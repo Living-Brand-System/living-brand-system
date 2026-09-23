@@ -41,3 +41,22 @@ export async function requestLogout(): Promise<boolean> {
 	//    상태**다 — 에러로 다루면 다시 눌러도 영영 400이라 사용자가 문구에 갇힌다.
 	return Boolean(response && (response.ok || response.status === 400))
 }
+
+export type PasswordChangeResult = { status: 'ok' } | { status: 'failed'; message: string }
+
+/** 내 비밀번호 변경. 🔴 실패 문구는 서버가 정한다 — 화면이 이유를 지어내면 안 된다. */
+export async function requestPasswordChange(
+	currentPassword: string,
+	nextPassword: string,
+): Promise<PasswordChangeResult> {
+	const response = await fetch('/api/auth/password', {
+		body: JSON.stringify({ currentPassword, nextPassword }),
+		headers: { 'Content-Type': 'application/json' },
+		method: 'POST',
+	}).catch(() => null)
+
+	if (response?.ok) return { status: 'ok' }
+
+	const body = (await response?.json().catch(() => null)) as { message?: string } | null
+	return { status: 'failed', message: body?.message ?? '비밀번호를 바꾸지 못했습니다.' }
+}

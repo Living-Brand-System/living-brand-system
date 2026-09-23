@@ -1,5 +1,6 @@
 import { LogoutButton } from '@/components/auth/logout-button'
 import { Controller } from '@/components/shared/controller'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { Typography } from '@/components/ui/typography'
 
 /** 가입일 표시. 🔴 존을 못 박는다 — 빼면 서버 TZ(대개 UTC)를 따라가 하루 밀린다. */
@@ -40,6 +41,10 @@ export function AccountCard({ email, createdAt }: { email: string; createdAt?: s
 						<span className="text-muted-foreground text-sm">{joinedAt}</span>
 					</Controller.Row>
 				)}
+				{/* 🔑 `ThemeToggle`은 이미 만들어져 있었는데 소비처가 0건이었다 — 설정 화면이 그 자리다. */}
+				<Controller.Row className="h-auto py-1.5" readonly label="테마">
+					<ThemeToggle />
+				</Controller.Row>
 			</div>
 
 			<LogoutButton />
