@@ -155,16 +155,13 @@ export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderPr
 	const loginItem = {
 		current: isCurrentPath(pathname, routes.login),
 		href: routes.login,
-		label: 'Log in',
+		label: 'Login',
 	} as const
 	const accountItem = {
 		current: isCurrentPath(pathname, routes.account),
 		href: routes.account,
 		label: 'Account',
 	} as const
-	// 🔴 헤더에는 실패를 적을 자리가 없다 — 그래서 라벨 자체가 다음 행동을 말하고, 사유는
-	//    보이지 않는 사람을 위해 live 영역이 읽는다(docs/08 「실패는 원인과 다음 행동을 말한다」).
-	const logoutLabel = logoutError ? 'Retry' : loggingOut ? 'Logging out…' : 'Logout'
 	const closeCompact = () => setCompactOpen(false)
 
 	return (
@@ -174,18 +171,18 @@ export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderPr
 					{session.status === 'in' && (
 						<>
 							<NavigationHeader.Link {...accountItem} />
-							{/* 🔑 배경이 없는 surface다 — Account 알약과 맞닿아 한 덩어리로 읽히지 않게.
-							    새 변형을 만들지 않고 킷에 이미 있는 것을 쓴다. */}
+							{/* 🔴 Login과 같은 알약이다 — 둘은 한 버튼의 두 상태라 모양이 갈리면 안 된다.
+							    진행·실패를 라벨에 쓰지 않는다(사용자 지시): 중복 클릭은 훅이 막고,
+							    실패 사유는 아래 live 영역이 읽는다. */}
 							<NavigationHeader.Action
 								aria-busy={loggingOut || undefined}
-								label={logoutLabel}
+								label="Logout"
 								onClick={logout}
-								surface="grouped"
 							/>
 						</>
 					)}
 					{session.status === 'out' && <NavigationHeader.Link {...loginItem} />}
-					{/* 라벨은 「Retry」까지만 말한다 — 왜 실패했는지는 여기서 읽어 준다. */}
+					{/* 라벨은 Login·Logout 둘뿐이다 — 실패 사유를 적을 자리가 없어 여기서 읽어 준다. */}
 					<span className="sr-only" role="alert">
 						{logoutError}
 					</span>
@@ -277,7 +274,7 @@ export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderPr
 										<NavigationHeader.Action
 											aria-busy={loggingOut || undefined}
 											className="justify-center bg-muted"
-											label={logoutLabel}
+											label="Logout"
 											onClick={logout}
 											surface="compact"
 										/>

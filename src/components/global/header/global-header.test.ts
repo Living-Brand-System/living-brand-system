@@ -76,7 +76,7 @@ describe('GlobalHeader', () => {
 			'/account',
 		)
 		expect(within(desktop).getByRole('button', { name: 'Logout' })).toBeInTheDocument()
-		expect(within(desktop).queryByRole('link', { name: 'Log in' })).toBeNull()
+		expect(within(desktop).queryByRole('link', { name: 'Login' })).toBeNull()
 	})
 
 	it('메가 메뉴 없이 직접 링크와 current·update 상태를 표시한다', async () => {
@@ -96,9 +96,10 @@ describe('GlobalHeader', () => {
 
 		// 🔴 이 단언이 「Payload 주소가 헤더에 노출되지 않는다」를 지키는 유일한 검사기다.
 		expect(
-			await within(desktop as HTMLElement).findByRole('link', { name: 'Log in' }),
+			await within(desktop as HTMLElement).findByRole('link', { name: 'Login' }),
 		).toHaveAttribute('href', '/login')
-		expect(within(desktop as HTMLElement).queryByRole('link', { name: 'Login' })).toBeNull()
+		// 🔴 이 단언이 「Payload 주소가 헤더에 노출되지 않는다」를 지키는 검사기다.
+		expect((desktop as HTMLElement).querySelector('a[href^="/admin"]')).toBeNull()
 		expect(links.getByRole('link', { name: /Guideline/ })).toHaveAttribute('href', '/guideline')
 		expect(links.getByRole('link', { name: 'Template' })).toHaveAttribute(
 			'href',

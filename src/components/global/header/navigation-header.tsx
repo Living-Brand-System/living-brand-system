@@ -207,7 +207,8 @@ function NavigationHeaderStart({ className, ...props }: React.ComponentProps<'se
 	return (
 		<section
 			data-slot="navigation-header-start"
-			className={cn('flex items-center justify-self-start', className)}
+			// gap-2는 우측 유틸 묶음(End)과 같은 값이다 — 양쪽 묶음이 같은 간격을 쓴다.
+			className={cn('flex items-center justify-self-start gap-2', className)}
 			{...props}
 		/>
 	)
