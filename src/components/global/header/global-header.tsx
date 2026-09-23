@@ -2,7 +2,6 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { AccountMenu } from '@/components/auth/account-menu'
 import { NavigationHeader } from '@/components/global/header/navigation-header'
 import {
 	Command,
@@ -13,6 +12,7 @@ import {
 	CommandItem,
 	CommandList,
 } from '@/components/ui/command'
+import { useLogout } from '@/features/auth/hooks/use-logout'
 import { useSession } from '@/features/auth/hooks/use-session'
 import type { GetGuidelineNavigationOutput } from '@/features/guideline/services/get-guideline-navigation.service'
 import { routes } from '@/lib/routes'
@@ -85,6 +85,7 @@ function HeaderGuidelineSearchDialog({
 export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderProps) {
 	const pathname = usePathname()
 	const session = useSession()
+	const { error: logoutError, loading: loggingOut, logout } = useLogout()
 	const [compactOpen, setCompactOpen] = useState(false)
 	const [searchOpen, setSearchOpen] = useState(false)
 
@@ -170,14 +171,35 @@ export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderPr
 		href: routes.login,
 		label: 'Log in',
 	} as const
+	const accountItem = {
+		current: isCurrentPath(pathname, routes.account),
+		href: routes.account,
+		label: 'Account',
+	} as const
+	// 🔴 헤더에는 실패를 적을 자리가 없다 — 그래서 라벨 자체가 다음 행동을 말하고, 사유는
+	//    보이지 않는 사람을 위해 live 영역이 읽는다(docs/08 「실패는 원인과 다음 행동을 말한다」).
+	const logoutLabel = logoutError ? 'Retry' : loggingOut ? 'Logging out…' : 'Logout'
 	const closeCompact = () => setCompactOpen(false)
 
 	return (
 		<NavigationHeader.Root>
 			<NavigationHeader.Desktop>
 				<NavigationHeader.Start>
-					{session.status === 'in' && <AccountMenu email={session.email} />}
+					{session.status === 'in' && (
+						<>
+							<NavigationHeader.Link {...accountItem} />
+							<NavigationHeader.Action
+								aria-busy={loggingOut || undefined}
+								label={logoutLabel}
+								onClick={logout}
+							/>
+						</>
+					)}
 					{session.status === 'out' && <NavigationHeader.Link {...loginItem} />}
+					{/* 라벨은 「Retry」까지만 말한다 — 왜 실패했는지는 여기서 읽어 준다. */}
+					<span className="sr-only" role="alert">
+						{logoutError}
+					</span>
 				</NavigationHeader.Start>
 				<NavigationHeader.Center aria-label="주요 메뉴">
 					<NavigationHeader.SymbolLink href={routes.home} />
@@ -256,14 +278,21 @@ export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderPr
 							</NavigationHeader.CompactLinkGroup>
 							<NavigationHeader.CompactLinkGroup className="pt-6">
 								{session.status === 'in' && (
-									<NavigationHeader.Link
-										className="justify-center bg-muted"
-										current={isCurrentPath(pathname, routes.account)}
-										href={routes.account}
-										label={session.email}
-										onClick={closeCompact}
-										surface="compact"
-									/>
+									<>
+										<NavigationHeader.Link
+											{...accountItem}
+											className="justify-center bg-muted"
+											onClick={closeCompact}
+											surface="compact"
+										/>
+										<NavigationHeader.Action
+											aria-busy={loggingOut || undefined}
+											className="justify-center bg-muted"
+											label={logoutLabel}
+											onClick={logout}
+											surface="compact"
+										/>
+									</>
 								)}
 								{session.status === 'out' && (
 									<NavigationHeader.Link

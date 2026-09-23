@@ -64,17 +64,18 @@ describe('GlobalHeader', () => {
 
 	afterEach(cleanup)
 
-	it('로그인하면 Log in 대신 계정 메뉴가 선다', async () => {
+	it('로그인하면 Log in 대신 Account와 Logout 둘이 선다', async () => {
 		sessionUser = { email: 'someone@plus-ex.com' }
 		renderHeader()
 
 		const desktop = document.querySelector<HTMLElement>(
 			'[data-slot="navigation-header-desktop"]',
 		) as HTMLElement
-		// 🔑 Carbon: 헤더는 「로그인했는지」와 「어느 계정인지」를 드러낸다.
-		expect(
-			await within(desktop).findByRole('button', { name: /someone@plus-ex\.com/ }),
-		).toBeInTheDocument()
+		expect(await within(desktop).findByRole('link', { name: 'Account' })).toHaveAttribute(
+			'href',
+			'/account',
+		)
+		expect(within(desktop).getByRole('button', { name: 'Logout' })).toBeInTheDocument()
 		expect(within(desktop).queryByRole('link', { name: 'Log in' })).toBeNull()
 	})
 

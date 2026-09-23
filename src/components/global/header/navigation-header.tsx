@@ -292,6 +292,44 @@ type NavigationHeaderLinkGroupProps = Omit<React.ComponentProps<'div'>, 'childre
 	items: readonly NavigationHeaderLinkItem[]
 }
 
+type NavigationHeaderActionProps = Omit<React.ComponentProps<'button'>, 'children'> &
+	VariantProps<typeof navigationHeaderLinkVariants> & {
+		label: string
+	}
+
+/**
+ * 링크와 **같은 모양의 버튼.** 헤더 항목이 이동이 아니라 동작일 때(로그아웃) 쓴다.
+ *
+ * 🔴 클래스를 베껴 쓰지 않고 `navigationHeaderLinkVariants`를 그대로 공유한다 — 같은 알약이
+ *    두 자리에서 각자 정의되면 한쪽만 바뀌어 어긋난다(docs/09 §9).
+ */
+function NavigationHeaderAction({
+	className,
+	current = false,
+	label,
+	surface = 'standalone',
+	...props
+}: NavigationHeaderActionProps) {
+	return (
+		<button
+			data-slot="navigation-header-action"
+			data-surface={surface}
+			className={cn(navigationHeaderLinkVariants({ current, surface }), className)}
+			type="button"
+			{...props}
+		>
+			<Typography
+				as="span"
+				className={navigationHeaderLinkLabelVariants({ current, surface })}
+				size="sm"
+				weight="medium"
+			>
+				{label}
+			</Typography>
+		</button>
+	)
+}
+
 function NavigationHeaderLinkGroup({ className, items, ...props }: NavigationHeaderLinkGroupProps) {
 	const groupRef = React.useRef<HTMLDivElement>(null)
 	const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null)
@@ -475,6 +513,7 @@ function NavigationHeaderMenuTrigger({
 }
 
 const NavigationHeader = {
+	Action: NavigationHeaderAction,
 	Center: NavigationHeaderCenter,
 	ChatTrigger: NavigationHeaderChatTrigger,
 	Compact: NavigationHeaderCompact,

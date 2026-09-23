@@ -5,21 +5,19 @@
  *    로그아웃은 덮을 것이 없어 Payload의 세션 종료 엔드포인트를 그대로 부른다.
  */
 
-/** 지금 로그인한 사람. 헤더가 알아야 하는 것은 「누구인가」뿐이라 이메일 하나만 들고 온다. */
-export type SessionUser = { email: string } | null
-
 /**
- * 🔑 헤더는 서버에서 세션을 읽지 못한다 — 루트 레이아웃이 세션을 읽으면 `/`와 `/guideline`의
+ * 지금 로그인돼 있나. 🔑 헤더가 필요한 것은 그것뿐이라 계정 정보를 들고 오지 않는다 —
+ * 누구인지는 계정 화면이 서버에서 읽는다.
+ *
+ * 🔑 헤더는 서버에서 세션을 읽지 못한다. 루트 레이아웃이 세션을 읽으면 `/`와 `/guideline`의
  *    정적 렌더가 깨지기 때문이다(docs/05). 그래서 브라우저가 직접 묻는다.
  */
-export async function requestSession(): Promise<SessionUser> {
+export async function requestIsSignedIn(): Promise<boolean> {
 	const response = await fetch('/api/users/me').catch(() => null)
-	if (!response?.ok) return null
+	if (!response?.ok) return false
 
-	const body = (await response.json().catch(() => null)) as {
-		user?: { email?: string } | null
-	} | null
-	return body?.user?.email ? { email: body.user.email } : null
+	const body = (await response.json().catch(() => null)) as { user?: unknown } | null
+	return Boolean(body?.user)
 }
 
 export type LoginResult = { status: 'ok' } | { status: 'rejected' } | { status: 'error' }
