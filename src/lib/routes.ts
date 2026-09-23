@@ -9,7 +9,6 @@ export const routes = {
 		graph: '/studio/graph',
 		graphic: '/studio/graphic',
 		image: '/studio/image',
-		mcp: '/studio/mcp',
 		review: '/studio/review',
 		template: '/studio/template',
 		usage: '/studio/usage',
@@ -95,8 +94,15 @@ export const legacyPageRedirects = [
 		permanent: true,
 	},
 	{
+		// MCP 키는 계정당 하나라 스튜디오 도구가 아니라 개인 설정이다 — 계정 화면이 갖는다.
+		// 🔴 permanent가 아니다. 이 배치는 아직 바뀔 수 있는데 308은 브라우저가 오래 캐시한다.
 		source: '/settings/mcp',
-		destination: routes.studio.mcp,
-		permanent: true,
+		destination: routes.account,
+		permanent: false,
+	},
+	{
+		source: '/studio/mcp',
+		destination: routes.account,
+		permanent: false,
 	},
 ] as const

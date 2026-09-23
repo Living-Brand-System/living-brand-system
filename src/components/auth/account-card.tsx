@@ -50,11 +50,6 @@ export function AccountCard({ email, createdAt }: { email: string; createdAt?: s
 						내가 쓴 토큰 보기
 					</Link>
 				</Controller.Row>
-				<Controller.Row readonly label="MCP">
-					<Link className="text-sm underline underline-offset-4" href={routes.studio.mcp}>
-						키 발급하기
-					</Link>
-				</Controller.Row>
 			</div>
 
 			<LogoutButton />

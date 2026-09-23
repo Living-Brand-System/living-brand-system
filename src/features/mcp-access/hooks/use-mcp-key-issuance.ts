@@ -26,7 +26,7 @@ export function useMcpKeyIssuance() {
 		setLoading(false)
 
 		if (result.status === 'unauthorized') {
-			window.location.assign(loginHref(routes.studio.mcp))
+			window.location.assign(loginHref(routes.account))
 			return
 		}
 		if (result.status === 'error') {

@@ -12,8 +12,8 @@ import {
 describe('로그인 이동', () => {
 	it('로그인 문은 앱 안이다 — Payload Admin으로 보내지 않는다', () => {
 		// 🔴 이 단언이 깨지면 worker가 CMS 로그인 화면을 보게 된다(docs/07 #14).
-		expect(loginHref('/studio/mcp')).toBe('/login?redirect=%2Fstudio%2Fmcp')
-		expect(loginHref('/studio/mcp')).not.toContain('/admin')
+		expect(loginHref('/studio/usage')).toBe('/login?redirect=%2Fstudio%2Fusage')
+		expect(loginHref('/studio/usage')).not.toContain('/admin')
 	})
 
 	it('돌아갈 곳은 내부 경로만 통과시킨다', () => {
@@ -44,7 +44,6 @@ describe('routes', () => {
 		expect(routes.studio.image).toBe('/studio/image')
 		expect(routes.studio.graphic).toBe('/studio/graphic')
 		expect(routes.studio.template).toBe('/studio/template')
-		expect(routes.studio.mcp).toBe('/studio/mcp')
 
 		expect(getStudioImageRoute('illustration')).toBe('/studio/image/illustration')
 		expect(getStudioGraphicRoute('forward-straight')).toBe('/studio/graphic/forward-straight')
@@ -59,7 +58,7 @@ describe('routes', () => {
 		expect(getStudioTemplateRoute('summer-poster').split('/')).toHaveLength(4)
 	})
 
-	it('이전 Studio 경로를 canonical 경로로 영구 이동한다', () => {
+	it('이전 경로를 canonical 경로로 옮긴다', () => {
 		expect(legacyPageRedirects).toEqual([
 			{
 				source: '/studio',
@@ -81,10 +80,17 @@ describe('routes', () => {
 				destination: '/studio/review',
 				permanent: true,
 			},
+			// MCP는 계정 화면으로 옮겼다. 🔴 permanent가 아니다 — 아직 바뀔 수 있는 배치라
+			// 308로 굳히면 브라우저 캐시 때문에 되돌리기 어려워진다.
 			{
 				source: '/settings/mcp',
-				destination: '/studio/mcp',
-				permanent: true,
+				destination: '/account',
+				permanent: false,
+			},
+			{
+				source: '/studio/mcp',
+				destination: '/account',
+				permanent: false,
 			},
 		])
 	})

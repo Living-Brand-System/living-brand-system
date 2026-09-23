@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { AccountCard } from '@/components/auth/account-card'
+import { McpKeyIssuer } from '@/components/studio/mcp/mcp-key-issuer'
 import { isPayloadUser } from '@/lib/auth'
 import { requireUser } from '@/lib/request-auth'
 import { loginHref, routes } from '@/lib/routes'
@@ -20,9 +21,12 @@ export default async function AccountPage() {
 
 	// 앱 셸이 헤더를 본문 위에 겹치므로 그 높이만큼 비운다(section-layout과 같은 값).
 	return (
-		<main className="grid h-full place-items-center overflow-y-auto p-4 pt-[50px] md:p-6 xl:pt-(--global-header-height)">
-			<div className="w-full max-w-sm">
+		<main className="grid h-full justify-items-center overflow-y-auto p-4 pt-[50px] md:p-6 xl:pt-(--global-header-height)">
+			{/* 폭은 화면 조합이 소유한다(docs/10 §4). MCP 카드의 명령 두 칸이 나란히 서는 폭 = 672px. */}
+			<div className="flex w-full max-w-2xl flex-col gap-4 py-6">
 				<AccountCard createdAt={user.createdAt} email={user.email} />
+				{/* MCP 키는 계정당 하나다 — 스튜디오 도구가 아니라 이 계정의 설정이라 여기 선다. */}
+				<McpKeyIssuer />
 			</div>
 		</main>
 	)
