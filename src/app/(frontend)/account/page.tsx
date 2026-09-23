@@ -37,10 +37,14 @@ export default async function AccountPage({
 			{/*
 			 * 폭은 화면 조합이 소유한다(docs/10 §4).
 			 * 🔑 두 열로 갈린다 — 왼쪽은 설정, 오른쪽은 기록(사용량)이다. 성격이 다르므로 섞지 않는다.
+			 * 🔑 설정 열은 고정 폭이다 — 담는 것이 짧은 행과 입력이라 넓어져도 얻는 게 없다.
+			 *    남는 폭은 전부 사용량이 가져간다(표 6열·막대 30개가 폭을 먹는 쪽이다).
+			 * 🔴 채우는 트랙은 `1fr`이 아니라 `minmax(0,1fr)`다 — 그냥 `1fr`이면 표가 트랙을
+			 *    밀어내 그리드가 컨테이너 밖으로 넘친다.
 			 * 🔴 `items-start`: 두 열의 높이가 다르므로 각자 위에서 시작하게 둔다. 안 주면 짧은
 			 *    쪽이 긴 쪽에 맞춰 늘어나 빈 면이 생긴다.
 			 */}
-			<div className="grid w-full max-w-7xl items-start gap-4 py-6 lg:grid-cols-2">
+			<div className="grid w-full max-w-7xl items-start gap-4 py-6 lg:grid-cols-[28rem_minmax(0,1fr)]">
 				<div className="flex flex-col gap-4">
 					<AccountCard createdAt={user.createdAt} email={user.email} />
 					{/* 🔴 앱에 이 자리가 없으면 비밀번호를 바꿀 길이 Payload Admin뿐이다. */}
