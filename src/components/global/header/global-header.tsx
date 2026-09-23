@@ -152,10 +152,14 @@ export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderPr
 	// 🔴 데스크톱과 컴팩트가 같은 것을 두 번 그린다 — 한 자리로 묶어 한쪽만 고쳐지는 일을 막는다.
 	// 세션은 서버가 아니라 브라우저가 묻는다 — 루트 레이아웃이 세션을 읽으면 `/`와 `/guideline`의
 	// 정적 렌더가 깨지기 때문이다(docs/05). 모르는 동안(`unknown`)은 아무것도 그리지 않는다.
+	// 🔴 Login과 Logout은 **한 버튼의 두 상태**다 — surface가 갈리면 안 된다.
+	//    배경 없는 쪽이 기준이다(사용자 지시). cva의 defaultVariants가 standalone인 것은
+	//    코드의 기본값일 뿐 디자인 기준이 아니다.
 	const loginItem = {
 		current: isCurrentPath(pathname, routes.login),
 		href: routes.login,
 		label: 'Login',
+		surface: 'grouped',
 	} as const
 	const accountItem = {
 		current: isCurrentPath(pathname, routes.account),
@@ -171,13 +175,13 @@ export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderPr
 					{session.status === 'in' && (
 						<>
 							<NavigationHeader.Link {...accountItem} />
-							{/* 🔴 Login과 같은 알약이다 — 둘은 한 버튼의 두 상태라 모양이 갈리면 안 된다.
-							    진행·실패를 라벨에 쓰지 않는다(사용자 지시): 중복 클릭은 훅이 막고,
-							    실패 사유는 아래 live 영역이 읽는다. */}
+							{/* Login과 같은 surface다(위 주석의 이유). 진행·실패를 라벨에 쓰지 않는다 —
+							    중복 클릭은 훅이 막고, 실패 사유는 아래 live 영역이 읽는다. */}
 							<NavigationHeader.Action
 								aria-busy={loggingOut || undefined}
 								label="Logout"
 								onClick={logout}
+								surface="grouped"
 							/>
 						</>
 					)}

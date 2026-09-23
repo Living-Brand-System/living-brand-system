@@ -5,6 +5,9 @@ import { SidebarProvider } from '@/components/ui/sidebar'
 import { GlobalHeader, type NavigationHeaderUpdates } from './global-header'
 
 let pathname = ''
+// 🔴 Login과 Logout은 **한 버튼의 두 상태**다 — surface가 갈리면 안 된다.
+//    실제로 두 번 어긋났다(한쪽만 배경을 주고, 다음엔 반대로 통일했다). 여기서 못 박는다.
+const LOGIN_LOGOUT_SURFACE = 'grouped'
 // 헤더는 마운트 때 /api/users/me를 묻는다 — 테스트가 그 답을 정한다.
 let sessionUser: { email: string } | null = null
 const push = vi.fn()
@@ -75,7 +78,10 @@ describe('GlobalHeader', () => {
 			'href',
 			'/account',
 		)
-		expect(within(desktop).getByRole('button', { name: 'Logout' })).toBeInTheDocument()
+		expect(within(desktop).getByRole('button', { name: 'Logout' })).toHaveAttribute(
+			'data-surface',
+			LOGIN_LOGOUT_SURFACE,
+		)
 		expect(within(desktop).queryByRole('link', { name: 'Login' })).toBeNull()
 	})
 
@@ -98,6 +104,10 @@ describe('GlobalHeader', () => {
 		expect(
 			await within(desktop as HTMLElement).findByRole('link', { name: 'Login' }),
 		).toHaveAttribute('href', '/login')
+		expect(within(desktop as HTMLElement).getByRole('link', { name: 'Login' })).toHaveAttribute(
+			'data-surface',
+			LOGIN_LOGOUT_SURFACE,
+		)
 		// 🔴 이 단언이 「Payload 주소가 헤더에 노출되지 않는다」를 지키는 검사기다.
 		expect((desktop as HTMLElement).querySelector('a[href^="/admin"]')).toBeNull()
 		expect(links.getByRole('link', { name: /Guideline/ })).toHaveAttribute('href', '/guideline')
