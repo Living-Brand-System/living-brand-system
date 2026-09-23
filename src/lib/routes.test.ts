@@ -12,12 +12,12 @@ import {
 describe('로그인 이동', () => {
 	it('로그인 문은 앱 안이다 — Payload Admin으로 보내지 않는다', () => {
 		// 🔴 이 단언이 깨지면 worker가 CMS 로그인 화면을 보게 된다(docs/07 #14).
-		expect(loginHref('/studio/usage')).toBe('/login?redirect=%2Fstudio%2Fusage')
-		expect(loginHref('/studio/usage')).not.toContain('/admin')
+		expect(loginHref('/account')).toBe('/login?redirect=%2Faccount')
+		expect(loginHref('/account')).not.toContain('/admin')
 	})
 
 	it('돌아갈 곳은 내부 경로만 통과시킨다', () => {
-		expect(safeRedirectPath('/studio/usage', '/account')).toBe('/studio/usage')
+		expect(safeRedirectPath('/studio/image', '/account')).toBe('/studio/image')
 		expect(safeRedirectPath(undefined, '/account')).toBe('/account')
 		// 🔴 바깥으로 보내는 모양들 — 하나라도 통과하면 로그인 링크가 피싱 통로가 된다.
 		expect(safeRedirectPath('https://evil.test', '/account')).toBe('/account')
@@ -34,7 +34,7 @@ describe('로그인 이동', () => {
 		expect(safeRedirectPath('/\r//evil.test', '/account')).toBe('/account')
 		expect(safeRedirectPath('/\t/evil.test', '/account')).toBe('/account')
 		// 내부 경로는 쿼리까지 살아서 돌아온다 — 기간·필터를 들고 로그인해도 잃지 않는다.
-		expect(safeRedirectPath('/studio/usage?days=7', '/account')).toBe('/studio/usage?days=7')
+		expect(safeRedirectPath('/account?days=7', '/login')).toBe('/account?days=7')
 	})
 })
 
@@ -89,6 +89,11 @@ describe('routes', () => {
 			},
 			{
 				source: '/studio/mcp',
+				destination: '/account',
+				permanent: false,
+			},
+			{
+				source: '/studio/usage',
 				destination: '/account',
 				permanent: false,
 			},

@@ -11,7 +11,6 @@ export const routes = {
 		image: '/studio/image',
 		review: '/studio/review',
 		template: '/studio/template',
-		usage: '/studio/usage',
 	},
 } as const
 
@@ -102,6 +101,11 @@ export const legacyPageRedirects = [
 	},
 	{
 		source: '/studio/mcp',
+		destination: routes.account,
+		permanent: false,
+	},
+	{
+		source: '/studio/usage',
 		destination: routes.account,
 		permanent: false,
 	},

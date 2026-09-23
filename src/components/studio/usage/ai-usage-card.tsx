@@ -1,48 +1,40 @@
-import { redirect } from 'next/navigation'
-import { StudioWorkspacePage } from '@/components/studio/shared/studio-workspace'
-import { AiUsageBreakdownTable } from '@/components/studio/usage/ai-usage-breakdown-table'
-import { AiUsageDailyStrip } from '@/components/studio/usage/ai-usage-daily-strip'
-import { AiUsageFilterChips } from '@/components/studio/usage/ai-usage-filter-chips'
-import { AiUsageKpis } from '@/components/studio/usage/ai-usage-kpis'
-import { AiUsageSegment } from '@/components/studio/usage/ai-usage-segment'
+import { Controller } from '@/components/shared/controller'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
-import { isManager, isPayloadUser } from '@/lib/auth'
-import { requireUser } from '@/lib/request-auth'
-import { loginHref, routes } from '@/lib/routes'
+import { Typography } from '@/components/ui/typography'
+import type { AiUsageBreakdownRow } from '@/modules/ai-usage/ai-usage-breakdown'
 import { AI_USAGE_AXES, AI_USAGE_PERIODS } from '@/modules/ai-usage/ai-usage-catalog'
 import { foldAiUsage } from '@/modules/ai-usage/ai-usage-fold'
 import {
+	type AiUsageQuery,
 	aiUsageAxisHref,
 	aiUsagePeriodHref,
-	parseAiUsageQuery,
 } from '@/modules/ai-usage/ai-usage-query'
-import { getAiUsageBreakdown } from '@/modules/ai-usage/services/get-ai-usage-breakdown.service'
-
-// 렌더링: 매 요청. 로그인 계정에 따라 보이는 행이 달라지므로 캐시하지 않는다(docs/05).
-export const dynamic = 'force-dynamic'
+import { AiUsageBreakdownTable } from './ai-usage-breakdown-table'
+import { AiUsageDailyStrip } from './ai-usage-daily-strip'
+import { AiUsageFilterChips } from './ai-usage-filter-chips'
+import { AiUsageKpis } from './ai-usage-kpis'
+import { AiUsageSegment } from './ai-usage-segment'
 
 /**
- * 사용량 총괄 — 기간 하나, 축 하나, 표 하나.
+ * 사용량 — 기간 하나, 축 하나, 표 하나.
  *
- * 🔑 상태가 전부 URL에 있어서 이 화면에 클라이언트 state가 없다(세그먼트의 링크만 client다).
+ * 🔑 상태가 전부 URL에 있어서 여기에 클라이언트 state가 없다(세그먼트의 링크만 client다).
  *    그래서 새로고침·링크 공유에 안 날아가고, 축을 바꿔도 기간과 필터가 유지된다.
  * 🔴 「날짜」는 축이 아니다 — 다른 축과 배타로 고르는 것이 아니라 언제나 켜져 있는 분포라,
  *    축 세그먼트가 아니라 상시 일자 스트립이 맡는다.
+ * 🔑 표면은 계정 화면의 다른 카드와 같은 컨트롤러 킷이다 — 여기서 카드를 새로 만들지 않는다.
  */
-export default async function StudioUsagePage({
-	searchParams,
+export function AiUsageCard({
+	canSeeEveryone,
+	query,
+	rows,
+	todayKey,
 }: {
-	searchParams: Promise<Record<string, string | string[] | undefined>>
+	canSeeEveryone: boolean
+	query: AiUsageQuery
+	rows: AiUsageBreakdownRow[]
+	todayKey: string
 }) {
-	const { user } = await requireUser(routes.studio.usage)
-	// MCP API 키로는 이 화면을 열 수 없다 — 집계는 사람 계정 단위이므로 로그인으로 돌려보낸다.
-	if (!isPayloadUser(user)) redirect(loginHref(routes.studio.usage))
-
-	const query = parseAiUsageQuery(await searchParams)
-	// 범위 제한은 repository가 소유한다 — manager가 아니면 쿼리 자체가 본인 행으로 좁혀진다.
-	const { rows, todayKey } = await getAiUsageBreakdown(user)
-	const canSeeEveryone = isManager(user)
-
 	// 자기 것만 보는 사람에게 「계정」 축은 한 줄짜리 표라 뜻이 없다.
 	const axes = canSeeEveryone ? AI_USAGE_AXES : AI_USAGE_AXES.filter((a) => a.value !== 'user')
 	const axis = axes.some((a) => a.value === query.axis) ? query.axis : 'feature'
@@ -52,13 +44,19 @@ export default async function StudioUsagePage({
 	const filteredEmail = rows.find((row) => String(row.userId) === query.filters.user)?.userEmail
 
 	return (
-		<StudioWorkspacePage
-			description={
-				canSeeEveryone ? '모든 계정이 AI에 쓴 토큰입니다.' : '내가 AI에 쓴 토큰입니다.'
-			}
-			title="사용량"
-		>
-			<div className="flex flex-col gap-6 overflow-auto px-4 py-6 md:px-8">
+		<Controller.Root className="gap-3 px-3 pt-6 pb-3 lg:h-auto">
+			<header className="flex flex-col gap-1 px-2">
+				<Typography as="h2" size="2xl" weight="medium">
+					사용량
+				</Typography>
+				<Typography size="sm" tone="muted">
+					{canSeeEveryone
+						? '모든 계정이 AI에 쓴 토큰입니다.'
+						: '내가 AI에 쓴 토큰입니다.'}
+				</Typography>
+			</header>
+
+			<div className="flex flex-col gap-4 px-2 pb-2">
 				{/* 🔴 기간은 축보다 물리적으로 위다 — 축 안에 든 것처럼 읽히면 안 된다. */}
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<AiUsageSegment
@@ -100,6 +98,6 @@ export default async function StudioUsagePage({
 					)}
 				</div>
 			</div>
-		</StudioWorkspacePage>
+		</Controller.Root>
 	)
 }

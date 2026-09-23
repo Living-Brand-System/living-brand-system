@@ -1,4 +1,3 @@
-import { Card } from '@/components/ui/card'
 import { Typography } from '@/components/ui/typography'
 import { cn } from '@/lib/utils'
 import type { AiUsageFold } from '@/modules/ai-usage/ai-usage-fold'
@@ -28,7 +27,10 @@ export function AiUsageKpis({ fold }: { fold: AiUsageFold }) {
 	return (
 		<div className="grid grid-cols-2 gap-3 md:grid-cols-4">
 			{cards.map((card) => (
-				<Card className="px-4" key={card.label} size="sm">
+				<div
+					className="flex flex-col gap-0.5 rounded-lg bg-muted px-3 py-2"
+					key={card.label}
+				>
 					<Typography as="p" className="text-muted-foreground" size="xs">
 						{card.label}
 					</Typography>
@@ -48,7 +50,7 @@ export function AiUsageKpis({ fold }: { fold: AiUsageFold }) {
 							{card.hint.text}
 						</Typography>
 					)}
-				</Card>
+				</div>
 			))}
 		</div>
 	)

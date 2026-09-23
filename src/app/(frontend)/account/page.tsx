@@ -1,9 +1,12 @@
 import { redirect } from 'next/navigation'
 import { AccountCard } from '@/components/auth/account-card'
 import { McpKeyIssuer } from '@/components/studio/mcp/mcp-key-issuer'
-import { isPayloadUser } from '@/lib/auth'
+import { AiUsageCard } from '@/components/studio/usage/ai-usage-card'
+import { isManager, isPayloadUser } from '@/lib/auth'
 import { requireUser } from '@/lib/request-auth'
 import { loginHref, routes } from '@/lib/routes'
+import { parseAiUsageQuery } from '@/modules/ai-usage/ai-usage-query'
+import { getAiUsageBreakdown } from '@/modules/ai-usage/services/get-ai-usage-breakdown.service'
 
 // 렌더링: 매 요청. 로그인 계정을 읽으므로 캐시하지 않는다(docs/05).
 export const dynamic = 'force-dynamic'
@@ -14,10 +17,18 @@ export const dynamic = 'force-dynamic'
  * 🔑 비로그인이면 `requireUser`가 로그인으로 보내고 돌아온다. 그래서 헤더는 로그인 여부를 몰라도
  *    되고, `/`와 `/guideline`의 정적 렌더가 깨지지 않는다.
  */
-export default async function AccountPage() {
+export default async function AccountPage({
+	searchParams,
+}: {
+	searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
 	const { user } = await requireUser(routes.account)
 	// MCP API 키 세션으로는 열 수 없다 — 계정 화면은 사람 계정의 것이므로 로그인으로 돌려보낸다.
 	if (!isPayloadUser(user)) redirect(loginHref(routes.account))
+
+	// 범위 제한은 repository가 소유한다 — manager가 아니면 쿼리 자체가 본인 행으로 좁혀진다.
+	const query = parseAiUsageQuery(await searchParams)
+	const { rows, todayKey } = await getAiUsageBreakdown(user)
 
 	// 앱 셸이 헤더를 본문 위에 겹치므로 그 높이만큼 비운다(section-layout과 같은 값).
 	return (
@@ -27,6 +38,13 @@ export default async function AccountPage() {
 				<AccountCard createdAt={user.createdAt} email={user.email} />
 				{/* MCP 키는 계정당 하나다 — 스튜디오 도구가 아니라 이 계정의 설정이라 여기 선다. */}
 				<McpKeyIssuer />
+				{/* 사용량도 계정에 매달린 기록이다 — 스튜디오 도구가 아니라 이 계정의 것이다. */}
+				<AiUsageCard
+					canSeeEveryone={isManager(user)}
+					query={query}
+					rows={rows}
+					todayKey={todayKey}
+				/>
 			</div>
 		</main>
 	)

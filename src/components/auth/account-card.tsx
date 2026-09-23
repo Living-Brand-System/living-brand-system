@@ -1,8 +1,6 @@
-import Link from 'next/link'
 import { LogoutButton } from '@/components/auth/logout-button'
 import { Controller } from '@/components/shared/controller'
 import { Typography } from '@/components/ui/typography'
-import { routes } from '@/lib/routes'
 
 /** 가입일 표시. 🔴 존을 못 박는다 — 빼면 서버 TZ(대개 UTC)를 따라가 하루 밀린다. */
 const JOINED_AT_FORMAT = new Intl.DateTimeFormat('ko-KR', {
@@ -42,14 +40,6 @@ export function AccountCard({ email, createdAt }: { email: string; createdAt?: s
 						<span className="text-muted-foreground text-sm">{joinedAt}</span>
 					</Controller.Row>
 				)}
-				<Controller.Row readonly label="사용량">
-					<Link
-						className="text-sm underline underline-offset-4"
-						href={routes.studio.usage}
-					>
-						내가 쓴 토큰 보기
-					</Link>
-				</Controller.Row>
 			</div>
 
 			<LogoutButton />
