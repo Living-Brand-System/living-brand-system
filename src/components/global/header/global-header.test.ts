@@ -109,7 +109,10 @@ describe('GlobalHeader', () => {
 			'href',
 			'/studio/graphic',
 		)
-		expect(links.getByRole('link', { name: 'MCP' })).toHaveAttribute('href', '/studio/mcp')
+		// 🔴 MCP·Usage는 헤더에서 뺐다 — 개인 설정이라 계정 화면이 진입점을 갖는다.
+		//    이 단언이 「실수로 다시 들어오는 것」을 막는다.
+		expect(links.queryByRole('link', { name: 'MCP' })).toBeNull()
+		expect(links.queryByRole('link', { name: 'Usage' })).toBeNull()
 		expect(links.getByRole('link', { name: 'Review' })).toHaveAttribute(
 			'href',
 			'/studio/review',

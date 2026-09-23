@@ -25,10 +25,8 @@ type NavigationHeaderUpdateKey =
 	| 'graphic'
 	| 'guideline'
 	| 'image'
-	| 'mcp'
 	| 'review'
 	| 'template'
-	| 'usage'
 
 type NavigationHeaderUpdates = Partial<Record<NavigationHeaderUpdateKey, boolean>>
 
@@ -139,12 +137,6 @@ export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderPr
 	] as const
 	const studioSettingItems = [
 		{
-			current: isCurrentPath(pathname, routes.studio.mcp),
-			hasUpdate: updates.mcp,
-			href: routes.studio.mcp,
-			label: 'MCP',
-		},
-		{
 			current: isCurrentPath(pathname, routes.studio.review),
 			hasUpdate: updates.review,
 			href: routes.studio.review,
@@ -155,12 +147,6 @@ export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderPr
 			hasUpdate: updates.assets,
 			href: routes.studio.assets,
 			label: 'Assets',
-		},
-		{
-			current: isCurrentPath(pathname, routes.studio.usage),
-			hasUpdate: updates.usage,
-			href: routes.studio.usage,
-			label: 'Usage',
 		},
 	] as const
 	// 🔴 데스크톱과 컴팩트가 같은 것을 두 번 그린다 — 한 자리로 묶어 한쪽만 고쳐지는 일을 막는다.
@@ -188,10 +174,13 @@ export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderPr
 					{session.status === 'in' && (
 						<>
 							<NavigationHeader.Link {...accountItem} />
+							{/* 🔑 배경이 없는 surface다 — Account 알약과 맞닿아 한 덩어리로 읽히지 않게.
+							    새 변형을 만들지 않고 킷에 이미 있는 것을 쓴다. */}
 							<NavigationHeader.Action
 								aria-busy={loggingOut || undefined}
 								label={logoutLabel}
 								onClick={logout}
+								surface="grouped"
 							/>
 						</>
 					)}
