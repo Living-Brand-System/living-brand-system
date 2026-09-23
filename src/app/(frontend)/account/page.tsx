@@ -36,27 +36,25 @@ export default async function AccountPage({
 		<main className="grid h-full justify-items-center overflow-y-auto p-4 pt-[50px] md:p-6 xl:pt-(--global-header-height)">
 			{/*
 			 * 폭은 화면 조합이 소유한다(docs/10 §4).
-			 * 🔑 설정 카드 셋은 짧아서 두 열로 나란히 서고, 사용량은 표·스트립이 넓어야 읽히므로
-			 *    두 열을 가로지른다. 한 줄로 세우면 넓은 화면이 통째로 빈다.
+			 * 🔑 두 열로 갈린다 — 왼쪽은 설정, 오른쪽은 기록(사용량)이다. 성격이 다르므로 섞지 않는다.
+			 * 🔴 `items-start`: 두 열의 높이가 다르므로 각자 위에서 시작하게 둔다. 안 주면 짧은
+			 *    쪽이 긴 쪽에 맞춰 늘어나 빈 면이 생긴다.
 			 */}
-			<div className="grid w-full max-w-7xl gap-4 py-6 lg:grid-cols-2">
-				{/* 🔴 셋을 그리드 칸에 그냥 흘리면 빈 칸이 생긴다 — 짧은 둘을 한 열에 쌓는다. */}
+			<div className="grid w-full max-w-7xl items-start gap-4 py-6 lg:grid-cols-2">
 				<div className="flex flex-col gap-4">
 					<AccountCard createdAt={user.createdAt} email={user.email} />
 					{/* 🔴 앱에 이 자리가 없으면 비밀번호를 바꿀 길이 Payload Admin뿐이다. */}
 					<PasswordCard />
+					{/* MCP 키는 계정당 하나다 — 스튜디오 도구가 아니라 이 계정의 설정이라 여기 선다. */}
+					<McpKeyIssuer />
 				</div>
-				{/* MCP 키는 계정당 하나다 — 스튜디오 도구가 아니라 이 계정의 설정이라 여기 선다. */}
-				<McpKeyIssuer />
-				{/* 사용량도 계정에 매달린 기록이다 — 스튜디오 도구가 아니라 이 계정의 것이다. */}
-				<div className="lg:col-span-2">
-					<AiUsageCard
-						canSeeEveryone={isManager(user)}
-						query={query}
-						rows={rows}
-						todayKey={todayKey}
-					/>
-				</div>
+				{/* 사용량은 계정에 매달린 **기록**이다 — 설정과 성격이 달라 자기 열을 갖는다. */}
+				<AiUsageCard
+					canSeeEveryone={isManager(user)}
+					query={query}
+					rows={rows}
+					todayKey={todayKey}
+				/>
 			</div>
 		</main>
 	)
