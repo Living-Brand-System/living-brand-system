@@ -1,4 +1,4 @@
-import type { Access, CollectionConfig, FieldAccess } from 'payload'
+import type { Access, CollectionConfig, FieldAccess, Where } from 'payload'
 import type { User } from '@/payload-types'
 
 /**
@@ -44,12 +44,27 @@ export const managerManagedAccess: CollectionConfig['access'] = {
 	delete: managerOrAdmin,
 }
 
-/** 본인 문서이거나 admin일 때 허용 (Users 읽기/수정용) */
-export const selfOrAdmin: Access = ({ req, id }) => {
+/**
+ * manager가 운영하는 세계에는 `worker`와 `manager`만 있다 — admin 행은 보이지도 고쳐지지도 않는다.
+ * (2026-09-28 결정: manager는 admin이 될 수 없고, admin 계정을 삭제·강등할 수도 없다.)
+ */
+const nonAdminRows: Where = { role: { not_equals: 'admin' } }
+
+/** 본인 문서이거나, manager가 다루는 비-admin 문서 (Users 조회/수정용) */
+export const selfOrManaged: Access = ({ req }) => {
 	if (isAdmin(req.user)) return true
+	if (isManager(req.user)) return nonAdminRows
 	const uid = (req.user as { id?: string | number } | null)?.id
-	return uid != null && id != null && String(uid) === String(id)
+	if (uid == null) return false
+	return { id: { equals: uid } }
 }
 
-// --- 필드 access (예: role 변경은 admin만) ---
-export const adminFieldOnly: FieldAccess = ({ req }) => isAdmin(req.user)
+/** manager 이상만, 단 admin 문서는 건드리지 못한다 (Users 삭제용) */
+export const managedRowsOnly: Access = ({ req }) => {
+	if (isAdmin(req.user)) return true
+	return isManager(req.user) ? nonAdminRows : false
+}
+
+// --- 필드 access ---
+/** role 지정·변경은 manager 이상. `admin` 값을 넣는 것은 role 필드 hook이 따로 막는다. */
+export const managerFieldOnly: FieldAccess = ({ req }) => isManager(req.user)

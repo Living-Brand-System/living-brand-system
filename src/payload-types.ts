@@ -2122,7 +2122,7 @@ export interface GeneratedImage {
 export interface User {
   id: number;
   /**
-   * admin(전체)·manager(기준 관리)·worker(사용)
+   * admin(전체)·manager(계정·기준 관리)·worker(사용)
    */
   role: 'admin' | 'manager' | 'worker';
   updatedAt: string;
