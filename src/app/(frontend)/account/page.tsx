@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { AccountCard } from '@/components/auth/account-card'
+import { AdminEntryCard } from '@/components/auth/admin-entry-card'
 import { PasswordCard } from '@/components/auth/password-card'
 import { McpKeyIssuer } from '@/components/studio/mcp/mcp-key-issuer'
 import { AiUsageCard } from '@/components/studio/usage/ai-usage-card'
@@ -51,6 +52,8 @@ export default async function AccountPage({
 					<PasswordCard />
 					{/* MCP 키는 계정당 하나다 — 스튜디오 도구가 아니라 이 계정의 설정이라 여기 선다. */}
 					<McpKeyIssuer />
+					{/* 앱에서 Payload Admin으로 가는 유일한 입구 — worker에게는 그 주소가 404다. */}
+					{isManager(user) && <AdminEntryCard />}
 				</div>
 				{/* 사용량은 계정에 매달린 **기록**이다 — 설정과 성격이 달라 자기 열을 갖는다. */}
 				<AiUsageCard
