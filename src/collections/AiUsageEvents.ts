@@ -44,14 +44,16 @@ export const AiUsageEvents: CollectionConfig = {
 	},
 	fields: [
 		{
+			// 🔴 required를 두지 않는다. FK가 `ON DELETE SET NULL`이므로 계정이 지워지면 이 값이
+			//    비고, NOT NULL이면 Postgres가 그 DELETE 자체를 거부한다(2026-09-28 실측).
+			//    비어 있는 행은 「삭제된 계정이 쓴 토큰」이고, 집계에서 빼지 않는다.
 			name: 'createdBy',
 			type: 'relationship',
 			relationTo: 'users',
-			required: true,
 			index: true,
 			admin: {
 				position: 'sidebar',
-				description: '호출 당시 인증된 사용자입니다.',
+				description: '호출 당시 인증된 사용자입니다. 계정이 삭제되면 비어 있습니다.',
 			},
 		},
 		{

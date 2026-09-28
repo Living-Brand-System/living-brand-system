@@ -2097,7 +2097,7 @@ export interface GeneratedImage {
   /**
    * 생성 요청 당시 인증된 사용자 ID입니다.
    */
-  createdBy: number | User;
+  createdBy?: (number | null) | User;
   /**
    * 이 이미지를 만들 때 참조한 원본 생성 이미지입니다.
    */
@@ -2122,7 +2122,7 @@ export interface GeneratedImage {
 export interface User {
   id: number;
   /**
-   * admin(전체)·manager(기준 관리)·worker(사용)
+   * admin(전체)·manager(계정·기준 관리)·worker(사용)
    */
   role: 'admin' | 'manager' | 'worker';
   updatedAt: string;
@@ -2537,9 +2537,9 @@ export interface AgentChatSession {
 export interface AiUsageEvent {
   id: number;
   /**
-   * 호출 당시 인증된 사용자입니다.
+   * 호출 당시 인증된 사용자입니다. 계정이 삭제되면 비어 있습니다.
    */
-  createdBy: number | User;
+  createdBy?: (number | null) | User;
   /**
    * AI를 호출한 기능입니다.
    */

@@ -42,8 +42,8 @@ export async function POST(request: Request) {
 	}
 
 	try {
-		// 🔑 overrideAccess: false — `Users.access.update`가 selfOrAdmin이라 남의 문서는 못 고친다.
-		//    role은 adminFieldOnly라 여기서 권한이 올라갈 수 없다.
+		// 🔑 overrideAccess: false — `Users.access.update`가 본인 문서만 열어 주므로 남의 것은 못 고친다.
+		//    role은 manager 이상만 쓸 수 있어 여기서 권한이 올라갈 수 없다.
 		await payload.update({
 			collection: 'users',
 			data: { password: parsed.data.nextPassword },

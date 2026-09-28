@@ -6,10 +6,12 @@ import type {
 /**
  * 좌측 갤러리가 그리는 생성 이미지 한 장.
  *
- * 🔴 복원 값이 전부 nullable인 것은 실수가 아니다 — `generated-images`의 메타 필드는
- *    manager 전용 field access를 갖는다(컬렉션 선언). 권한이 없는 사용자에게는 Payload가
- *    그 필드를 빼고 내려주므로, 갤러리는 그림만 보이고 복원은 열리지 않는다.
- *    그 경계를 조회에서 우회하지 않는다(`overrideAccess: false`).
+ * 🔑 복원 값은 **전원에게 열려 있다**(2026-09-28). 「worker에게 기능이 숨겨지면 안 된다」는
+ *    결정에 따라 복원에 필요한 여섯 필드(scenario·scenarioName·inputPrompt·aspectRatio·
+ *    imageSize·batchKey)의 manager 전용 field access를 걷어냈다.
+ * 🔴 그래도 nullable인 이유는 둘이다 — 그 여섯 필드가 도입되기 전에 만들어진 행이 있고,
+ *    복원에 안 쓰는 넷(effectivePrompt·model·createdBy·sourceImage)은 여전히 manager 전용이라
+ *    권한 없는 사용자에게는 Payload가 빼고 내려준다. 조회는 계속 `overrideAccess: false`다.
  */
 export interface GeneratedImageHistoryItem {
 	id: number

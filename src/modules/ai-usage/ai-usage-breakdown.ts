@@ -7,8 +7,9 @@ import type { AiUsageFeature, AiUsageStudio } from './ai-usage-catalog'
  *    어느 축으로 접든 같은 집합의 분할이라 총계가 변하지 않는다.
  */
 export interface AiUsageBreakdownRow {
-	userId: number
-	userEmail: string
+	/** null = 계정이 삭제됨. 토큰은 남으므로 집계에서 빼지 않는다. */
+	userId: number | null
+	userEmail: string | null
 	feature: AiUsageFeature
 	/** null = 스튜디오 밖(admin 미리보기·전역 헤더 챗). */
 	studio: AiUsageStudio | null

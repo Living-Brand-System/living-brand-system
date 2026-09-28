@@ -12,6 +12,11 @@ import { AI_USAGE_TIME_ZONE, type AiUsageFeature, type AiUsageStudio } from '../
  * 🔴 drizzle 직통 쿼리는 컬렉션 access를 **통과하지 않는다**. manager가 아니면 자기 행으로
  *    좁히는 제한을 여기서 직접 건다 — users를 join해 이메일을 뽑으므로, 빠뜨리면 토큰 숫자가
  *    아니라 **계정 목록이 샌다**(docs/07 신뢰 경계).
+ * 🔑 manager는 **역할과 무관하게 전 계정**을 본다(2026-09-28 사용자 지시). 계정 관리에서는
+ *    manager에게 admin 행이 보이지 않지만, 여기는 권한 표면이 아니라 **리포트**다 — 누가 토큰을
+ *    태웠는지는 비용의 사실이라 역할로 가리면 총합이 실제 청구액과 어긋난다.
+ * 🔴 join은 `leftJoin`이다. `innerJoin`이면 계정이 삭제된 이벤트가 fold 이전에 사라져 총합이
+ *    조용히 줄어든다 — 행은 남기고 이름만 비운다.
  * 🔴 일자 버킷에 `AT TIME ZONE`을 명시한다. 빼면 세션 TZ(대개 UTC)를 따라가 「오늘」이 하루
  *    밀린다 — 이 리포가 실제로 겪은 사고다.
  * ponytail: 기간 WHERE 없이 전 기간을 한 번 읽는다. 그룹 행 수는 원시 이벤트 수를 못 넘고
@@ -43,7 +48,7 @@ export async function findAiUsageBreakdown(user: User): Promise<AiUsageBreakdown
 			userId: events.createdBy,
 		})
 		.from(events)
-		.innerJoin(users, eq(users.id, events.createdBy))
+		.leftJoin(users, eq(users.id, events.createdBy))
 		.where(isManager(user) ? undefined : eq(events.createdBy, user.id))
 		.groupBy(events.createdBy, users.email, events.feature, events.studio, events.model, dayKey)
 
@@ -59,8 +64,8 @@ export async function findAiUsageBreakdown(user: User): Promise<AiUsageBreakdown
 		reasoningTokens: Number(row.reasoningTokens),
 		studio: (row.studio ?? null) as AiUsageStudio | null,
 		totalTokens: Number(row.totalTokens),
-		userEmail: String(row.userEmail),
-		userId: Number(row.userId),
+		userEmail: row.userEmail == null ? null : String(row.userEmail),
+		userId: row.userId == null ? null : Number(row.userId),
 	}))
 }
 
