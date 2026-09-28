@@ -16,7 +16,15 @@ describe('buildGuidelineNavigationChapters', () => {
 				{
 					chapterId: 1,
 					id: 2,
-					sections: [{ anchor: 'primary-logo', title: 'Primary Logo' }],
+					sections: [
+						{
+							id: 'primary-logo',
+							headingLevel: 2,
+							parentSectionId: null,
+							anchor: 'primary-logo',
+							title: 'Primary Logo',
+						},
+					],
 					slug: 'logo',
 					title: 'Logo',
 				},
@@ -34,6 +42,9 @@ describe('buildGuidelineNavigationChapters', () => {
 						href: '/guideline/brand/logo',
 						sections: [
 							{
+								id: 'primary-logo',
+								headingLevel: 2,
+								parentSectionId: null,
 								anchor: 'primary-logo',
 								title: 'Primary Logo',
 								href: '/guideline/brand/logo#primary-logo',

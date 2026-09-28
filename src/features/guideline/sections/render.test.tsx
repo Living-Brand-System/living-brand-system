@@ -69,6 +69,45 @@ it('CMS 이미지 관계를 공통 카드와 개별·섹션 다운로드로 연�
 	)
 })
 
+it('본문은 평면 배치를 유지하면서 조회 위계대로 H2/H3와 섹션 이름을 연결한다', () => {
+	const { container } = render(
+		<CmsGuidelineSections
+			sections={[
+				{ ...section, id: 'main', containers: [] },
+				{
+					...section,
+					id: 'sub',
+					anchor: 'details',
+					type: 'subsection',
+					title: 'Details',
+					containers: [],
+				},
+				{
+					...section,
+					id: 'incorrect',
+					anchor: 'incorrect',
+					type: 'incorrect-usages',
+					containers: [],
+				},
+			]}
+		/>,
+	)
+	expect(
+		screen.getAllByRole('heading').map((heading) => [heading.tagName, heading.textContent]),
+	).toEqual([
+		['H2', 'Icons'],
+		['H3', 'Details'],
+		['H2', 'Incorrect Usages'],
+	])
+	expect(screen.getByRole('region', { name: 'Details' })).toHaveAttribute(
+		'aria-labelledby',
+		'details-heading',
+	)
+	expect(
+		container.querySelectorAll('[data-slot="cms-guideline-sections"] > section'),
+	).toHaveLength(3)
+})
+
 it('Incorrect Usages는 금지 기본이며 명시적인 없음은 유지한다', () => {
 	const card = section.containers[0].cards[0]
 	const { rerender } = render(

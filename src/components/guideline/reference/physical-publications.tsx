@@ -151,33 +151,34 @@ export function PhysicalPublicationsReference() {
 						),
 					]}
 				/>
-				<GuidelineSection id="brochure-covers" hierarchy="sub">
-					<GuidelineSectionHeading
-						id="brochure-covers-heading"
-						hierarchy="sub"
-						title="Cover Type"
-						description="타이포그래피, 일러스트레이션, 사진과 그래픽을 활용한 표지 구성 예시입니다."
-					/>
-					<GuidelineCarouselContainer
-						label="브로슈어 표지 예시"
-						displayHeight={720}
-						cards={covers}
-					/>
-				</GuidelineSection>
-				<GuidelineSection id="brochure-body" hierarchy="sub">
-					<GuidelineSectionHeading
-						id="brochure-body-heading"
-						hierarchy="sub"
-						title="Body Type"
-						description="제목, 본문, 사진과 목차를 정보의 성격에 맞게 배치한 내지 구성 예시입니다."
-					/>
-					<GuidelineCarouselContainer
-						label="브로슈어 내지 예시"
-						displayHeight={720}
-						cards={body}
-					/>
-				</GuidelineSection>
 			</GuidelineSection>
+			<GuidelineSection id="brochure-covers" hierarchy="sub">
+				<GuidelineSectionHeading
+					id="brochure-covers-heading"
+					hierarchy="sub"
+					title="Cover Type"
+					description="타이포그래피, 일러스트레이션, 사진과 그래픽을 활용한 표지 구성 예시입니다."
+				/>
+				<GuidelineCarouselContainer
+					label="브로슈어 표지 예시"
+					displayHeight={720}
+					cards={covers}
+				/>
+			</GuidelineSection>
+			<GuidelineSection id="brochure-body" hierarchy="sub">
+				<GuidelineSectionHeading
+					id="brochure-body-heading"
+					hierarchy="sub"
+					title="Body Type"
+					description="제목, 본문, 사진과 목차를 정보의 성격에 맞게 배치한 내지 구성 예시입니다."
+				/>
+				<GuidelineCarouselContainer
+					label="브로슈어 내지 예시"
+					displayHeight={720}
+					cards={body}
+				/>
+			</GuidelineSection>
+
 			<GuidelineSection id="banner" hierarchy="main">
 				<GuidelineSectionHeading
 					id="banner-heading"
@@ -203,33 +204,34 @@ export function PhysicalPublicationsReference() {
 						),
 					]}
 				/>
-				<GuidelineSection id="banner-horizontal" hierarchy="sub">
-					<GuidelineSectionHeading
-						id="banner-horizontal-heading"
-						hierarchy="sub"
-						title="Banner (Horizontal)"
-						description="가로 공간에 제목과 그래픽을 배치해 주요 메시지를 한눈에 전달합니다."
-					/>
-					<GuidelineCarouselContainer
-						label="가로 배너 예시"
-						displayHeight={720}
-						cards={horizontal}
-					/>
-				</GuidelineSection>
-				<GuidelineSection id="banner-vertical" hierarchy="sub">
-					<GuidelineSectionHeading
-						id="banner-vertical-heading"
-						hierarchy="sub"
-						title="Banner (Vertical)"
-						description="세로 흐름에 맞춰 로고, 메시지와 행사 정보를 순서대로 배치합니다."
-					/>
-					<GuidelineCarouselContainer
-						label="세로 배너 예시"
-						displayHeight={720}
-						cards={vertical}
-					/>
-				</GuidelineSection>
 			</GuidelineSection>
+			<GuidelineSection id="banner-horizontal" hierarchy="sub">
+				<GuidelineSectionHeading
+					id="banner-horizontal-heading"
+					hierarchy="sub"
+					title="Banner (Horizontal)"
+					description="가로 공간에 제목과 그래픽을 배치해 주요 메시지를 한눈에 전달합니다."
+				/>
+				<GuidelineCarouselContainer
+					label="가로 배너 예시"
+					displayHeight={720}
+					cards={horizontal}
+				/>
+			</GuidelineSection>
+			<GuidelineSection id="banner-vertical" hierarchy="sub">
+				<GuidelineSectionHeading
+					id="banner-vertical-heading"
+					hierarchy="sub"
+					title="Banner (Vertical)"
+					description="세로 흐름에 맞춰 로고, 메시지와 행사 정보를 순서대로 배치합니다."
+				/>
+				<GuidelineCarouselContainer
+					label="세로 배너 예시"
+					displayHeight={720}
+					cards={vertical}
+				/>
+			</GuidelineSection>
+
 			<GuidelineSection id="poster" hierarchy="main">
 				<GuidelineSectionHeading
 					id="poster-heading"
@@ -249,20 +251,21 @@ export function PhysicalPublicationsReference() {
 						),
 					]}
 				/>
-				<GuidelineSection id="poster-graphic" hierarchy="sub">
-					<GuidelineSectionHeading
-						id="poster-graphic-heading"
-						hierarchy="sub"
-						title="Poster (Graphic Type)"
-						description="사진과 브랜드 그래픽을 활용한 포스터 구성 예시입니다. 메시지와 세부 정보가 명확히 구분되도록 배치합니다."
-					/>
-					<GuidelineCarouselContainer
-						label="포스터 예시"
-						displayHeight={720}
-						cards={posters}
-					/>
-				</GuidelineSection>
 			</GuidelineSection>
+			<GuidelineSection id="poster-graphic" hierarchy="sub">
+				<GuidelineSectionHeading
+					id="poster-graphic-heading"
+					hierarchy="sub"
+					title="Poster (Graphic Type)"
+					description="사진과 브랜드 그래픽을 활용한 포스터 구성 예시입니다. 메시지와 세부 정보가 명확히 구분되도록 배치합니다."
+				/>
+				<GuidelineCarouselContainer
+					label="포스터 예시"
+					displayHeight={720}
+					cards={posters}
+				/>
+			</GuidelineSection>
+
 			<GuidelineSection id="related-resources" hierarchy="main">
 				<GuidelineSectionHeading
 					id="related-resources-heading"

@@ -5,7 +5,8 @@ import {
 	type GuidelineBlock,
 	snapshotBlock,
 } from '../blocks/projection'
-import { projectSection, sectionTitle } from '../sections/model'
+import { sectionTitle } from '../sections/model'
+import { projectSection } from '../sections/projection'
 import { relationshipId } from '../utils/block-text'
 import {
 	buildCheckSourceSnapshot,

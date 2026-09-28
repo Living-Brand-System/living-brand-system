@@ -1,6 +1,6 @@
 import type { GuidelineDocument } from '@/payload-types'
 import { formatBlockForAgent } from '../blocks/projection'
-import { projectSection } from '../sections/model'
+import { projectSection } from '../sections/projection'
 import { compact } from './block-text'
 
 export interface GuidelineSearchRuleSummary {

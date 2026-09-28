@@ -298,66 +298,60 @@ export function TypographyReference() {
 				/>
 				<GuidelineStickyContainer cards={hierarchyCards} mode="switch" />
 			</GuidelineSection>
-			<div className="px-4 py-16 md:px-12 md:py-32">
-				<GuidelineSection
-					id="incorrect-usages"
+
+			<GuidelineSection
+				id="incorrect-usages"
+				hierarchy="main"
+				className="rounded-3xl bg-destructive/15"
+			>
+				<GuidelineSectionHeading
+					id="incorrect-usages-heading"
+					align="center"
 					hierarchy="main"
-					className="rounded-3xl bg-destructive/15"
-				>
-					<GuidelineSectionHeading
-						id="incorrect-usages-heading"
-						align="center"
-						hierarchy="main"
-						title="Incorrect Usages"
-						description="서체의 잘못된 사용은 브랜드 아이덴티티의 일관성을 저해할 수 있습니다. 글자 간격·서체·크기·형태를 임의로 변경하지 않습니다."
-					/>
-					<GuidelineGridContainer
-						columns={2}
-						displayWidth={720}
-						minDisplayWidth={320}
-						cards={[
-							[
-								'과도하게 좁은 글자 간격',
-								'글자 사이 간격을 지나치게 줄일 수 없습니다.',
-							],
-							[
-								'과도하게 넓은 글자 간격',
-								'글자 사이 간격을 지나치게 넓힐 수 없습니다.',
-							],
-							[
-								'지정되지 않은 서체',
-								'지정된 서체 이외의 다른 서체를 사용할 수 없습니다.',
-							],
-							[
-								'일관되지 않은 글자 크기',
-								'한 문장 안에서 각기 다른 글자 크기를 적용할 수 없습니다.',
-							],
-							['글자 형태 변형', '글자의 형태를 변형할 수 없습니다.'],
-							['임의의 기울임', '글자를 기울여 사용할 수 없습니다.'],
-						].map(([title, description], index) => ({
-							id: `incorrect-${index + 1}`,
-							ratio: '4:3',
-							display: (
-								<GuidelineCardDisplay
-									src={`/guideline/reference/typography/incorrect-${String(index + 1).padStart(2, '0')}.png`}
-									alt={`${title} 사용 금지 사례`}
-									scale={100}
-								>
-									<GuidelineCardActions
-										start={{
-											kind: 'badge',
-											label: '사용 금지',
-											variant: 'destructive',
-											icon: <Close size={24} />,
-										}}
-									/>
-								</GuidelineCardDisplay>
-							),
-							caption: { type: 'basic', title, description },
-						}))}
-					/>
-				</GuidelineSection>
-			</div>
+					title="Incorrect Usages"
+					description="서체의 잘못된 사용은 브랜드 아이덴티티의 일관성을 저해할 수 있습니다. 글자 간격·서체·크기·형태를 임의로 변경하지 않습니다."
+				/>
+				<GuidelineGridContainer
+					columns={2}
+					displayWidth={720}
+					minDisplayWidth={320}
+					cards={[
+						['과도하게 좁은 글자 간격', '글자 사이 간격을 지나치게 줄일 수 없습니다.'],
+						['과도하게 넓은 글자 간격', '글자 사이 간격을 지나치게 넓힐 수 없습니다.'],
+						[
+							'지정되지 않은 서체',
+							'지정된 서체 이외의 다른 서체를 사용할 수 없습니다.',
+						],
+						[
+							'일관되지 않은 글자 크기',
+							'한 문장 안에서 각기 다른 글자 크기를 적용할 수 없습니다.',
+						],
+						['글자 형태 변형', '글자의 형태를 변형할 수 없습니다.'],
+						['임의의 기울임', '글자를 기울여 사용할 수 없습니다.'],
+					].map(([title, description], index) => ({
+						id: `incorrect-${index + 1}`,
+						ratio: '4:3',
+						display: (
+							<GuidelineCardDisplay
+								src={`/guideline/reference/typography/incorrect-${String(index + 1).padStart(2, '0')}.png`}
+								alt={`${title} 사용 금지 사례`}
+								scale={100}
+							>
+								<GuidelineCardActions
+									start={{
+										kind: 'badge',
+										label: '사용 금지',
+										variant: 'destructive',
+										icon: <Close size={24} />,
+									}}
+								/>
+							</GuidelineCardDisplay>
+						),
+						caption: { type: 'basic', title, description },
+					}))}
+				/>
+			</GuidelineSection>
+
 			<GuidelineDisplayFooter
 				logo={{
 					src: '/brand/hd/ko-horizontal-default-blk@2x.png',

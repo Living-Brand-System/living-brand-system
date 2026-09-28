@@ -1,9 +1,9 @@
-import { formatBlockForAgent } from '@/features/guideline/blocks/projection'
-import { collectGuidelineCheckSources } from '@/features/guideline/checks/collect-guideline-check-sources'
-import { projectSection } from '@/features/guideline/sections/model'
-import { compact } from '@/features/guideline/utils/block-text'
+import { formatGuidelineReadDocument } from '@/features/guideline/domain/reading/format-document'
 import {
-	type AgentGuidelineDocument,
+	type GuidelineReadDocument,
+	toGuidelineReadDocument,
+} from '@/features/guideline/domain/reading/read-document'
+import {
 	type AgentGuidelineSearchCandidate,
 	findAgentGuidelineDocument,
 	findGuidelineSearchPhraseCandidates,
@@ -79,12 +79,9 @@ export async function readAgentGuidelineDocument(
 	const result = await findAgentGuidelineDocument(user, input)
 	if (!result) return null
 
-	const document = result.document
+	const document = toGuidelineReadDocument(result.document, result.paletteCatalog)
 	const id = String(document.id)
-	const checks = collectGuidelineCheckSources(document).map(({ rule }) => ({
-		key: rule.key,
-		title: rule.title,
-	}))
+	const content = formatGuidelineReadDocument(document)
 	return {
 		title: document.title,
 		collection: 'guideline-documents' as const,
@@ -95,28 +92,11 @@ export async function readAgentGuidelineDocument(
 			title: document.title,
 			href: documentHref(document),
 		},
-		checks,
-		content: limitContent(formatGuidelineDocument(result, checks)),
+		checks: document.checks,
+		content: limitContent(content),
+		truncated: content.length > MAX_DOCUMENT_CONTENT_LENGTH,
+		totalContentLength: content.length,
 	}
-}
-
-function formatGuidelineDocument(
-	result: AgentGuidelineDocument,
-	checks: { key: string; title: string }[],
-): string {
-	const document = result.document
-	const formattedChecks = checks.map((check) => `- ${check.key}: ${check.title}`)
-
-	// 🔴 문서는 전부 토픽이다(2026-08-26). 깊이로 종류를 가르던 분기가 사라졌고, 섹션은
-	//    본문 블록이라 `formatBlockForAgent`가 이미 담는다.
-	return compact([
-		document.chapterTitle ? `Chapter: ${document.chapterTitle}` : null,
-		`Topic: ${document.title}`,
-		...(document.contentModel === 'sections'
-			? (document.sections ?? []).map((section) => projectSection(section).text)
-			: (document.blocks?.map(formatBlockForAgent).filter(Boolean) ?? [])),
-		formattedChecks.length ? `Checks:\n${formattedChecks.join('\n')}` : null,
-	]).join('\n\n')
 }
 
 function searchTerms(query: string): string[] {
@@ -138,12 +118,12 @@ function titleMatchCount(title: string, terms: string[]): number {
 	return terms.filter((term) => normalizedTitle.includes(term.toLocaleLowerCase())).length
 }
 
-function documentHref(document: AgentGuidelineDocument['document']): string | null {
-	return document.chapterSlug ? `/guideline/${document.chapterSlug}/${document.slug}` : null
+function documentHref(document: GuidelineReadDocument): string | null {
+	return document.chapter?.slug ? `/guideline/${document.chapter.slug}/${document.slug}` : null
 }
 
 function limitContent(value: string): string {
 	return value.length > MAX_DOCUMENT_CONTENT_LENGTH
-		? `${value.slice(0, MAX_DOCUMENT_CONTENT_LENGTH)}...`
+		? `${value.slice(0, MAX_DOCUMENT_CONTENT_LENGTH)}\n[Truncated: ${MAX_DOCUMENT_CONTENT_LENGTH}/${value.length} characters]`
 		: value
 }

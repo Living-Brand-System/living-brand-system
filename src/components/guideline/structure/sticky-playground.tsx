@@ -99,54 +99,56 @@ export function GuidelineStickyPlayground() {
 		),
 	}))
 	return (
-		<GuidelineSection id="sticky-playground" hierarchy="main">
-			<GuidelineSectionHeading
-				id="sticky-playground-heading"
-				hierarchy="main"
-				title="Sticky Playground"
-				description="일반형과 스크롤 전환형을 비교하세요. 좁은 화면에서는 캡션 전체 → 도판 순서로 표시합니다. 예시 문구와 수치는 비교용 목업입니다."
-			/>
-			<div className="flex flex-wrap gap-6">
-				<label className="flex max-w-48 flex-col gap-2 text-sm">
-					Sticky 캡션 형태
-					<select
-						className="rounded-md border border-border bg-background p-2 focus-visible:outline-2 focus-visible:outline-ring"
-						value={captionType}
-						onChange={(e) => setCaptionType(e.target.value as typeof captionType)}
-					>
-						<option value="basic">기본형</option>
-						<option value="list">목록형</option>
-						<option value="specification">명세형</option>
-					</select>
-				</label>
-				<label className="flex max-w-48 flex-col gap-2 text-sm">
-					고정 위치
-					<select
-						className="rounded-md border border-border bg-background p-2 focus-visible:outline-2 focus-visible:outline-ring"
-						value={top}
-						onChange={(e) => setTop(Number(e.target.value))}
-					>
-						{[32, 80, 160].map((value) => (
-							<option key={value} value={value}>
-								상단 {value}px
-							</option>
-						))}
-					</select>
-				</label>
-				<label className="flex max-w-48 flex-col gap-2 text-sm">
-					Sticky 카드 판형
-					<select
-						className="rounded-md border border-border bg-background p-2 focus-visible:outline-2 focus-visible:outline-ring"
-						value={ratio}
-						onChange={(e) => setRatio(e.target.value as typeof ratio)}
-					>
-						<option value="mixed">혼합 · 1:1 / 2:3 / 16:9</option>
-						{DISPLAY_RATIOS.map((value) => (
-							<option key={value}>{value}</option>
-						))}
-					</select>
-				</label>
-			</div>
+		<>
+			<GuidelineSection id="sticky-playground" hierarchy="main">
+				<GuidelineSectionHeading
+					id="sticky-playground-heading"
+					hierarchy="main"
+					title="Sticky Playground"
+					description="일반형과 스크롤 전환형을 비교하세요. 좁은 화면에서는 캡션 전체 → 도판 순서로 표시합니다. 예시 문구와 수치는 비교용 목업입니다."
+				/>
+				<div className="flex flex-wrap gap-6">
+					<label className="flex max-w-48 flex-col gap-2 text-sm">
+						Sticky 캡션 형태
+						<select
+							className="rounded-md border border-border bg-background p-2 focus-visible:outline-2 focus-visible:outline-ring"
+							value={captionType}
+							onChange={(e) => setCaptionType(e.target.value as typeof captionType)}
+						>
+							<option value="basic">기본형</option>
+							<option value="list">목록형</option>
+							<option value="specification">명세형</option>
+						</select>
+					</label>
+					<label className="flex max-w-48 flex-col gap-2 text-sm">
+						고정 위치
+						<select
+							className="rounded-md border border-border bg-background p-2 focus-visible:outline-2 focus-visible:outline-ring"
+							value={top}
+							onChange={(e) => setTop(Number(e.target.value))}
+						>
+							{[32, 80, 160].map((value) => (
+								<option key={value} value={value}>
+									상단 {value}px
+								</option>
+							))}
+						</select>
+					</label>
+					<label className="flex max-w-48 flex-col gap-2 text-sm">
+						Sticky 카드 판형
+						<select
+							className="rounded-md border border-border bg-background p-2 focus-visible:outline-2 focus-visible:outline-ring"
+							value={ratio}
+							onChange={(e) => setRatio(e.target.value as typeof ratio)}
+						>
+							<option value="mixed">혼합 · 1:1 / 2:3 / 16:9</option>
+							{DISPLAY_RATIOS.map((value) => (
+								<option key={value}>{value}</option>
+							))}
+						</select>
+					</label>
+				</div>
+			</GuidelineSection>
 			{(['individual', 'switch'] as const).map((mode) => (
 				<GuidelineSection key={mode} id={`sticky-${mode}`} hierarchy="sub">
 					<GuidelineSectionHeading
@@ -162,6 +164,6 @@ export function GuidelineStickyPlayground() {
 					<GuidelineStickyContainer cards={cards} mode={mode} top={top} />
 				</GuidelineSection>
 			))}
-		</GuidelineSection>
+		</>
 	)
 }

@@ -11,6 +11,60 @@ vi.mock('@payload-config', () => ({ default: {} }))
 vi.mock('payload', () => ({ getPayload: vi.fn() }))
 
 describe('listPublishedGuidelineNavigationTopics', () => {
+	it('신규 목차는 본문의 부모·제목 단계를 보존하고 레거시 목차는 H2로 유지한다', async () => {
+		const find = vi.fn().mockResolvedValue({
+			docs: [
+				{
+					id: 1,
+					chapter: 1,
+					title: 'New',
+					slug: 'new',
+					contentModel: 'sections',
+					blocks: [{ blockType: 'section', anchor: 'retired', title: 'Retired' }],
+					sections: [
+						{ id: 'main-id', type: 'section', anchor: 'main', title: 'Main' },
+						{ id: 'sub-id', type: 'subsection', anchor: 'sub', title: 'Sub' },
+					],
+				},
+				{
+					id: 2,
+					chapter: 1,
+					title: 'Old',
+					slug: 'old',
+					blocks: [{ blockType: 'section', anchor: 'legacy', title: 'Legacy' }],
+				},
+			],
+		})
+		vi.mocked(getPayload).mockResolvedValue({ find } as never)
+		const topics = await listPublishedGuidelineNavigationTopics()
+		expect(topics.map((topic) => topic.sections)).toEqual([
+			[
+				{
+					id: 'main-id',
+					anchor: 'main',
+					title: 'Main',
+					headingLevel: 2,
+					parentSectionId: null,
+				},
+				{
+					id: 'sub-id',
+					anchor: 'sub',
+					title: 'Sub',
+					headingLevel: 3,
+					parentSectionId: 'main-id',
+				},
+			],
+			[
+				{
+					id: 'legacy',
+					anchor: 'legacy',
+					title: 'Legacy',
+					headingLevel: 2,
+					parentSectionId: null,
+				},
+			],
+		])
+	})
 	it('global 관계 문서를 plain metadata DTO로 변환한다', async () => {
 		const findGlobal = vi.fn().mockResolvedValue({
 			companyName: 'Company',

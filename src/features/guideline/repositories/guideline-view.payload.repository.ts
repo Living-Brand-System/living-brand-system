@@ -8,7 +8,7 @@ import type {
 	GuidelineNavigationTopicData,
 	GuidelineTopicData,
 } from '../domain/contract/guideline'
-import { sectionTitle } from '../sections/model'
+import { withSectionHierarchy } from '../sections/model'
 
 /**
  * Creator UI 렌더링용 published guideline 조회 repository.
@@ -87,7 +87,7 @@ export async function listPublishedGuidelineNavigationTopics(): Promise<
 			//    (`@payloadcms/drizzle` find/traverseFields.js — 목록에 없는 블록은 빈 select로 접힌다).
 			blocks: { section: { anchor: true, title: true } },
 			contentModel: true,
-			sections: { type: true, anchor: true, title: true },
+			sections: { id: true, type: true, anchor: true, title: true },
 		},
 	})
 
@@ -96,15 +96,31 @@ export async function listPublishedGuidelineNavigationTopics(): Promise<
 		id: document.id,
 		sections:
 			document.contentModel === 'sections'
-				? (document.sections ?? []).flatMap((section) =>
+				? withSectionHierarchy(document.sections ?? []).flatMap((section) =>
 						section.anchor
-							? [{ anchor: section.anchor, title: sectionTitle(section) }]
+							? [
+									{
+										id: section.id,
+										anchor: section.anchor,
+										title: section.title ?? '',
+										headingLevel: section.headingLevel,
+										parentSectionId: section.parentSectionId,
+									},
+								]
 							: [],
 					)
 				: (document.blocks ?? []).flatMap((block) =>
 						// 제목 없는 섹션(히어로)은 앵커도 목차 항목도 없다.
 						block.blockType === 'section' && block.anchor && block.title
-							? [{ anchor: block.anchor, title: block.title }]
+							? [
+									{
+										id: block.id || block.anchor,
+										anchor: block.anchor,
+										title: block.title,
+										headingLevel: 2 as const,
+										parentSectionId: null,
+									},
+								]
 							: [],
 					),
 		slug: document.slug,

@@ -1,5 +1,6 @@
 import { Download } from '@carbon/icons-react'
 import Link from 'next/link'
+import { Fragment } from 'react'
 import { GuidelineCardActions } from '@/components/guideline/structure/card-actions'
 import {
 	GuidelineDisplayFooter,
@@ -95,44 +96,46 @@ export function IconographyReference() {
 				/>
 			</GuidelineSection>
 			{variants.map(({ id, title, stroke }) => (
-				<GuidelineSection key={id} id={id} hierarchy="main">
-					<GuidelineSectionHeading
-						id={`${id}-heading`}
-						hierarchy="main"
-						title={title}
-						description={
-							id === 'outlined'
-								? '일관된 선 두께로 산업과 사물의 특징을 표현합니다.'
-								: '면으로 채운 형태로 산업과 사물의 특징을 표현합니다.'
-						}
-					/>
-					<GuidelineGridContainer
-						columns={1}
-						displayWidth={720}
-						cards={[
-							{
-								id: `${id}-construction`,
-								ratio: '1:1',
-								display: downloadableDisplay(
-									`construction/icon-construction-${id}.svg`,
-									`${title} 변압기 아이콘 제작 규칙`,
-								),
-								caption: {
-									type: 'specification',
-									title: 'Construction',
-									groups: [
-										{
-											items: [
-												{ label: 'Icon Area', value: '48 × 48px' },
-												{ label: 'Stroke', value: stroke },
-												{ label: 'Padding', value: '12px' },
-											],
-										},
-									],
+				<Fragment key={id}>
+					<GuidelineSection id={id} hierarchy="main">
+						<GuidelineSectionHeading
+							id={`${id}-heading`}
+							hierarchy="main"
+							title={title}
+							description={
+								id === 'outlined'
+									? '일관된 선 두께로 산업과 사물의 특징을 표현합니다.'
+									: '면으로 채운 형태로 산업과 사물의 특징을 표현합니다.'
+							}
+						/>
+						<GuidelineGridContainer
+							columns={1}
+							displayWidth={720}
+							cards={[
+								{
+									id: `${id}-construction`,
+									ratio: '1:1',
+									display: downloadableDisplay(
+										`construction/icon-construction-${id}.svg`,
+										`${title} 변압기 아이콘 제작 규칙`,
+									),
+									caption: {
+										type: 'specification',
+										title: 'Construction',
+										groups: [
+											{
+												items: [
+													{ label: 'Icon Area', value: '48 × 48px' },
+													{ label: 'Stroke', value: stroke },
+													{ label: 'Padding', value: '12px' },
+												],
+											},
+										],
+									},
 								},
-							},
-						]}
-					/>
+							]}
+						/>
+					</GuidelineSection>
 					<GuidelineSection id={`${id}-icons`} hierarchy="sub">
 						<GuidelineSectionHeading
 							id={`${id}-icons-heading`}
@@ -160,7 +163,7 @@ export function IconographyReference() {
 							}))}
 						/>
 					</GuidelineSection>
-				</GuidelineSection>
+				</Fragment>
 			))}
 			<GuidelineDisplayFooter
 				logo={{

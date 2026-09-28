@@ -1,6 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
+import type { ReactNode } from 'react'
 import { Sidebar } from '@/components/global/sidebar/sidebar'
 import { CopyPageLink } from '@/components/shared/copy-page-link'
 import {
@@ -25,6 +26,35 @@ export function GuidelineSideNavigation({
 		.find((topic) => pathname === topic.href || pathname.startsWith(`${topic.href}/`))
 	const currentSections = currentTopic?.sections ?? []
 	const activeAnchor = useActiveSectionAnchor(currentSections.map((section) => section.anchor))
+
+	const sectionItems = currentSections
+		.filter(
+			(section) =>
+				!section.parentSectionId ||
+				!currentSections.some((parent) => parent.id === section.parentSectionId),
+		)
+		.map((section) => {
+			const children = currentSections.filter((child) => child.parentSectionId === section.id)
+			return (
+				<SectionNavigationItem
+					key={section.id}
+					section={section}
+					activeAnchor={activeAnchor}
+				>
+					{children.length > 0 && (
+						<Sidebar.Children>
+							{children.map((child) => (
+								<SectionNavigationItem
+									key={child.id}
+									section={child}
+									activeAnchor={activeAnchor}
+								/>
+							))}
+						</Sidebar.Children>
+					)}
+				</SectionNavigationItem>
+			)
+		})
 
 	return (
 		<Sidebar.Root
@@ -67,36 +97,7 @@ export function GuidelineSideNavigation({
 											>
 												{topicActive && sections.length > 0 && (
 													<Sidebar.Children>
-														{sections.map((section) => {
-															const sectionCurrent =
-																section.anchor === activeAnchor
-
-															return (
-																<Sidebar.Item
-																	key={section.anchor}
-																	aria-current={
-																		sectionCurrent
-																			? 'location'
-																			: undefined
-																	}
-																	current={sectionCurrent}
-																	depth={2}
-																	href={section.href}
-																	label={section.title}
-																	onClick={(event) =>
-																		scrollToGuidelineSection(
-																			event,
-																			section.anchor,
-																		)
-																	}
-																	tone={
-																		sectionCurrent
-																			? 'emphasized'
-																			: 'subtle'
-																	}
-																/>
-															)
-														})}
+														{sectionItems}
 													</Sidebar.Children>
 												)}
 											</Sidebar.Item>
@@ -109,5 +110,30 @@ export function GuidelineSideNavigation({
 				</Sidebar.Group>
 			</Sidebar.Content>
 		</Sidebar.Root>
+	)
+}
+
+function SectionNavigationItem({
+	section,
+	activeAnchor,
+	children,
+}: {
+	section: GetGuidelineNavigationOutput['chapters'][number]['topics'][number]['sections'][number]
+	activeAnchor: string | null
+	children?: ReactNode
+}) {
+	const current = section.anchor === activeAnchor
+	return (
+		<Sidebar.Item
+			aria-current={current ? 'location' : undefined}
+			current={current}
+			depth={section.headingLevel}
+			href={section.href}
+			label={section.title}
+			onClick={(event) => scrollToGuidelineSection(event, section.anchor)}
+			tone={current ? 'emphasized' : 'subtle'}
+		>
+			{children}
+		</Sidebar.Item>
 	)
 }

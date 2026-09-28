@@ -47,14 +47,19 @@ export async function GuidelineDisplayReviewPlayground({
 		),
 	]
 	return (
-		<GuidelineSection id="display-review" hierarchy="main">
-			<GuidelineSectionHeading
-				id="display-review-heading"
-				hierarchy="main"
-				title="디스플레이 유지 조건 검토"
-				description="서체 편집과 배경별 로고 사용을 비교합니다. CI Lockup 자동 순환 예제는 보류 상태로 유지합니다."
-			/>
-			<GuidelineGridContainer cards={cards} displayWidth={720} columns={2} />
+		<>
+			<GuidelineSection id="display-review" hierarchy="main">
+				<GuidelineSectionHeading
+					id="display-review-heading"
+					hierarchy="main"
+					title="디스플레이 유지 조건 검토"
+					description="서체 편집과 배경별 로고 사용을 비교합니다. CI Lockup 자동 순환 예제는 보류 상태로 유지합니다."
+				/>
+				<GuidelineGridContainer cards={cards} displayWidth={720} columns={2} />
+				{!Object.keys(catalog).length && (
+					<p>배경색 규정 데이터가 없어 LogoOnBackground 예제를 표시할 수 없습니다.</p>
+				)}
+			</GuidelineSection>
 			{(
 				[
 					{ id: 'compact', width: 320, title: '320px · 셀 16:9' },
@@ -104,9 +109,6 @@ export async function GuidelineDisplayReviewPlayground({
 					/>
 				</GuidelineSection>
 			))}
-			{!Object.keys(catalog).length && (
-				<p>배경색 규정 데이터가 없어 LogoOnBackground 예제를 표시할 수 없습니다.</p>
-			)}
-		</GuidelineSection>
+		</>
 	)
 }

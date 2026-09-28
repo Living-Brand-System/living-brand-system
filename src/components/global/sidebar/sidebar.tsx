@@ -29,6 +29,7 @@ const sidebarItemVariants = cva(
 			depth: {
 				0: 'justify-start rounded-md px-2 font-medium md:max-xl:justify-start xl:group-data-[collapsed=false]/sidebar-api:justify-start',
 				1: 'justify-start rounded-md px-2 md:max-xl:justify-start xl:group-data-[collapsed=false]/sidebar-api:justify-start',
+				3: 'h-7 justify-start rounded-md px-2 py-1 text-xs md:max-xl:justify-start xl:group-data-[collapsed=false]/sidebar-api:justify-start',
 				2: 'h-7 justify-start rounded-md px-2 py-1 text-xs md:max-xl:justify-start xl:group-data-[collapsed=false]/sidebar-api:justify-start',
 			},
 			tone: {

@@ -176,27 +176,27 @@ export function InfographicsReference() {
 				/>
 				<GuidelineGridContainer displayWidth={480} columns={3} cards={charts} />
 			</GuidelineSection>
-			<div className="px-4 py-16 md:px-12 md:py-32">
-				<GuidelineSection
-					id="incorrect-usages"
+
+			<GuidelineSection
+				id="incorrect-usages"
+				hierarchy="main"
+				className="rounded-3xl bg-destructive/15"
+			>
+				<GuidelineSectionHeading
+					id="incorrect-usages-heading"
 					hierarchy="main"
-					className="rounded-3xl bg-destructive/15"
-				>
-					<GuidelineSectionHeading
-						id="incorrect-usages-heading"
-						hierarchy="main"
-						align="center"
-						title="Incorrect Usages"
-						description="인포그래픽은 정보를 명확하고 일관되게 전달해야 합니다. 불필요한 장식이나 시각적 왜곡으로 데이터의 의미를 흐리지 않도록 아래 사용 금지 사례를 확인하세요."
-					/>
-					<GuidelineGridContainer
-						displayWidth={720}
-						minDisplayWidth={320}
-						columns={2}
-						cards={incorrectUsages}
-					/>
-				</GuidelineSection>
-			</div>
+					align="center"
+					title="Incorrect Usages"
+					description="인포그래픽은 정보를 명확하고 일관되게 전달해야 합니다. 불필요한 장식이나 시각적 왜곡으로 데이터의 의미를 흐리지 않도록 아래 사용 금지 사례를 확인하세요."
+				/>
+				<GuidelineGridContainer
+					displayWidth={720}
+					minDisplayWidth={320}
+					columns={2}
+					cards={incorrectUsages}
+				/>
+			</GuidelineSection>
+
 			<GuidelineSection id="related-resources" hierarchy="main">
 				<GuidelineSectionHeading
 					id="related-resources-heading"

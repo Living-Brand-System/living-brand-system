@@ -26,6 +26,7 @@ import {
 	resolveColor,
 	sectionFiles,
 	sectionTitle,
+	withSectionHierarchy,
 } from './model'
 
 const GRID_SIZES = { xs: 240, sm: 320, md: 480, lg: 720, xl: 1440 } as const
@@ -104,9 +105,9 @@ export function CmsGuidelineSections({
 }) {
 	return (
 		<div data-slot="cms-guideline-sections">
-			{sections.map((section, index) => {
-				const id = section.anchor || section.id || `section-${index}`
-				const hierarchy = section.type === 'subsection' ? 'sub' : 'main'
+			{withSectionHierarchy(sections).map((section) => {
+				const id = section.anchor || section.id
+				const hierarchy = section.headingLevel === 3 ? 'sub' : 'main'
 				const incorrect = section.type === 'incorrect-usages'
 				const assets = sectionFiles(section)
 				return (

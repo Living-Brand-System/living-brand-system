@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { formatGuidelineReadDocument } from '@/features/guideline/domain/reading/format-document'
+import { toGuidelineReadDocument } from '@/features/guideline/domain/reading/read-document'
 import {
 	findAgentGuidelineDocument,
 	findGuidelineSearchPhraseCandidates,
@@ -55,6 +57,60 @@ describe('searchAgentGuidelines', () => {
 describe('readAgentGuidelineDocument', () => {
 	beforeEach(() => vi.clearAllMocks())
 
+	it('신규 본문은 제목 위계와 카드 경계를 유지하고 레거시 본문을 제외한다', async () => {
+		vi.mocked(findAgentGuidelineDocument).mockResolvedValue({
+			collection: 'guideline-documents',
+			document: {
+				id: 7,
+				title: 'Logo',
+				slug: 'logo',
+				contentModel: 'sections',
+				blocks: [{ blockType: 'section', title: 'Retired' }],
+				sections: [
+					{ id: 'main', type: 'section', title: 'Overview' },
+					{
+						id: 'sub',
+						type: 'subsection',
+						title: 'Details',
+						containers: [
+							{
+								type: 'grid',
+								cards: [
+									{
+										display: { type: 'image', alt: 'First image' },
+										caption: { type: 'basic', title: 'First' },
+									},
+									{
+										display: { type: 'image' },
+										caption: {
+											type: 'specification',
+											title: 'Second',
+											rows: [{ label: 'Width', value: '24px' }],
+										},
+									},
+								],
+							},
+						],
+					},
+					{ id: 'incorrect', type: 'incorrect-usages' },
+				],
+			},
+		} as never)
+		const result = await readAgentGuidelineDocument(
+			{ id: 1 },
+			{ collection: 'guideline-documents', id: '7' },
+		)
+		expect(result?.content).toContain('## Overview')
+		expect(result?.content).toContain('### Details')
+		expect(result?.content).toContain('"parentSectionId":"main"')
+		expect(result?.content).toContain('Figure 1 (도판)')
+		expect(result?.content).toContain('Title: First')
+		expect(result?.content).toContain('Specification (명세):\n- Width: 24px')
+		expect(result?.content).toContain('## Incorrect Usages')
+		expect(result?.content).not.toContain('Retired')
+		expect(result?.truncated).toBe(false)
+	})
+
 	it('Page와 Block의 Check를 통합 문서 Agent 결과에 포함한다', async () => {
 		vi.mocked(findAgentGuidelineDocument).mockResolvedValue({
 			collection: 'guideline-documents',
@@ -70,8 +126,7 @@ describe('readAgentGuidelineDocument', () => {
 						tier: 'required',
 					},
 				],
-				chapterSlug: 'brand',
-				chapterTitle: 'Brand',
+				chapter: { id: 1, slug: 'brand', title: 'Brand' },
 			},
 		} as never)
 
@@ -101,8 +156,7 @@ describe('readAgentGuidelineDocument', () => {
 						tier: 'recommended',
 					},
 				],
-				chapterSlug: 'brand',
-				chapterTitle: 'Brand',
+				chapter: { id: 1, slug: 'brand', title: 'Brand' },
 			},
 		} as never)
 
@@ -131,4 +185,68 @@ describe('readAgentGuidelineDocument', () => {
 			},
 		])
 	})
+})
+
+it('긴 문서는 읽기 모델을 자르지 않고 전달 결과에만 잘림을 명시한다', async () => {
+	vi.mocked(findAgentGuidelineDocument).mockResolvedValue({
+		collection: 'guideline-documents',
+		document: {
+			id: 1,
+			title: 'Long',
+			slug: 'long',
+			contentModel: 'sections',
+			sections: [{ type: 'section', title: 'Long section', description: '가'.repeat(7000) }],
+		},
+	} as never)
+	const result = await readAgentGuidelineDocument(
+		{},
+		{ collection: 'guideline-documents', id: '1' },
+	)
+	expect(result?.truncated).toBe(true)
+	expect(result?.totalContentLength).toBeGreaterThan(7000)
+	expect(result?.content).toContain('[Truncated: 6000/')
+})
+
+it('Agent도 공통 읽기 모델의 텍스트를 반환하며 관계 해석을 다시 하지 않는다', async () => {
+	const document = {
+		id: 3,
+		title: 'Weights',
+		slug: 'weights',
+		chapter: { id: 2, title: 'Type', slug: 'type' },
+		contentModel: 'sections',
+		sections: [
+			{
+				id: 's',
+				type: 'section',
+				title: 'Weights',
+				containers: [
+					{
+						type: 'sticky',
+						cards: [
+							{
+								id: 'bold',
+								ratio: '4:3',
+								display: { type: 'type-weight', weight: 'bold' },
+								caption: { type: 'basic', title: 'Bold' },
+								download: { source: 'none' },
+							},
+						],
+					},
+				],
+			},
+		],
+	} as const
+	vi.mocked(findAgentGuidelineDocument).mockResolvedValue({
+		collection: 'guideline-documents',
+		document,
+	} as never)
+	const result = await readAgentGuidelineDocument(
+		{},
+		{ collection: 'guideline-documents', id: '3' },
+	)
+	const read = toGuidelineReadDocument(document as never)
+	expect(result?.content).toBe(formatGuidelineReadDocument(read))
+	expect(result?.source.href).toBe('/guideline/type/weights')
+	expect(result?.checks).toEqual(read.checks)
+	expect(result?.truncated).toBe(false)
 })

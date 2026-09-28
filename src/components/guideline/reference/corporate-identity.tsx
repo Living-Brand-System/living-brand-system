@@ -118,26 +118,27 @@ export function CorporateIdentityReference() {
 					]}
 				/>
 				<GuidelineGridContainer displayWidth={480} columns={3} cards={identity} />
-				<GuidelineSection id="safe-area" hierarchy="sub">
-					<GuidelineSectionHeading
-						id="safe-area-heading"
-						hierarchy="sub"
-						title="Safe Area"
-						description="모든 브랜드 접점에서 로고의 명료성을 확보하기 위해, 시각적 혼란을 유발할 수 있는 다른 요소로부터 충분한 공간을 확보할 것을 권장합니다."
-						download={{
-							filename: 'hd-safe-area.zip',
-							assets: [
-								'hd-horizontal-default-logoSpace.svg',
-								'hd-horizontal-default-clearSpace.svg',
-							].map((filename) => ({
-								filename,
-								url: `/guideline/reference/clearspace/${filename}`,
-							})),
-						}}
-					/>
-					<GuidelineStickyContainer cards={safeArea} />
-				</GuidelineSection>
 			</GuidelineSection>
+			<GuidelineSection id="safe-area" hierarchy="sub">
+				<GuidelineSectionHeading
+					id="safe-area-heading"
+					hierarchy="sub"
+					title="Safe Area"
+					description="모든 브랜드 접점에서 로고의 명료성을 확보하기 위해, 시각적 혼란을 유발할 수 있는 다른 요소로부터 충분한 공간을 확보할 것을 권장합니다."
+					download={{
+						filename: 'hd-safe-area.zip',
+						assets: [
+							'hd-horizontal-default-logoSpace.svg',
+							'hd-horizontal-default-clearSpace.svg',
+						].map((filename) => ({
+							filename,
+							url: `/guideline/reference/clearspace/${filename}`,
+						})),
+					}}
+				/>
+				<GuidelineStickyContainer cards={safeArea} />
+			</GuidelineSection>
+
 			<GuidelineDisplayFooter
 				logo={{
 					src: '/brand/hd/ko-horizontal-default-blk@2x.png',

@@ -1,14 +1,10 @@
 import config from '@payload-config'
 import { getPayload, type Where } from 'payload'
+import type { PaletteCatalog } from '@/features/guideline/domain/contract/palette'
+import type { GuidelineSourceDocument } from '@/features/guideline/domain/reading/read-document'
+import { findPaletteCatalog } from '@/features/guideline/repositories/palette.payload.repository'
+import { needsPaletteCatalog } from '@/features/guideline/sections/model'
 import type { GuidelineDocument } from '@/payload-types'
-
-type AgentGuidelineDocumentData = Pick<
-	GuidelineDocument,
-	'id' | 'title' | 'slug' | 'headerImage' | 'blocks' | 'rules' | 'contentModel' | 'sections'
-> & {
-	chapterSlug: string | null
-	chapterTitle: string | null
-}
 
 export interface AgentGuidelineListItem {
 	chapterId: number | null
@@ -18,7 +14,8 @@ export interface AgentGuidelineListItem {
 
 export type AgentGuidelineDocument = {
 	collection: 'guideline-documents'
-	document: AgentGuidelineDocumentData
+	document: GuidelineSourceDocument
+	paletteCatalog?: PaletteCatalog
 }
 
 type SearchDoc = {
@@ -139,6 +136,7 @@ export async function findAgentGuidelineDocument(
 			sections: true,
 			rules: true,
 			chapter: true,
+			displayOrder: true,
 			_status: true,
 		},
 	})
@@ -146,24 +144,10 @@ export async function findAgentGuidelineDocument(
 
 	return {
 		collection: 'guideline-documents',
-		document: {
-			id: document.id,
-			title: document.title,
-			slug: document.slug,
-			headerImage: document.headerImage,
-			blocks: document.blocks,
-			contentModel: document.contentModel,
-			sections: document.sections,
-			rules: document.rules,
-			chapterSlug:
-				typeof document.chapter === 'object' && document.chapter
-					? document.chapter.slug
-					: null,
-			chapterTitle:
-				typeof document.chapter === 'object' && document.chapter
-					? document.chapter.title
-					: null,
-		},
+		document,
+		paletteCatalog: needsPaletteCatalog(document)
+			? await findPaletteCatalog({ payload, user: user as never, locale: 'ko' })
+			: {},
 	}
 }
 

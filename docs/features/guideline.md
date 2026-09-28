@@ -138,7 +138,7 @@ Document
          └─ caption: 기본 | 목록 | 명세
 ```
 
-Section은 H2, Subsection은 앞선 메인 섹션에 속하는 H3입니다. CMS에서는 같은 배열에서 편집하고 서브섹션을 재귀 중첩하지 않습니다. Incorrect Usages는 고정 제목·중앙 정렬·기존 적색 패널을 사용합니다. 첫 항목이 Subsection이거나 문서 안의 앵커가 중복되면 저장을 거부합니다.
+Section은 H2, Subsection은 앞선 메인 섹션에 속하는 H3입니다. CMS에서는 같은 배열에서 편집하고, CMS·레퍼런스·플레이그라운드 모두 출력도 평면으로 유지합니다. 레이아웃 책임과 간격은 [09 §7](../09-design-system.md#7-공통-셸과-프레임-골격)이 소유하며 위계에 따른 여백 예외를 두지 않습니다. Incorrect Usages는 고정 제목·중앙 정렬·기존 적색 패널을 사용합니다. 첫 항목이 Subsection이거나 문서 안의 앵커가 중복되면 저장을 거부합니다.
 
 | 대상 | 합의한 기본값과 범위 |
 | --- | --- |
@@ -162,7 +162,55 @@ Section은 H2, Subsection은 앞선 메인 섹션에 속하는 H3입니다. CMS�
 
 기존 문서는 `contentModel=legacy`를 기본으로 기존 `blocks`를 읽습니다. 편집자가 `sections`를 선택하면 신규 본문만 읽으며 빈 배열이어도 기존 본문으로 되돌아가지 않습니다. 기존 테이블·콘텐츠를 삭제하거나 자동 전환하지 않습니다. 게시 조회·목차·초안 미리보기·검색·Agent·MCP·검수 투영·읽기 전용 콘텐츠 스냅샷은 모두 선택한 본문을 따릅니다. 신규 배열은 기본 Admin 편집과 저장 후 미리보기를 사용하며 Better Editor의 블록 직접 선택은 이 단계에 포함하지 않습니다.
 
-`sections/schema.ts`와 `display-schema.ts`는 저장·검증을, `sections/model.ts`는 파일 해석·자기 섹션 다운로드·텍스트 투영을, `sections/render.tsx`와 `display-render.tsx`는 공통 표현 API 연결을 소유합니다. 공통 표현 컴포넌트에는 CMS 관계를 넘기지 않습니다. 다운로드는 현재 선택한 디스플레이의 에셋만 수집하고 URL이 같은 파일은 한 번만 포함합니다. 캡션 행은 배열 전체를 번역 단위로 삼습니다. 셀별 번역 테이블을 추가하면 깊은 버전 조회에서 PostgreSQL 별칭 길이 제한에 걸립니다.
+#### 조회용 문서 위계
+
+CMS의 `sections[]`는 평면 배열로 저장합니다. `sections/model.ts`의 `withSectionHierarchy`가 조회 시 다음 값을 계산하고, 본문 렌더러·목차·MCP·Agent 문서 읽기가 같은 규칙을 사용합니다. DB 필드나 편집 항목은 추가하지 않습니다.
+
+| 조회 필드 | 규칙 |
+| --- | --- |
+| `id` | 저장된 섹션 ID. 없으면 anchor, 둘 다 없으면 배열 위치 기반 ID |
+| `headingLevel` | Section·Incorrect Usages는 2, Subsection은 3 |
+| `parentSectionId` | H2는 null, H3는 가장 가까운 앞선 H2의 ID |
+
+섹션·컨테이너·카드 순서는 저장 순서를 유지합니다. Incorrect Usages도 H2 경계를 시작합니다. 첫 서브섹션의 저장은 기존 검증에서 거부하며, 검증 전 초안 조회에서는 없는 부모를 만들어 붙이지 않고 null로 표시합니다. 목차는 부모 아래에 서브섹션 목록을 중첩하지만 본문 DOM과 간격은 평면 계약을 유지합니다.
+
+MCP 문서 응답은 `contentModel`에 해당하는 `sections` 또는 `blocks`만 반환합니다. 비활성 본문은 응답에서 생략하며 DB에서 삭제하지 않습니다. Agent 문서 읽기는 H1/H2/H3와 컨테이너·카드 경계를 텍스트에 보존합니다. 검색·검수용 기존 투영과 `referenceAssets: []` 정책은 유지합니다.
+
+#### 공통 읽기 모델
+
+```text
+Repository → sourceDocument + paletteCatalog
+                       ↓ toGuidelineReadDocument (순수 변환)
+               GuidelineReadDocument
+                 ├─ JSON → MCP
+                 └─ formatGuidelineReadDocument → Agent 텍스트
+```
+
+CMS 저장·UI 계약은 `containers → cards → display`를 유지합니다. 조회 계약은 `sections → contentGroups → figures → visual`로 표현합니다. `contentGroups.layout`은 Grid/Carousel/Sticky의 활성 설정과 기본값을 담고, 각 Figure는 시각 자료·캡션·저작 상태·조작·실행 동작을 묶습니다. 카드 캡션은 문서 제목 단계를 만들지 않습니다.
+
+- Repository는 게시·로케일·접근 제어와 관계 조회를 담당합니다. MCP와 Agent의 문서 관계 조회 깊이는 2이며, 필요한 팔레트도 같은 사용자·로케일의 접근 제어로 조회합니다.
+- `toGuidelineReadDocument`가 위계·기본값·파일·팔레트·액션을 해석합니다. 원본을 수정하지 않고 비활성 CMS 입력을 제외하며, 읽을 수 없는 관계에 URL·색상을 추측해 넣지 않습니다. DB와 네트워크를 호출하지 않습니다.
+- 기본 캡션은 제목·설명을 구분하고 비활성 `rows`를 제외합니다. 목록은 항목 제목(`label`)·설명(`value`), 명세는 속성(`label`)·값(`value`)의 대응과 저장 순서를 보존합니다. 명세와 스펙의 계약 용어는 `specification`입니다. 단위와 빈 값은 원문대로 전달합니다.
+- `usageStatus`는 저작자가 지정한 사용 상태이며 검수 결과가 아닙니다. 생략 시 Incorrect Usages는 `prohibited`, 나머지는 `none`입니다. 명시적인 `none`이 기본값보다 우선합니다.
+- `controls`는 가이드 Off/On, 굵기, 배경색 선택을 `kind/label/target/defaultValue/options/effect`로 설명합니다. UI의 슬롯 배치를 바꾸지 않으며 현재 사용자 상태를 전달하지 않습니다.
+- `actions`는 다운로드·유효한 링크·복사·초기화의 라벨과 대상을 담습니다. 도판의 동작과 캡션 명세는 분리합니다. 섹션 다운로드는 자기 카드의 파일만 담고 하위 섹션을 재귀 수집하지 않습니다. 이 명세는 실행 가능한 MCP 도구가 아닙니다.
+- 출력기는 이미 해석된 읽기 모델만 표현합니다. 텍스트에는 H1/H2/H3·Figure·Caption·List·Specification을 표시하고 도판 설정·조작 정보는 JSON으로 보존합니다. 파일 내용은 자동으로 읽지 않습니다.
+- 레거시 문서는 `contentModel=legacy`와 기존 `blocks` 필드를 유지합니다. 기존 블록 평문은 변환 단계에서 `text`로 계산합니다. JSON과 텍스트 모두 이 호환 모델을 읽으며 신규 Figure 구조로 강제 변환하지 않습니다.
+- 응답 길이는 전달 계층의 정책입니다. Agent는 기존 6,000자 제한을 유지하며 `truncated`, `totalContentLength`와 본문의 잘림 표시를 반환합니다. 공통 읽기 모델·포매터는 전체 내용을 유지합니다. MCP는 기존 문서 단위 페이지 정책을 사용합니다.
+
+파일별 책임:
+
+| 파일 | 책임 |
+| --- | --- |
+| `sections/schema.ts`·`display-schema.ts` | CMS 저장·검증 |
+| `sections/model.ts` | 공통 타입·위계·파일 해석·자기 섹션 다운로드 |
+| `domain/reading/read-document.ts` | `GuidelineReadDocument` 계약과 원본→문서 변환 |
+| `domain/reading/read-visual.ts` | 활성 도판 입력과 지원 조작·동작 해석 |
+| `domain/reading/format-document.ts` | 읽기 모델→텍스트 표현 |
+| `sections/projection.ts` | 기존 검색·검수 투영 |
+| `sections/render.tsx`·`display-render.tsx` | CMS→공통 표현 API 연결 |
+
+공통 표현 컴포넌트에는 CMS 관계를 넘기지 않습니다. 기존 검색·검수 투영과 `referenceAssets: []` 정책은 유지합니다. 구조·정보 보존 테스트는 모델 이해도 개선률과 구분하며, 이해도는 별도 전후 평가로 확인합니다. 캡션 행은 배열 전체를 번역 단위로 삼습니다. 셀별 번역 테이블은 추가하지 않습니다.
 
 검증은 `tests/int/guideline-sections-storage.int.spec.ts`에서 명시적으로 지정한 일회용 로컬 DB만 사용합니다. 저장·버전 조회·기본값·관계 해석·게시/초안 분리·편집 권한·잘못된 위계·필수 에셋·팔레트 연결을 검사합니다. 콘텐츠는 admin에서 작성하며 코드로 reference 페이지를 DB에 심지 않습니다.
 

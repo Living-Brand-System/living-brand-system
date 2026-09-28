@@ -102,20 +102,21 @@ export function DigitalPublicationsReference() {
 						),
 					]}
 				/>
-				<GuidelineSection id="media-wall-examples" hierarchy="sub">
-					<GuidelineSectionHeading
-						id="media-wall-examples-heading"
-						hierarchy="sub"
-						title="Examples"
-						description="브랜드 메시지와 그래픽을 조합한 미디어월 구성 예시입니다."
-					/>
-					<GuidelineCarouselContainer
-						label="미디어월 예시"
-						displayHeight={720}
-						cards={mediaWall}
-					/>
-				</GuidelineSection>
 			</GuidelineSection>
+			<GuidelineSection id="media-wall-examples" hierarchy="sub">
+				<GuidelineSectionHeading
+					id="media-wall-examples-heading"
+					hierarchy="sub"
+					title="Examples"
+					description="브랜드 메시지와 그래픽을 조합한 미디어월 구성 예시입니다."
+				/>
+				<GuidelineCarouselContainer
+					label="미디어월 예시"
+					displayHeight={720}
+					cards={mediaWall}
+				/>
+			</GuidelineSection>
+
 			<GuidelineSection id="presentation" hierarchy="main">
 				<GuidelineSectionHeading
 					id="presentation-heading"
@@ -139,33 +140,34 @@ export function DigitalPublicationsReference() {
 						),
 					]}
 				/>
-				<GuidelineSection id="presentation-covers" hierarchy="sub">
-					<GuidelineSectionHeading
-						id="presentation-covers-heading"
-						hierarchy="sub"
-						title="Cover Type Examples"
-						description="브랜드 그래픽과 일러스트레이션을 활용한 표지 구성 예시입니다."
-					/>
-					<GuidelineCarouselContainer
-						label="프레젠테이션 표지 예시"
-						displayHeight={720}
-						cards={covers}
-					/>
-				</GuidelineSection>
-				<GuidelineSection id="presentation-body" hierarchy="sub">
-					<GuidelineSectionHeading
-						id="presentation-body-heading"
-						hierarchy="sub"
-						title="Body Type Examples"
-						description="장 제목, 이미지와 본문을 정보의 위계에 맞춰 배치한 슬라이드 구성 예시입니다."
-					/>
-					<GuidelineCarouselContainer
-						label="프레젠테이션 본문 예시"
-						displayHeight={720}
-						cards={body}
-					/>
-				</GuidelineSection>
 			</GuidelineSection>
+			<GuidelineSection id="presentation-covers" hierarchy="sub">
+				<GuidelineSectionHeading
+					id="presentation-covers-heading"
+					hierarchy="sub"
+					title="Cover Type Examples"
+					description="브랜드 그래픽과 일러스트레이션을 활용한 표지 구성 예시입니다."
+				/>
+				<GuidelineCarouselContainer
+					label="프레젠테이션 표지 예시"
+					displayHeight={720}
+					cards={covers}
+				/>
+			</GuidelineSection>
+			<GuidelineSection id="presentation-body" hierarchy="sub">
+				<GuidelineSectionHeading
+					id="presentation-body-heading"
+					hierarchy="sub"
+					title="Body Type Examples"
+					description="장 제목, 이미지와 본문을 정보의 위계에 맞춰 배치한 슬라이드 구성 예시입니다."
+				/>
+				<GuidelineCarouselContainer
+					label="프레젠테이션 본문 예시"
+					displayHeight={720}
+					cards={body}
+				/>
+			</GuidelineSection>
+
 			<GuidelineSection id="related-resources" hierarchy="main">
 				<GuidelineSectionHeading
 					id="related-resources-heading"

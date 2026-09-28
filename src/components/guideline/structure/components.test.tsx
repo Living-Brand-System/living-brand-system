@@ -1,6 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { groupSections } from '@/features/guideline/domain/group-sections'
 import { downloadSectionAssets } from '@/features/guideline/services/download-section-assets.client'
 import { GuidelineDisplayHeading, GuidelineSection, GuidelineSectionHeading } from './components'
 
@@ -9,39 +8,27 @@ vi.mock('@/features/guideline/services/download-section-assets.client', () => ({
 }))
 const download = { filename: 'section.zip', assets: [{ url: '/logo.svg', filename: 'logo.svg' }] }
 describe('가이드라인 문서 구조', () => {
-	it('평면 목록을 소속대로 묶고 고아 서브섹션·빈 제목을 거부한다', () => {
-		const a = { id: 'a', title: 'A', hierarchy: 'main' as const }
-		const b = { id: 'b', title: 'B', hierarchy: 'sub' as const }
-		const c = { id: 'c', title: 'C', hierarchy: 'main' as const }
-		expect(groupSections([a, b, c])).toEqual([
-			{ section: a, subsections: [b] },
-			{ section: c, subsections: [] },
-		])
-		expect(() => groupSections([b, a])).toThrow()
-		expect(() => groupSections([{ ...a, title: ' ' }])).toThrow()
-		expect(() => groupSections([a, a])).toThrow()
-	})
 	it('h1/h2/h3와 섹션 이름을 연결하고 없는 설명·다운로드를 생략한다', () => {
 		const { container } = render(
 			<>
 				<GuidelineDisplayHeading title="문서" />
 				<GuidelineSection id="main" hierarchy="main">
 					<GuidelineSectionHeading id="main-heading" hierarchy="main" title="섹션" />
-					<GuidelineSection id="sub" hierarchy="sub">
-						<GuidelineSectionHeading
-							id="sub-heading"
-							hierarchy="sub"
-							title="하위"
-							download={{ filename: 'empty', assets: [] }}
-						/>
-					</GuidelineSection>
+				</GuidelineSection>
+				<GuidelineSection id="sub" hierarchy="sub">
+					<GuidelineSectionHeading
+						id="sub-heading"
+						hierarchy="sub"
+						title="하위"
+						download={{ filename: 'empty', assets: [] }}
+					/>
 				</GuidelineSection>
 			</>,
 		)
 		expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('문서')
 		expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('섹션')
 		expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('하위')
-		expect(screen.getByRole('region', { name: '섹션' })).toContainElement(
+		expect(screen.getByRole('region', { name: '섹션' })).not.toContainElement(
 			screen.getByRole('region', { name: '하위' }),
 		)
 		expect(container.querySelectorAll('p')).toHaveLength(0)

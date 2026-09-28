@@ -1,6 +1,6 @@
 import type { GuidelineDocument } from '@/payload-types'
 import { type CheckSourceSnapshot, snapshotBlock } from '../blocks/projection'
-import { projectSection } from '../sections/model'
+import { projectSection } from '../sections/projection'
 import { relationshipId } from '../utils/block-text'
 
 export type GuidelineCheckDocument = Pick<

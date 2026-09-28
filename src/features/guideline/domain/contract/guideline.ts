@@ -1,5 +1,12 @@
 import type { GuidelineDocument } from '@/payload-types'
 
+/** CMS 저장 필드가 아닌 문서 조회 시 계산되는 섹션 위계. */
+export interface SectionHierarchy {
+	id: string
+	headingLevel: 2 | 3
+	parentSectionId: string | null
+}
+
 export type GuidelineBlocks = GuidelineDocument['blocks']
 export type GuidelineHeaderImage = GuidelineDocument['headerImage']
 
@@ -22,7 +29,7 @@ export interface GuidelineChapterData {
 export interface GuidelineNavigationTopicData {
 	chapterId: number | null
 	id: number
-	sections: { anchor: string; title: string }[]
+	sections: (SectionHierarchy & { anchor: string; title: string })[]
 	slug: string
 	title: string
 }

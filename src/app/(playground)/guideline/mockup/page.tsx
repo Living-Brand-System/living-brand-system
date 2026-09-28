@@ -16,7 +16,6 @@ import { GuidelineGridPlayground } from '@/components/guideline/structure/grid-p
 import { GuidelineGuidePlayground } from '@/components/guideline/structure/guide-playground'
 import { GuidelineStickyPlayground } from '@/components/guideline/structure/sticky-playground'
 import { GuidelineTypeWeightPlayground } from '@/components/guideline/structure/type-weight-playground'
-import { groupSections } from '@/features/guideline/domain/group-sections'
 import type { SectionDownload } from '@/features/guideline/services/download-section-assets.client'
 import { getGuidelineLockupColors } from '@/features/guideline/services/get-guideline-colors.service'
 
@@ -178,17 +177,9 @@ export default async function GuidelineMockupPage() {
 				</Link>
 			</nav>
 			<GuidelineDisplayHeading title="Corporate Identity" subtitle="기업 로고" />
-			{groupSections(sections).map(({ section, subsections }) => (
-				<GuidelineSection key={section.id} id={section.id} hierarchy="main">
+			{sections.map((section) => (
+				<GuidelineSection key={section.id} id={section.id} hierarchy={section.hierarchy}>
 					<GuidelineSectionHeading {...section} id={`${section.id}-heading`} />
-					{subsections.map((subsection) => (
-						<GuidelineSection key={subsection.id} id={subsection.id} hierarchy="sub">
-							<GuidelineSectionHeading
-								{...subsection}
-								id={`${subsection.id}-heading`}
-							/>
-						</GuidelineSection>
-					))}
 				</GuidelineSection>
 			))}
 			<GuidelineGridPlayground />

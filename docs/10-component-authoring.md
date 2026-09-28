@@ -39,8 +39,8 @@ grep -rl "Badge\|Card\|Typography" src/components src/features
 | 아이콘 | `@carbon/icons-react` |
 | className 병합 | `@/lib/utils`의 `cn` |
 | 색 파생(전경색·RGB) | `@/lib/color` (`hexToRgb`, `getContrastingForeground`) |
-| 콘텐츠 최대 폭 | `ContentFrame` (`src/components/shared/content-frame.tsx`) |
-| 카드 줄 높이·섹션 간격 | `GuidelineSections`·`GridContainer`·`CarouselContainer`, 공유 높이는 `src/components/guideline/sections/row-height.ts` |
+| 콘텐츠 최대 폭 | 일반 표면·레거시는 `ContentFrame`. 신규 가이드라인은 Section·컨테이너의 [09 §7 계약](09-design-system.md#7-공통-셸과-프레임-골격) |
+| 카드 크기·섹션 간격 | 신규는 `GuidelineSection`과 Grid·Carousel·Sticky. 레거시는 `GuidelineSections`와 기존 컨테이너 |
 
 shadcn 4.12의 공식 아이콘 목록에는 Carbon이 없어 `components.json`은 `radix-mira`가 지원하는 `hugeicons` 값을 유지합니다. 이 값은 생성기 호환용일 뿐 저장소의 아이콘 정책이 아닙니다. shadcn 컴포넌트를 추가한 같은 변경에서 생성된 아이콘을 `@carbon/icons-react`로 바꾸고, `@hugeicons/*` import가 0건인지 확인한 뒤 커밋합니다. `iconLibrary`를 임의의 `carbon` 문자열로 바꾸면 레지스트리의 `IconPlaceholder`가 변환되지 않으므로 금지합니다.
 
@@ -348,7 +348,9 @@ const GRID_BY_COLUMNS = {
 grep -rnE '(grid-cols|col-span|gap|w|h|text)-\$\{' src
 ```
 
-### 폭·표면색·세로 리듬은 프레임이 소유
+### 레거시 폭·표면색·세로 리듬은 프레임이 소유
+
+이 절은 기존 blocks 경로에 적용합니다. 신규 sections 경로의 레이아웃 책임과 수치는 [09 §7](09-design-system.md#7-공통-셸과-프레임-골격)이 소유합니다.
 
 - 개별 블록·컴포넌트가 자기 `max-width`를 갖지 않습니다. 콘텐츠 최대 폭은 `ContentFrame`에만 있습니다(`content-frame.tsx:22`의 `max-w-[1540px]`). 예외는 프리미티브의 **내재 콘텐츠 폭**뿐입니다 — `dialog`의 `max-w-sm`, `tooltip`의 `max-w-xs`, `bubble`의 `max-w-[80%]`처럼 오버레이·말풍선이 자기 판형을 갖는 것은 페이지 폭 소유가 아닙니다. 금지 대상은 화면·블록 컴포넌트가 페이지 폭을 스스로 좁히는 것(`<Card className="max-w-2xl">` 등)입니다.
 - 표면 배경색은 컴포넌트 안에 칠하지 않습니다. 가이드라인 섹션·leaf는 배경 설정을 갖지 않습니다(2026-09-04에 걷음). 브랜드 면(흰 판·검은 판)은 위젯이 `cards/displays/dynamics/surface.ts`의 선언으로 그립니다(`docs/11` §8).
@@ -430,19 +432,19 @@ PR을 올리기 전 자기 점검용입니다.
 - [ ] motion은 `motion/react`의 `LazyMotion` + `m`이고, `shouldReduceMotion`을 props로 내리지 않았다.
 - [ ] 비자명 로직에 co-located `*.test.ts` 하나가 있다. one-liner엔 없다.
 
-## 가이드라인 문서 구조 목업 (2026-09-14)
+## 가이드라인 문서 구조 API (2026-09-23)
 
-새 표현 API는 `src/components/guideline/structure/`가 소유하며 개발 전용 `/guideline/mockup`에서 확인합니다. 기존 표현은 `deprecated/` 경로에 남습니다.
+신규 표현 API는 `src/components/guideline/structure/`가 소유하며 CMS sections·레퍼런스·`/guideline/mockup`이 공유합니다. 기존 표현은 `deprecated/` 경로에 남습니다. 간격·폭의 책임과 반응형 수치는 [09 §7](09-design-system.md#7-공통-셸과-프레임-골격)이 소유합니다.
 
 - `GuidelineDisplayHeading`: 필수 `title`(문서의 유일한 h1), 선택 `subtitle`. 중앙 정렬, `min-height: 100dvh`.
-- `GuidelineSection`: `id`, `hierarchy: main | sub`, `children`. 섹션 경계·앵커·메인/서브 간격을 소유합니다.
+- `GuidelineSection`: `id`, `hierarchy: main | sub`, `children`. 섹션 경계·앵커와 공통 여백을 소유합니다. `hierarchy`는 헤딩 위계이며 레이아웃 간격을 바꾸지 않습니다.
 - `GuidelineSectionHeading`: 필수 `id`·`hierarchy`·`title`, 선택 `description`·`align`·`download`. Main은 h2, Sub는 h3입니다. ID는 소유 섹션의 `${id}-heading`이며 섹션의 `aria-labelledby`와 연결합니다. 제목과 설명은 일반 텍스트이며 설명만 줄바꿈을 지원합니다. 설명이 없으면 영역과 간격을 없앱니다.
 - Start는 텍스트와 다운로드를 `space-between`으로 양끝 배치하고 모바일에서는 버튼을 아래 왼쪽에 놓습니다. Center는 제목·설명·다운로드를 세로 중앙 배치합니다. 정렬은 계층과 독립적입니다.
 - `GuidelineDisplayFooter`: public 로고의 `src`·`alt`·원본 크기를 `logo`로 받습니다. 비율 유지, 중앙 정렬, `min-height: 100dvh`. 목업은 `public/brand/hd/ko-horizontal-default-blk@2x.png`를 사용합니다.
-- 평면 목록의 `hierarchy`는 항목이 소유합니다. 서브섹션은 직전 메인에 소속하며 첫 항목은 Sub일 수 없습니다. `groupSections`가 출력 시 중첩을 조립하고 빈 제목·중복 ID·고아 Sub를 거부합니다.
+- 평면 목록의 `hierarchy`는 항목이 소유합니다. 서브섹션은 직전 메인에 의미상 소속하며 첫 항목은 Sub일 수 없습니다. CMS·레퍼런스·플레이그라운드 모두 출력도 평면으로 유지합니다. CMS의 필수 제목·앵커 중복·고아 Sub 검증은 `sections/schema.ts`가 소유합니다.
 - 다운로드는 섹션에 명시적으로 등록한 에셋만 ZIP으로 묶습니다. 카드나 서브섹션을 재귀 탐색하지 않습니다. 목록이 비면 버튼을 숨기고, 진행 중 중복 실행을 막으며 실패 시 재시도합니다.
 
-현재 목업은 공개 파일을 명시한 개발용 데이터로 계약을 검증합니다. CMS 스키마·편집 검증·권한 있는 에셋 조회 연결은 아직 적용하지 않았으며 기존 저장 모델을 변경하지 않습니다. CMS에 연결할 때도 Payload의 재귀 스키마를 만들지 않습니다.
+목업은 공개 파일을 명시한 개발용 데이터로 계약을 검증합니다. CMS 저장·검증·관계 해석은 `features/guideline/sections/`가 담당하며, 재귀 스키마를 사용하지 않습니다. 레거시 blocks는 별도 경로로 유지합니다.
 
 ### Card와 Grid 정규화 (2026-09-14)
 

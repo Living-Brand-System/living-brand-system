@@ -72,7 +72,7 @@ const user = (req: PayloadRequest) => {
 export const customMcpTools = [
 	mcpTextTool(
 		'findGuidelineDocuments',
-		'Find published guideline topics with localized content, chapter, blocks, and applied rules.',
+		'Find published guideline read documents. The active contentModel returns ordered sections or legacy blocks. sections include id, headingLevel and parentSectionId; contentGroups describe layout; figures combine visual, caption, author-assigned usageStatus, controls and actions. Caption types: basic title/description, list rows pairing label/value as item title/description, specification rows pairing property/value (including original units). Defaults and accessible asset/palette relationships are already resolved. Preserve all orders and figure-caption associations. usageStatus is not a check result. controls describe display changes with options/defaultValue/effect; actions describe download, link, copy or reset, not executable MCP tools or current user state. Legacy blocks retain their compatibility fields and resolved text. Do not infer unavailable assets from null values.',
 		mcpListParameters,
 		(args, req) => findMcpGuidelineDocuments(req, args),
 	),

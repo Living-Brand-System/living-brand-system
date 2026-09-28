@@ -1,14 +1,29 @@
 import config from '@payload-config'
-import { getPayload } from 'payload'
+import { getPayload, type PayloadRequest } from 'payload'
 import { isValidHex } from '@/lib/color'
 import type { BrandColor } from '@/payload-types'
 import type { PaletteCatalog, PaletteGroup } from '../domain/contract/palette'
 
 /** 신규 family 키를 우선하며, 아직 분류하지 않은 기존 그룹명만 호환합니다. */
-export async function findPaletteCatalog(): Promise<PaletteCatalog> {
-	const payload = await getPayload({ config })
+export async function findPaletteCatalog(context?: {
+	payload: PayloadRequest['payload']
+	user: PayloadRequest['user']
+	req?: PayloadRequest
+	locale?: 'ko' | 'en'
+}): Promise<PaletteCatalog> {
+	const payload = context?.payload ?? (await getPayload({ config }))
 	const { docs } = await payload.find({
 		collection: 'brand-color-groups',
+		...(context
+			? {
+					overrideAccess: false,
+					user: context.user,
+					req: context.req,
+					locale: context.locale ?? 'ko',
+					fallbackLocale: 'en' as const,
+					draft: false,
+				}
+			: {}),
 		where: {
 			and: [
 				{ _status: { equals: 'published' } },

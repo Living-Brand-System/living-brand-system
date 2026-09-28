@@ -1,5 +1,6 @@
 import { Close } from '@carbon/icons-react'
 import Link from 'next/link'
+import { Fragment } from 'react'
 import { GuidelineCardActions } from '@/components/guideline/structure/card-actions'
 import { GuidelineCarouselContainer } from '@/components/guideline/structure/carousel'
 import {
@@ -138,44 +139,45 @@ export function KeyVisualsReference() {
 					names: ['Dimensional Formation', 'Dimensional Texture'],
 				},
 			].map((group) => (
-				<div key={group.id}>
+				<Fragment key={group.id}>
 					<GuidelineSection id={group.id} hierarchy="main">
 						<GuidelineSectionHeading
 							id={`${group.id}-heading`}
 							hierarchy="main"
 							title={group.title}
 						/>
-						<GuidelineSection id={`${group.id}-types`} hierarchy="sub">
-							<GuidelineSectionHeading
-								id={`${group.id}-types-heading`}
-								hierarchy="sub"
-								title="Types"
-							/>
-							<GuidelineGridContainer
-								columns={2}
-								displayWidth={480}
-								minDisplayWidth={320}
-								cards={group.motifs.map((motif, index) => ({
-									id: `type-${motif.id}-motif`,
-									ratio: '3:4',
-									display: (
-										<GuidelineCardDisplay
-											src={`${root}/type-${motif.id}.png`}
-											alt={`${group.names[index]} 기본 모티프`}
-											scale={100}
-										/>
-									),
-									caption: {
-										type: 'basic',
-										title: group.names[index],
-										description: motif.description,
-									},
-								}))}
-							/>
-						</GuidelineSection>
 					</GuidelineSection>
+					<GuidelineSection id={`${group.id}-types`} hierarchy="sub">
+						<GuidelineSectionHeading
+							id={`${group.id}-types-heading`}
+							hierarchy="sub"
+							title="Types"
+						/>
+						<GuidelineGridContainer
+							columns={2}
+							displayWidth={480}
+							minDisplayWidth={320}
+							cards={group.motifs.map((motif, index) => ({
+								id: `type-${motif.id}-motif`,
+								ratio: '3:4',
+								display: (
+									<GuidelineCardDisplay
+										src={`${root}/type-${motif.id}.png`}
+										alt={`${group.names[index]} 기본 모티프`}
+										scale={100}
+									/>
+								),
+								caption: {
+									type: 'basic',
+									title: group.names[index],
+									description: motif.description,
+								},
+							}))}
+						/>
+					</GuidelineSection>
+
 					{group.motifs.map(({ id, title, count, description, rules }) => (
-						<div key={id}>
+						<Fragment key={id}>
 							<GuidelineSection id={`type-${id}`} hierarchy="main">
 								<GuidelineSectionHeading
 									id={`type-${id}-heading`}
@@ -183,86 +185,85 @@ export function KeyVisualsReference() {
 									title={title}
 									description={description}
 								/>
-								<GuidelineSection id={`type-${id}-examples`} hierarchy="sub">
-									<GuidelineSectionHeading
-										id={`type-${id}-examples-heading`}
-										hierarchy="sub"
-										title="Usage Examples"
-									/>
-									<GuidelineCarouselContainer
-										label={`${title} 적용 예시`}
-										displayHeight={480}
-										cards={Array.from({ length: count }, (_, index) => {
-											const number = String(index + 1).padStart(2, '0')
-											return {
-												id: `type-${id}-${number}`,
-												ratio: '4:3' as const,
-												display: (
-													<GuidelineCardDisplay
-														src={`${root}/type-${id}/examples/key-visual-type-${id}-example-${number}.webp`}
-														alt={`${title} 적용 예시 ${number}`}
-													/>
-												),
-												caption: {
-													type: 'basic' as const,
-													title: `${title} · ${number}`,
-												},
-											}
-										})}
-									/>
-								</GuidelineSection>
 							</GuidelineSection>
-							<div className="px-4 py-16 md:px-12 md:py-32">
-								<GuidelineSection
-									id={`type-${id}-incorrect-usages`}
+							<GuidelineSection id={`type-${id}-examples`} hierarchy="sub">
+								<GuidelineSectionHeading
+									id={`type-${id}-examples-heading`}
+									hierarchy="sub"
+									title="Usage Examples"
+								/>
+								<GuidelineCarouselContainer
+									label={`${title} 적용 예시`}
+									displayHeight={480}
+									cards={Array.from({ length: count }, (_, index) => {
+										const number = String(index + 1).padStart(2, '0')
+										return {
+											id: `type-${id}-${number}`,
+											ratio: '4:3' as const,
+											display: (
+												<GuidelineCardDisplay
+													src={`${root}/type-${id}/examples/key-visual-type-${id}-example-${number}.webp`}
+													alt={`${title} 적용 예시 ${number}`}
+												/>
+											),
+											caption: {
+												type: 'basic' as const,
+												title: `${title} · ${number}`,
+											},
+										}
+									})}
+								/>
+							</GuidelineSection>
+
+							<GuidelineSection
+								id={`type-${id}-incorrect-usages`}
+								hierarchy="main"
+								className="rounded-3xl bg-destructive/15"
+							>
+								<GuidelineSectionHeading
+									id={`type-${id}-incorrect-usages-heading`}
 									hierarchy="main"
-									className="rounded-3xl bg-destructive/15"
-								>
-									<GuidelineSectionHeading
-										id={`type-${id}-incorrect-usages-heading`}
-										hierarchy="main"
-										align="center"
-										title="Incorrect Usages"
-										description={`${title}의 사용 금지 사례를 확인합니다.`}
-									/>
-									<GuidelineGridContainer
-										columns={2}
-										displayWidth={720}
-										minDisplayWidth={320}
-										cards={rules.map(([rule, detail], index) => {
-											const number = String(index + 1).padStart(2, '0')
-											return {
-												id: `type-${id}-incorrect-${number}`,
-												ratio: '4:3' as const,
-												display: (
-													<GuidelineCardDisplay
-														src={`${root}/type-${id}/incorrect-usage/key-visual-type-${id}-incorrect-usage-${number}.webp`}
-														alt={`${title} · ${rule} 사례`}
-														scale={100}
-													>
-														<GuidelineCardActions
-															start={{
-																kind: 'badge',
-																label: '사용 금지',
-																variant: 'destructive',
-																icon: <Close size={24} />,
-															}}
-														/>
-													</GuidelineCardDisplay>
-												),
-												caption: {
-													type: 'basic' as const,
-													title: rule,
-													description: detail,
-												},
-											}
-										})}
-									/>
-								</GuidelineSection>
-							</div>
-						</div>
+									align="center"
+									title="Incorrect Usages"
+									description={`${title}의 사용 금지 사례를 확인합니다.`}
+								/>
+								<GuidelineGridContainer
+									columns={2}
+									displayWidth={720}
+									minDisplayWidth={320}
+									cards={rules.map(([rule, detail], index) => {
+										const number = String(index + 1).padStart(2, '0')
+										return {
+											id: `type-${id}-incorrect-${number}`,
+											ratio: '4:3' as const,
+											display: (
+												<GuidelineCardDisplay
+													src={`${root}/type-${id}/incorrect-usage/key-visual-type-${id}-incorrect-usage-${number}.webp`}
+													alt={`${title} · ${rule} 사례`}
+													scale={100}
+												>
+													<GuidelineCardActions
+														start={{
+															kind: 'badge',
+															label: '사용 금지',
+															variant: 'destructive',
+															icon: <Close size={24} />,
+														}}
+													/>
+												</GuidelineCardDisplay>
+											),
+											caption: {
+												type: 'basic' as const,
+												title: rule,
+												description: detail,
+											},
+										}
+									})}
+								/>
+							</GuidelineSection>
+						</Fragment>
 					))}
-				</div>
+				</Fragment>
 			))}
 			<GuidelineDisplayFooter
 				logo={{

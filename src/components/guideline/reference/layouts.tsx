@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Fragment } from 'react'
 import { GuidelineCarouselContainer } from '@/components/guideline/structure/carousel'
 import { GuidelineClearspaceDisplay } from '@/components/guideline/structure/clearspace-display'
 import {
@@ -110,35 +111,37 @@ export function LayoutsReference() {
 					}
 				})
 				return (
-					<GuidelineSection key={id} id={`type-${id}`} hierarchy="main">
-						<GuidelineSectionHeading
-							id={`type-${id}-heading`}
-							hierarchy="main"
-							title={title}
-							description={description}
-						/>
-						<GuidelineGridContainer
-							columns={1}
-							displayWidth={1440}
-							cards={[
-								{
-									id: `type-${id}-overview`,
-									ratio: '4:3',
-									display: (
-										<GuidelineCardDisplay
-											src={`${root}/type-${id}/overview/layout-type-${id}-overview.webp`}
-											alt={`${title} 적용 사례 모음`}
-										/>
-									),
-									caption: {
-										type: 'basic',
-										title: `${title} · Overview`,
-										description:
-											'같은 판형 안에서 달라지는 제목·이미지·로고의 구성을 비교합니다.',
+					<Fragment key={id}>
+						<GuidelineSection id={`type-${id}`} hierarchy="main">
+							<GuidelineSectionHeading
+								id={`type-${id}-heading`}
+								hierarchy="main"
+								title={title}
+								description={description}
+							/>
+							<GuidelineGridContainer
+								columns={1}
+								displayWidth={1440}
+								cards={[
+									{
+										id: `type-${id}-overview`,
+										ratio: '4:3',
+										display: (
+											<GuidelineCardDisplay
+												src={`${root}/type-${id}/overview/layout-type-${id}-overview.webp`}
+												alt={`${title} 적용 사례 모음`}
+											/>
+										),
+										caption: {
+											type: 'basic',
+											title: `${title} · Overview`,
+											description:
+												'같은 판형 안에서 달라지는 제목·이미지·로고의 구성을 비교합니다.',
+										},
 									},
-								},
-							]}
-						/>
+								]}
+							/>
+						</GuidelineSection>
 						<GuidelineSection id={`type-${id}-examples`} hierarchy="sub">
 							<GuidelineSectionHeading
 								id={`type-${id}-examples-heading`}
@@ -161,7 +164,7 @@ export function LayoutsReference() {
 								/>
 							)}
 						</GuidelineSection>
-					</GuidelineSection>
+					</Fragment>
 				)
 			})}
 			<GuidelineDisplayFooter

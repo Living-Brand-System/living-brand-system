@@ -1,6 +1,6 @@
 import { isValidHex } from '@/lib/color'
 import type { BrandColor, GuidelineDocument } from '@/payload-types'
-import { compact } from '../utils/block-text'
+import type { SectionHierarchy } from '../domain/contract/guideline'
 
 export type CmsSection = NonNullable<GuidelineDocument['sections']>[number]
 export type CmsContainer = NonNullable<CmsSection['containers']>[number]
@@ -25,6 +25,26 @@ export function isGuidelineActionHref(value: string | null | undefined): value i
 export const sectionTitle = (section: Pick<CmsSection, 'type' | 'title'>) =>
 	section.type === 'incorrect-usages' ? 'Incorrect Usages' : (section.title ?? '')
 
+/** 저장 순서를 유지하며 조회용 위계를 계산한다. CMS 데이터는 변경하지 않는다. */
+export function withSectionHierarchy<
+	T extends Pick<CmsSection, 'id' | 'anchor' | 'type' | 'title'>,
+>(sections: readonly T[]): (T & SectionHierarchy)[] {
+	let parentSectionId: string | null = null
+	return sections.map((section, index) => {
+		const id = section.id || section.anchor || `section-${index}`
+		const isSubsection = section.type === 'subsection'
+		const result = {
+			...section,
+			id,
+			title: sectionTitle(section),
+			headingLevel: isSubsection ? (3 as const) : (2 as const),
+			parentSectionId: isSubsection ? parentSectionId : null,
+		}
+		if (!isSubsection) parentSectionId = id
+		return result
+	})
+}
+
 /** populate되지 않았거나 읽을 수 없는 파일은 링크를 만들지 않는다. */
 export function resolveFile(reference: CmsCard['display']['image'] | undefined | null) {
 	const file = reference?.value
@@ -42,8 +62,8 @@ export function resolveColor(color: number | BrandColor | undefined | null) {
 				id: String(color.id),
 				label: color.name,
 				value: `#${color.hex.replace(/^#/, '')}`,
-				cmyk: color.cmyk,
-				pantone: color.pantone,
+				cmyk: color.cmyk ?? null,
+				pantone: color.pantone ?? null,
 			}
 		: null
 }
@@ -114,39 +134,4 @@ export function needsPaletteCatalog(body: CmsBody) {
 			),
 		)
 	)
-}
-
-export function projectSection(section: CmsSection) {
-	const captions = compact(
-		(section.containers ?? []).flatMap((container) =>
-			(container.cards ?? []).flatMap(({ caption, selectionLabel, display, endActions }) => [
-				selectionLabel,
-				...(endActions ?? []).flatMap((action) => [
-					action.label,
-					action.type === 'copy' ? action.value : action.href,
-				]),
-				...(display.type === 'image' || display.type === 'guide' ? [display.alt] : []),
-				...(display.type === 'swatch'
-					? [resolveColor(display.color)?.label, resolveColor(display.color)?.value]
-					: []),
-				caption?.title,
-				caption?.description,
-				...(caption?.type !== 'basic'
-					? (caption?.rows ?? []).flatMap((row) => [row.label, row.value])
-					: []),
-			]),
-		),
-	)
-	const title = sectionTitle(section)
-	return {
-		text: compact([title, section.anchor, section.description, ...captions]).join('\n'),
-		evidence: {
-			type: 'section' as const,
-			title,
-			anchor: section.anchor ?? undefined,
-			description: section.description ?? undefined,
-			captions,
-		},
-		referenceAssets: [],
-	}
 }

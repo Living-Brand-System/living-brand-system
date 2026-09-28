@@ -36,11 +36,17 @@ const chapters: GetGuidelineNavigationOutput['chapters'] = [
 				href: '/guideline/guidelines/lbs-structure',
 				sections: [
 					{
+						id: 'naming-definition',
+						headingLevel: 2,
+						parentSectionId: null,
 						anchor: 'naming-definition',
 						title: 'Naming definition',
 						href: '/guideline/guidelines/lbs-structure#naming-definition',
 					},
 					{
+						id: 'japanese',
+						headingLevel: 3,
+						parentSectionId: 'naming-definition',
 						anchor: 'japanese',
 						title: 'Japanese',
 						href: '/guideline/guidelines/lbs-structure#japanese',
@@ -53,6 +59,9 @@ const chapters: GetGuidelineNavigationOutput['chapters'] = [
 				href: '/guideline/guidelines/identity',
 				sections: [
 					{
+						id: 'identity-details',
+						headingLevel: 2,
+						parentSectionId: null,
 						anchor: 'identity-details',
 						title: 'Identity details',
 						href: '/guideline/guidelines/identity#identity-details',
@@ -88,8 +97,11 @@ describe('GuidelineSideNavigation', () => {
 		)
 		expect(screen.getByRole('link', { name: 'Japanese' }).closest('li')).toHaveAttribute(
 			'data-depth',
-			'2',
+			'3',
 		)
+		expect(
+			screen.getByRole('link', { name: 'Naming definition' }).closest('li'),
+		).toContainElement(screen.getByRole('link', { name: 'Japanese' }))
 		expect(screen.queryByRole('link', { name: 'Identity details' })).not.toBeInTheDocument()
 		expect(container.querySelector('[data-slot="guideline-side-navigation"]')).toHaveClass(
 			'md:w-[265px]',
