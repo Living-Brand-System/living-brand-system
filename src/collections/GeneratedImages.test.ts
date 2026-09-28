@@ -14,14 +14,32 @@ describe('GeneratedImages collection', () => {
 			_status: { equals: 'published' },
 		})
 
-		const inputPrompt = GeneratedImages.fields.find(
-			(field) => 'name' in field && field.name === 'inputPrompt',
-		)
-		const metadataRead =
-			inputPrompt && 'access' in inputPrompt ? inputPrompt.access?.read : undefined
-		expect(typeof metadataRead).toBe('function')
-		expect(await metadataRead?.({ req: { user: { role: 'worker' } } } as never)).toBe(false)
-		expect(await metadataRead?.({ req: { user: { role: 'manager' } } } as never)).toBe(true)
+		const readOf = (name: string) => {
+			const field = GeneratedImages.fields.find((f) => 'name' in f && f.name === name)
+			expect(field, `${name} 필드가 없습니다.`).toBeDefined()
+			return field && 'access' in field ? field.access?.read : undefined
+		}
+
+		// 🔑 복원에 쓰이는 여섯 필드는 전원에게 열려 있다 — worker에게 기능이 숨겨지면 안 된다
+		//    (2026-09-28 결정). field access 자체를 두지 않는 것이 「열림」이다.
+		for (const name of [
+			'scenario',
+			'scenarioName',
+			'inputPrompt',
+			'aspectRatio',
+			'imageSize',
+			'batchKey',
+		]) {
+			expect(readOf(name), `${name}은 전원에게 열려 있어야 합니다.`).toBeUndefined()
+		}
+
+		// 복원에 안 쓰이는 넷은 manager 전용으로 남는다.
+		for (const name of ['effectivePrompt', 'model', 'createdBy', 'sourceImage']) {
+			const metadataRead = readOf(name)
+			expect(typeof metadataRead, `${name}은 manager 전용이어야 합니다.`).toBe('function')
+			expect(await metadataRead?.({ req: { user: { role: 'worker' } } } as never)).toBe(false)
+			expect(await metadataRead?.({ req: { user: { role: 'manager' } } } as never)).toBe(true)
+		}
 
 		const remove = GeneratedImages.access?.delete
 		expect(

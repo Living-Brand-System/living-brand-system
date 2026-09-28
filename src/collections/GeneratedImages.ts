@@ -44,13 +44,13 @@ export const GeneratedImages: CollectionConfig = {
 			type: 'relationship',
 			relationTo: 'image-profiles',
 			required: true,
-			access: { read: managerFieldRead, update: () => false },
+			access: { update: () => false },
 		},
 		{
 			name: 'scenarioName',
 			type: 'text',
 			required: true,
-			access: { read: managerFieldRead, update: () => false },
+			access: { update: () => false },
 			admin: {
 				description: '생성 당시 이미지 프로파일 이름입니다.',
 			},
@@ -59,7 +59,7 @@ export const GeneratedImages: CollectionConfig = {
 			name: 'inputPrompt',
 			type: 'textarea',
 			required: true,
-			access: { read: managerFieldRead, update: () => false },
+			access: { update: () => false },
 			admin: {
 				description: '사용자가 입력한 원본 프롬프트입니다.',
 			},
@@ -84,14 +84,14 @@ export const GeneratedImages: CollectionConfig = {
 			type: 'select',
 			required: true,
 			options: [...IMAGE_ASPECT_RATIO_OPTIONS],
-			access: { read: managerFieldRead, update: () => false },
+			access: { update: () => false },
 		},
 		{
 			name: 'imageSize',
 			type: 'select',
 			required: true,
 			options: [...IMAGE_OUTPUT_SIZE_OPTIONS],
-			access: { read: managerFieldRead, update: () => false },
+			access: { update: () => false },
 		},
 		{
 			// 한 번의 생성 요청으로 함께 만들어진 이미지를 묶는 키 — 요청마다 새로 만든다.
@@ -101,7 +101,7 @@ export const GeneratedImages: CollectionConfig = {
 			name: 'batchKey',
 			type: 'text',
 			index: true,
-			access: { read: managerFieldRead, update: () => false },
+			access: { update: () => false },
 			admin: {
 				position: 'sidebar',
 				description: '한 번의 생성 요청으로 함께 만들어진 이미지를 묶는 키입니다.',
@@ -121,10 +121,11 @@ export const GeneratedImages: CollectionConfig = {
 			},
 		},
 		{
+			// 🔴 required를 두지 않는다. FK가 `ON DELETE SET NULL`이라 계정이 지워지면 비는데,
+			//    required면 그 뒤 bestSample을 켜는 update가 필수 필드 누락으로 막힌다.
 			name: 'createdBy',
 			type: 'relationship',
 			relationTo: 'users',
-			required: true,
 			index: true,
 			access: { read: managerFieldRead, update: () => false },
 			admin: {
