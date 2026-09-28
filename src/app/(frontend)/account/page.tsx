@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { AccountCard } from '@/components/auth/account-card'
-import { AdminEntryCard } from '@/components/auth/admin-entry-card'
-import { PasswordCard } from '@/components/auth/password-card'
+import { PayloadEntryLink } from '@/components/auth/payload-entry-link'
 import { McpKeyIssuer } from '@/components/studio/mcp/mcp-key-issuer'
 import { AiUsageCard } from '@/components/studio/usage/ai-usage-card'
 import { isManager, isPayloadUser } from '@/lib/auth'
@@ -47,13 +46,11 @@ export default async function AccountPage({
 			 */}
 			<div className="grid w-full max-w-7xl items-start gap-4 py-6 lg:grid-cols-[28rem_minmax(0,1fr)]">
 				<div className="flex flex-col gap-4">
-					<AccountCard createdAt={user.createdAt} email={user.email} />
-					{/* 🔴 앱에 이 자리가 없으면 비밀번호를 바꿀 길이 Payload Admin뿐이다. */}
-					<PasswordCard />
+					<AccountCard createdAt={user.createdAt} email={user.email} role={user.role} />
 					{/* MCP 키는 계정당 하나다 — 스튜디오 도구가 아니라 이 계정의 설정이라 여기 선다. */}
 					<McpKeyIssuer />
 					{/* 앱에서 Payload Admin으로 가는 유일한 입구 — worker에게는 그 주소가 404다. */}
-					{isManager(user) && <AdminEntryCard />}
+					{isManager(user) && <PayloadEntryLink />}
 				</div>
 				{/* 사용량은 계정에 매달린 **기록**이다 — 설정과 성격이 달라 자기 열을 갖는다. */}
 				<AiUsageCard

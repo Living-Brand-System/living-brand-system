@@ -1,5 +1,6 @@
 export const routes = {
 	account: '/account',
+	accountPassword: '/account/password',
 	admin: '/admin',
 	guideline: '/guideline',
 	home: '/',
