@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { routes } from '@/lib/routes'
+import { loginHref, routes } from '@/lib/routes'
 import { type McpApiKeyCredential, requestMcpApiKey } from '../services/issue-mcp-api-key.client'
 
 const ISSUE_ERROR_MESSAGE = 'MCP 키를 발급하지 못했습니다.'
@@ -26,7 +26,7 @@ export function useMcpKeyIssuance() {
 		setLoading(false)
 
 		if (result.status === 'unauthorized') {
-			window.location.assign(`/admin/login?redirect=${encodeURIComponent(routes.studio.mcp)}`)
+			window.location.assign(loginHref(routes.account))
 			return
 		}
 		if (result.status === 'error') {

@@ -1,4 +1,3 @@
-import { Card } from '@/components/ui/card'
 import { Typography } from '@/components/ui/typography'
 import type { AiUsageDay } from '@/modules/ai-usage/ai-usage-fold'
 import { formatTokens } from './ai-usage-format'
@@ -22,7 +21,7 @@ export function AiUsageDailyStrip({ days }: { days: AiUsageDay[] }) {
 	const last = shown.at(-1)?.dayKey
 
 	return (
-		<Card className="px-4" size="sm">
+		<div className="flex flex-col gap-2 rounded-lg bg-muted px-3 py-2">
 			<div className="flex items-baseline justify-between">
 				<Typography as="h2" className="text-muted-foreground" size="xs" weight="medium">
 					일자별 사용량
@@ -48,6 +47,6 @@ export function AiUsageDailyStrip({ days }: { days: AiUsageDay[] }) {
 					</li>
 				))}
 			</ul>
-		</Card>
+		</div>
 	)
 }

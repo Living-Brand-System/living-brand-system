@@ -190,8 +190,8 @@ Studio는 GlobalHeader의 진입점 여섯 개로 노출됩니다. 목록과 순
 | Template | `/studio/template` | 생성 Studio | `/studio/template/<templateSlug>` | 진입하면 첫 렌더 가능한 발행 템플릿으로 redirect하고, 없으면 빈 상태를 그립니다 |
 | Image | `/studio/image` | 생성 Studio | `/studio/image/<profileSlug>` | 시작 Config 하나만 싣습니다. 프로파일 교체는 자산 브라우저가 담당합니다 |
 | Graphic | `/studio/graphic` | 생성 Studio | `/studio/graphic/<profileSlug>` | 세그먼트 값은 runtime id입니다 — `GraphicProfiles.runtime`이 `unique`라 프로파일과 런타임이 1:1이고 runtime id가 그대로 slug 역할을 합니다 |
+| Graph | `/studio/graph` | 생성 Studio | `/studio/graph/<profileSlug>` | Graphic과 같은 계약을 씁니다 — 카탈로그와 컬렉션만 갈립니다 |
 | Review | `/studio/review` | 검수 | 없음 | 업로드한 래스터를 CheckScenario로 검수하고 결과 테이블을 돌려줍니다 |
-| MCP | `/studio/mcp` | 계정 설정 | 없음 | 단일 카드(`McpKeyIssuer`) 하나뿐이고 Canvas도 Controller도 없습니다 |
 | Assets | `/studio/assets` | 자리만 확보 | 없음 | 🔴 경로와 메뉴만 서 있고 화면이 없습니다(`page.tsx`가 `requireUser()` 뒤 `null` 반환) |
 
 `/studio` 자체는 페이지가 아니라 `/studio/assets`로 가는 영구 redirect입니다(`legacyPageRedirects`).
@@ -200,7 +200,7 @@ Studio는 GlobalHeader의 진입점 여섯 개로 노출됩니다. 목록과 순
 
 §2의 계약을 끝까지 타는 것은 「생성 Studio」 셋뿐입니다. 나머지는 워크스페이스 셸만 공유합니다.
 
-| | Template·Image·Graphic | Review | MCP·Assets |
+| | Template·Image·Graphic·Graph | Review | Assets |
 | --- | --- | --- | --- |
 | Runtime Manifest → Effective Config | 있음 | 없음 | 없음 |
 | Artifact와 Export Layer | 있음 | 없음(출력은 검수 결과) | 없음 |

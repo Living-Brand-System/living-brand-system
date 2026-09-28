@@ -12,6 +12,8 @@ import {
 	CommandItem,
 	CommandList,
 } from '@/components/ui/command'
+import { useLogout } from '@/features/auth/hooks/use-logout'
+import { useSession } from '@/features/auth/hooks/use-session'
 import type { GetGuidelineNavigationOutput } from '@/features/guideline/services/get-guideline-navigation.service'
 import { routes } from '@/lib/routes'
 
@@ -23,10 +25,8 @@ type NavigationHeaderUpdateKey =
 	| 'graphic'
 	| 'guideline'
 	| 'image'
-	| 'mcp'
 	| 'review'
 	| 'template'
-	| 'usage'
 
 type NavigationHeaderUpdates = Partial<Record<NavigationHeaderUpdateKey, boolean>>
 
@@ -82,6 +82,8 @@ function HeaderGuidelineSearchDialog({
 
 export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderProps) {
 	const pathname = usePathname()
+	const session = useSession()
+	const { error: logoutError, loading: loggingOut, logout } = useLogout()
 	const [compactOpen, setCompactOpen] = useState(false)
 	const [searchOpen, setSearchOpen] = useState(false)
 
@@ -135,12 +137,6 @@ export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderPr
 	] as const
 	const studioSettingItems = [
 		{
-			current: isCurrentPath(pathname, routes.studio.mcp),
-			hasUpdate: updates.mcp,
-			href: routes.studio.mcp,
-			label: 'MCP',
-		},
-		{
 			current: isCurrentPath(pathname, routes.studio.review),
 			hasUpdate: updates.review,
 			href: routes.studio.review,
@@ -152,24 +148,48 @@ export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderPr
 			href: routes.studio.assets,
 			label: 'Assets',
 		},
-		{
-			current: isCurrentPath(pathname, routes.studio.usage),
-			hasUpdate: updates.usage,
-			href: routes.studio.usage,
-			label: 'Usage',
-		},
 	] as const
+	// 🔴 데스크톱과 컴팩트가 같은 것을 두 번 그린다 — 한 자리로 묶어 한쪽만 고쳐지는 일을 막는다.
+	// 세션은 서버가 아니라 브라우저가 묻는다 — 루트 레이아웃이 세션을 읽으면 `/`와 `/guideline`의
+	// 정적 렌더가 깨지기 때문이다(docs/05). 모르는 동안(`unknown`)은 아무것도 그리지 않는다.
+	// 🔴 Login과 Logout은 **한 버튼의 두 상태**다 — surface가 갈리면 안 된다.
+	//    배경 없는 쪽이 기준이다(사용자 지시). cva의 defaultVariants가 standalone인 것은
+	//    코드의 기본값일 뿐 디자인 기준이 아니다.
+	const loginItem = {
+		current: isCurrentPath(pathname, routes.login),
+		href: routes.login,
+		label: 'Login',
+		surface: 'grouped',
+	} as const
+	const accountItem = {
+		current: isCurrentPath(pathname, routes.account),
+		href: routes.account,
+		label: 'Account',
+	} as const
 	const closeCompact = () => setCompactOpen(false)
 
 	return (
 		<NavigationHeader.Root>
 			<NavigationHeader.Desktop>
 				<NavigationHeader.Start>
-					<NavigationHeader.Link
-						current={pathname === routes.admin}
-						href={routes.admin}
-						label="Login"
-					/>
+					{session.status === 'in' && (
+						<>
+							<NavigationHeader.Link {...accountItem} />
+							{/* Login과 같은 surface다(위 주석의 이유). 진행·실패를 라벨에 쓰지 않는다 —
+							    중복 클릭은 훅이 막고, 실패 사유는 아래 live 영역이 읽는다. */}
+							<NavigationHeader.Action
+								aria-busy={loggingOut || undefined}
+								label="Logout"
+								onClick={logout}
+								surface="grouped"
+							/>
+						</>
+					)}
+					{session.status === 'out' && <NavigationHeader.Link {...loginItem} />}
+					{/* 라벨은 Login·Logout 둘뿐이다 — 실패 사유를 적을 자리가 없어 여기서 읽어 준다. */}
+					<span className="sr-only" role="alert">
+						{logoutError}
+					</span>
 				</NavigationHeader.Start>
 				<NavigationHeader.Center aria-label="주요 메뉴">
 					<NavigationHeader.SymbolLink href={routes.home} />
@@ -247,14 +267,31 @@ export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderPr
 								))}
 							</NavigationHeader.CompactLinkGroup>
 							<NavigationHeader.CompactLinkGroup className="pt-6">
-								<NavigationHeader.Link
-									className="justify-center bg-muted"
-									current={pathname === routes.admin}
-									href={routes.admin}
-									label="Login"
-									onClick={closeCompact}
-									surface="compact"
-								/>
+								{session.status === 'in' && (
+									<>
+										<NavigationHeader.Link
+											{...accountItem}
+											className="justify-center bg-muted"
+											onClick={closeCompact}
+											surface="compact"
+										/>
+										<NavigationHeader.Action
+											aria-busy={loggingOut || undefined}
+											className="justify-center bg-muted"
+											label="Logout"
+											onClick={logout}
+											surface="compact"
+										/>
+									</>
+								)}
+								{session.status === 'out' && (
+									<NavigationHeader.Link
+										{...loginItem}
+										className="justify-center bg-muted"
+										onClick={closeCompact}
+										surface="compact"
+									/>
+								)}
 							</NavigationHeader.CompactLinkGroup>
 						</NavigationHeader.CompactContent>
 					</NavigationHeader.CompactBody>

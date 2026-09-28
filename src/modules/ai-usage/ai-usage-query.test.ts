@@ -40,7 +40,10 @@ describe('aiUsage href', () => {
 	const base = parseAiUsageQuery({ by: 'model', days: '7', user: '3' })
 
 	it('기본값은 주소에 안 싣는다', () => {
-		expect(aiUsagePeriodHref(parseAiUsageQuery({}), '30')).toBe('')
+		// 🔴 빈 문자열이면 `href=""`가 되어 **지금 주소**로 해석된다 — 기본값으로 돌아가는 링크가
+		//    아무 일도 안 하는 결함이 실제로 있었다(30일 버튼이 안 눌렸다).
+		expect(aiUsagePeriodHref(parseAiUsageQuery({}), '30')).toBe('?')
+		expect(aiUsagePeriodHref(parseAiUsageQuery({ days: '7' }), '30')).toBe('?')
 	})
 
 	// 🔴 이 설계에서 기간이 안 날아가는 것이 탭을 안 만든 유일한 이유다.
@@ -71,7 +74,7 @@ describe('aiUsage href', () => {
 		const two = parseAiUsageQuery({ feature: 'asset-check', user: '3' })
 		expect(aiUsageClearFilterHref(two, 'user')).not.toContain('user=')
 		expect(aiUsageClearFilterHref(two, 'user')).toContain('feature=asset-check')
-		expect(aiUsageClearAllFiltersHref(two)).toBe('')
+		expect(aiUsageClearAllFiltersHref(two)).toBe('?')
 	})
 
 	it('주소를 되읽으면 같은 상태가 나온다', () => {

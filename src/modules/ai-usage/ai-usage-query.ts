@@ -66,7 +66,10 @@ function toSearch(query: AiUsageQuery): string {
 	}
 	if (query.showAllRows) params.set('limit', 'all')
 	const search = params.toString()
-	return search === '' ? '' : `?${search}`
+	// 🔴 빈 문자열을 돌려주면 안 된다. `href=""`는 브라우저가 **지금 주소(쿼리 포함)**로 해석해서,
+	//    기본값으로 되돌리는 링크가 아무 일도 하지 않는다 — 기본 기간(30일)과 기본 축이 정확히
+	//    그 자리였다. `?`는 「이 경로, 쿼리 없음」이라 기본값으로 제대로 되돌린다.
+	return search === '' ? '?' : `?${search}`
 }
 
 /** 현재 상태에서 한 곳만 바꾼 주소. 나머지 상태는 전부 따라간다. */

@@ -21,10 +21,6 @@ const FOOTER_LINK_GROUPS = [
 			{ href: routes.studio.assets, label: 'Assets' },
 		],
 	},
-	{
-		label: 'System',
-		links: [{ href: routes.admin, label: 'Admin ↗' }],
-	},
 ] as const
 
 export async function HeroFooter() {
@@ -55,7 +51,7 @@ export async function HeroFooter() {
 						© {new Date().getFullYear()} {companyName}. All rights reserved.
 					</Typography>
 				</div>
-				<nav aria-label="푸터 메뉴" className="grid grid-cols-3 gap-8 md:gap-16">
+				<nav aria-label="푸터 메뉴" className="grid grid-cols-2 gap-8 md:gap-16">
 					{FOOTER_LINK_GROUPS.map((group) => (
 						<div key={group.label}>
 							<Typography as="p" size="xs" weight="semibold">

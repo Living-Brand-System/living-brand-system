@@ -5,6 +5,11 @@ import { SidebarProvider } from '@/components/ui/sidebar'
 import { GlobalHeader, type NavigationHeaderUpdates } from './global-header'
 
 let pathname = ''
+// 🔴 Login과 Logout은 **한 버튼의 두 상태**다 — surface가 갈리면 안 된다.
+//    실제로 두 번 어긋났다(한쪽만 배경을 주고, 다음엔 반대로 통일했다). 여기서 못 박는다.
+const LOGIN_LOGOUT_SURFACE = 'grouped'
+// 헤더는 마운트 때 /api/users/me를 묻는다 — 테스트가 그 답을 정한다.
+let sessionUser: { email: string } | null = null
 const push = vi.fn()
 
 vi.stubGlobal(
@@ -45,6 +50,11 @@ describe('GlobalHeader', () => {
 		pathname = '/studio/graphic'
 		push.mockReset()
 		localStorage.clear()
+		sessionUser = null
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => ({ json: async () => ({ user: sessionUser }), ok: true })),
+		)
 		vi.stubGlobal(
 			'matchMedia',
 			vi.fn(() => ({
@@ -57,7 +67,25 @@ describe('GlobalHeader', () => {
 
 	afterEach(cleanup)
 
-	it('메가 메뉴 없이 직접 링크와 current·update 상태를 표시한다', () => {
+	it('로그인하면 Log in 대신 Account와 Logout 둘이 선다', async () => {
+		sessionUser = { email: 'someone@plus-ex.com' }
+		renderHeader()
+
+		const desktop = document.querySelector<HTMLElement>(
+			'[data-slot="navigation-header-desktop"]',
+		) as HTMLElement
+		expect(await within(desktop).findByRole('link', { name: 'Account' })).toHaveAttribute(
+			'href',
+			'/account',
+		)
+		expect(within(desktop).getByRole('button', { name: 'Logout' })).toHaveAttribute(
+			'data-surface',
+			LOGIN_LOGOUT_SURFACE,
+		)
+		expect(within(desktop).queryByRole('link', { name: 'Login' })).toBeNull()
+	})
+
+	it('메가 메뉴 없이 직접 링크와 current·update 상태를 표시한다', async () => {
 		renderHeader({ guideline: true, image: true })
 
 		const header = document.querySelector('[data-slot="navigation-header"]')
@@ -72,10 +100,16 @@ describe('GlobalHeader', () => {
 		})
 		const links = within(navigation)
 
+		// 🔴 이 단언이 「Payload 주소가 헤더에 노출되지 않는다」를 지키는 유일한 검사기다.
+		expect(
+			await within(desktop as HTMLElement).findByRole('link', { name: 'Login' }),
+		).toHaveAttribute('href', '/login')
 		expect(within(desktop as HTMLElement).getByRole('link', { name: 'Login' })).toHaveAttribute(
-			'href',
-			'/admin',
+			'data-surface',
+			LOGIN_LOGOUT_SURFACE,
 		)
+		// 🔴 이 단언이 「Payload 주소가 헤더에 노출되지 않는다」를 지키는 검사기다.
+		expect((desktop as HTMLElement).querySelector('a[href^="/admin"]')).toBeNull()
 		expect(links.getByRole('link', { name: /Guideline/ })).toHaveAttribute('href', '/guideline')
 		expect(links.getByRole('link', { name: 'Template' })).toHaveAttribute(
 			'href',
@@ -86,7 +120,10 @@ describe('GlobalHeader', () => {
 			'href',
 			'/studio/graphic',
 		)
-		expect(links.getByRole('link', { name: 'MCP' })).toHaveAttribute('href', '/studio/mcp')
+		// 🔴 MCP·Usage는 헤더에서 뺐다 — 개인 설정이라 계정 화면이 진입점을 갖는다.
+		//    이 단언이 「실수로 다시 들어오는 것」을 막는다.
+		expect(links.queryByRole('link', { name: 'MCP' })).toBeNull()
+		expect(links.queryByRole('link', { name: 'Usage' })).toBeNull()
 		expect(links.getByRole('link', { name: 'Review' })).toHaveAttribute(
 			'href',
 			'/studio/review',

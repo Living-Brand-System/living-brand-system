@@ -2,6 +2,7 @@ import config from '@payload-config'
 import { headers as getHeaders } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getPayload } from 'payload'
+import { loginHref } from '@/lib/routes'
 
 /**
  * 커스텀 라우트 핸들러의 요청 인증 헬퍼 — Payload 세션에서 사용자를 읽는다.
@@ -17,14 +18,15 @@ export async function authenticateRequest() {
 }
 
 /**
- * 회원 전용 페이지 게이트 — 비회원은 로그인으로 보내고 returnTo로 되돌린다.
+ * 회원 전용 페이지 게이트 — 비회원은 **앱 로그인 화면**으로 보내고 returnTo로 되돌린다.
+ * 🔴 Payload Admin으로 보내지 않는다 — worker에게 CMS의 존재를 드러내지 않기 위해서다(docs/07 #14).
  * 레이아웃 검사는 클라이언트 내비게이션에서 재실행되지 않으므로
  * 게이트는 각 페이지 첫 줄이 소유한다. 반환된 user는 non-null이 보장된다.
  */
 export async function requireUser(returnTo: string) {
 	const { payload, user } = await authenticateRequest()
 	if (!user) {
-		redirect(`/admin/login?redirect=${encodeURIComponent(returnTo)}`)
+		redirect(loginHref(returnTo))
 	}
 	return { payload, user }
 }
