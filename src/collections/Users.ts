@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionBeforeDeleteHook, CollectionConfig } from 'payload'
 import { Forbidden } from 'payload'
 import {
 	isAdmin,
@@ -8,6 +8,15 @@ import {
 	managerOrAdmin,
 	selfOrManaged,
 } from '@/lib/auth'
+
+const revokeMcpKeysOfUser: CollectionBeforeDeleteHook = async ({ id, req }) => {
+	await req.payload.delete({
+		collection: 'payload-mcp-api-keys',
+		overrideAccess: true,
+		req,
+		where: { user: { equals: id } },
+	})
+}
 
 export const Users: CollectionConfig = {
 	slug: 'users',
@@ -31,6 +40,12 @@ export const Users: CollectionConfig = {
 		delete: managedRowsOnly,
 		// worker는 Payload Admin이 있다는 사실 자체를 몰라야 한다. (admin access는 boolean만 받는다)
 		admin: ({ req }) => isManager(req.user),
+	},
+	hooks: {
+		// 🔴 계정을 지우기 전에 그 사람의 MCP 키를 회수한다. 주인 없는 API 키는 남길 것이 아니고,
+		//    DB의 `payload_mcp_api_keys.user_id`가 NOT NULL이라 그냥 두면 DELETE 자체가 거부된다.
+		//    plugin이 소유한 컬렉션이라 스키마를 우리가 못 고친다 — 그래서 여기서 먼저 지운다.
+		beforeDelete: [revokeMcpKeysOfUser],
 	},
 	fields: [
 		{

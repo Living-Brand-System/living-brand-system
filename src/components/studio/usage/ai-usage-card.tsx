@@ -41,7 +41,11 @@ export function AiUsageCard({
 	const fold = foldAiUsage(rows, { ...query, axis, todayKey })
 
 	// 계정 id는 그 자체로 못 읽는다 — 칩에 쓸 이름을 원본에서 찾아 준다.
-	const filteredEmail = rows.find((row) => String(row.userId) === query.filters.user)?.userEmail
+	const filteredEmail = rows.find(
+		(row) => (row.userId == null ? 'deleted' : String(row.userId)) === query.filters.user,
+	)?.userEmail
+	const filteredUserLabel =
+		query.filters.user === undefined ? undefined : (filteredEmail ?? '삭제된 계정')
 
 	return (
 		<Controller.Root className="gap-3 px-3 pt-6 pb-3 lg:h-auto">
@@ -50,9 +54,7 @@ export function AiUsageCard({
 					사용량
 				</Typography>
 				<Typography size="sm" tone="muted">
-					{canSeeEveryone
-						? '모든 계정이 AI에 쓴 토큰입니다.'
-						: '내가 AI에 쓴 토큰입니다.'}
+					{canSeeEveryone ? '계정별로 AI에 쓴 토큰입니다.' : '내가 AI에 쓴 토큰입니다.'}
 				</Typography>
 			</header>
 
@@ -68,7 +70,7 @@ export function AiUsageCard({
 						}))}
 						value={query.period}
 					/>
-					<AiUsageFilterChips labels={{ user: filteredEmail }} query={query} />
+					<AiUsageFilterChips labels={{ user: filteredUserLabel }} query={query} />
 				</div>
 
 				<AiUsageKpis fold={fold} />

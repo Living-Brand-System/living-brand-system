@@ -57,8 +57,11 @@ describe('Users 권한 — manager가 계정을 운영한다', () => {
 		expect(call(update, worker)).toEqual({ id: { equals: 3 } })
 	})
 
-	it('삭제·생성: manager 이상만, 그리고 admin 행은 지우지 못한다', () => {
-		expect(call(collectionAccess('delete'), manager)).toEqual(ONLY_MANAGED)
+	it('삭제·생성: manager 이상만, 그리고 admin 행과 자기 자신은 지우지 못한다', () => {
+		// 🔴 자기 삭제를 막는다 — 마지막 manager가 사라지면 계정을 만들 사람이 0이 된다.
+		expect(call(collectionAccess('delete'), manager)).toEqual({
+			and: [ONLY_MANAGED, { id: { not_equals: 2 } }],
+		})
 		expect(call(collectionAccess('delete'), worker)).toBe(false)
 		expect(call(collectionAccess('create'), manager)).toBe(true)
 		expect(call(collectionAccess('create'), worker)).toBe(false)

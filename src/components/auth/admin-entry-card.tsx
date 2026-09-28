@@ -20,7 +20,7 @@ export function AdminEntryCard() {
 					관리 화면
 				</Typography>
 				<Typography size="sm" tone="muted">
-					가이드라인·템플릿·계정을 고치는 곳입니다.
+					관리자에게 추가로 열리는 화면입니다. 가이드라인·템플릿·계정을 여기서 고칩니다.
 				</Typography>
 			</header>
 

@@ -24,14 +24,24 @@ describe('AiUsageEvents collection', () => {
 		}
 	})
 
+	const fieldNamed = (name: string) =>
+		AiUsageEvents.fields.find((candidate) => 'name' in candidate && candidate.name === name)
+
 	it('집계 기준이 되는 축은 인덱스와 필수를 갖는다', () => {
-		for (const name of ['createdBy', 'feature', 'model']) {
-			const field = AiUsageEvents.fields.find(
-				(candidate) => 'name' in candidate && candidate.name === name,
-			)
+		for (const name of ['feature', 'model']) {
+			const field = fieldNamed(name)
 			expect(field, `${name} 필드가 없습니다.`).toBeDefined()
 			expect(field && 'required' in field ? field.required : false).toBe(true)
 			expect(field && 'index' in field ? field.index : false).toBe(true)
 		}
+	})
+
+	// 🔴 createdBy만 예외다. FK가 `ON DELETE SET NULL`이라 required를 두면 계정 삭제 자체가
+	//    Postgres에서 거부된다(2026-09-28 실측). 계정이 지워져도 토큰 기록은 남아야 한다.
+	it('createdBy는 인덱스를 갖되 필수가 아니다 — 계정이 삭제되면 비워진다', () => {
+		const field = fieldNamed('createdBy')
+		expect(field, 'createdBy 필드가 없습니다.').toBeDefined()
+		expect(field && 'required' in field ? field.required : false).toBeFalsy()
+		expect(field && 'index' in field ? field.index : false).toBe(true)
 	})
 })

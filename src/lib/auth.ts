@@ -59,10 +59,19 @@ export const selfOrManaged: Access = ({ req }) => {
 	return { id: { equals: uid } }
 }
 
-/** manager 이상만, 단 admin 문서는 건드리지 못한다 (Users 삭제용) */
+/**
+ * manager 이상만, 단 admin 문서와 **자기 자신**은 건드리지 못한다 (Users 삭제용).
+ *
+ * 🔴 자기 삭제를 막는 이유: manager는 수가 매우 적어서, 마지막 한 명이 자기를 지우면 계정을
+ *    만들 사람이 0이 되고 코드를 고칠 수 있는 admin을 불러야 한다. 되돌릴 수 없는 쪽만 막는다 —
+ *    자기 강등(manager→worker)은 다른 manager나 admin이 되돌릴 수 있으므로 막지 않는다.
+ */
 export const managedRowsOnly: Access = ({ req }) => {
 	if (isAdmin(req.user)) return true
-	return isManager(req.user) ? nonAdminRows : false
+	if (!isManager(req.user)) return false
+	const uid = (req.user as { id?: string | number } | null)?.id
+	if (uid == null) return nonAdminRows
+	return { and: [nonAdminRows, { id: { not_equals: uid } }] }
 }
 
 // --- 필드 access ---

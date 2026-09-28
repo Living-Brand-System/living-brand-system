@@ -84,7 +84,7 @@ function shiftDayKey(dayKey: string, days: number): string {
 }
 
 function matchesFilters(row: AiUsageBreakdownRow, filters: AiUsageFilters): boolean {
-	if (filters.user !== undefined && String(row.userId) !== filters.user) return false
+	if (filters.user !== undefined && userKeyOf(row) !== filters.user) return false
 	if (filters.feature !== undefined && row.feature !== filters.feature) return false
 	// 스튜디오 밖은 'none'이라는 값으로 고른다 — null을 URL에 실을 수 없기 때문이다.
 	if (filters.studio !== undefined && (row.studio ?? 'none') !== filters.studio) return false
@@ -92,15 +92,20 @@ function matchesFilters(row: AiUsageBreakdownRow, filters: AiUsageFilters): bool
 	return true
 }
 
+/** 계정이 삭제된 행도 한 칸으로 모은다 — 토큰은 남았으므로 집계에서 사라지면 안 된다. */
+function userKeyOf(row: AiUsageBreakdownRow): string {
+	return row.userId == null ? 'deleted' : String(row.userId)
+}
+
 function axisKeyOf(row: AiUsageBreakdownRow, axis: AiUsageAxis): string | null {
-	if (axis === 'user') return String(row.userId)
+	if (axis === 'user') return userKeyOf(row)
 	if (axis === 'feature') return row.feature
 	if (axis === 'model') return row.model
 	return row.studio
 }
 
 function axisLabelOf(row: AiUsageBreakdownRow, axis: AiUsageAxis): string {
-	if (axis === 'user') return row.userEmail
+	if (axis === 'user') return row.userEmail ?? '삭제된 계정'
 	if (axis === 'feature') return aiUsageFeatureLabel(row.feature)
 	if (axis === 'model') return row.model
 	return aiUsageStudioLabel(row.studio)
