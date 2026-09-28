@@ -54,7 +54,9 @@ export function AiUsageCard({
 					사용량
 				</Typography>
 				<Typography size="sm" tone="muted">
-					{canSeeEveryone ? '계정별로 AI에 쓴 토큰입니다.' : '내가 AI에 쓴 토큰입니다.'}
+					{canSeeEveryone
+						? '모든 계정이 AI에 쓴 토큰입니다.'
+						: '내가 AI에 쓴 토큰입니다.'}
 				</Typography>
 			</header>
 
