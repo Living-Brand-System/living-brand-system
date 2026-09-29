@@ -2,6 +2,7 @@ import config from '@payload-config'
 import { headers as getHeaders } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getPayload } from 'payload'
+import { cache } from 'react'
 import { loginHref } from '@/lib/routes'
 
 /**
@@ -9,13 +10,17 @@ import { loginHref } from '@/lib/routes'
  * 라우트가 Payload Local API 초기화를 직접 알지 않게 인증 경계를 여기로 모은다 (docs/06 §6).
  * lib/auth.ts와 분리한 이유: auth.ts는 collections가 import하므로
  * @payload-config를 넣으면 payload.config와 순환 의존이 생긴다.
+ *
+ * 🔴 요청 하나 안에서는 한 번만 인증한다(`cache`) — 스튜디오는 layout과 page가 각각 부르므로
+ *    감싸지 않으면 진입마다 `payload.auth()`가 두 번 돈다. 요청이 끝나면 캐시도 사라지므로
+ *    세션이 요청을 넘어 재사용되지 않는다.
  */
-export async function authenticateRequest() {
+export const authenticateRequest = cache(async () => {
 	const payload = await getPayload({ config })
 	const { user } = await payload.auth({ headers: await getHeaders() })
 
 	return { payload, user }
-}
+})
 
 /**
  * 회원 전용 페이지 게이트 — 비회원은 **앱 로그인 화면**으로 보내고 returnTo로 되돌린다.
