@@ -866,7 +866,7 @@ describe('TemplateGenerator', () => {
 	 * 🔴 묶음 순서는 고정이고 배경이 마지막이다. 묶음은 겹침에서 한 자리를 갖지 않으므로(텍스트와
 	 * 이미지가 z에서 엇갈린다) 겹침 순서로 정렬할 수 없다 — 대신 모든 템플릿에서 목록이 같다.
 	 */
-	it('레이어 목록이 묶음 머리글과 그 하위 이름으로 나온다', () => {
+	it('레이어 목록은 묶음만 보여 준다 — 하위 이름은 적지 않는다', () => {
 		const { container } = render(
 			<TemplateGenerator
 				categoryTitle="카드"
@@ -889,13 +889,15 @@ describe('TemplateGenerator', () => {
 		const textOf = (selector: string) =>
 			Array.from(panel.querySelectorAll(selector), (element) => element.textContent)
 
-		// 🔴 고를 수 있는 것은 **묶음뿐**이다 — 개수는 여럿일 때만 붙는다(Text만).
+		// 🔴 고를 수 있는 것은 **묶음뿐**이고, 목록에 있는 것도 묶음뿐이다(사용자 지시, 2026-09-29).
+		//    개수는 여럿일 때만 붙는다(Text만).
 		expect(textOf('[data-slot="layer-row"]')).toEqual(['Text3', 'Image', 'Background'])
-		// 하위 레이어는 목록에 남는다 — 무엇이 들어 있는지는 보여야 한다.
-		expect(textOf('li ul li')).toEqual(['Title', 'Years', 'Slogan', '배경'])
+		// 하위 레이어 이름은 패널에 나오지 않는다 — 무엇이 들어 있는지는 우측 컨트롤이 말한다.
+		expect(panel.textContent).not.toContain('Title')
+		expect(panel.textContent).not.toContain('Slogan')
 	})
 
-	it('🔴 하위 레이어는 고를 수 없다 — 묶음만 버튼이다', () => {
+	it('🔴 패널에는 묶음만 있다 — 텍스트 상자 하나를 고르는 길이 없다', () => {
 		const { container } = render(
 			<TemplateGenerator
 				categoryTitle="카드"
@@ -911,12 +913,10 @@ describe('TemplateGenerator', () => {
 		)
 		const panel = container.querySelector('[data-slot="studio-left-panel"]') as HTMLElement
 
-		// 하위 이름은 보이되 누를 수 있는 것은 묶음뿐이다 — 「텍스트 상자 하나만 고른 상태」를 만들지 않는다.
-		expect(panel.textContent).toContain('Title')
+		// 「텍스트 상자 하나만 고른 상태」를 만들 길이 패널에 없다.
 		expect(panel.querySelector('button[data-slot="layer-row"]')?.textContent).toBe('Text2')
-		expect(
-			Array.from(panel.querySelectorAll('button'), (button) => button.textContent),
-		).not.toContain('Title')
+		expect(panel.textContent).not.toContain('Title')
+		expect(panel.textContent).not.toContain('Years')
 	})
 
 	/**

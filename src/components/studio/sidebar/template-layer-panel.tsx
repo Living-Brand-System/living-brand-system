@@ -29,10 +29,10 @@ const GROUP_ICON: Partial<Record<TemplateLayerGroup['kind'], typeof TextFont>> =
  * 2. 창작자가 대략적인 레이어 계층을 알고는 있어야 한다.
  *
  * 🔴 **일러스트레이터·피그마처럼 모든 레이어를 보여 주지 않는다.** text·image·CI·background의
- *    **몇 개의 큰 묶음**으로 묶고 그 아래에 레이어 이름을 늘어놓는다.
- * 🔴 **고르는 단위는 묶음(종류)이다**(사용자 지시, 2026-09-29) — 텍스트를 고치려는 사람은 상자
- *    하나가 아니라 텍스트 전부를 한 번에 본다. 그래서 묶음 머리글이 버튼이고, 하위 줄은 **무엇이
- *    들어 있는지 보여 줄 뿐 고를 수 없다**(2026-09-10과 반대다 — 그때는 하위가 선택 단위였다).
+ *    **몇 개의 큰 묶음만** 보여 주고 하위 레이어 이름은 **적지 않는다**(사용자 지시, 2026-09-29).
+ *    묶음이 곧 최소 클릭 단위라, 하위를 늘어놓으면 「이건 고를 수 있나」가 흐려진다. 무엇이 들어
+ *    있는지는 묶음을 고르면 우측 컨트롤이 말한다 — 컨트롤도 묶음별로 나오므로 두 패널이 같은 단위다.
+ * 🔴 그래서 **고르는 단위는 묶음(종류)이다** — 2026-09-10의 「하위가 선택 단위」는 뒤집혔다.
  * 🔴 **자기 위치를 모른다.** 값을 prop으로 받지 않고 컨텍스트에서 직접 읽으므로 좌·우·헤더·본문
  *    어디에 꽂아도 그대로 돈다 — 위치를 정하는 코드는 꽂는 자리 한 줄뿐이다.
  * 🔴 **선택(`layers.selectedKind`)과 `focus`는 다른 것이다.** 선택은 여기서만 바뀌고, `focus`는
@@ -63,8 +63,6 @@ export function TemplateLayerPanel() {
 				<ul className="flex flex-col [&>li+li]:mt-2 [&>li+li]:border-t [&>li+li]:border-border [&>li+li]:pt-2">
 					{groups.map((group) => (
 						<li key={group.kind}>
-							{/* 🔴 머리글이 유일한 선택 지점이다. 하위 줄까지 버튼이면 「텍스트 상자
-							    하나만 고른 상태」가 다시 생긴다. */}
 							<LayerRow
 								kind={group.kind}
 								icon={GROUP_ICON[group.kind]}
@@ -74,25 +72,6 @@ export function TemplateLayerPanel() {
 								selected={layers.selectedKind === group.kind}
 								onSelect={() => select(group)}
 							/>
-							{group.members.length > 0 && (
-								// 🔑 안내선 하나로 「이 줄들은 위 묶음에 속한다」가 읽힌다 — 들여쓰기만
-								//    쓰면 묶음 사이 구분선과 섞여 계층이 흐려진다.
-								<ul className="mt-0.5 ml-3 flex flex-col border-border border-l pl-1">
-									{group.members.map((member) => (
-										<li
-											key={member.id}
-											className={cn(
-												'min-w-0 truncate px-2 py-1 text-muted-foreground text-xs',
-												// 숨긴 레이어도 목록에는 남는다 — 지우면 되살릴 방법이 없다.
-												layers.visibility[member.id] === false &&
-													'line-through',
-											)}
-										>
-											{member.label}
-										</li>
-									))}
-								</ul>
-							)}
 						</li>
 					))}
 				</ul>
