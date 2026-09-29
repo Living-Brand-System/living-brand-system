@@ -77,10 +77,6 @@ export function createKeyVisualFormationRuntime({
 			if (scene.planeImage && loaded?.url === scene.planeImage) {
 				drawCover(preview, loaded.element)
 			}
-			if (scene.dimmerOpacity > 0) {
-				preview.fill(0, 0, 0, scene.dimmerOpacity * 255)
-				preview.rect(0, 0, preview.width, preview.height)
-			}
 			preview.fill(scene.lineColor)
 			// 자리 쪽 면도 선과 같은 색이다 — 선이 모여 그 면이 된 것이다.
 			for (const band of [...(scene.planeBand ? [scene.planeBand] : []), ...scene.bands]) {

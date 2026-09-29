@@ -35,8 +35,6 @@ export const keyVisualFormationInputSchema = z.strictObject({
 	planeColor: z.enum(colorIds),
 	lineColor: z.enum(colorIds),
 	planeImage: z.string().min(1).nullable(),
-	dimmer: z.boolean(),
-	dimmerOpacity: z.number().min(0).max(0.7),
 	anchor: z.enum(anchorIds),
 	lineRatio: z.number().min(0.05).max(0.33),
 	planeRatio: z.number().min(0).max(0.33),
@@ -80,8 +78,6 @@ export function toKeyVisualFormationInput(values: ControllerValues): KeyVisualFo
 		lineColor,
 		planeImage:
 			typeof values.planeImage === 'string' && values.planeImage ? values.planeImage : null,
-		dimmer: typeof values.dimmer === 'boolean' ? values.dimmer : base.dimmer,
-		dimmerOpacity: values.dimmerOpacity,
 		anchor: resolveOption(values.anchor, anchorIds, base.anchor),
 		lineRatio: values.lineRatio,
 		planeRatio: values.planeRatio,
@@ -100,10 +96,9 @@ export type KeyVisualFormationBand = {
 export type KeyVisualFormationScene = {
 	width: number
 	height: number
-	/** 면 — 판 전체다. 이미지가 있으면 그 위를 덮고, 디머는 다시 그 위를 덮는다. */
+	/** 면 — 판 전체다. 이미지가 있으면 그 위를 덮는다. */
 	planeColor: string
 	planeImage: string | null
-	dimmerOpacity: number
 	lineColor: string
 	/** 선의 영역 안의 선들. 판 배경(면 색) 위에 얹힌다. */
 	bands: KeyVisualFormationBand[]
@@ -174,7 +169,6 @@ export function createKeyVisualFormationScene(
 				: null,
 		planeColor: keyVisualFormationColorHex(input.planeColor),
 		planeImage: input.planeImage,
-		dimmerOpacity: input.dimmer ? input.dimmerOpacity : 0,
 		lineColor: keyVisualFormationColorHex(input.lineColor),
 		bands,
 		planeAreas: [nearPlane, axisLength - nearPlane - lineArea],
@@ -214,17 +208,6 @@ export function createKeyVisualFormationVectorArtifact(
 			height: scene.height,
 			href: scene.planeImage,
 			preserveAspectRatio: 'xMidYMid slice',
-		})
-	}
-	if (scene.dimmerOpacity > 0) {
-		primitives.push({
-			kind: 'rect',
-			x: 0,
-			y: 0,
-			width: scene.width,
-			height: scene.height,
-			fill: '#000000',
-			opacity: scene.dimmerOpacity,
 		})
 	}
 	// 자리 쪽 면과 선은 같은 색이다 — 선이 모여 그 면이 된 것이라 색이 갈리면 안 된다.

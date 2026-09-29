@@ -53,14 +53,12 @@ export type KeyVisualFormationAnchorId = keyof typeof KEY_VISUAL_FORMATION_ANCHO
 /**
  * 가이드라인 B.8 TYPE C — FORMATION의 기본값.
  *
- * 면이 판 전체를 덮고 그 **위에** 선이 얹힌다. 면에는 이미지를 깔 수 있고 디머로 눌러 둘 수 있다.
+ * 면이 판 전체를 덮고 그 **위에** 선이 얹힌다. 면에는 이미지를 깔 수 있다.
  */
 export const KEY_VISUAL_FORMATION_DEFAULT_INPUT = {
 	planeColor: 'deep',
 	lineColor: 'prosperity',
 	planeImage: null,
-	dimmer: false,
-	dimmerOpacity: 0.2,
 	anchor: 'bottom',
 	lineRatio: 0.3,
 	planeRatio: 0,
@@ -106,7 +104,7 @@ export default defineGraphicRuntime({
 	artifacts: { vector: {}, raster: {} },
 	controller: {
 		// 면·선의 색과 재료는 창작자가 늘 만지는 큰 축이다 — 왼쪽 패널.
-		left: ['planeColor', 'lineColor', 'planeImage', 'dimmer', 'dimmerOpacity', 'anchor'],
+		left: ['planeColor', 'lineColor', 'planeImage', 'anchor'],
 		right: ['lineRatio', 'planeRatio', 'steps', 'decay'],
 		groups: [
 			{
@@ -128,22 +126,6 @@ export default defineGraphicRuntime({
 						source: 'sample-images' as const,
 						defaultValue: KEY_VISUAL_FORMATION_DEFAULT_INPUT.planeImage,
 					},
-					{
-						id: 'dimmer',
-						kind: 'toggle' as const,
-						label: 'Dimmer',
-						defaultValue: KEY_VISUAL_FORMATION_DEFAULT_INPUT.dimmer,
-					},
-					// Template 배경 디머와 같은 범위다 — 0.7을 넘기면 이미지가 사실상 사라진다.
-					rangeControl(
-						'dimmerOpacity',
-						'Dimmer Opacity',
-						KEY_VISUAL_FORMATION_DEFAULT_INPUT.dimmerOpacity,
-						0,
-						0.7,
-						0.01,
-						{ precision: 2 },
-					),
 				],
 			},
 			{
