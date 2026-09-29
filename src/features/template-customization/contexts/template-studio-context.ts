@@ -7,6 +7,7 @@ import type {
 	ResolvedTemplateImageConfig,
 	TemplateBackgroundType,
 	TemplateStudioConfig,
+	TemplateStudioConfigSlot,
 	TemplateVectorSlot,
 } from '@/features/template-customization/domain/template-studio-config'
 import type {
@@ -138,16 +139,16 @@ export type TemplateStudioValue = {
 		visibility: Record<string, boolean>
 		setVisible: (slotId: string, visible: boolean) => void
 		/**
-		 * 레이어 패널에서 고른 **레이어**(슬롯 id). 묶음(Text·Image·CI)은 고를 수 없다 —
-		 * 묶음 헤더는 hover만 되고, 고르는 것은 그 자식이다(사용자 지시, 2026-09-10).
-		 * 배경은 하위가 없으므로 자기 자신이 잎이고 id는 `'background'`다.
+		 * 레이어 패널에서 고른 **종류**. 고르는 단위는 레이어 하나가 아니라 Text·Image·CI·Background
+		 * 묶음이다(사용자 지시, 2026-09-29) — 텍스트를 고치려는 사람은 텍스트 상자 하나가 아니라
+		 * 텍스트 전부를 한 번에 본다. 그래서 하위 줄은 목록에만 있고 고를 수 없다.
 		 *
 		 * 🔴 **`focus`와 다른 것이다.** 컨트롤러는 평소에 아무것도 보여주지 않고 이 값이 있을 때만
-		 *    그 레이어의 컨트롤을 낸다 — `focus`로 대신하면 입력칸에 커서를 넣는 것만으로 대상이
+		 *    그 묶음의 컨트롤을 낸다 — `focus`로 대신하면 입력칸에 커서를 넣는 것만으로 대상이
 		 *    바뀌어 방금 고른 것이 사라진다(`focus`는 「지금 만지는 자리」이고 이것은 「고른 것」이다).
 		 */
-		selectedId: string | null
-		select: (slotId: string | null) => void
+		selectedKind: TemplateStudioConfigSlot['kind'] | null
+		select: (kind: TemplateStudioConfigSlot['kind'] | null) => void
 	}
 	background: {
 		state: TemplateBackgroundState

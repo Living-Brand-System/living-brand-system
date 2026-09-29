@@ -33,7 +33,7 @@ function writers() {
 		layers: {
 			visibility: {},
 			setVisible: log('layers.setVisible'),
-			selectedId: null,
+			selectedKind: null,
 			select: log('layers.select'),
 		},
 		background: {

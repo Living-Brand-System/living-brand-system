@@ -359,14 +359,13 @@ function ImageRaceProbe() {
  * 테스트는 먼저 레이어 패널에서 그 레이어를 고른다.
  */
 /**
- * 레이어 패널에서 **레이어**를 고른다 — 컨트롤은 고른 그때만 나온다(사용자 지시, 2026-09-10).
- * 🔴 묶음 머리글(Text·Image·CI)은 클릭되지 않는다 — `layer-row`(button)만 고를 수 있고,
- *    배경은 하위가 없어 자기 자신이 잎이다.
+ * 레이어 패널에서 **묶음**을 고른다 — 컨트롤은 고른 그때만 나온다(사용자 지시, 2026-09-29).
+ * 🔴 인자는 종류다. 하위 레이어 이름으로는 고를 수 없다 — 하위 줄은 목록일 뿐 버튼이 아니다.
+ * 🔑 라벨이 아니라 종류로 집는다 — 이름에 개수가 붙어(Text3) 라벨 일치로는 못 찾는다.
  */
-function selectLayer(label: string) {
-	const rows = screen.getAllByRole('button', { name: label })
-	const row = rows.find((candidate) => candidate.dataset.slot === 'layer-row')
-	if (!row) throw new Error(`레이어 행을 찾지 못했습니다: ${label}`)
+function selectLayerGroup(kind: 'text' | 'image' | 'vector' | 'background') {
+	const row = document.querySelector(`[data-slot="layer-row"][data-layer-kind="${kind}"]`)
+	if (!row) throw new Error(`레이어 묶음을 찾지 못했습니다: ${kind}`)
 	fireEvent.click(row)
 }
 
@@ -589,7 +588,7 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 
-		selectLayer('배경')
+		selectLayerGroup('image')
 
 		fireEvent.change(screen.getByLabelText('Prompt'), { target: { value: '파스텔 배경' } })
 		fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
@@ -620,7 +619,7 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 
-		selectLayer('배경')
+		selectLayerGroup('image')
 
 		await user.click(screen.getByRole('radio', { name: 'Preset' }))
 
@@ -648,7 +647,7 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 
-		selectLayer('배경')
+		selectLayerGroup('image')
 
 		fireEvent.change(screen.getByLabelText('Prompt'), { target: { value: '파스텔 배경' } })
 		fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
@@ -691,7 +690,7 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 
-		selectLayer('배경')
+		selectLayerGroup('image')
 
 		fireEvent.change(screen.getByLabelText('Prompt'), { target: { value: '원본 이미지' } })
 		fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
@@ -727,7 +726,7 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 
-		selectLayer('배경')
+		selectLayerGroup('image')
 		const slot = container.querySelector<HTMLElement>('[data-slot="image-slot-input"]')
 		expect(slot).not.toBeNull()
 		if (!slot) return
@@ -757,7 +756,7 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 
-		selectLayer('Title')
+		selectLayerGroup('text')
 
 		// 만지기 전 — 저작 색 유지.
 		expect(container.innerHTML).not.toContain('rgb(255, 0, 0)')
@@ -872,19 +871,13 @@ describe('TemplateGenerator', () => {
 		const textOf = (selector: string) =>
 			Array.from(panel.querySelectorAll(selector), (element) => element.textContent)
 
-		// 머리글은 묶음 셋 — 개수는 여럿일 때만 붙는다(Text만).
-		expect(textOf('[data-slot="layer-group-header"]')).toEqual(['Text3', 'Image'])
-		// 고를 수 있는 것은 자식과 배경(하위가 없어 자기 자신이 잎)뿐이다.
-		expect(textOf('[data-slot="layer-row"]')).toEqual([
-			'Title',
-			'Years',
-			'Slogan',
-			'배경',
-			'Background',
-		])
+		// 🔴 고를 수 있는 것은 **묶음뿐**이다 — 개수는 여럿일 때만 붙는다(Text만).
+		expect(textOf('[data-slot="layer-row"]')).toEqual(['Text3', 'Image', 'Background'])
+		// 하위 레이어는 목록에 남는다 — 무엇이 들어 있는지는 보여야 한다.
+		expect(textOf('li ul li')).toEqual(['Title', 'Years', 'Slogan', '배경'])
 	})
 
-	it('🔴 묶음 머리글에 hover하면 그 자식이 모두 함께 hover된다', () => {
+	it('🔴 하위 레이어는 고를 수 없다 — 묶음만 버튼이다', () => {
 		const { container } = render(
 			<TemplateGenerator
 				categoryTitle="카드"
@@ -899,22 +892,16 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 		const panel = container.querySelector('[data-slot="studio-left-panel"]') as HTMLElement
-		const header = panel.querySelector('[data-slot="layer-group-header"]') as HTMLElement
-		const hoveredRows = () =>
-			Array.from(
-				panel.querySelectorAll('[data-slot="layer-row"][data-group-hovered]'),
-				(row) => row.textContent,
-			)
 
-		expect(hoveredRows()).toEqual([])
-		fireEvent.pointerEnter(header)
-		// 🔴 자식 **전부**다 — CSS group-hover를 자식에 얹으면 자식 하나에 hover할 때도 켜진다.
-		expect(hoveredRows()).toEqual(['Title', 'Years'])
-		fireEvent.pointerLeave(header)
-		expect(hoveredRows()).toEqual([])
+		// 하위 이름은 보이되 누를 수 있는 것은 묶음뿐이다 — 「텍스트 상자 하나만 고른 상태」를 만들지 않는다.
+		expect(panel.textContent).toContain('Title')
+		expect(panel.querySelector('button[data-slot="layer-row"]')?.textContent).toBe('Text2')
+		expect(
+			Array.from(panel.querySelectorAll('button'), (button) => button.textContent),
+		).not.toContain('Title')
 	})
 
-	it('레이어를 고르면 그 레이어의 컨트롤만 나온다 — 같은 묶음의 형제도 걸러진다', () => {
+	it('묶음을 고르면 그 종류의 컨트롤이 함께 나온다', () => {
 		const { container } = render(
 			<TemplateGenerator
 				categoryTitle="카드"
@@ -938,10 +925,10 @@ describe('TemplateGenerator', () => {
 			).map((group) => group.querySelector('span')?.textContent?.trim())
 
 		expect(titles()).toEqual([])
-		selectLayer('배경 B')
-		// 🔑 제목의 번호는 슬롯 전체에서의 자리다 — 걸러진 뒤에도 2번이 2번으로 남는다.
+		selectLayerGroup('image')
+		// 🔑 이미지를 고치려는 사람은 슬롯 하나가 아니라 이미지 전부를 본다(사용자 지시, 2026-09-29).
+		expect(titles()).toContain('Image 1')
 		expect(titles()).toContain('Image 2')
-		expect(titles()).not.toContain('Image 1')
 	})
 
 	/**
@@ -976,7 +963,7 @@ describe('TemplateGenerator', () => {
 
 		// Text 묶음을 고르면 텍스트 슬롯이 **함께** 나온다 — 선택 단위가 묶음이라서다.
 		// 🔴 캔버스가 같은 컨테이너에 있어 판의 글자까지 잡힌다 — 사이드바로 좁혀서 본다.
-		selectLayer('Title')
+		selectLayerGroup('text')
 		const sidebar = () =>
 			container.querySelector('[data-slot="studio-sidebar"]')?.textContent ?? ''
 		expect(titles()).toContain('Text')
@@ -991,11 +978,11 @@ describe('TemplateGenerator', () => {
 		expect(sidebar()).toContain('YEARS 2')
 
 		// 같은 묶음을 다시 누르면 선택이 풀리고 컨트롤도 사라진다.
-		selectLayer('Title')
+		selectLayerGroup('text')
 		expect(titles()).not.toContain('Text')
 	})
 
-	it('섹션은 노드 개수와 무관하게 눌러서 활성화된다 — Text는 슬롯 여럿, Background는 노드 없음', () => {
+	it('묶음을 고르면 그 섹션이 곧바로 활성화된다 — Text는 슬롯 여럿, Background는 노드 없음', () => {
 		const { container } = render(
 			<TemplateGenerator
 				categoryTitle="카드"
@@ -1015,14 +1002,13 @@ describe('TemplateGenerator', () => {
 		const named = (title: string) =>
 			groups().find((group) => group.querySelector('span')?.textContent?.trim() === title)
 
-		// 🔴 Text와 Background는 이제 동시에 뜰 수 없다 — 한 번에 한 묶음만 고르므로 차례로 본다.
-		selectLayer('Title')
-		expect(named('Text')).not.toHaveAttribute('data-active')
-		// 🔴 전에는 이 둘이 활성화되지 않았다 — 대상이 슬롯 하나로 고정돼 있었다.
-		fireEvent.click(named('Text')?.querySelector('span') as Element)
+		// 🔴 묶음을 고르면 그 종류 **전부**를 집는다 — 따로 한 번 더 누르지 않아도 활성화된다.
+		//    노드가 여럿이어도 대상이 슬롯 하나로 고정되지 않는다.
+		selectLayerGroup('text')
 		expect(named('Text')).toHaveAttribute('data-active', 'true')
 
-		selectLayer('Background')
+		// 한 번에 한 묶음만 고르므로 Text와 Background는 동시에 뜨지 않는다.
+		selectLayerGroup('background')
 		expect(named('Text')).toBeUndefined()
 		// 🔴 배경은 집을 노드가 없다 — 도화지를 집는다(`kind: 'canvas'`). 그래도 활성 면이 켜진다.
 		//    전에는 대상이 슬롯 하나로 고정돼 있어 이것이 안 됐다.
@@ -1032,7 +1018,7 @@ describe('TemplateGenerator', () => {
 	it('Background 섹션은 노드가 아니라 도화지를 집고, 면 없이 테두리만 그린다', () => {
 		const { container } = render(<TemplateGenerator categoryTitle="카드" template={template} />)
 
-		selectLayer('Background')
+		selectLayerGroup('background')
 		const groups = Array.from(container.querySelectorAll('[data-slot="controller-group"]'))
 		const background = groups.find(
 			(group) => group.querySelector('span')?.textContent?.trim() === 'Background',
@@ -1068,7 +1054,7 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 
-		selectLayer('배경')
+		selectLayerGroup('image')
 
 		fireEvent.change(screen.getByLabelText('Line Color 색상 선택'), {
 			target: { value: '#00ff00' },
@@ -1111,7 +1097,7 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 
-		selectLayer('배경')
+		selectLayerGroup('image')
 
 		await user.click(screen.getByRole('radio', { name: 'Preset' }))
 		await user.click(await screen.findByRole('button', { name: '샘플 이미지 선택' }))
@@ -1168,7 +1154,7 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 
-		selectLayer('배경')
+		selectLayerGroup('image')
 
 		await user.click(screen.getByRole('radio', { name: 'Preset' }))
 		await user.click(await screen.findByRole('button', { name: '샘플 이미지 선택' }))
@@ -1204,7 +1190,7 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 
-		selectLayer('배경')
+		selectLayerGroup('image')
 
 		// 생성 전 — Transform 섹션은 닫힌 채 잠긴다(내용 미노출 + 트리거 비활성).
 		expect(
@@ -1241,7 +1227,7 @@ describe('TemplateGenerator', () => {
 		const canvasOf = () =>
 			container.querySelector('[data-slot="studio-workspace-canvas"] [data-node-id="1:1"]')
 
-		selectLayer('Background')
+		selectLayerGroup('background')
 		// 만지기 전 — 저작 배경 유지.
 		expect((canvasOf() as HTMLElement).style.backgroundColor).toBe('rgb(0, 40, 10)')
 
@@ -1267,7 +1253,7 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 
-		selectLayer('Background')
+		selectLayerGroup('background')
 		screen.getByRole('combobox', { name: 'Type' }).focus()
 		await user.keyboard('{ArrowDown}')
 		await user.click(screen.getByRole('option', { name: 'Image' }))
@@ -1304,7 +1290,7 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 
-		selectLayer('Background')
+		selectLayerGroup('background')
 		screen.getByRole('combobox', { name: 'Type' }).focus()
 		await user.keyboard('{ArrowDown}')
 		await user.click(screen.getByRole('option', { name: 'Image' }))
@@ -1342,7 +1328,7 @@ describe('TemplateGenerator', () => {
 				'[data-slot="studio-workspace-canvas"] [data-node-id="1:1"]',
 			) as HTMLElement
 
-		selectLayer('Background')
+		selectLayerGroup('background')
 		screen.getByRole('combobox', { name: 'Type' }).focus()
 		await user.keyboard('{ArrowDown}')
 		await user.click(screen.getByRole('option', { name: 'Graphic' }))
@@ -1411,7 +1397,7 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 
-		selectLayer('배경')
+		selectLayerGroup('image')
 		expect(
 			pinned.container.querySelector('[data-slot="image-slot-input"]')?.textContent,
 		).toContain('고정된 이미지 프로파일을 사용할 수 없습니다.')
@@ -1429,7 +1415,7 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 
-		selectLayer('배경')
+		selectLayerGroup('image')
 		expect(screen.getByText('사용 가능한 이미지 프로파일이 없습니다.')).toBeInTheDocument()
 	})
 
@@ -1446,7 +1432,7 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 
-		selectLayer('배경')
+		selectLayerGroup('image')
 
 		expect(screen.getByText('16:9')).toBeInTheDocument()
 		fireEvent.change(screen.getByLabelText('Prompt'), { target: { value: '파스텔 배경' } })
@@ -1479,7 +1465,7 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 
-		selectLayer('배경')
+		selectLayerGroup('image')
 
 		if (availability === 'readonly') {
 			expect(screen.getByText('고정 프롬프트')).toBeInTheDocument()
@@ -1572,7 +1558,7 @@ describe('TemplateGenerator', () => {
 			</TemplateStudioProvider>,
 		)
 
-		selectLayer('배경')
+		selectLayerGroup('image')
 
 		fireEvent.click(screen.getByRole('button', { name: 'start slot generation' }))
 		expect(screen.getByTestId('slot-generating')).toHaveTextContent('true')
@@ -1632,7 +1618,7 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 
-		selectLayer('배경')
+		selectLayerGroup('image')
 		const slot = container.querySelector<HTMLElement>('[data-slot="image-slot-input"]')
 		expect(slot).not.toBeNull()
 		if (!slot) return

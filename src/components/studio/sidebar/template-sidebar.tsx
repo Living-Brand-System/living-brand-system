@@ -69,13 +69,14 @@ export function TemplateSidebar({ exporting }: { exporting: TemplateExportView }
 	 * 🔴 **평소에는 아무 컨트롤도 보여주지 않는다.** 레이어 패널에서 레이어를 고른 그 순간에만
 	 *    그 레이어의 컨트롤이 나온다(사용자 지시, 2026-09-10) — 우측이 「너무 많다」는 것은
 	 *    모든 슬롯의 컨트롤이 동시에 펼쳐져 있어서다.
-	 * 🔑 고르는 단위는 **레이어 하나**다. 묶음 머리글(Text·Image·CI)은 클릭되지 않으므로
-	 *    「묶음 전체」라는 선택은 존재하지 않는다.
+	 * 🔑 고르는 단위는 **종류**다(사용자 지시, 2026-09-29) — Text를 고르면 텍스트 상자가 전부,
+	 *    Image를 고르면 이미지 슬롯이 전부 한 번에 나온다.
 	 * 🔴 `focus`를 보지 않는다. `focus`는 「지금 만지는 자리」라 입력칸에 커서가 들어가면
 	 *    대상이 바뀌고, 그것을 선택으로 읽으면 **글자를 치는 순간 컨트롤이 통째로 사라진다.**
 	 *    선택은 레이어 패널만 바꾸는 별개 상태다.
 	 */
-	const showsLayer = (slotId: string) => layers.selectedId === slotId
+	const showsKind = (kind: 'text' | 'image' | 'vector' | 'background') =>
+		layers.selectedKind === kind
 	// 배경은 노드가 아니라 도화지라 항상 있다 — 「고를 것이 있나」는 나머지로 판단한다.
 	const hasSlots = config.template.slots.some((slot) => slot.kind !== 'background')
 	const { canvas } = config.template.exportOption
@@ -99,7 +100,7 @@ export function TemplateSidebar({ exporting }: { exporting: TemplateExportView }
 					<StudioPanelScroll>
 						{/* 🔴 텍스트 색은 그룹 공용이라 필터를 타지 않는다 — 행이 전부 걸러지면 그룹이 껍데기로
 				    남아 `Color`만 뜬다. 보일 행이 하나도 없으면 그룹째 접는다. */}
-						{textSlots.some((slot) => showsLayer(slot.id)) && textGroup && (
+						{showsKind('text') && textGroup && (
 							<ControllerGroupRenderer
 								definition={textGroup}
 								section={sectionProps(focus, {
@@ -163,119 +164,127 @@ export function TemplateSidebar({ exporting }: { exporting: TemplateExportView }
 								)}
 							</ControllerGroupRenderer>
 						)}
-						{imageSlots.map((slot, index) => {
-							const topicTitle =
-								imageSlots.length > 1 ? `Image ${index + 1}` : 'Image'
-							const state = images.states[slot.id]
-							const contracts = images.contracts[slot.id] ?? []
-							if (!state) return null
-							if (!showsLayer(slot.id)) return null
-							return (
-								<Controller.Group
-									key={slot.id}
-									title={topicTitle}
-									collapsible
-									{...sectionProps(focus, slotTarget(slot.id))}
-								>
-									<LayerVisibilityControl
-										label={slot.label}
-										visible={layers.visibility[slot.id] ?? true}
-										allowToggle={slot.visibility.allowToggle}
-										onChange={(visible) => layers.setVisible(slot.id, visible)}
-									/>
-									<ImageSlotInput
-										pinned={slot.imageConfig.mode === 'pinned'}
-										readonly={slot.access === 'readonly'}
-										contracts={contracts}
-										value={state}
-										onFeatureChange={(controlId, next) =>
-											images.updateFeature(slot.id, controlId, next)
-										}
-										onProfileChange={(profileId) =>
-											images.selectProfile(slot.id, profileId)
-										}
-										onPromptChange={(prompt) =>
-											images.update(slot.id, { prompt })
-										}
-										onImageModeChange={(imageMode) =>
-											images.update(slot.id, { imageMode })
-										}
-										onSelectSampleImage={(option) =>
-											images.selectSampleImage(slot.id, option)
-										}
-										onGenerate={() => images.generate(slot.id)}
-										section={subsectionProps(focus, slotTarget(slot.id))}
-									/>
-									{/* 디자인 SSOT(1:1838): Image Transform은 구분선 없는 섹션이다. 대상 슬롯에 종속되므로
+						{showsKind('image') &&
+							imageSlots.map((slot, index) => {
+								const topicTitle =
+									imageSlots.length > 1 ? `Image ${index + 1}` : 'Image'
+								const state = images.states[slot.id]
+								const contracts = images.contracts[slot.id] ?? []
+								if (!state) return null
+								return (
+									<Controller.Group
+										key={slot.id}
+										title={topicTitle}
+										collapsible
+										{...sectionProps(focus, slotTarget(slot.id))}
+									>
+										<LayerVisibilityControl
+											label={slot.label}
+											visible={layers.visibility[slot.id] ?? true}
+											allowToggle={slot.visibility.allowToggle}
+											onChange={(visible) =>
+												layers.setVisible(slot.id, visible)
+											}
+										/>
+										<ImageSlotInput
+											pinned={slot.imageConfig.mode === 'pinned'}
+											readonly={slot.access === 'readonly'}
+											contracts={contracts}
+											value={state}
+											onFeatureChange={(controlId, next) =>
+												images.updateFeature(slot.id, controlId, next)
+											}
+											onProfileChange={(profileId) =>
+												images.selectProfile(slot.id, profileId)
+											}
+											onPromptChange={(prompt) =>
+												images.update(slot.id, { prompt })
+											}
+											onImageModeChange={(imageMode) =>
+												images.update(slot.id, { imageMode })
+											}
+											onSelectSampleImage={(option) =>
+												images.selectSampleImage(slot.id, option)
+											}
+											onGenerate={() => images.generate(slot.id)}
+											section={subsectionProps(focus, slotTarget(slot.id))}
+										/>
+										{/* 디자인 SSOT(1:1838): Image Transform은 구분선 없는 섹션이다. 대상 슬롯에 종속되므로
 						    슬롯 그룹 안에 두고 함께 접는다. 생성 전에는 닫힌 채 잠긴다 — compose가 배정된
 						    이미지에만 transform을 적용해서다. */}
-									{slot.transform.enabled && (
-										<Controller.Group
-											title={`${topicTitle} Transform`}
-											collapsible
-											attached
-											{...subsectionProps(focus, slotTarget(slot.id))}
-											disabled={slot.access === 'readonly' || !state?.image}
-										>
-											<ImageTransformControl
-												value={state?.transform ?? IMAGE_TRANSFORM_DEFAULT}
-												// compose는 배정된 이미지에만 transform을 적용한다 — 생성 전에는 비활성.
+										{slot.transform.enabled && (
+											<Controller.Group
+												title={`${topicTitle} Transform`}
+												collapsible
+												attached
+												{...subsectionProps(focus, slotTarget(slot.id))}
 												disabled={
 													slot.access === 'readonly' || !state?.image
 												}
-												limits={slot.transform.limits}
-												// 패드는 대상 슬롯 박스와 같은 비율로 그려진다(디자인 Wide/Portrait/Square).
-												aspectRatio={
-													slot.box.width && slot.box.height
-														? slot.box.width / slot.box.height
-														: undefined
-												}
-												onChange={(transform) =>
-													images.update(slot.id, { transform })
-												}
-											/>
-										</Controller.Group>
-									)}
-								</Controller.Group>
-							)
-						})}
-						{vectors.slots.map((slot) => {
-							const color = vectors.colors[slot.id]
-							if (!showsLayer(slot.id)) return null
-							return (
-								<Controller.Group
-									key={slot.id}
-									title={slot.label}
-									collapsible
-									{...sectionProps(focus, slotTarget(slot.id))}
-								>
-									<LayerVisibilityControl
-										label={slot.label}
-										visible={layers.visibility[slot.id] ?? true}
-										allowToggle={slot.visibility.allowToggle}
-										onChange={(visible) => layers.setVisible(slot.id, visible)}
-									/>
-									{/* 🔴 팔레트가 아직·끝내 비어 있으면 잠근다. 빈 목록은 「제한 없음」이
+											>
+												<ImageTransformControl
+													value={
+														state?.transform ?? IMAGE_TRANSFORM_DEFAULT
+													}
+													// compose는 배정된 이미지에만 transform을 적용한다 — 생성 전에는 비활성.
+													disabled={
+														slot.access === 'readonly' || !state?.image
+													}
+													limits={slot.transform.limits}
+													// 패드는 대상 슬롯 박스와 같은 비율로 그려진다(디자인 Wide/Portrait/Square).
+													aspectRatio={
+														slot.box.width && slot.box.height
+															? slot.box.width / slot.box.height
+															: undefined
+													}
+													onChange={(transform) =>
+														images.update(slot.id, { transform })
+													}
+												/>
+											</Controller.Group>
+										)}
+									</Controller.Group>
+								)
+							})}
+						{showsKind('vector') &&
+							vectors.slots.map((slot) => {
+								const color = vectors.colors[slot.id]
+								return (
+									<Controller.Group
+										key={slot.id}
+										title={slot.label}
+										collapsible
+										{...sectionProps(focus, slotTarget(slot.id))}
+									>
+										<LayerVisibilityControl
+											label={slot.label}
+											visible={layers.visibility[slot.id] ?? true}
+											allowToggle={slot.visibility.allowToggle}
+											onChange={(visible) =>
+												layers.setVisible(slot.id, visible)
+											}
+										/>
+										{/* 🔴 팔레트가 아직·끝내 비어 있으면 잠근다. 빈 목록은 「제한 없음」이
 									    아니라 「도메인을 모른다」이고, 열어 두면 네이티브 피커가 정본 밖
 									    색을 통과시킨다. */}
-									<Controller.ColorRow
-										label="Color"
-										value={color ?? '#000000'}
-										isEmpty={!color}
-										values={brandColorValues}
-										disabled={
-											slot.access === 'readonly' ||
-											brandColorValues.length === 0
-										}
-										onChange={(next) => vectors.setColor(slot.id, next)}
-									/>
-								</Controller.Group>
-							)
-						})}
-						{showsLayer('background') && <TemplateBackgroundPanel />}
+										<Controller.ColorRow
+											label="Color"
+											value={color ?? '#000000'}
+											isEmpty={!color}
+											values={brandColorValues}
+											disabled={
+												slot.access === 'readonly' ||
+												brandColorValues.length === 0
+											}
+											onChange={(next) => vectors.setColor(slot.id, next)}
+										/>
+									</Controller.Group>
+								)
+							})}
+						{showsKind('background') && <TemplateBackgroundPanel />}
 						{/* 🔴 메인 필드가 비어 있는 상태는 **말을 한다.** 이 큰 공간이 아무
 							    설명 없이 비어 있으면 처음 온 사람이 어디서 시작하는지 알 수 없다. */}
-						{!layers.selectedId && (
+						{!layers.selectedKind && (
 							<Empty className="my-auto border-0">
 								<EmptyHeader>
 									<EmptyTitle>

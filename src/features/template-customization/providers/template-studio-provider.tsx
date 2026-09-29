@@ -288,8 +288,8 @@ function useTemplateVectorSession(
 }
 
 /**
- * 🔴 목록이 둘인 이유: 표시/숨김은 **편집 가능한 레이어만** 갖고(배경은 정책이 없다), 선택은
- *    배경까지 포함한 **묶음**을 대상으로 한다 — 배경도 레이어 패널의 한 줄이다(사용자 지시, 2026-09-10).
+ * 🔴 목록이 둘인 이유: 표시/숨김은 **편집 가능한 레이어 하나하나**를 갖고(배경은 정책이 없다),
+ *    선택은 배경까지 포함한 **종류**를 대상으로 한다 — 배경도 레이어 패널의 한 줄이다.
  */
 function useTemplateLayerSession(
 	editable: readonly (TemplateTextSlot | TemplateImageConfigSlot | TemplateVectorSlot)[],
@@ -308,13 +308,13 @@ function useTemplateLayerSession(
 			}),
 		[editable],
 	)
-	const [selected, setSelected] = useState<string | null>(null)
-	// 🔴 읽을 때 걸러 낸다 — 템플릿을 바꾸면 슬롯 id가 통째로 달라지고, 그때 남은 선택은
-	//    아무 컨트롤도 못 내면서 「고른 상태」로 보인다. 초기화 effect를 두는 대신 유도한다.
-	const selectedId = selected && all.some((slot) => slot.id === selected) ? selected : null
+	const [selected, setSelected] = useState<TemplateStudioConfigSlot['kind'] | null>(null)
+	// 🔴 읽을 때 걸러 낸다 — 템플릿을 바꾸면 있는 종류가 달라지고, 그때 남은 선택은 아무 컨트롤도
+	//    못 내면서 「고른 상태」로 보인다. 초기화 effect를 두는 대신 유도한다.
+	const selectedKind = selected && all.some((slot) => slot.kind === selected) ? selected : null
 	return useMemo(
-		() => ({ visibility, setVisible, selectedId, select: setSelected }),
-		[selectedId, setVisible, visibility],
+		() => ({ visibility, setVisible, selectedKind, select: setSelected }),
+		[selectedKind, setVisible, visibility],
 	)
 }
 
