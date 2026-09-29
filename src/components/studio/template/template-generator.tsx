@@ -26,6 +26,8 @@ type TemplateGeneratorProps = {
 	 * 🔑 없어도 스튜디오는 열린다(캔버스가 토큰으로 폴백한다) — 그래서 optional이다.
 	 */
 	highlightColor?: string | null
+	/** 임시 저장의 주인 — 공용 PC에서 남의 초안이 뜨지 않게 저장 키에 섞는다. */
+	userId?: string | null
 }
 
 /**
@@ -41,6 +43,7 @@ export function TemplateGenerator({
 	categoryTitle,
 	template,
 	highlightColor = null,
+	userId = null,
 }: TemplateGeneratorProps) {
 	return (
 		<TemplateStudioProvider
@@ -48,6 +51,7 @@ export function TemplateGenerator({
 			template={template}
 			categoryTitle={categoryTitle}
 			highlightColor={highlightColor}
+			userId={userId}
 		>
 			<TemplateWorkspace template={template} />
 		</TemplateStudioProvider>

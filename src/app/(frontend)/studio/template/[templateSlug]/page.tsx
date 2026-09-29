@@ -39,6 +39,8 @@ export default async function CreateTemplatePage({
 				}
 				template={studio.template}
 				highlightColor={studio.highlightColor}
+				// 임시 저장의 주인 — 공용 PC에서 남의 초안이 내 화면에 뜨지 않게 저장 키에 섞는다.
+				userId={String(user.id)}
 			/>
 		</StudioWorkspacePage>
 	)

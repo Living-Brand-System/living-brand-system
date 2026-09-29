@@ -387,6 +387,8 @@ function selectLayerGroup(kind: LayerKind) {
 
 describe('TemplateGenerator', () => {
 	beforeEach(() => {
+		// 🔴 임시 저장은 자리가 하나뿐이라 테스트끼리 샌다.
+		window.localStorage.clear()
 		vi.clearAllMocks()
 		mocks.captureGraphicFrame.mockReturnValue('data:image/png;base64,graphic')
 		mocks.canExportTemplate.mockReturnValue(true)
@@ -1020,6 +1022,56 @@ describe('TemplateGenerator', () => {
 
 		expect(document.activeElement).toBe(inputOf('t2'))
 		expect(document.activeElement).not.toBe(inputOf('t1'))
+	})
+
+	/**
+	 * 🔴 **새로고침 정도는 버틴다**(사용자 지시, 2026-09-29) — 값이 브라우저 메모리에만 있으면
+	 * 실수로 새로고침한 사람이 작업을 통째로 잃는다.
+	 */
+	it('넣은 값을 임시 저장했다가 다시 열 때 되살린다', async () => {
+		const props = {
+			categoryTitle: '카드',
+			userId: '7',
+			template: {
+				...template,
+				html: '<p data-node-id="t1">TITLE</p>',
+				nodeConfigs: { t1: { input: { label: 'Title' } } },
+			},
+		} as const
+
+		const first = render(<TemplateGenerator {...props} />)
+		const input = () => screen.getByRole('textbox', { name: 'Title' }) as HTMLInputElement
+		fireEvent.change(input(), { target: { value: '되살아나라' } })
+		// 저장은 값이 멈춘 뒤에 한 번만 일어난다.
+		await waitFor(() => expect(window.localStorage.getItem('lbs.templateDraft')).not.toBeNull())
+		first.unmount()
+
+		render(<TemplateGenerator {...props} />)
+
+		expect(input().value).toBe('되살아나라')
+	})
+
+	// 🔴 공용 PC에서 남의 초안이 내 화면에 뜨면 안 된다.
+	it('다른 계정으로 열면 남의 초안을 되살리지 않는다', async () => {
+		const template2 = {
+			...template,
+			html: '<p data-node-id="t1">TITLE</p>',
+			nodeConfigs: { t1: { input: { label: 'Title' } } },
+		}
+		const first = render(
+			<TemplateGenerator categoryTitle="카드" userId="7" template={template2} />,
+		)
+		fireEvent.change(screen.getByRole('textbox', { name: 'Title' }), {
+			target: { value: '내 것' },
+		})
+		await waitFor(() => expect(window.localStorage.getItem('lbs.templateDraft')).not.toBeNull())
+		first.unmount()
+
+		render(<TemplateGenerator categoryTitle="카드" userId="8" template={template2} />)
+
+		expect((screen.getByRole('textbox', { name: 'Title' }) as HTMLInputElement).value).not.toBe(
+			'내 것',
+		)
 	})
 
 	// 🔴 판에서 같은 것을 다시 눌러도 풀리지 않는다 — 조작이 죽은 것처럼 보이면 안 된다.
