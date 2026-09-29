@@ -112,7 +112,10 @@ export function StudioPanelScroll({ children }: { children: ReactNode }) {
 	return (
 		<div
 			data-slot="studio-panel-scroll"
-			className="flex min-h-0 flex-1 flex-col overflow-y-auto border-t border-border px-4 pb-4 first:border-t-0 [&>*:first-child]:border-t-0"
+			// 🔴 `overflow-x-hidden`은 안전망이다 — 어떤 컨트롤이 제 폭을 잘못 잡아도 **패널 밖으로
+			//    번지지는 않는다.** 한 컨트롤이 틀린 것과 화면 전체가 깨지는 것은 다른 사태다
+			//    (사용자 지시, 2026-09-29). 넘치는 컨트롤은 자기 안에서 스크롤을 갖는다.
+			className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden border-t border-border px-4 pb-4 first:border-t-0 [&>*:first-child]:border-t-0"
 		>
 			{children}
 		</div>
