@@ -48,6 +48,9 @@ export function clampSlotBox(
  */
 const FILL_ALPHA = '18%'
 
+/** hover는 선택보다 **약해야** 한다 — 같은 세기면 둘 중 무엇이 고른 것인지 알 수 없다. */
+const HOVER_ALPHA = '10%'
+
 /**
  * 강조 색을 못 받았을 때의 폴백. 브랜드 주입을 받는 유일한 토큰이다(`docs/09` §5) —
  * 🔴 채도 0인 `--accent`·`--ring`은 강조로 읽히지 않으므로 쓰지 않는다.
@@ -93,5 +96,21 @@ export function slotHighlightStyle(
 		...(filled
 			? { backgroundColor: `color-mix(in srgb, ${ink} ${FILL_ALPHA}, transparent)` }
 			: {}),
+	}
+}
+
+/**
+ * hover 미리보기 — **지금 누르면 무엇이 잡히는지**를 먼저 보여 준다(사용자 지시, 2026-09-29).
+ *
+ * 🔴 테두리를 주지 않는다. 고른 것의 테두리와 같은 굵기로 그리면 「고른 것」과 「지나가는 것」이
+ *    구별되지 않는다 — 면만 옅게 깔아 **선택보다 약한 신호**로 둔다.
+ * 🔑 배경(도화지)에는 쓰지 않는다. 전면을 덮는 면은 콘텐츠만 탁하게 만들고, 판 어디에 있든 늘
+ *    켜져 있어 아무것도 알려 주지 않는다.
+ */
+export function slotHoverStyle(color?: string | null): CSSProperties {
+	return {
+		position: 'absolute',
+		pointerEvents: 'none',
+		backgroundColor: `color-mix(in srgb, ${cssColor(color)} ${HOVER_ALPHA}, transparent)`,
 	}
 }

@@ -1078,6 +1078,40 @@ describe('TemplateGenerator', () => {
 		)
 	})
 
+	/**
+	 * 🔴 지나가는 자리를 옅게 비춘다 — **지금 누르면 무엇이 잡히는지**를 먼저 보여 준다
+	 * (사용자 지시, 2026-09-29). 배경은 뺀다: 판 어디에 있든 늘 켜져 있어 알려 주는 것이 없다.
+	 */
+	it('슬롯 위를 지나면 미리 비추고, 배경 위에서는 비추지 않는다', () => {
+		const rect = vi
+			.spyOn(Element.prototype, 'getBoundingClientRect')
+			.mockReturnValue({ left: 0, top: 0, width: 400, height: 300 } as DOMRect)
+		try {
+			const { container } = render(
+				<TemplateGenerator
+					categoryTitle="카드"
+					template={{
+						...template,
+						html: '<p data-node-id="t1">TITLE</p>',
+						nodeConfigs: { t1: { input: { label: 'Title' } } },
+					}}
+				/>,
+			)
+			const hovers = () => container.querySelectorAll('[data-slot="template-slot-hover"]')
+
+			expect(hovers()).toHaveLength(0)
+
+			fireEvent.pointerOver(container.querySelector('[data-node-id="t1"]') as Element)
+			expect(hovers()).toHaveLength(1)
+
+			// 배경(슬롯이 아닌 자리)에서는 뜨지 않는다.
+			fireEvent.pointerOver(container.querySelector('[data-background-type]') as Element)
+			expect(hovers()).toHaveLength(0)
+		} finally {
+			rect.mockRestore()
+		}
+	})
+
 	// 🔴 판에서 같은 것을 다시 눌러도 풀리지 않는다 — 조작이 죽은 것처럼 보이면 안 된다.
 	it('판에서 같은 것을 다시 눌러도 선택이 풀리지 않는다', () => {
 		const { container } = render(

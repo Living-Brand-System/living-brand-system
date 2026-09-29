@@ -20,6 +20,7 @@ import {
 	clampSlotBox,
 	type SlotHighlightBox,
 	slotHighlightStyle,
+	slotHoverStyle,
 } from '@/components/studio/template/slot-highlight'
 import { Typography } from '@/components/ui/typography'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
@@ -73,12 +74,6 @@ export function TemplateCanvas() {
 		[config.template.slots],
 	)
 	/**
-	 * 정책이 배경 컨트롤을 안 내주는 템플릿에는 배경 슬롯 자체가 없다. 그때 도화지는 **고를 수 없는
-	 * 면**이므로 누르면 아무 일도 없어야 하고, 커서도 손가락이 되면 안 된다(사용자 지시, 2026-09-29).
-	 */
-	const hasBackgroundSlot = config.template.slots.some((slot) => slot.kind === 'background')
-
-	/**
 	 * 🔴 배경이 graphic이면 주입 HTML 전체가 `pointer-events:none`이다(그 밑의 셰이더를 끌 수 있게).
 	 *    그대로 두면 슬롯을 눌러도 이벤트가 셰이더로 새어 **무엇을 눌렀는지 알 수 없다.**
 	 *    슬롯 노드에만 되돌린다 — 빈 자리는 계속 셰이더가 받으므로 드래그가 산다.
@@ -109,28 +104,67 @@ export function TemplateCanvas() {
 	 *    눌렀다」가 판에서 보여야 하기 때문이다. 사이드바에서 한 행에 포커스를 줄 때와 같은 모양이다.
 	 */
 	const clickAreaRef = useRef<HTMLDivElement>(null)
-	const selectAt = useCallback(
+	/**
+	 * 포인터 아래의 슬롯을 찾는다 — hover 미리보기와 클릭이 **같은 규칙**을 쓴다.
+	 * 🔴 판 상자에서 멈춘다 — 그래픽 셰이더는 주입 HTML의 **형제**라, 주입 루트를 끝으로 삼으면
+	 *    그 위의 포인터가 조상을 끝까지 거슬러 올라간다.
+	 */
+	const slotAt = useCallback(
 		(from: Element | null) => {
-			// 🔴 판 상자에서 멈춘다 — 그래픽 셰이더는 주입 HTML의 **형제**라, 주입 루트를 끝으로
-			//    삼으면 그 위의 클릭이 조상을 끝까지 거슬러 올라간다.
 			const stop = clickAreaRef.current
 			for (let node = from; node && node !== stop; node = node.parentElement) {
 				const nodeId = node.getAttribute('data-node-id')
 				const kind = nodeId ? slotKindByNodeId.get(nodeId) : undefined
-				if (nodeId && kind) {
-					layers.select(kind)
-					// 🔑 글자를 누른 사람은 곧바로 칠 참이다 — 커서까지 그 입력칸으로 옮긴다.
-					//    커서가 판이 아니라 **우측 컨트롤러**에 생기는 것이 이 스튜디오의 규칙이다.
-					focus.set(templateSlotFocusTarget(kind, nodeId, { caret: kind === 'text' }))
-					return
-				}
+				if (nodeId && kind) return { node, nodeId, kind }
 			}
-			if (!hasBackgroundSlot) return
+			return null
+		},
+		[slotKindByNodeId],
+	)
+
+	const selectAt = useCallback(
+		(from: Element | null) => {
+			const found = slotAt(from)
+			if (found) {
+				layers.select(found.kind)
+				// 🔑 글자를 누른 사람은 곧바로 칠 참이다 — 커서까지 그 입력칸으로 옮긴다.
+				//    커서가 판이 아니라 **우측 컨트롤러**에 생기는 것이 이 스튜디오의 규칙이다.
+				focus.set(
+					templateSlotFocusTarget(found.kind, found.nodeId, {
+						caret: found.kind === 'text',
+					}),
+				)
+				return
+			}
 			layers.select('background')
 			focus.set({ sectionId: TEMPLATE_BACKGROUND_SECTION_ID, kind: 'canvas' })
 		},
-		[focus.set, hasBackgroundSlot, layers.select, slotKindByNodeId],
+		[focus.set, layers.select, slotAt],
 	)
+
+	/**
+	 * 지나가는 자리를 옅게 비춘다 — **지금 누르면 무엇이 잡히는지**를 먼저 보여 준다
+	 * (사용자 지시, 2026-09-29).
+	 *
+	 * 🔴 배경은 뺀다. 도화지를 덮는 면은 판 어디에 있든 늘 켜져 있어 아무것도 알려 주지 않는다.
+	 * 🔑 지날 때 바로 재고 끝낸다 — 상시 측정을 두면 이미지·폰트가 늦게 도착할 때마다 다시 재야 한다.
+	 * 🔑 겹친 슬롯은 고려하지 않는다(사용자 지시) — 맨 위에 그려진 것을 브라우저가 이미 골라 준다.
+	 */
+	const [hoverBox, setHoverBox] = useState<SlotHighlightBox | null>(null)
+	const previewHover = (from: Element | null) => {
+		const root = canvas.previewRef.current
+		const found = slotAt(from)
+		if (!found || !root) {
+			setHoverBox(null)
+			return
+		}
+		setHoverBox(
+			clampSlotBox(found.node.getBoundingClientRect(), root.getBoundingClientRect(), {
+				width,
+				height,
+			}),
+		)
+	}
 
 	// 끌기와 클릭을 가른다 — 그래픽 핸들을 끌고 놓는 것이 선택으로 읽히면 안 된다.
 	const pressRef = useRef<{ x: number; y: number } | null>(null)
@@ -223,13 +257,20 @@ export function TemplateCanvas() {
 					className="relative"
 					onPointerDown={onPointerDown}
 					onPointerUp={onPointerUp}
+					onPointerOver={(event) => previewHover(event.target as Element | null)}
+					onPointerLeave={() => setHoverBox(null)}
 					style={{
 						width,
 						height,
 						transform: `scale(${scale})`,
 						transformOrigin: 'top left',
-						// 고를 수 있는 면이면 손가락, 고를 것이 없으면 기본형(사용자 지시, 2026-09-29).
-						cursor: hasBackgroundSlot ? 'pointer' : 'default',
+						/*
+						 * 누를 수 있으면 누를 수 있는 커서(사용자 지시, 2026-09-29). 판 **안**은 어디를
+						 * 눌러도 무언가 고르므로 배경 위에서도 손가락이다 — 배경 슬롯은 정책과 무관하게
+						 * 항상 만들어져(`template-studio-config`) 「고를 것이 없는 자리」가 판 안에 없다.
+						 * 🔑 판 **밖**(회색 무대)은 이 상자 밖이라 저절로 기본 커서다.
+						 */
+						cursor: 'pointer',
 					}}
 				>
 					{background.state.type === 'graphic' && graphicConfig && (
@@ -250,6 +291,13 @@ export function TemplateCanvas() {
 					{/* 🔴 주입된 HTML의 **형제**다 — 루트 프레임 안에 두면 캔버스를 넘는 슬롯의 강조가
 					    그 프레임의 overflow:hidden에 잘린다(`slot-highlight.ts`가 이유를 갖는다).
 					    🔑 여러 개인 이유: Text 섹션은 텍스트 상자를 전부 집는다. */}
+					{/* hover가 먼저 깔린다 — 고른 것의 테두리를 가리지 않는다. */}
+					{hoverBox && (
+						<div
+							data-slot="template-slot-hover"
+							style={{ ...slotHoverStyle(focus.color), ...hoverBox }}
+						/>
+					)}
 					{highlights.map((box) => (
 						<div
 							key={`${box.left}:${box.top}:${box.width}:${box.height}`}
