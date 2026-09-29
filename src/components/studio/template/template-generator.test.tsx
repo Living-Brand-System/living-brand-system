@@ -1022,6 +1022,10 @@ describe('TemplateGenerator', () => {
 
 		expect(document.activeElement).toBe(inputOf('t2'))
 		expect(document.activeElement).not.toBe(inputOf('t1'))
+		// 🔴 커서는 글자 **끝**이다 — 맨 앞이면 누르자마자 친 글자가 기존 글자 앞에 끼어든다.
+		const focused = document.activeElement as HTMLInputElement
+		expect(focused.selectionStart).toBe(focused.value.length)
+		expect(focused.value.length).toBeGreaterThan(0)
 	})
 
 	/**

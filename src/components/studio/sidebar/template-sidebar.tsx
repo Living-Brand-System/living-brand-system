@@ -480,6 +480,17 @@ function useTextCaretHandoff(target: TemplateFocusTarget | null) {
 		const row = Array.from(document.querySelectorAll('[data-text-slot]')).find(
 			(candidate) => candidate.getAttribute('data-text-slot') === nodeId,
 		)
-		row?.querySelector<HTMLInputElement | HTMLTextAreaElement>('input, textarea')?.focus()
+		const field = row?.querySelector<HTMLInputElement | HTMLTextAreaElement>('input, textarea')
+		if (!field) return
+		field.focus()
+		/*
+		 * 🔴 커서를 글자 **끝**으로 옮긴다. `focus()`만 하면 브라우저는 맨 **앞**에 놓고, 그러면
+		 *    누르자마자 친 글자가 기존 글자 앞에 끼어든다 — 「클릭하고 바로 타이핑」이 깨진다.
+		 * 🔴 `setSelectionRange`는 `number`·`email`·`date` 입력에서 **예외를 던진다.** 던지는 것을
+		 *    try/catch로 삼키면 다음 사람이 왜 감쌌는지 모르므로, 되는 것만 골라서 부른다.
+		 */
+		if (field instanceof HTMLTextAreaElement || field.type === 'text') {
+			field.setSelectionRange(field.value.length, field.value.length)
+		}
 	}, [target])
 }
