@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { Controller } from '@/components/shared/controller'
 import {
 	CONTROLLER_TOGGLE_OPTIONS,
@@ -60,6 +61,7 @@ export function TemplateSidebar({ exporting }: { exporting: TemplateExportView }
 	 * (사용자 지시, 2026-09-29). admin 편집기와 같은 목록을 본다.
 	 */
 	const { values: brandColorValues } = usePublishedBrandColorValues()
+	useTextCaretHandoff(focus.target)
 	// 🔑 배경도 여기다 — 레이어 패널의 한 줄이므로 컨트롤도 다른 레이어와 같은 자리에 온다.
 	const { text: textSlots, image: imageSlots } = partitionTemplateSlots(config.template.slots)
 	/**
@@ -116,6 +118,7 @@ export function TemplateSidebar({ exporting }: { exporting: TemplateExportView }
 									return (
 										<div
 											key={slot.id}
+											data-text-slot={slot.id}
 											className="flex flex-col gap-1"
 											{...rowFocusProps(focus, {
 												sectionId: TEMPLATE_TEXT_SECTION_ID,
@@ -459,4 +462,24 @@ function LayerVisibilityControl({
 			/>
 		</Controller.Row>
 	)
+}
+
+/**
+ * 판에서 글자를 누르면 **그 슬롯의 입력칸으로 커서를 옮긴다**(사용자 지시, 2026-09-29) —
+ * 캔버스는 고르기만 하고 타이핑은 우측에서 하므로, 이 한 걸음이 없으면 누른 뒤 손이 한 번 더 간다.
+ *
+ * 🔴 입력칸을 찾을 때 선택자를 조립하지 않는다 — nodeId에 콜론이 섞여 있다(compose·캔버스와 같은 규칙).
+ * 🔑 끄는 코드가 없다. 포커스를 받은 입력칸이 `caret` 없는 같은 대상으로 focus를 다시 세우므로
+ *    다음 렌더에는 요청이 사라져 있다.
+ */
+function useTextCaretHandoff(target: TemplateFocusTarget | null) {
+	useEffect(() => {
+		if (target?.kind !== 'nodes' || !target.caret) return
+		const [nodeId] = target.nodeIds
+		if (!nodeId) return
+		const row = Array.from(document.querySelectorAll('[data-text-slot]')).find(
+			(candidate) => candidate.getAttribute('data-text-slot') === nodeId,
+		)
+		row?.querySelector<HTMLInputElement | HTMLTextAreaElement>('input, textarea')?.focus()
+	}, [target])
 }

@@ -98,7 +98,19 @@ export type TemplateBackgroundPatch = Partial<
  * 만질 때도 같은 값이 온다(그때는 `nodeIds`만 좁아진다).
  */
 export type TemplateFocusTarget = { sectionId: string } & (
-	| { kind: 'nodes'; nodeIds: readonly string[] }
+	| {
+			kind: 'nodes'
+			nodeIds: readonly string[]
+			/**
+			 * 이 슬롯의 입력칸으로 **커서까지** 옮겨 달라는 요청. 판에서 글자를 누른 사람은 곧바로
+			 * 타이핑할 참이기 때문이다(사용자 지시, 2026-09-29).
+			 *
+			 * 🔴 상태를 따로 만들지 않는다 — 입력칸이 포커스를 받으면 그 자신이 이 플래그 없는
+			 *    같은 대상으로 focus를 다시 세워서 **저절로 꺼진다.** 끄는 코드를 두면 누가 언제
+			 *    끄는지가 또 하나의 규칙이 된다.
+			 */
+			caret?: boolean
+	  }
 	| { kind: 'canvas' }
 )
 
@@ -117,11 +129,13 @@ export const TEMPLATE_BACKGROUND_SECTION_ID = 'section:background'
 export function templateSlotFocusTarget(
 	kind: 'text' | 'image' | 'vector',
 	nodeId: string,
+	options: { caret?: boolean } = {},
 ): TemplateFocusTarget {
 	return {
 		sectionId: kind === 'text' ? TEMPLATE_TEXT_SECTION_ID : nodeId,
 		kind: 'nodes',
 		nodeIds: [nodeId],
+		...(options.caret ? { caret: true } : {}),
 	}
 }
 

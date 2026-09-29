@@ -992,6 +992,36 @@ describe('TemplateGenerator', () => {
 		expect(titles()).not.toContain('Text')
 	})
 
+	/**
+	 * 🔴 판에서 글자를 누르면 **우측 입력칸에 커서까지** 간다(사용자 지시, 2026-09-29).
+	 * 커서가 판이 아니라 컨트롤러에 생기는 것이 이 스튜디오의 규칙이라, 이 한 걸음이 없으면
+	 * 누른 뒤 손이 한 번 더 가야 한다.
+	 */
+	it('판의 글자를 누르면 그 슬롯의 입력칸에 커서가 간다', () => {
+		const { container } = render(
+			<TemplateGenerator
+				categoryTitle="카드"
+				template={{
+					...template,
+					html: '<p data-node-id="t1">TITLE</p><p data-node-id="t2">YEARS</p>',
+					nodeConfigs: {
+						t1: { input: { label: 'Title' } },
+						t2: { input: { label: 'Years' } },
+					},
+				}}
+			/>,
+		)
+		const inputOf = (nodeId: string) =>
+			container
+				.querySelector(`[data-text-slot="${nodeId}"]`)
+				?.querySelector('input, textarea')
+
+		clickCanvas(container.querySelector('[data-node-id="t2"]') as Element)
+
+		expect(document.activeElement).toBe(inputOf('t2'))
+		expect(document.activeElement).not.toBe(inputOf('t1'))
+	})
+
 	// 🔴 판에서 같은 것을 다시 눌러도 풀리지 않는다 — 조작이 죽은 것처럼 보이면 안 된다.
 	it('판에서 같은 것을 다시 눌러도 선택이 풀리지 않는다', () => {
 		const { container } = render(

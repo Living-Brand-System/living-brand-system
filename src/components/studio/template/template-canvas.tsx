@@ -72,6 +72,11 @@ export function TemplateCanvas() {
 			),
 		[config.template.slots],
 	)
+	/**
+	 * 정책이 배경 컨트롤을 안 내주는 템플릿에는 배경 슬롯 자체가 없다. 그때 도화지는 **고를 수 없는
+	 * 면**이므로 누르면 아무 일도 없어야 하고, 커서도 손가락이 되면 안 된다(사용자 지시, 2026-09-29).
+	 */
+	const hasBackgroundSlot = config.template.slots.some((slot) => slot.kind === 'background')
 
 	/**
 	 * 🔴 배경이 graphic이면 주입 HTML 전체가 `pointer-events:none`이다(그 밑의 셰이더를 끌 수 있게).
@@ -87,6 +92,9 @@ export function TemplateCanvas() {
 		for (const node of root.querySelectorAll<HTMLElement>('[data-node-id]')) {
 			if (slotKindByNodeId.has(node.getAttribute('data-node-id') ?? '')) {
 				node.style.pointerEvents = 'auto'
+				// 🔑 커서는 상속되지만 슬롯에는 직접 준다 — 배경이 없어 판 전체가 기본 커서인
+				//    템플릿에서도 슬롯 위에서는 「누를 수 있다」가 보여야 한다.
+				node.style.cursor = 'pointer'
 			}
 		}
 	}, [canvas.html, canvas.previewRef, slotKindByNodeId])
@@ -100,22 +108,28 @@ export function TemplateCanvas() {
 	 * 🔑 하이라이트는 **누른 것 하나만** 밝힌다(사용자 지시) — 선택은 종류 전체이되, 「내가 이걸
 	 *    눌렀다」가 판에서 보여야 하기 때문이다. 사이드바에서 한 행에 포커스를 줄 때와 같은 모양이다.
 	 */
+	const clickAreaRef = useRef<HTMLDivElement>(null)
 	const selectAt = useCallback(
 		(from: Element | null) => {
-			const root = canvas.previewRef.current
-			for (let node = from; node && node !== root; node = node.parentElement) {
+			// 🔴 판 상자에서 멈춘다 — 그래픽 셰이더는 주입 HTML의 **형제**라, 주입 루트를 끝으로
+			//    삼으면 그 위의 클릭이 조상을 끝까지 거슬러 올라간다.
+			const stop = clickAreaRef.current
+			for (let node = from; node && node !== stop; node = node.parentElement) {
 				const nodeId = node.getAttribute('data-node-id')
 				const kind = nodeId ? slotKindByNodeId.get(nodeId) : undefined
 				if (nodeId && kind) {
 					layers.select(kind)
-					focus.set(templateSlotFocusTarget(kind, nodeId))
+					// 🔑 글자를 누른 사람은 곧바로 칠 참이다 — 커서까지 그 입력칸으로 옮긴다.
+					//    커서가 판이 아니라 **우측 컨트롤러**에 생기는 것이 이 스튜디오의 규칙이다.
+					focus.set(templateSlotFocusTarget(kind, nodeId, { caret: kind === 'text' }))
 					return
 				}
 			}
+			if (!hasBackgroundSlot) return
 			layers.select('background')
 			focus.set({ sectionId: TEMPLATE_BACKGROUND_SECTION_ID, kind: 'canvas' })
 		},
-		[canvas.previewRef, focus.set, layers.select, slotKindByNodeId],
+		[focus.set, hasBackgroundSlot, layers.select, slotKindByNodeId],
 	)
 
 	// 끌기와 클릭을 가른다 — 그래픽 핸들을 끌고 놓는 것이 선택으로 읽히면 안 된다.
@@ -190,12 +204,22 @@ export function TemplateCanvas() {
 					{
 						...preview,
 						'--preview-scale': previewSize / 100,
+						/*
+						 * 투명 픽셀 바탕 — **조건을 따지지 않고 항상 맨 뒤에 깐다.** 판이 불투명하면
+						 * 저절로 가려지고, 비치는 곳에서만 보인다. 「배경이 없다」가 한 가지가 아니라
+						 * (그래픽 미선택 · Figma 원본이 투명 · 색 미지정) 추론하면 반드시 틀린다.
+						 * 🔑 미리보기 전용이다 — 내보내기는 HTML을 다시 합성하므로 PNG의 투명이 살아 있다.
+						 */
+						backgroundImage:
+							'conic-gradient(var(--muted) 25%, var(--background) 0 50%, var(--muted) 0 75%, var(--background) 0)',
+						backgroundSize: '16px 16px',
 					} as CSSProperties
 				}
 			>
 				{/* 🔑 클릭은 **여기서** 받는다 — 주입 HTML과 그래픽 배경을 함께 담은 유일한 상자라,
 				    둘 중 무엇을 눌렀든 같은 자리로 올라온다. */}
 				<div
+					ref={clickAreaRef}
 					className="relative"
 					onPointerDown={onPointerDown}
 					onPointerUp={onPointerUp}
@@ -204,6 +228,8 @@ export function TemplateCanvas() {
 						height,
 						transform: `scale(${scale})`,
 						transformOrigin: 'top left',
+						// 고를 수 있는 면이면 손가락, 고를 것이 없으면 기본형(사용자 지시, 2026-09-29).
+						cursor: hasBackgroundSlot ? 'pointer' : 'default',
 					}}
 				>
 					{background.state.type === 'graphic' && graphicConfig && (
