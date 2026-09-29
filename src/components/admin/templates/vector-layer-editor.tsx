@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { Controller } from '@/components/shared/controller'
+import { usePublishedBrandColorValues } from '@/features/template-core/hooks/use-published-brand-color-values'
 import {
 	requestPublishedTemplateVectorAssets,
 	type TemplateVectorAsset,
 } from '@/features/template-core/services/template-editor-options.client'
-import { isValidHex } from '@/lib/color'
 import type { TemplateNodeConfig } from '@/types/template'
-import { usePublishedBrandColors } from './brand-color-swatches'
 
 /** '원본' 선택값 — 자산 값(`collection:id`)과 겹치지 않는 sentinel. */
 const ORIGINAL = 'original'
@@ -22,7 +21,7 @@ export function VectorLayerEditor({
 }) {
 	const [assets, setAssets] = useState<TemplateVectorAsset[]>([])
 	const [loadError, setLoadError] = useState(false)
-	const { colors, loadError: colorLoadError } = usePublishedBrandColors()
+	const { values: colorValues, loadError: colorLoadError } = usePublishedBrandColorValues()
 
 	useEffect(() => {
 		const controller = new AbortController()
@@ -51,10 +50,6 @@ export function VectorLayerEditor({
 				: [],
 		),
 	]
-	const colorValues = colors
-		.filter((color) => isValidHex(color.hex))
-		.map((color) => (color.hex.startsWith('#') ? color.hex : `#${color.hex}`))
-
 	return (
 		<Controller.Group
 			title="세부 설정"
