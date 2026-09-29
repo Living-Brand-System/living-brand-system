@@ -124,7 +124,14 @@ export function SampleImagePicker({
 											{option.name}
 										</Typography>
 										{size && (
-											<Typography as="p" size="xs" tone="muted">
+											// 🔴 `tone="muted"`를 쓰지 않는다 — 자산 브라우저는 반전
+											//    색면이라 비반전 팔레트의 muted를 얹으면 글자가 배경에
+											//    묻힌다. 낮은 강조는 같은 계열의 투명도로 준다.
+											<Typography
+												as="p"
+												size="xs"
+												className="text-inverted-foreground/70 tabular-nums"
+											>
 												{size}
 											</Typography>
 										)}
