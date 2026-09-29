@@ -9,6 +9,7 @@ import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/g
 import { getGraphicStudioRuntimeGroups } from '@/features/graphic-generation/runtime/graphic-studio-runtime'
 import { fetchCanvasStudioConfigs } from '@/features/graphic-generation/services/list-canvas-studio-configs.client'
 import { useLazyResource } from '@/hooks/use-lazy-resource'
+import { getCanvasStudioRoute } from '@/lib/routes'
 import {
 	acceptsControllerDraftValue,
 	type ControllerControlValue,
@@ -156,6 +157,12 @@ export function GraphicStudioProvider({
 			setBindings({})
 			setValues(createControllerValues(next.controller.groups))
 			setConfig(next)
+			/**
+			 * 새로고침해도 고른 프로파일이 남도록 주소를 맞춘다.
+			 * 🔴 router로 옮기지 않는다 — 페이지가 다시 그려지면서 지금 세션이 통째로 사라진다.
+			 *    이력도 쌓지 않는다(`replaceState`): 뒤로 가기가 화면은 안 바꾸고 주소만 되돌린다.
+			 */
+			window.history.replaceState(null, '', getCanvasStudioRoute(next.studio, next.id))
 		},
 		[browse.data, config.id],
 	)

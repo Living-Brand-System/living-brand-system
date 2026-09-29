@@ -29,6 +29,7 @@ import { useImageGeneration } from '@/features/image-generation/hooks/use-image-
 import type { ImageColorAdjustment } from '@/features/image-generation/runtime/image-colorize'
 import { fetchImageStudioConfigs } from '@/features/image-generation/services/list-image-studio-configs.client'
 import { useLazyResource } from '@/hooks/use-lazy-resource'
+import { getStudioImageRoute } from '@/lib/routes'
 import {
 	acceptsControllerDraftValue,
 	type ControllerControlValue,
@@ -184,6 +185,9 @@ export function ImageStudioProvider({
 			)
 			setValues((current) => reconcileProfileValues(next, current))
 			setProfileId(nextProfileId)
+			// 딥링크와 같은 주소로 맞춘다 — 근거는 Graphic Provider의 같은 자리에 적혀 있다.
+			if (next.image.slug)
+				window.history.replaceState(null, '', getStudioImageRoute(next.image.slug))
 		},
 		[browse.data, configs, clearReference],
 	)

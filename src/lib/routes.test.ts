@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+	getCanvasStudioRoute,
 	getStudioGraphicRoute,
 	getStudioImageRoute,
 	getStudioTemplateRoute,
@@ -48,6 +49,12 @@ describe('routes', () => {
 		expect(getStudioImageRoute('illustration')).toBe('/studio/image/illustration')
 		expect(getStudioGraphicRoute('forward-straight')).toBe('/studio/graphic/forward-straight')
 		expect(getStudioTemplateRoute('summer-poster')).toBe('/studio/template/summer-poster')
+
+		// 같은 Provider가 둘을 굴리므로 kind가 주소를 가른다.
+		expect(getCanvasStudioRoute('graphic', 'forward-straight')).toBe(
+			'/studio/graphic/forward-straight',
+		)
+		expect(getCanvasStudioRoute('graph', 'bar-race')).toBe('/studio/graph/bar-race')
 	})
 
 	it('템플릿 주소에 분류 세그먼트를 넣지 않는다 — 분류가 바뀌어도 링크가 유지된다', () => {

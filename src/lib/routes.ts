@@ -34,6 +34,16 @@ export function getStudioGraphRoute(profileSlug: string) {
 	return `${routes.studio.graph}/${profileSlug}`
 }
 
+/**
+ * Graphic·Graph는 한 Provider가 굴리므로 주소도 한 자리에서 고른다 —
+ * 호출부에서 kind를 갈라 적으면 Graph 세션이 `/studio/graphic/...`으로 주소를 바꾼다.
+ */
+export function getCanvasStudioRoute(studio: 'graphic' | 'graph', profileSlug: string) {
+	return studio === 'graph'
+		? getStudioGraphRoute(profileSlug)
+		: getStudioGraphicRoute(profileSlug)
+}
+
 export function getStudioTemplateRoute(templateSlug: string) {
 	return `${routes.studio.template}/${templateSlug}`
 }
