@@ -6,7 +6,12 @@ import { getGuidelineMetadata } from '@/features/guideline/services/get-guidelin
 import { routes } from '@/lib/routes'
 import { cn } from '@/lib/utils'
 
-const FOOTER_LINK_GROUPS = [
+/**
+ * 🔴 Studio 그룹은 `routes.studio`를 **빠짐없이** 덮어야 한다 — 푸터가 유일한 입구인 화면 크기가
+ *    있고, 한 칸이 빠지면 그 스튜디오는 주소를 아는 사람만 간다(QA C1: Graph가 빠져 있었다).
+ *    `hero-footer.test.ts`가 이 불변식을 지킨다.
+ */
+export const FOOTER_LINK_GROUPS = [
 	{
 		label: 'Guideline',
 		links: [{ href: routes.guideline, label: 'Overview' }],
@@ -17,6 +22,7 @@ const FOOTER_LINK_GROUPS = [
 			{ href: routes.studio.template, label: 'Templates' },
 			{ href: routes.studio.image, label: 'Image' },
 			{ href: routes.studio.graphic, label: 'Graphic' },
+			{ href: routes.studio.graph, label: 'Graph' },
 			{ href: routes.studio.review, label: 'Review' },
 			{ href: routes.studio.assets, label: 'Assets' },
 		],
