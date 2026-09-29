@@ -15,6 +15,12 @@ export type SampleImageOption = {
 	lineArt: boolean
 	/** 브라우저의 태그 필터가 쓰는 분류. 비어 있으면 어느 태그에도 속하지 않는다. */
 	group: string
+	/**
+	 * 원본 판형(px). 어느 판에 어울리는 그림인지는 고르기 **전에** 보여야 한다 —
+	 * 썸네일은 전부 같은 칸에 들어가 비율을 감춘다. 업로드가 크기를 못 읽었으면 null이다.
+	 */
+	width: number | null
+	height: number | null
 }
 
 /**
@@ -40,6 +46,8 @@ function toSampleImageOption(doc: SampleImage): SampleImageOption[] {
 			thumbnailUrl: doc.sizes?.thumbnail?.url ?? doc.url,
 			lineArt: doc.lineArt ?? false,
 			group: doc.group ?? '',
+			width: doc.width ?? null,
+			height: doc.height ?? null,
 		},
 	]
 }

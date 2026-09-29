@@ -12,6 +12,11 @@ import { cn } from '@/lib/utils'
 /** 빈 목록의 신원을 고정한다 — 렌더마다 새 배열을 만들면 useMemo가 매번 다시 돈다. */
 const NO_OPTIONS: readonly SampleImageOption[] = []
 
+/** 판형 표기. 크기를 모르는 문서는 아무것도 적지 않는다 — 「0 × 0」은 거짓이다. */
+function formatSampleImageSize({ width, height }: SampleImageOption) {
+	return width && height ? `${width} × ${height}` : null
+}
+
 /**
  * 자산 브라우저 본문의 샘플 이미지 카드 그리드 — 킷(Controller.Browser)이 크롬을, 이 컴포넌트가 도메인을 갖는다.
  * 배경과 이미지 슬롯이 같은 목록을 쓰므로 고른 뒤 무엇을 하는지는 onSelect가 갖는다.
@@ -90,6 +95,7 @@ export function SampleImagePicker({
 				<div className="grid grid-cols-3 gap-3">
 					{visible.map((option) => {
 						const current = option.id === selectedId
+						const size = formatSampleImageSize(option)
 
 						return (
 							<ControllerBrowser.Close key={option.id} asChild>
@@ -117,6 +123,11 @@ export function SampleImagePicker({
 										>
 											{option.name}
 										</Typography>
+										{size && (
+											<Typography as="p" size="xs" tone="muted">
+												{size}
+											</Typography>
+										)}
 									</div>
 								</button>
 							</ControllerBrowser.Close>
