@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { Controller } from '@/components/shared/controller'
 import type { ControllerGroupSectionProps } from '@/components/shared/controller/group'
 import {
@@ -27,11 +26,6 @@ import type {
 	ControllerRuntimeBindings,
 } from '@/modules/studio-controller/controller-definition'
 import { visibleControllerGroups } from '@/modules/studio-controller/controller-definition'
-import {
-	IMAGE_TRANSFORM_DEFAULT,
-	ImageTransformControl,
-	type ImageTransformValue,
-} from './image-transform-control'
 import { SampleImagePicker } from './sample-image-picker'
 
 type BackgroundSectionProps = {
@@ -45,8 +39,6 @@ type BackgroundSectionProps = {
 	/** 배경 위 디머 — 형식 분기 밖에 있다. 어드민 정책이 끄면 매니페스트에서 빠져 undefined다. */
 	dimmerDefinition?: Extract<ControllerControlDefinition, { kind: 'toggle' }>
 	dimmerOpacityDefinition?: Extract<ControllerControlDefinition, { kind: 'range' }>
-	/** 템플릿 캔버스 종횡비(w/h) — 배경 transform 패드가 같은 비율로 그려진다. */
-	canvasAspectRatio?: number
 	/** Image Config를 캔버스 비율로 제한한 슬롯 범위 계약. */
 	imageContracts: readonly ResolvedTemplateImageConfig[]
 	featureBindings: ControllerRuntimeBindings
@@ -68,11 +60,11 @@ type BackgroundSectionProps = {
 
 /**
  * 디자인 SSOT(2:2071 Sidebar State)의 Background 상태 분기 — Type이 하위 컨트롤 세트를 갈아끼운다.
- * Color: 배경색 / Image: Preset(샘플 이미지 선택)·Generate(프롬프트 생성) + Image Transform /
+ * Color: 배경색 / Image: Preset(샘플 이미지 선택)·Generate(프롬프트 생성) /
  * Graphic: Graphic Config 선택 + 해당 Config의 공통 Controller Definition.
  *
  * 값·프롬프트·생성 중·실패와 HTTP는 Provider가 슬롯 단위로 소유한다. Graphic은 순수 SVG adapter로 compose하고,
- * 경로가 없는 배경 이미지 feature 색 행·Image Transform만 잠가 스테이징한다.
+ * 경로가 없는 배경 이미지 feature 색 행만 잠가 스테이징한다.
  */
 export function BackgroundSection({
 	section,
@@ -82,7 +74,6 @@ export function BackgroundSection({
 	colorDefinition,
 	dimmerDefinition,
 	dimmerOpacityDefinition,
-	canvasAspectRatio,
 	imageContracts,
 	featureBindings,
 	graphicConfigs,
@@ -99,8 +90,6 @@ export function BackgroundSection({
 	onGenerate,
 }: BackgroundSectionProps) {
 	const { type, imageMode } = value
-	const [imageTransform, setImageTransform] =
-		useState<ImageTransformValue>(IMAGE_TRANSFORM_DEFAULT)
 	const selectedSample = value.image?.kind === 'sample' ? value.image : undefined
 	const imageContract = imageContracts.find((contract) => contract.config.id === value.profileId)
 	const graphicConfig = graphicConfigs.find((candidate) => candidate.id === value.graphicConfigId)
@@ -227,14 +216,6 @@ export function BackgroundSection({
 							</>
 						)}
 					</Controller.TabPanel>
-					{/* Image Transform은 compose 경로가 없어 잠근 채, 대상인 Background 안에서 그린다. */}
-					<Controller.Group title="Image Transform" collapsible attached disabled>
-						<ImageTransformControl
-							value={imageTransform}
-							aspectRatio={canvasAspectRatio}
-							onChange={setImageTransform}
-						/>
-					</Controller.Group>
 				</>
 			)}
 
