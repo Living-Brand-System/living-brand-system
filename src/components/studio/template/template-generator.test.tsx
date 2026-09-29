@@ -358,15 +358,25 @@ function ImageRaceProbe() {
  * 컨트롤은 **레이어를 고른 그때만** 나온다(사용자 지시, 2026-09-10) — 슬롯 컨트롤을 보는
  * 테스트는 먼저 레이어 패널에서 그 레이어를 고른다.
  */
+type LayerKind = 'text' | 'image' | 'vector' | 'background'
+
 /**
- * 레이어 패널에서 **묶음**을 고른다 — 컨트롤은 고른 그때만 나온다(사용자 지시, 2026-09-29).
- * 🔴 인자는 종류다. 하위 레이어 이름으로는 고를 수 없다 — 하위 줄은 목록일 뿐 버튼이 아니다.
  * 🔑 라벨이 아니라 종류로 집는다 — 이름에 개수가 붙어(Text3) 라벨 일치로는 못 찾는다.
+ * 🔴 하위 레이어 이름으로는 고를 수 없다 — 하위 줄은 목록일 뿐 버튼이 아니다.
  */
-function selectLayerGroup(kind: 'text' | 'image' | 'vector' | 'background') {
+function layerGroupRow(kind: LayerKind) {
 	const row = document.querySelector(`[data-slot="layer-row"][data-layer-kind="${kind}"]`)
 	if (!row) throw new Error(`레이어 묶음을 찾지 못했습니다: ${kind}`)
-	fireEvent.click(row)
+	return row
+}
+
+/**
+ * 그 묶음이 **골라진 상태로 만든다.** 🔴 무조건 누르면 안 된다 — 첫 묶음은 처음부터 골라져 있어
+ * (사용자 지시, 2026-09-29) 한 번 더 누르면 오히려 풀린다.
+ */
+function selectLayerGroup(kind: LayerKind) {
+	const row = layerGroupRow(kind)
+	if (row.getAttribute('aria-pressed') !== 'true') fireEvent.click(row)
 }
 
 describe('TemplateGenerator', () => {
@@ -924,7 +934,10 @@ describe('TemplateGenerator', () => {
 				),
 			).map((group) => group.querySelector('span')?.textContent?.trim())
 
-		expect(titles()).toEqual([])
+		// 첫 묶음은 처음부터 골라져 있다 — 다른 묶음으로 옮겼다가 돌아와서 확인한다.
+		selectLayerGroup('background')
+		expect(titles()).not.toContain('Image 1')
+
 		selectLayerGroup('image')
 		// 🔑 이미지를 고치려는 사람은 슬롯 하나가 아니라 이미지 전부를 본다(사용자 지시, 2026-09-29).
 		expect(titles()).toContain('Image 1')
@@ -957,7 +970,10 @@ describe('TemplateGenerator', () => {
 				group.querySelector('span')?.textContent?.trim(),
 			)
 
-		// 🔴 아무것도 고르지 않았으면 레이어 목록만 있다.
+		// 🔴 첫 묶음은 처음부터 골라져 있다(사용자 지시, 2026-09-29) — 들어오자마자 만질 것이 보인다.
+		expect(titles()).toContain('Text')
+		// 풀면 컨트롤이 사라지고 레이어 목록만 남는다.
+		fireEvent.click(layerGroupRow('text'))
 		expect(titles()).toContain('Layers')
 		expect(titles()).not.toContain('Text')
 
@@ -978,7 +994,7 @@ describe('TemplateGenerator', () => {
 		expect(sidebar()).toContain('YEARS 2')
 
 		// 같은 묶음을 다시 누르면 선택이 풀리고 컨트롤도 사라진다.
-		selectLayerGroup('text')
+		fireEvent.click(layerGroupRow('text'))
 		expect(titles()).not.toContain('Text')
 	})
 
@@ -1002,8 +1018,9 @@ describe('TemplateGenerator', () => {
 		const named = (title: string) =>
 			groups().find((group) => group.querySelector('span')?.textContent?.trim() === title)
 
-		// 🔴 묶음을 고르면 그 종류 **전부**를 집는다 — 따로 한 번 더 누르지 않아도 활성화된다.
-		//    노드가 여럿이어도 대상이 슬롯 하나로 고정되지 않는다.
+		// 🔴 **눌러서** 고르면 그 종류 전부를 집는다 — 노드가 여럿이어도 슬롯 하나로 고정되지 않는다.
+		//    (처음부터 골라져 있는 첫 묶음은 판을 밝히지 않는다 — 들어오자마자 덮개가 깔리면 안 된다.)
+		selectLayerGroup('background')
 		selectLayerGroup('text')
 		expect(named('Text')).toHaveAttribute('data-active', 'true')
 

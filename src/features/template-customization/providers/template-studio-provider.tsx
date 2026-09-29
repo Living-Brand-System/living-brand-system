@@ -33,6 +33,7 @@ import {
 import {
 	findTemplateControl,
 	listCompatibleTemplateImageConfigs,
+	listTemplateLayerGroups,
 	mapTemplateNodeLayers,
 	type PublishedTemplateView,
 	partitionTemplateSlots,
@@ -308,10 +309,21 @@ function useTemplateLayerSession(
 			}),
 		[editable],
 	)
-	const [selected, setSelected] = useState<TemplateStudioConfigSlot['kind'] | null>(null)
+	/**
+	 * 🔴 `undefined`(아직 고른 적 없음)와 `null`(일부러 풀었음)은 다른 상태다. 둘을 합치면
+	 *    고른 묶음을 다시 눌러 푸는 순간 첫 묶음으로 되튄다.
+	 */
+	const [selected, setSelected] = useState<TemplateStudioConfigSlot['kind'] | null | undefined>()
+	// 들어오자마자 만질 것이 보여야 한다(사용자 지시, 2026-09-29) — 아직 안 골랐으면 첫 묶음이다.
+	const initial = listTemplateLayerGroups(all)[0]?.kind ?? null
 	// 🔴 읽을 때 걸러 낸다 — 템플릿을 바꾸면 있는 종류가 달라지고, 그때 남은 선택은 아무 컨트롤도
 	//    못 내면서 「고른 상태」로 보인다. 초기화 effect를 두는 대신 유도한다.
-	const selectedKind = selected && all.some((slot) => slot.kind === selected) ? selected : null
+	const selectedKind =
+		selected === undefined
+			? initial
+			: selected && all.some((slot) => slot.kind === selected)
+				? selected
+				: null
 	return useMemo(
 		() => ({ visibility, setVisible, selectedKind, select: setSelected }),
 		[selectedKind, setVisible, visibility],
