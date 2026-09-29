@@ -358,6 +358,12 @@ function ImageRaceProbe() {
  * 컨트롤은 **레이어를 고른 그때만** 나온다(사용자 지시, 2026-09-10) — 슬롯 컨트롤을 보는
  * 테스트는 먼저 레이어 패널에서 그 레이어를 고른다.
  */
+/** 판 클릭 = 움직임 없는 pointerdown/up 쌍. 끌기와 가르므로 click 하나로는 안 된다. */
+function clickCanvas(element: Element) {
+	fireEvent.pointerDown(element, { clientX: 10, clientY: 10 })
+	fireEvent.pointerUp(element, { clientX: 10, clientY: 10 })
+}
+
 type LayerKind = 'text' | 'image' | 'vector' | 'background'
 
 /**
@@ -909,6 +915,138 @@ describe('TemplateGenerator', () => {
 		expect(
 			Array.from(panel.querySelectorAll('button'), (button) => button.textContent),
 		).not.toContain('Title')
+	})
+
+	/**
+	 * 🔴 **판을 클릭하면 거기 있는 것이 선택된다**(사용자 지시, 2026-09-29).
+	 * 배경을 따로 가르지 않는다 — 슬롯을 만나면 그 종류, 아무것도 안 만나면 그것이 곧 배경이다.
+	 */
+	it('판의 텍스트를 클릭하면 텍스트 묶음이 선택되고 누른 것만 밝아진다', () => {
+		const { container } = render(
+			<TemplateGenerator
+				categoryTitle="카드"
+				template={{
+					...template,
+					html:
+						'<div data-node-id="i1" data-figma-type="FRAME" data-name="배경" data-image-carrier=""></div>' +
+						'<p data-node-id="t1">TITLE</p><p data-node-id="t2">YEARS</p>',
+					nodeConfigs: {
+						i1: { imageInput: { profileId: 7 } },
+						t1: { input: { label: 'Title' } },
+						t2: { input: { label: 'Years' } },
+					},
+				}}
+			/>,
+		)
+		const titles = () =>
+			Array.from(
+				container.querySelectorAll(
+					'[data-slot="studio-sidebar"] [data-slot="controller-group"]',
+				),
+			).map((group) => group.querySelector('span')?.textContent?.trim())
+		const node = (nodeId: string) =>
+			container.querySelector(`[data-node-id="${nodeId}"]`) as Element
+
+		// 첫 묶음(Text)이 이미 골라져 있으므로, 다른 것을 눌러 옮겨지는지로 본다.
+		clickCanvas(node('i1'))
+		expect(titles()).toContain('Image')
+		expect(titles()).not.toContain('Text')
+
+		// 🔑 선택은 텍스트 전체지만 판에서 밝아지는 것은 **누른 하나**다.
+		// 🔴 jsdom은 모든 rect가 0이라 그대로 두면 강조가 0개로 나온다 — 이 단언에만 자를 세운다.
+		const rect = vi
+			.spyOn(Element.prototype, 'getBoundingClientRect')
+			.mockReturnValue({ left: 0, top: 0, width: 400, height: 300 } as DOMRect)
+		try {
+			clickCanvas(node('t2'))
+			expect(titles()).toContain('Text')
+			expect(
+				container.querySelectorAll('[data-slot="template-slot-highlight"]'),
+			).toHaveLength(1)
+		} finally {
+			rect.mockRestore()
+		}
+	})
+
+	it('슬롯이 아닌 자리를 누르면 배경이 선택된다 — 예외 분기 없이', () => {
+		const { container } = render(
+			<TemplateGenerator
+				categoryTitle="카드"
+				template={{
+					...template,
+					html: '<p data-node-id="t1">TITLE</p>',
+					nodeConfigs: { t1: { input: { label: 'Title' } } },
+				}}
+			/>,
+		)
+		const titles = () =>
+			Array.from(
+				container.querySelectorAll(
+					'[data-slot="studio-sidebar"] [data-slot="controller-group"]',
+				),
+			).map((group) => group.querySelector('span')?.textContent?.trim())
+
+		clickCanvas(container.querySelector('[data-background-type]') as Element)
+
+		expect(titles()).toContain('Background')
+		expect(titles()).not.toContain('Text')
+	})
+
+	// 🔴 판에서 같은 것을 다시 눌러도 풀리지 않는다 — 조작이 죽은 것처럼 보이면 안 된다.
+	it('판에서 같은 것을 다시 눌러도 선택이 풀리지 않는다', () => {
+		const { container } = render(
+			<TemplateGenerator
+				categoryTitle="카드"
+				template={{
+					...template,
+					html: '<p data-node-id="t1">TITLE</p>',
+					nodeConfigs: { t1: { input: { label: 'Title' } } },
+				}}
+			/>,
+		)
+		const titles = () =>
+			Array.from(
+				container.querySelectorAll(
+					'[data-slot="studio-sidebar"] [data-slot="controller-group"]',
+				),
+			).map((group) => group.querySelector('span')?.textContent?.trim())
+		const text = container.querySelector('[data-node-id="t1"]') as Element
+
+		clickCanvas(text)
+		clickCanvas(text)
+
+		expect(titles()).toContain('Text')
+	})
+
+	// 🔴 끌기는 선택이 아니다 — 그래픽 핸들을 끌고 놓은 것이 선택으로 읽히면 조작이 서로를 잡아먹는다.
+	it('끌어서 놓으면 선택이 바뀌지 않는다', () => {
+		const { container } = render(
+			<TemplateGenerator
+				categoryTitle="카드"
+				template={{
+					...template,
+					html: '<p data-node-id="t1">TITLE</p>',
+					nodeConfigs: { t1: { input: { label: 'Title' } } },
+				}}
+			/>,
+		)
+		const titles = () =>
+			Array.from(
+				container.querySelectorAll(
+					'[data-slot="studio-sidebar"] [data-slot="controller-group"]',
+				),
+			).map((group) => group.querySelector('span')?.textContent?.trim())
+
+		// 배경으로 옮겨 둔 뒤, 텍스트 위에서 **끌면** 그대로 배경이어야 한다.
+		clickCanvas(container.querySelector('[data-background-type]') as Element)
+		expect(titles()).toContain('Background')
+
+		const text = container.querySelector('[data-node-id="t1"]') as Element
+		fireEvent.pointerDown(text, { clientX: 10, clientY: 10 })
+		fireEvent.pointerUp(text, { clientX: 60, clientY: 40 })
+
+		expect(titles()).toContain('Background')
+		expect(titles()).not.toContain('Text')
 	})
 
 	it('묶음을 고르면 그 종류의 컨트롤이 함께 나온다', () => {

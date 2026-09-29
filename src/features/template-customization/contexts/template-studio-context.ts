@@ -102,6 +102,29 @@ export type TemplateFocusTarget = { sectionId: string } & (
 	| { kind: 'canvas' }
 )
 
+/**
+ * 텍스트 섹션의 식별자 — 텍스트는 상자가 여럿이어도 컨트롤 그룹이 하나다.
+ * 🔴 Figma 노드 id는 `82:11` 꼴이라 이 값과 겹치지 않는다.
+ */
+export const TEMPLATE_TEXT_SECTION_ID = 'section:text'
+export const TEMPLATE_BACKGROUND_SECTION_ID = 'section:background'
+
+/**
+ * 슬롯 하나를 집는 focus 대상 — **사이드바와 캔버스가 같은 규칙을 쓴다.**
+ * 🔴 두 입구가 각자 만들면 같은 슬롯을 집었는데 사이드바 면이 한쪽에서만 켜진다. 실제로
+ *    텍스트는 섹션이 하나(`section:text`)이고 이미지·CI는 슬롯마다 섹션이라 규칙이 갈린다.
+ */
+export function templateSlotFocusTarget(
+	kind: 'text' | 'image' | 'vector',
+	nodeId: string,
+): TemplateFocusTarget {
+	return {
+		sectionId: kind === 'text' ? TEMPLATE_TEXT_SECTION_ID : nodeId,
+		kind: 'nodes',
+		nodeIds: [nodeId],
+	}
+}
+
 export type TemplateStudioValue = {
 	navigation: {
 		/** 현재 템플릿이 속한 카테고리 이름 — 식별 카드의 부제다. 목록 없이도 알아야 해서 서버가 함께 내린다. */

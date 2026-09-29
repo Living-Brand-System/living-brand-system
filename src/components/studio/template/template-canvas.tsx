@@ -1,6 +1,15 @@
 'use client'
 
-import { type CSSProperties, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import {
+	type CSSProperties,
+	type PointerEvent as ReactPointerEvent,
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+} from 'react'
 import { ControllerBar } from '@/components/shared/controller'
 import { fitPreviewSize } from '@/components/studio/shared/fit-preview-size'
 import {
@@ -18,20 +27,30 @@ import {
 	type GraphicRuntime,
 	loadGraphicRuntimeAdapter,
 } from '@/features/graphic-generation/runtime/client/graphic-runtime.client'
+import {
+	TEMPLATE_BACKGROUND_SECTION_ID,
+	templateSlotFocusTarget,
+} from '@/features/template-customization/contexts/template-studio-context'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import {
 	type ControllerValues,
 	controllerRemountKey,
 } from '@/modules/studio-controller/controller-definition'
 
+/** 클릭으로 볼 만큼의 움직임 — 이보다 많이 끌었으면 그래픽 조작이지 선택이 아니다. */
+const CLICK_SLOP_PX = 4
+
 /**
  * 템플릿 스튜디오의 작업 공간(미리보기 캔버스) — 사이드바를 모른다.
  * 합성 결과와 미리보기 ref는 TemplateStudioProvider 컨텍스트로만 주고받는다.
  * 미리보기는 동일-문서 렌더(어드민 캔버스는 same-origin iframe) — opaque origin iframe은 벡터 mask의
  * CORS 로드를 깨뜨린다. 임포트 HTML은 스크립트 없는 inline-style이다.
+ *
+ * 🔑 **판을 클릭하면 거기 있는 것이 선택된다** — 레이어 패널과 같은 `select()`를 부르므로 우측
+ *    컨트롤과 판 하이라이트가 한 번에 따라온다. 입구가 둘이 됐을 뿐 상태는 그대로다.
  */
 export function TemplateCanvas() {
-	const { config, canvas, background, focus } = useTemplateStudio()
+	const { config, canvas, background, focus, layers } = useTemplateStudio()
 	const { width, height } = config.template.exportOption.canvas
 	const stageRef = useRef<HTMLDivElement>(null)
 	const [preview, setPreview] = useState({ width, height })
@@ -40,6 +59,77 @@ export function TemplateCanvas() {
 	const graphicConfig = config.template.graphicConfigs.find(
 		(candidate) => candidate.id === background.state.graphicConfigId,
 	)
+
+	/**
+	 * 판에서 클릭한 노드 → 그 노드가 속한 슬롯의 종류. 배경은 노드가 아니라 도화지라 여기 없다.
+	 */
+	const slotKindByNodeId = useMemo(
+		() =>
+			new Map(
+				config.template.slots.flatMap((slot) =>
+					slot.kind === 'background' ? [] : [[slot.id, slot.kind] as const],
+				),
+			),
+		[config.template.slots],
+	)
+
+	/**
+	 * 🔴 배경이 graphic이면 주입 HTML 전체가 `pointer-events:none`이다(그 밑의 셰이더를 끌 수 있게).
+	 *    그대로 두면 슬롯을 눌러도 이벤트가 셰이더로 새어 **무엇을 눌렀는지 알 수 없다.**
+	 *    슬롯 노드에만 되돌린다 — 빈 자리는 계속 셰이더가 받으므로 드래그가 산다.
+	 * 🔑 미리보기 DOM만 만진다. 내보내기는 `exportHtml()`이 문자열을 다시 합성하므로 산출물에
+	 *    흔적이 남지 않는다(focus가 「내보내는 HTML에 흔적을 남기지 않는다」는 계약 그대로).
+	 */
+	// biome-ignore lint/correctness/useExhaustiveDependencies: canvas.html은 읽는 값이 아니라 **다시 칠할 방아쇠**다 — 합성 결과가 갈리면 노드가 통째로 새로 생긴다
+	useLayoutEffect(() => {
+		const root = canvas.previewRef.current
+		if (!root) return
+		for (const node of root.querySelectorAll<HTMLElement>('[data-node-id]')) {
+			if (slotKindByNodeId.has(node.getAttribute('data-node-id') ?? '')) {
+				node.style.pointerEvents = 'auto'
+			}
+		}
+	}, [canvas.html, canvas.previewRef, slotKindByNodeId])
+
+	/**
+	 * 판을 눌렀을 때 **거기 있는 것**을 고른다 — 배경을 따로 가르지 않는다(사용자 지시, 2026-09-29).
+	 * 슬롯을 만나면 그 종류, 아무것도 안 만나고 루트까지 올라가면 그것이 곧 배경(도화지)이다.
+	 *
+	 * 🔴 캔버스에서는 **풀리지 않는다.** 레이어 패널은 재클릭이 해제지만, 판에서 글자를 두 번 눌렀는데
+	 *    컨트롤이 사라지면 조작이 죽은 것처럼 보인다.
+	 * 🔑 하이라이트는 **누른 것 하나만** 밝힌다(사용자 지시) — 선택은 종류 전체이되, 「내가 이걸
+	 *    눌렀다」가 판에서 보여야 하기 때문이다. 사이드바에서 한 행에 포커스를 줄 때와 같은 모양이다.
+	 */
+	const selectAt = useCallback(
+		(from: Element | null) => {
+			const root = canvas.previewRef.current
+			for (let node = from; node && node !== root; node = node.parentElement) {
+				const nodeId = node.getAttribute('data-node-id')
+				const kind = nodeId ? slotKindByNodeId.get(nodeId) : undefined
+				if (nodeId && kind) {
+					layers.select(kind)
+					focus.set(templateSlotFocusTarget(kind, nodeId))
+					return
+				}
+			}
+			layers.select('background')
+			focus.set({ sectionId: TEMPLATE_BACKGROUND_SECTION_ID, kind: 'canvas' })
+		},
+		[canvas.previewRef, focus.set, layers.select, slotKindByNodeId],
+	)
+
+	// 끌기와 클릭을 가른다 — 그래픽 핸들을 끌고 놓는 것이 선택으로 읽히면 안 된다.
+	const pressRef = useRef<{ x: number; y: number } | null>(null)
+	const onPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+		pressRef.current = { x: event.clientX, y: event.clientY }
+	}
+	const onPointerUp = (event: ReactPointerEvent<HTMLElement>) => {
+		const press = pressRef.current
+		pressRef.current = null
+		if (!press) return
+		const moved = Math.hypot(event.clientX - press.x, event.clientY - press.y)
+		if (moved <= CLICK_SLOP_PX) selectAt(event.target as Element | null)
+	}
 
 	const target = focus.target
 	const [highlights, setHighlights] = useState<readonly SlotHighlightBox[]>([])
@@ -103,8 +193,12 @@ export function TemplateCanvas() {
 					} as CSSProperties
 				}
 			>
+				{/* 🔑 클릭은 **여기서** 받는다 — 주입 HTML과 그래픽 배경을 함께 담은 유일한 상자라,
+				    둘 중 무엇을 눌렀든 같은 자리로 올라온다. */}
 				<div
 					className="relative"
+					onPointerDown={onPointerDown}
+					onPointerUp={onPointerUp}
 					style={{
 						width,
 						height,

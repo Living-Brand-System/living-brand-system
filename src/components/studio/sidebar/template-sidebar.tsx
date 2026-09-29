@@ -33,7 +33,10 @@ import {
 import type { TemplateExportView } from '@/features/studio-export/hooks/use-template-export'
 import { formatMillimeters } from '@/features/studio-export/print-policy'
 import { usePublishedBrandColorValues } from '@/features/template-core/hooks/use-published-brand-color-values'
-import type { TemplateFocusTarget } from '@/features/template-customization/contexts/template-studio-context'
+import {
+	TEMPLATE_TEXT_SECTION_ID,
+	type TemplateFocusTarget,
+} from '@/features/template-customization/contexts/template-studio-context'
 import {
 	findTemplateControl,
 	findTemplateControlGroup,
@@ -44,12 +47,6 @@ import { useTemplateStudio } from '@/features/template-customization/hooks/use-t
 const FORMAT_LABELS = new Map(
 	STUDIO_OUTPUT_FORMAT_OPTIONS.map(({ label, value }) => [value, label]),
 )
-
-/**
- * 노드에서 오지 않는 섹션의 식별자. 🔴 Figma 노드 id는 `82:11` 꼴이라 이 값과 겹치지 않는다.
- * 배경은 노드가 아니라 도화지를 집으므로 `kind: 'canvas'`다.
- */
-const TEXT_SECTION_ID = 'section:text'
 
 /**
  * 템플릿 스튜디오의 사이드바(컨트롤러 패널) — 캔버스를 모른다.
@@ -104,7 +101,7 @@ export function TemplateSidebar({ exporting }: { exporting: TemplateExportView }
 							<ControllerGroupRenderer
 								definition={textGroup}
 								section={sectionProps(focus, {
-									sectionId: TEXT_SECTION_ID,
+									sectionId: TEMPLATE_TEXT_SECTION_ID,
 									kind: 'nodes',
 									// 섹션 헤더를 누르면 이 섹션이 다루는 텍스트 상자를 **전부** 집는다.
 									nodeIds: textSlots.map((slot) => slot.id),
@@ -121,7 +118,7 @@ export function TemplateSidebar({ exporting }: { exporting: TemplateExportView }
 											key={slot.id}
 											className="flex flex-col gap-1"
 											{...rowFocusProps(focus, {
-												sectionId: TEXT_SECTION_ID,
+												sectionId: TEMPLATE_TEXT_SECTION_ID,
 												kind: 'nodes',
 												nodeIds: [slot.id],
 											})}
