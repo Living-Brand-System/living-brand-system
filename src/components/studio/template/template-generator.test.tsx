@@ -376,6 +376,13 @@ function layerGroupRow(kind: LayerKind) {
 	return row
 }
 
+/** 하위 레이어 줄 — 묶음 줄과 같은 슬롯이지만 `data-layer-member`가 붙어 있다. */
+function layerMemberRow(memberId: string) {
+	const row = document.querySelector(`[data-slot="layer-row"][data-layer-member="${memberId}"]`)
+	if (!row) throw new Error(`레이어 줄을 찾지 못했습니다: ${memberId}`)
+	return row
+}
+
 /**
  * 그 묶음이 **골라진 상태로 만든다.** 🔴 무조건 누르면 안 된다 — 첫 묶음은 처음부터 골라져 있어
  * (사용자 지시, 2026-09-29) 한 번 더 누르면 오히려 풀린다.
@@ -866,7 +873,7 @@ describe('TemplateGenerator', () => {
 	 * 🔴 묶음 순서는 고정이고 배경이 마지막이다. 묶음은 겹침에서 한 자리를 갖지 않으므로(텍스트와
 	 * 이미지가 z에서 엇갈린다) 겹침 순서로 정렬할 수 없다 — 대신 모든 템플릿에서 목록이 같다.
 	 */
-	it('레이어 목록은 묶음만 보여 준다 — 하위 이름은 적지 않는다', () => {
+	it('레이어 목록은 묶음과 하위를 모두 보여 주고, 둘 다 누를 수 있다', () => {
 		const { container } = render(
 			<TemplateGenerator
 				categoryTitle="카드"
@@ -889,15 +896,19 @@ describe('TemplateGenerator', () => {
 		const textOf = (selector: string) =>
 			Array.from(panel.querySelectorAll(selector), (element) => element.textContent)
 
-		// 🔴 고를 수 있는 것은 **묶음뿐**이고, 목록에 있는 것도 묶음뿐이다(사용자 지시, 2026-09-29).
-		//    개수는 여럿일 때만 붙는다(Text만).
-		expect(textOf('[data-slot="layer-row"]')).toEqual(['Text3', 'Image', 'Background'])
-		// 하위 레이어 이름은 패널에 나오지 않는다 — 무엇이 들어 있는지는 우측 컨트롤이 말한다.
-		expect(panel.textContent).not.toContain('Title')
-		expect(panel.textContent).not.toContain('Slogan')
+		// 🔴 묶음과 하위가 **둘 다** 버튼이다(사용자 지시, 2026-09-29). 개수는 여럿일 때만 붙는다.
+		expect(textOf('[data-slot="layer-row"]')).toEqual([
+			'Text3',
+			'Title',
+			'Years',
+			'Slogan',
+			'Image',
+			'배경',
+			'Background',
+		])
 	})
 
-	it('🔴 패널에는 묶음만 있다 — 텍스트 상자 하나를 고르는 길이 없다', () => {
+	it('🔴 하위를 눌러도 고른 것은 묶음이고, 집히는 것은 그 레이어다', () => {
 		const { container } = render(
 			<TemplateGenerator
 				categoryTitle="카드"
@@ -911,12 +922,48 @@ describe('TemplateGenerator', () => {
 				}}
 			/>,
 		)
-		const panel = container.querySelector('[data-slot="studio-left-panel"]') as HTMLElement
+		const titles = () =>
+			Array.from(
+				container.querySelectorAll(
+					'[data-slot="studio-sidebar"] [data-slot="controller-group"]',
+				),
+			).map((group) => group.querySelector('span')?.textContent?.trim())
 
-		// 「텍스트 상자 하나만 고른 상태」를 만들 길이 패널에 없다.
-		expect(panel.querySelector('button[data-slot="layer-row"]')?.textContent).toBe('Text2')
-		expect(panel.textContent).not.toContain('Title')
-		expect(panel.textContent).not.toContain('Years')
+		fireEvent.click(layerMemberRow('t2'))
+
+		// 고른 것은 묶음 전체다 — 우측에는 텍스트 컨트롤이 통째로 나온다.
+		expect(titles()).toContain('Text')
+		// 집힌 것은 누른 그 레이어다 — 커서도 그 입력칸으로 간다.
+		expect(layerMemberRow('t2').getAttribute('aria-pressed')).toBe('true')
+		expect(layerMemberRow('t1').getAttribute('aria-pressed')).toBe('false')
+		expect(document.activeElement).toBe(
+			container.querySelector('[data-text-slot="t2"]')?.querySelector('input, textarea'),
+		)
+	})
+
+	// 🔑 묶음을 누르면 그 안의 첫 레이어를 알아서 집는다(사용자 지시) — 고른 뒤 만질 것이 정해져 있어야 한다.
+	it('묶음을 누르면 첫 레이어를 알아서 집는다', () => {
+		const { container } = render(
+			<TemplateGenerator
+				categoryTitle="카드"
+				template={{
+					...template,
+					html: '<p data-node-id="t1">TITLE</p><p data-node-id="t2">YEARS</p>',
+					nodeConfigs: {
+						t1: { input: { label: 'Title' } },
+						t2: { input: { label: 'Years' } },
+					},
+				}}
+			/>,
+		)
+
+		fireEvent.click(layerMemberRow('t2'))
+		fireEvent.click(layerGroupRow('text'))
+
+		expect(layerMemberRow('t1').getAttribute('aria-pressed')).toBe('true')
+		expect(document.activeElement).toBe(
+			container.querySelector('[data-text-slot="t1"]')?.querySelector('input, textarea'),
+		)
 	})
 
 	/**
@@ -1230,10 +1277,7 @@ describe('TemplateGenerator', () => {
 
 		// 🔴 첫 묶음은 처음부터 골라져 있다(사용자 지시, 2026-09-29) — 들어오자마자 만질 것이 보인다.
 		expect(titles()).toContain('Text')
-		// 풀면 컨트롤이 사라지고 레이어 목록만 남는다.
-		fireEvent.click(layerGroupRow('text'))
 		expect(titles()).toContain('Layers')
-		expect(titles()).not.toContain('Text')
 
 		// Text 묶음을 고르면 텍스트 슬롯이 **함께** 나온다 — 선택 단위가 묶음이라서다.
 		// 🔴 캔버스가 같은 컨테이너에 있어 판의 글자까지 잡힌다 — 사이드바로 좁혀서 본다.
@@ -1251,9 +1295,9 @@ describe('TemplateGenerator', () => {
 		expect(titles()).toContain('Text')
 		expect(sidebar()).toContain('YEARS 2')
 
-		// 같은 묶음을 다시 누르면 선택이 풀리고 컨트롤도 사라진다.
+		// 🔴 다시 눌러도 풀리지 않는다 — 판과 같은 규칙이다(사용자 지시, 2026-09-29).
 		fireEvent.click(layerGroupRow('text'))
-		expect(titles()).not.toContain('Text')
+		expect(titles()).toContain('Text')
 	})
 
 	it('묶음을 고르면 그 섹션이 곧바로 활성화된다 — Text는 슬롯 여럿, Background는 노드 없음', () => {
