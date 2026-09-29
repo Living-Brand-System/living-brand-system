@@ -16,17 +16,12 @@ import { useLogout } from '@/features/auth/hooks/use-logout'
 import { useSession } from '@/features/auth/hooks/use-session'
 import type { GetGuidelineNavigationOutput } from '@/features/guideline/services/get-guideline-navigation.service'
 import { routes } from '@/lib/routes'
+import { type StudioNavKey, studioNavItems } from '../studio-nav'
 
 type GuidelineSearchChapter = GetGuidelineNavigationOutput['chapters'][number]
 
-type NavigationHeaderUpdateKey =
-	| 'assets'
-	| 'graph'
-	| 'graphic'
-	| 'guideline'
-	| 'image'
-	| 'review'
-	| 'template'
+// 🔴 스튜디오 쪽 키는 내비게이션 정본에서 파생한다 — 손으로 적으면 스튜디오가 늘 때 갈린다.
+type NavigationHeaderUpdateKey = StudioNavKey | 'guideline'
 
 type NavigationHeaderUpdates = Partial<Record<NavigationHeaderUpdateKey, boolean>>
 
@@ -109,46 +104,15 @@ export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderPr
 		href: routes.guideline,
 		label: 'Guideline',
 	} as const
-	const studioCreationItems = [
-		{
-			current: isCurrentPath(pathname, routes.studio.template),
-			hasUpdate: updates.template,
-			href: routes.studio.template,
-			label: 'Template',
-		},
-		{
-			current: isCurrentPath(pathname, routes.studio.image),
-			hasUpdate: updates.image,
-			href: routes.studio.image,
-			label: 'Image',
-		},
-		{
-			current: isCurrentPath(pathname, routes.studio.graphic),
-			hasUpdate: updates.graphic,
-			href: routes.studio.graphic,
-			label: 'Graphic',
-		},
-		{
-			current: isCurrentPath(pathname, routes.studio.graph),
-			hasUpdate: updates.graph,
-			href: routes.studio.graph,
-			label: 'Graph',
-		},
-	] as const
-	const studioSettingItems = [
-		{
-			current: isCurrentPath(pathname, routes.studio.review),
-			hasUpdate: updates.review,
-			href: routes.studio.review,
-			label: 'Review',
-		},
-		{
-			current: isCurrentPath(pathname, routes.studio.assets),
-			hasUpdate: updates.assets,
-			href: routes.studio.assets,
-			label: 'Assets',
-		},
-	] as const
+	// 목록은 `studio-nav`가 소유한다 — 여기서는 지금 화면과 갱신 표시만 얹는다.
+	const toHeaderItem = (item: ReturnType<typeof studioNavItems>[number]) => ({
+		current: isCurrentPath(pathname, item.href),
+		hasUpdate: updates[item.key],
+		href: item.href,
+		label: item.label,
+	})
+	const studioCreationItems = studioNavItems('creation').map(toHeaderItem)
+	const studioSettingItems = studioNavItems('setting').map(toHeaderItem)
 	// 🔴 데스크톱과 컴팩트가 같은 것을 두 번 그린다 — 한 자리로 묶어 한쪽만 고쳐지는 일을 막는다.
 	// 세션은 서버가 아니라 브라우저가 묻는다 — 루트 레이아웃이 세션을 읽으면 `/`와 `/guideline`의
 	// 정적 렌더가 깨지기 때문이다(docs/05). 모르는 동안(`unknown`)은 아무것도 그리지 않는다.

@@ -32,6 +32,7 @@ import {
 } from '@/features/studio-export/export-contract'
 import type { TemplateExportView } from '@/features/studio-export/hooks/use-template-export'
 import { formatMillimeters } from '@/features/studio-export/print-policy'
+import { usePublishedBrandColorValues } from '@/features/template-core/hooks/use-published-brand-color-values'
 import type { TemplateFocusTarget } from '@/features/template-customization/contexts/template-studio-context'
 import {
 	findTemplateControl,
@@ -57,6 +58,11 @@ const TEXT_SECTION_ID = 'section:text'
  */
 export function TemplateSidebar({ exporting }: { exporting: TemplateExportView }) {
 	const { config, text, images, vectors, layers, focus } = useTemplateStudio()
+	/**
+	 * 벡터 색은 창작자가 정하는 값이 아니라 **브랜드가 선언한 팔레트에서 고르는 값**이다
+	 * (사용자 지시, 2026-09-29). admin 편집기와 같은 목록을 본다.
+	 */
+	const { values: brandColorValues } = usePublishedBrandColorValues()
 	// 🔑 배경도 여기다 — 레이어 패널의 한 줄이므로 컨트롤도 다른 레이어와 같은 자리에 온다.
 	const { text: textSlots, image: imageSlots } = partitionTemplateSlots(config.template.slots)
 	/**
@@ -249,11 +255,18 @@ export function TemplateSidebar({ exporting }: { exporting: TemplateExportView }
 										allowToggle={slot.visibility.allowToggle}
 										onChange={(visible) => layers.setVisible(slot.id, visible)}
 									/>
+									{/* 🔴 팔레트가 아직·끝내 비어 있으면 잠근다. 빈 목록은 「제한 없음」이
+									    아니라 「도메인을 모른다」이고, 열어 두면 네이티브 피커가 정본 밖
+									    색을 통과시킨다. */}
 									<Controller.ColorRow
 										label="Color"
 										value={color ?? '#000000'}
 										isEmpty={!color}
-										disabled={slot.access === 'readonly'}
+										values={brandColorValues}
+										disabled={
+											slot.access === 'readonly' ||
+											brandColorValues.length === 0
+										}
 										onChange={(next) => vectors.setColor(slot.id, next)}
 									/>
 								</Controller.Group>

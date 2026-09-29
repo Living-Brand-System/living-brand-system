@@ -1,9 +1,7 @@
-import { notFound } from 'next/navigation'
-import { GraphicGenerator } from '@/components/studio/graphic/graphic-generator'
-import { StudioWorkspacePage } from '@/components/studio/shared/studio-workspace'
+import { notFound, redirect } from 'next/navigation'
 import { listGraphStudioConfigs } from '@/features/graph-generation/services/list-graph-studio-configs.service'
 import { requireUser } from '@/lib/request-auth'
-import { routes } from '@/lib/routes'
+import { getStudioGraphRoute, routes } from '@/lib/routes'
 
 // 렌더링: 매 요청. 권한과 발행된 프로파일을 읽으므로 캐시하지 않는다(docs/05 「렌더링 캐시 무효화」).
 export const dynamic = 'force-dynamic'
@@ -17,14 +15,6 @@ export default async function GenerateGraphPage() {
 	const [config] = await listGraphStudioConfigs(user)
 	if (!config) notFound()
 
-	return (
-		<StudioWorkspacePage
-			title="인포그래픽 생성"
-			description="인포그래픽 표현을 고르고 결과를 미리 봅니다."
-			hideHeading
-		>
-			{/* 프로파일이 하나뿐이라 교체 카드를 세우지 않는다. */}
-			<GraphicGenerator config={config} profileSwitching={false} />
-		</StudioWorkspacePage>
-	)
+	// 근거는 `/studio/graphic`의 같은 자리에 적혀 있다.
+	redirect(getStudioGraphRoute(config.id))
 }

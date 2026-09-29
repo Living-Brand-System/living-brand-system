@@ -402,12 +402,11 @@ describe('BackgroundSection', () => {
 		render(<Harness allowedTypes={['color', 'image', 'graphic']} />)
 
 		await selectBackgroundType(user, 'Image')
-		// Preset(샘플 이미지 목록)은 배선됐고, 배경 transform은 계속 잠긴다.
+		// Preset(샘플 이미지 목록)은 배선됐고, 배경 transform은 아예 없다.
 		const browse = screen.getByRole('button', { name: '샘플 이미지 선택' })
 		expect(browse).toHaveTextContent('Browse')
 		expect(browse).toBeEnabled()
-		expect(screen.getByRole('button', { name: 'Image Transform' })).toBeDisabled()
-		expect(screen.queryByRole('slider', { name: '이미지 위치' })).toBeNull()
+		expect(screen.queryByRole('button', { name: 'Image Transform' })).toBeNull()
 
 		// Generate 탭의 두 색 행은 생성 이미지 colorize 파라미터 — 캔버스 경로가 따로 필요하다.
 		await openGenerateTab(user)

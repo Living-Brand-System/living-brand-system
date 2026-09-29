@@ -21,7 +21,6 @@ import { useTemplateStudio } from '@/features/template-customization/hooks/use-t
 export function TemplateBackgroundPanel() {
 	const { config, background, focus } = useTemplateStudio()
 	const { background: slot } = partitionTemplateSlots(config.template.slots)
-	const { canvas } = config.template.exportOption
 
 	const typeControl = slot ? findTemplateControl(config, slot.typeControlId) : undefined
 	const colorControl = slot ? findTemplateControl(config, slot.colorControlId) : undefined
@@ -46,9 +45,6 @@ export function TemplateBackgroundPanel() {
 			dimmerDefinition={dimmerControl?.kind === 'toggle' ? dimmerControl : undefined}
 			dimmerOpacityDefinition={
 				dimmerOpacityControl?.kind === 'range' ? dimmerOpacityControl : undefined
-			}
-			canvasAspectRatio={
-				canvas.width && canvas.height ? canvas.width / canvas.height : undefined
 			}
 			imageContracts={background.contracts}
 			featureBindings={background.featureBindings}

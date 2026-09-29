@@ -146,18 +146,18 @@ describe('선 색은 면보다 밝다', () => {
 })
 
 describe('createKeyVisualFormationVectorArtifact', () => {
-	it('이미지와 디머가 선보다 아래에 깔린다', () => {
+	it('면 이미지가 선보다 아래에 깔린다', () => {
 		const artifact = createKeyVisualFormationVectorArtifact(
-			scene({ planeImage: 'https://example.test/a.png', dimmer: true, dimmerOpacity: 0.4 }),
+			scene({ planeImage: 'https://example.test/a.png' }),
 		)
 		const kinds = artifact.source.primitives.map((primitive) => primitive.kind)
 		expect(kinds[0]).toBe('image')
-		expect(artifact.source.primitives[1]).toMatchObject({ fill: '#000000', opacity: 0.4 })
-		expect(kinds).toHaveLength(2 + KEY_VISUAL_FORMATION_DEFAULT_INPUT.steps)
+		expect(kinds).toHaveLength(1 + KEY_VISUAL_FORMATION_DEFAULT_INPUT.steps)
 	})
 
-	it('디머가 꺼져 있으면 덮개를 만들지 않는다', () => {
-		const artifact = createKeyVisualFormationVectorArtifact(scene({ dimmer: false }))
+	// 디머는 /template 전용이다 — 이 런타임에는 덮개를 만드는 경로가 없다(QA A5, 2026-09-29).
+	it('면 이미지가 없으면 선 말고 아무것도 깔지 않는다', () => {
+		const artifact = createKeyVisualFormationVectorArtifact(scene())
 		expect(artifact.source.primitives).toHaveLength(KEY_VISUAL_FORMATION_DEFAULT_INPUT.steps)
 	})
 })
