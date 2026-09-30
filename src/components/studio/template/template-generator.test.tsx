@@ -573,12 +573,14 @@ describe('TemplateGenerator', () => {
 			)
 		})
 
-		/*
-		 * 🔴 1000×600을 꽉 채우지 않는다 — 판 둘레에 테두리가 나갈 자리(사방 4px)를 남기고 맞춘다.
-		 *    992×592에 400×300을 맞추면 세로가 먼저 차서 배율 1.9733, 789×592가 된다.
-		 */
 		const preview = container.querySelector<HTMLElement>('[data-slot="template-preview"]')
-		expect(preview).toHaveStyle({ width: '789px', height: '592px' })
+		// 잰 값은 **안쪽 상자**다 — 400×300을 1000×600에 맞추면 세로가 먼저 차서 배율 2가 된다.
+		expect(preview).toHaveStyle({ width: '800px', height: '600px' })
+		/*
+		 * 🔴 강조선이 나갈 자리는 판을 줄여서가 아니라 무대의 여백으로 만든다 — 줄이는 쪽으로 하면
+		 *    가운데 정렬이 남는 자리를 반씩 나누는데, 아래는 바 예약 덕에 남아돌고 위만 빠듯해진다.
+		 */
+		expect(preview?.parentElement?.className).toContain('p-1')
 	})
 
 	it('아이덴티티 카드의 Change로 연 자산 브라우저에서 고른 템플릿 작업대로 이동한다', async () => {
@@ -1393,7 +1395,7 @@ describe('TemplateGenerator', () => {
 		 * 캔버스 상자에서 **테두리 굵기만큼 밖으로** 넓힌 크기다 — 잴 것이 없고(노드가 아니므로
 		 * getBoundingClientRect를 안 쓴다) 도화지 자신의 테두리는 판 밖에 그려진다.
 		 */
-		const line = 'max(1px, calc(2 * calc(1px / (1 * var(--preview-scale, 1)))))'
+		const line = 'max(1px, calc(1px / (1 * var(--preview-scale, 1))))'
 		expect(overlays[0].style.width).toBe(`calc(400px + 2 * ${line})`)
 		expect(overlays[0].style.left).toBe(`calc(0px - ${line})`)
 		/*

@@ -19,7 +19,6 @@ import {
 import {
 	clampSlotBox,
 	outsetSlotBox,
-	SELECTION_OUTSET_PX,
 	type SlotHighlightBox,
 	slotHighlightStyle,
 	slotHoverStyle,
@@ -214,34 +213,33 @@ export function TemplateCanvas() {
 	useEffect(() => {
 		const stage = stageRef.current
 		if (!stage) return
-		const resize = (bounds: { width: number; height: number }) => {
-			if (bounds.width > 0 && bounds.height > 0) {
-				// 🔴 판 둘레에 테두리가 나갈 자리를 남긴다 — 남기지 않으면 무대의 overflow:hidden이
-				//    도화지와 변에 달라붙은 슬롯의 강조선을 잘라 먹는다.
-				setPreview(
-					fitPreviewSize(
-						{
-							width: Math.max(1, bounds.width - SELECTION_OUTSET_PX * 2),
-							height: Math.max(1, bounds.height - SELECTION_OUTSET_PX * 2),
-						},
-						{ width, height },
-					),
-				)
-			}
-		}
+		/*
+		 * 🔴 **`contentRect`(안쪽 상자)로만 잰다.** 무대는 테두리가 나갈 자리를 padding으로 두는데
+		 *    `clientHeight`는 그 padding을 포함해서 돌려준다 — 그 값으로 맞추면 판이 여백만큼
+		 *    커져 강조선이 갈 자리가 도로 없어진다(하단 예약 `pb-28`도 같은 이유로 새어 들어왔다).
+		 * 🔑 `observe()`가 첫 콜백을 그리기 전에 한 번 주므로 처음 값도 여기서 온다.
+		 */
 		const observer = new ResizeObserver(([entry]) => {
-			if (entry) resize(entry.contentRect)
+			const bounds = entry?.contentRect
+			if (bounds && bounds.width > 0 && bounds.height > 0) {
+				setPreview(fitPreviewSize(bounds, { width, height }))
+			}
 		})
-		resize({ width: stage.clientWidth, height: stage.clientHeight })
 		observer.observe(stage)
 		return () => observer.disconnect()
 	}, [height, width])
 
 	return (
-		// 🔴 하단 예약의 근거는 graphic-canvas.tsx와 같다 — 떠 있는 바가 프리뷰를 덮지 않게.
+		/*
+		 * 🔴 하단 예약(`pb-28`)의 근거는 graphic-canvas.tsx와 같다 — 떠 있는 바가 프리뷰를 덮지 않게.
+		 * 🔴 사방의 `p-1`은 **강조선이 나갈 자리**다. `overflow:hidden`은 padding 상자에서 자르므로
+		 *    판을 안쪽 상자에 맞추면 그 여백이 고스란히 선의 몫으로 남는다. 판을 줄여서 여백을
+		 *    만들면 안 된다 — 가운데 정렬이 남는 자리를 반씩 나눠 주다 보니 아래는 `pb-28` 덕에
+		 *    남아돌고 **위만 1px로 빠듯해져 도화지를 고를 때 윗변이 잘렸다**(2026-09-30 실측).
+		 */
 		<div
 			ref={stageRef}
-			className="relative grid h-full min-h-0 min-w-0 overflow-hidden lg:pb-28"
+			className="relative grid h-full min-h-0 min-w-0 overflow-hidden p-1 lg:pb-28"
 		>
 			{/* 🔴 여기서 자르지 않는다 — 강조선이 판 **밖**에 그려지므로, 자르는 일은 안쪽
 			    클릭 상자가 맡는다(주입 HTML과 그래픽 배경만 가둔다). */}

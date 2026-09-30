@@ -93,8 +93,9 @@ describe('slotHighlightStyle', () => {
 	})
 
 	it('총배율의 두 번째 몫(--preview-scale)을 CSS에 남긴다 — 한쪽만 보정하면 선이 절반이 된다', () => {
+		// 화면에서 1px로 보이도록 총배율로 나눈다 — 판을 줄일수록 캔버스 px로는 굵어진다.
 		expect(slotHighlightStyle(0.5, HD_GREEN).border).toBe(
-			'max(1px, calc(2 * calc(1px / (0.5 * var(--preview-scale, 1))))) solid #00AF41',
+			'max(1px, calc(1px / (0.5 * var(--preview-scale, 1)))) solid #00AF41',
 		)
 	})
 

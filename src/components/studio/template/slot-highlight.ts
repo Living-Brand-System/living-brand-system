@@ -82,19 +82,16 @@ function cssColor(color: string | null | undefined): string {
 function borderWidth(scale: number): string {
 	// scale이 0이나 음수로 오는 순간(측정 전 첫 프레임) 배율이 무의미해진다 — 1로 떨어뜨린다.
 	const fit = scale > 0 ? scale : 1
-	const unit = `calc(1px / (${fit} * var(--preview-scale, 1)))`
-	// 총배율이 2를 넘는 확대(작은 캔버스를 키워 맞춘 경우)에서도 선이 1px 아래로 내려가지 않게.
-	return `max(1px, calc(2 * ${unit}))`
+	/*
+	 * 🔑 **화면 1px짜리 실선이다**(사용자 판단, 2026-09-30). 전에는 2px이었는데, 그때는 테두리를
+	 *    상자 **안쪽**에 그려 대상 위에 얹히다 보니 굵어야 보였다. 밖으로 나온 뒤로는 빈 바탕에
+	 *    놓이므로 1px로 충분하고, 편집기(Figma·Illustrator)의 선택 윤곽선도 1px이다.
+	 * 🔴 캔버스 px로 1px 아래로는 내려가지 않게 막는다 — 1px 미만 `border-width`는 브라우저가
+	 *    0으로 반올림해 선이 통째로 사라질 수 있다. 판을 키워 맞춘 경우(총배율 > 1)만 걸리고,
+	 *    그때는 화면에서 총배율만큼 두꺼워진다.
+	 */
+	return `max(1px, calc(1px / (${fit} * var(--preview-scale, 1))))`
 }
-
-/**
- * 무대가 판 둘레에 남겨야 하는 여백(화면 px). 🔴 **테두리가 판 밖에 그려지기 때문이다** —
- * 도화지 자신과 변에 달라붙은 슬롯은 테두리가 통째로 판 밖으로 나가고, 여유가 없으면 잘린다
- * (사용자 판단, 2026-09-30: 「canvas에 약간의 여유를 줘서 border가 튀어나올 수 있게」).
- * 🔑 보통 테두리는 화면 2px이고, 작은 판을 키워 맞춘 경우에만 총배율만큼 두꺼워진다 —
- *    4px이면 총배율 4배까지 덮는다. 더 키우면 바깥쪽 1~2px이 잘리지만 선은 남는다.
- */
-export const SELECTION_OUTSET_PX = 4
 
 /**
  * 상자를 테두리 굵기만큼 **밖으로** 넓힌다(사용자 지시, 2026-09-30).
