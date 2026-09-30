@@ -11,70 +11,43 @@ vi.mock('@/features/guideline/services/get-guideline-metadata.service', () => ({
 }))
 
 vi.mock('@/features/guideline/repositories/guideline-view.payload.repository', () => ({
-	listPublishedGuidelineNavigationDocuments: vi.fn().mockResolvedValue([
+	listGuidelineChapters: vi
+		.fn()
+		.mockResolvedValue([{ id: 1, title: 'Basics', slug: 'basics', displayOrder: 0 }]),
+	listPublishedGuidelineNavigationTopics: vi.fn().mockResolvedValue([
 		{
-			id: 1,
-			title: 'Basics',
-			slug: 'basics',
+			chapterId: 1,
 			description: null,
-			parentId: null,
-			href: '/guideline/basics',
-		},
-		{
 			id: 10,
-			title: 'Logo',
+			sections: [
+				{ anchor: 'primary-logo', title: 'Primary Logo' },
+				{ anchor: 'clear-space', title: 'Clear Space' },
+			],
 			slug: 'logo',
-			description: null,
-			parentId: 1,
-			href: '/guideline/basics/logo',
+			title: 'Logo',
 		},
 		{
+			chapterId: 1,
+			description: null,
 			id: 11,
-			title: 'The Name',
+			sections: [{ anchor: 'the-name', title: 'The Name' }],
 			slug: 'the-name',
-			description: null,
-			parentId: 1,
-			href: '/guideline/basics/the-name',
-		},
-		{
-			id: 100,
-			title: 'Primary Logo',
-			slug: 'primary-logo',
-			description: null,
-			parentId: 10,
-			href: null,
-		},
-		{
-			id: 101,
-			title: 'Clear Space',
-			slug: 'clear-space',
-			description: null,
-			parentId: 10,
-			href: null,
-		},
-		{
-			id: 102,
 			title: 'The Name',
-			slug: 'the-name',
-			description: null,
-			parentId: 11,
-			href: null,
 		},
 	]),
 }))
 
 describe('getGuidelineNavigation', () => {
-	it('builds chapter, section, and page navigation', async () => {
+	it('builds chapter, topic, and section navigation', async () => {
 		await expect(getGuidelineNavigation()).resolves.toMatchObject({
 			chapters: [
 				{
 					title: 'Basics',
-					href: '/guideline/basics',
-					sections: [
+					topics: [
 						{
 							title: 'Logo',
 							href: '/guideline/basics/logo',
-							pages: [
+							sections: [
 								{
 									title: 'Primary Logo',
 									href: '/guideline/basics/logo#primary-logo',
@@ -88,7 +61,7 @@ describe('getGuidelineNavigation', () => {
 						{
 							title: 'The Name',
 							href: '/guideline/basics/the-name',
-							pages: [
+							sections: [
 								{
 									title: 'The Name',
 									href: '/guideline/basics/the-name#the-name',

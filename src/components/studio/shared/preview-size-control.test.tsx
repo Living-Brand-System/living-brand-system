@@ -8,15 +8,17 @@ it('프리뷰 크기를 25~100% 범위의 키보드 접근 가능한 값으로 �
 	render(<PreviewSizeControl value={DEFAULT_PREVIEW_SIZE} onChange={onChange} />)
 	const slider = screen.getByRole('slider', { name: 'Preview Size' })
 
-	expect(slider).toHaveAttribute('aria-valuenow', '50')
+	// 기본값이 상한이다 — 100%는 「스테이지 꽉 채움」이고 창작자는 줄이는 쪽으로만 움직인다.
+	expect(slider).toHaveAttribute('aria-valuenow', '100')
 	expect(slider).toHaveAttribute('aria-valuemin', '25')
 	expect(slider).toHaveAttribute('aria-valuemax', '100')
-	expect(slider).toHaveAttribute('aria-valuetext', '50%')
+	expect(slider).toHaveAttribute('aria-valuetext', '100%')
 
+	// 🔴 상한에서 오른쪽 키는 값을 넘기지 않고 그 자리에 붙는다(클램프).
 	fireEvent.keyDown(slider, { key: 'ArrowRight' })
-	expect(onChange).toHaveBeenCalledWith(55)
+	expect(onChange).toHaveBeenCalledWith(100)
 	fireEvent.keyDown(slider, { key: 'ArrowLeft' })
-	expect(onChange).toHaveBeenCalledWith(45)
+	expect(onChange).toHaveBeenCalledWith(95)
 })
 
 it('트랙은 킷의 Value Range 프리미티브가 그린다', () => {

@@ -9,9 +9,10 @@ import {
 	findLatestAgentChatSessionMessagesContainingAny,
 	saveAgentChatSessionRecord,
 } from '@/features/agent-chat/repositories/agent-chat-session.payload.repository'
-import type { AgentChatSessionMessageInput } from '@/features/agent-chat/types'
+import type { AgentChatAiUsage, AgentChatSessionMessageInput } from '@/features/agent-chat/types'
 import { getAgentMessageText } from '@/features/agent-chat/utils/derive-agent-message'
 import type { AgentChatMessage } from '@/modules/agents/agent-chat.agent'
+import { recordAiUsage } from '@/modules/ai-usage/repositories/ai-usage.payload.repository'
 import type { User } from '@/payload-types'
 
 export interface StartAgentChatSessionInput {
@@ -90,8 +91,9 @@ export async function startAgentChatSession(input: StartAgentChatSessionInput) {
 	const persistTerminal = async () => {
 		if (terminalPersisted) return
 		terminalSavePromise ??= saveTerminalWithRetry(record.id, toUpdateData(), input.user).then(
-			() => {
+			async () => {
 				terminalPersisted = true
+				await recordTurnAiUsage(usage.snapshot().aiUsage, input.user, record.id)
 			},
 		)
 		try {
@@ -127,6 +129,33 @@ export async function startAgentChatSession(input: StartAgentChatSessionInput) {
 			usage.addStep(step)
 		},
 	}
+}
+
+/**
+ * 한 턴이 쓴 토큰을 계정별 집계에 남긴다. 종결 저장 뒤 1회만 부른다.
+ *
+ * ponytail: 한 턴 = 한 행이다. 수집기가 토큰을 모델별로 나누지 않고 모델 이름만 이어 붙이므로,
+ * 한 턴이 모델을 둘 쓰면 그 행의 model은 "a, b"가 된다(스킬이 자기 모델을 지정하는 경우).
+ * 모델별 단가 분석이 필요해지면 수집기가 모델을 키로 토큰을 나누게 고친다.
+ */
+async function recordTurnAiUsage(
+	aiUsage: AgentChatAiUsage | undefined,
+	user: User,
+	agentChatSessionId: number,
+): Promise<void> {
+	if (!aiUsage?.model) return
+	await recordAiUsage({
+		createdBy: user.id,
+		feature: 'agent-chat',
+		model: aiUsage.model,
+		inputTokens: aiUsage.inputTokens,
+		outputTokens: aiUsage.outputTokens,
+		totalTokens: aiUsage.totalTokens,
+		cacheReadInputTokens: aiUsage.cacheReadInputTokens,
+		cacheWriteInputTokens: aiUsage.cacheWriteInputTokens,
+		reasoningTokens: aiUsage.reasoningTokens,
+		source: { relationTo: 'agent-chat-sessions', value: agentChatSessionId },
+	})
 }
 
 async function saveTerminalWithRetry(

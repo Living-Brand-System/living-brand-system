@@ -72,14 +72,9 @@ const user = (req: PayloadRequest) => {
 export const customMcpTools = [
 	mcpTextTool(
 		'findGuidelineDocuments',
-		'Find published guideline documents with localized content, hierarchy, blocks, and applied rules.',
-		{
-			...mcpListParameters,
-			level: z.number().int().min(1).max(3).optional(),
-		},
-		// level은 스키마가 1~3 정수로 검증하므로 리터럴 유니온으로 좁혀도 안전하다.
-		(args, req) =>
-			findMcpGuidelineDocuments(req, { ...args, level: args.level as 1 | 2 | 3 | undefined }),
+		'Find published guideline read documents. The active contentModel returns ordered sections or legacy blocks. sections include id, headingLevel and parentSectionId; contentGroups describe layout; figures combine visual, caption, author-assigned usageStatus, controls and actions. Caption types: basic title/description, list rows pairing label/value as item title/description, specification rows pairing property/value (including original units). Defaults and accessible asset/palette relationships are already resolved. Preserve all orders and figure-caption associations. usageStatus is not a check result. controls describe display changes with options/defaultValue/effect; actions describe download, link, copy or reset, not executable MCP tools or current user state. Legacy blocks retain their compatibility fields and resolved text. Do not infer unavailable assets from null values.',
+		mcpListParameters,
+		(args, req) => findMcpGuidelineDocuments(req, args),
 	),
 	mcpTextTool(
 		'findChecks',
@@ -101,7 +96,7 @@ export const customMcpTools = [
 	),
 	mcpTextTool(
 		'findTemplates',
-		'Find or list published production templates and their open text slots.',
+		'Find or list published production templates and their open slots.',
 		{ query: z.string().trim().min(1).max(120).optional() },
 		(args, req) => findTemplatesForRequest(user(req), args.query),
 	),
@@ -214,6 +209,8 @@ export const customMcpTools = [
 			const result = await generateImages({
 				count: args.count ?? 1,
 				profileId: args.profileId,
+				// 브라우저 화면이 아니라 MCP로 들어온 호출이다 — 사용량 집계에서 갈라 보여야 한다.
+				studio: 'mcp',
 				user: authenticatedUser,
 				userInput: args.prompt,
 			})

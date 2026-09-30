@@ -135,6 +135,8 @@ export async function findPublishedTemplate(templateSlug: string): Promise<
 			previewImage: true,
 			width: true,
 			height: true,
+			// 🔴 화이트리스트에 없으면 타입은 통과하는데 런타임 값이 영원히 undefined다.
+			canvasPpi: true,
 			exportPolicy: true,
 		},
 	})

@@ -16,6 +16,7 @@ import {
 } from '@/features/graphic-generation/runtime/client/graphic-runtime.client'
 import { getGraphicStudioRuntimeBindings } from '@/features/graphic-generation/runtime/graphic-studio-runtime'
 import type { GraphicExportView } from '@/features/studio-export/hooks/use-graphic-export'
+import { controllerRemountKey } from '@/modules/studio-controller/controller-definition'
 
 /** runtime type에 맞는 공용 Canvas를 고른다. 개별 그래픽 id는 Preview registry가 해석한다. */
 export function GraphicCanvas({
@@ -80,12 +81,20 @@ function GraphicPreviewCanvas({
 	const [previewSize, setPreviewSize] = useState(DEFAULT_PREVIEW_SIZE)
 	const outputWidth = output.draft?.width
 	const outputHeight = output.draft?.height
+	// 런타임을 다시 세워야 하는 값들의 지문 — 규칙과 근거는 계약이 갖는다.
+	const remountKey = controllerRemountKey(config.controller.remountOn, controls.values)
 
 	useEffect(() => {
 		valuesRef.current = controls.values
 		runtimeRef.current?.update(controls.values)
 	}, [controls.values])
 
+	/*
+	 * `remountKey`는 본문에 이름이 보이지 않는다 — 런타임은 `valuesRef.current`로 모양을 읽는다.
+	 * 그래도 의존성이어야 한다: 그 값이 바뀌면 다른 셰이더 프로그램을 컴파일해야 하므로 effect가
+	 * 다시 돌아야 한다.
+	 */
+	// biome-ignore lint/correctness/useExhaustiveDependencies(remountKey): 위 주석 — 재마운트 트리거다
 	useEffect(() => {
 		let runtime: GraphicRuntime | undefined
 		let disposed = false
@@ -130,7 +139,7 @@ function GraphicPreviewCanvas({
 			registerArtifacts(null)
 			controls.registerBindings({})
 		}
-	}, [config, controls.registerBindings, controls.update, registerArtifacts, type])
+	}, [config, controls.registerBindings, controls.update, registerArtifacts, remountKey, type])
 
 	useEffect(() => {
 		const stage = stageRef.current
@@ -163,9 +172,12 @@ function GraphicPreviewCanvas({
 
 	return (
 		<figure data-slot="graphic-canvas" className="relative flex min-h-0 flex-1 flex-col">
+			{/* 🔴 하단 예약: 플로팅 바가 bottom-10(40px)에 높이 60px으로 떠 있어서, 예약이 없으면
+			    기본 100% 배율의 프리뷰 아래쪽이 바 뒤로 들어간다. 바는 `lg:`에서만 보이므로 예약도
+			    그쪽만 한다. 실측 bounds가 그만큼 줄어 프리뷰가 바 위에 딱 맞는다. */}
 			<div
 				ref={stageRef}
-				className="flex min-h-96 flex-1 items-center justify-center overflow-hidden lg:min-h-0"
+				className="flex min-h-96 flex-1 items-center justify-center overflow-hidden lg:min-h-0 lg:pb-28"
 			>
 				<div
 					ref={containerRef}

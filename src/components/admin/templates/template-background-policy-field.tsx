@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 import { AdminSectionHeading } from '@/components/admin/shared/admin-section-heading'
 import { Controller } from '@/components/shared/controller'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
-import { fetchGraphicStudioConfigs } from '@/features/graphic-generation/services/list-graphic-studio-configs.client'
+import { fetchCanvasStudioConfigs } from '@/features/graphic-generation/services/list-canvas-studio-configs.client'
 import {
 	type ImageProfileOption,
 	requestPublishedImageProfiles,
@@ -84,7 +84,7 @@ export function TemplateBackgroundPolicyField({ path }: Props) {
 		void requestPublishedImageProfiles()
 			.then(setProfiles)
 			.catch(() => setProfilesLoadError(true))
-		void fetchGraphicStudioConfigs()
+		void fetchCanvasStudioConfigs('graphic')
 			.then(setGraphicConfigs)
 			.catch(() => setGraphicLoadError(true))
 	}, [])

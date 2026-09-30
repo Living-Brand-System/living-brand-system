@@ -37,6 +37,7 @@ describe('generateBrandImages', () => {
 		mocks.openaiImage.mockReturnValue('openai-model')
 		mocks.generateImage.mockResolvedValue({
 			image: { base64: 'google', mediaType: 'image/png' },
+			usage: { inputTokens: 10, outputTokens: 500, totalTokens: 510 },
 		})
 	})
 
@@ -53,6 +54,15 @@ describe('generateBrandImages', () => {
 			images: ['data:image/png;base64,google', 'data:image/png;base64,google'],
 			model: 'gemini-3.1-flash-lite-image',
 			provider: 'google',
+			// 장마다 따로 호출하므로 요청 1건의 사용량은 장별 합이다.
+			usage: {
+				inputTokens: 20,
+				outputTokens: 1000,
+				totalTokens: 1020,
+				cacheReadInputTokens: undefined,
+				cacheWriteInputTokens: undefined,
+				reasoningTokens: undefined,
+			},
 		})
 
 		expect(mocks.createGoogle).toHaveBeenCalledWith({ apiKey: 'google-key' })
@@ -69,6 +79,29 @@ describe('generateBrandImages', () => {
 					},
 				},
 			},
+		})
+	})
+
+	it.each([
+		'1K',
+		'2K',
+		'4K',
+	] as const)('Nano Banana 2에 %s와 참조 이미지를 전달한다', async (imageSize) => {
+		const seedImage = new Uint8Array([137, 80, 78, 71])
+		const result = await generateBrandImages({
+			prompt: 'excavator',
+			count: 1,
+			modelPreset: 'google-nano-banana-2',
+			aspectRatio: '16:9',
+			imageSize,
+			seedImage,
+		})
+		expect(result.model).toBe('gemini-3.1-flash-image')
+		expect(mocks.googleImage).toHaveBeenCalledWith('gemini-3.1-flash-image')
+		expect(mocks.generateImage).toHaveBeenCalledWith({
+			model: 'google-model',
+			prompt: { text: 'excavator', images: [seedImage] },
+			providerOptions: { google: { imageConfig: { aspectRatio: '16:9', imageSize } } },
 		})
 	})
 

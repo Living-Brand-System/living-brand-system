@@ -36,7 +36,11 @@ describe('normalizeImageProfilePrompt', () => {
 	})
 
 	it('정규화 행이 있으면 유저 원문을 최종 subject에 포함하지 않는다', async () => {
-		mocks.normalizeImagePromptWithAi.mockResolvedValue({ mood: 'organic' })
+		mocks.normalizeImagePromptWithAi.mockResolvedValue({
+			prompt: { mood: 'organic' },
+			model: 'claude-haiku-4-5',
+			usage: { inputTokens: 120, outputTokens: 8, totalTokens: 128 },
+		})
 
 		await expect(
 			normalizeImageProfilePrompt({
@@ -46,6 +50,10 @@ describe('normalizeImageProfilePrompt', () => {
 			}),
 		).resolves.toEqual({
 			normalizedInput: { mood: 'organic' },
+			usage: {
+				model: 'claude-haiku-4-5',
+				tokens: { inputTokens: 120, outputTokens: 8, totalTokens: 128 },
+			},
 			finalPrompt: {
 				style: 'editorial photography',
 				mood: 'organic',

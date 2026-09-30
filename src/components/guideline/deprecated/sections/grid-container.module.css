@@ -1,0 +1,32 @@
+.grid {
+	container: guideline-grid / inline-size;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-start;
+	--grid-gap: calc(var(--spacing) * 4);
+	gap: var(--grid-gap);
+}
+
+.grid > .card {
+	--visible-columns: 1;
+	width: calc((100% - (var(--visible-columns) - 1) * var(--grid-gap)) / var(--visible-columns));
+}
+
+/* 모바일은 항상 1열. 그 외에는 실제 콘텐츠 폭으로 열 수를 제한한다. */
+@media (min-width: 768px) {
+	@container guideline-grid (min-width: 560px) {
+		.grid > .card {
+			--visible-columns: min(var(--grid-columns), 2);
+		}
+	}
+	@container guideline-grid (min-width: 840px) {
+		.grid > .card {
+			--visible-columns: min(var(--grid-columns), 3);
+		}
+	}
+	@container guideline-grid (min-width: 1120px) {
+		.grid > .card {
+			--visible-columns: var(--grid-columns);
+		}
+	}
+}

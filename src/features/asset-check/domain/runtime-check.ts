@@ -52,8 +52,8 @@ export interface CheckSection {
 	chapterTitle: string
 	chapterSlug: string
 	chapterOrder: number
-	sectionTitle: string
-	sectionSlug: string
-	sectionOrder: number
+	topicTitle: string
+	topicSlug: string
+	topicOrder: number
 	checks: RuntimeCheck[]
 }

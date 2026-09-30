@@ -20,20 +20,18 @@ vi.mock('./published-guideline-checks.payload.repository', () => ({
 describe('MCP guideline Payload repository', () => {
 	beforeEach(() => vi.resetAllMocks())
 
-	it('published 문서를 접근 제어된 Local API로 읽고 MCP DTO로 변환한다', async () => {
+	it('published 문서를 접근 제어된 Local API로 조회한다', async () => {
 		const find = vi.fn().mockResolvedValue({
 			docs: [
 				{
 					id: 7,
 					title: 'Logo',
 					slug: 'logo',
-					description: null,
 					headerImage: 11,
 					rules: [],
 					blocks: [],
 					displayOrder: 2,
-					parent: 3,
-					breadcrumbs: [{ doc: 7, url: '/guideline/logo' }],
+					chapter: 3,
 					ignoredPersistenceField: 'do not expose',
 				},
 			],
@@ -46,13 +44,12 @@ describe('MCP guideline Payload repository', () => {
 				id: 7,
 				title: 'Logo',
 				slug: 'logo',
-				description: null,
 				headerImage: 11,
 				rules: [],
 				blocks: [],
+				contentModel: undefined,
 				displayOrder: 2,
-				parent: 3,
-				breadcrumbs: [{ doc: 7, url: '/guideline/logo' }],
+				chapter: 3,
 			},
 		])
 		expect(find).toHaveBeenCalledWith(
@@ -65,6 +62,22 @@ describe('MCP guideline Payload repository', () => {
 				user,
 			}),
 		)
+	})
+
+	it('저장 원본의 활성 모델과 순서를 변경하지 않는다', async () => {
+		const document = {
+			id: 1,
+			contentModel: 'sections',
+			sections: [{ id: 'main' }, { id: 'sub' }],
+			blocks: [{ title: 'retired' }],
+		}
+		const find = vi.fn().mockResolvedValue({ docs: [document] })
+		const result = await listPublishedMcpGuidelineDocuments(
+			{ payload: { find } } as unknown as PayloadRequest,
+			'ko',
+		)
+		expect(result[0]).toMatchObject(document)
+		expect(result[0].sections?.[0]).not.toHaveProperty('headingLevel')
 	})
 
 	it('published Rule source를 MCP DTO로 변환한다', async () => {

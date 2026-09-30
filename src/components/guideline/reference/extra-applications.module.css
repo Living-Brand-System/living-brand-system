@@ -1,0 +1,4 @@
+/* Figma 176:17047 쇼핑백 도판 배경. */
+.overview[data-slot="guideline-card-display"] {
+	--guideline-display-background: #dcf5d2;
+}

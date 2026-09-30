@@ -1,4 +1,5 @@
 import { APIError, type CollectionConfig, slugField } from 'payload'
+import { isPrintPpi, MAX_PRINT_PPI, MIN_PRINT_PPI } from '@/features/studio-export/print-policy'
 import { prepareTemplateSave } from '@/features/template-import/services/prepare-template-save.service'
 import { isManager, managerOrAdmin } from '@/lib/auth'
 import { previewImageField } from './fields/preview-image-field'
@@ -139,6 +140,26 @@ export const Templates: CollectionConfig = {
 					admin: { width: '50%', description: 'Figma 높이(px). 가져오기가 채웁니다.' },
 				},
 			],
+		},
+		// 🔴 재import는 baseHtml·html·overrides·width·height·sourceUrl만 덮는다 — 이 값은 사람만 정한다.
+		//    이름을 printPpi로 하지 말 것: 그 컬럼은 옛 enum 정책 필드였고 exportPolicy.print.allowedPpi와도 헷갈린다.
+		{
+			name: 'canvasPpi',
+			type: 'number',
+			label: '판형 해상도(ppi)',
+			min: MIN_PRINT_PPI,
+			max: MAX_PRINT_PPI,
+			// 🔴 기본값을 두지 않는다 — 300을 깔면 기존 디지털 템플릿이 전부 인쇄판으로 선언된다.
+			admin: {
+				position: 'sidebar',
+				description:
+					'이 판을 인쇄물로 선언합니다. 물리 크기 = 위 px ÷ ppi × 25.4mm (예: 2480×3508px에 300 → A4). 소수도 됩니다 — 630×891px 판을 정확히 A4로 선언하려면 76.2입니다. 비우면 디지털판이라 mm를 쓰지 않고, 창작자가 인쇄 해상도를 직접 고릅니다.',
+			},
+			// 커스텀 validate는 기본 min/max 검증을 대체한다 — isPrintPpi 하나가 정수·범위를 모두 본다.
+			validate: (value: unknown) =>
+				value === null || value === undefined || isPrintPpi(value)
+					? true
+					: `판형 해상도는 ${MIN_PRINT_PPI}~${MAX_PRINT_PPI} 사이 숫자여야 합니다.`,
 		},
 		{
 			name: 'category',

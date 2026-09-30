@@ -2,6 +2,7 @@
 
 import { ChevronDown } from '@carbon/icons-react'
 import { Controller } from '@/components/shared/controller'
+import type { ControllerGroupSectionProps } from '@/components/shared/controller/group'
 import { ControllerControlRenderer } from '@/components/shared/controller-renderer'
 import { ImageProfileFeatureRenderer } from '@/components/studio/image/image-profile-feature-renderer'
 import { Button } from '@/components/ui/button'
@@ -26,6 +27,8 @@ type ImageSlotInputProps = {
 	onImageModeChange: (mode: 'preset' | 'generate') => void
 	onSelectSampleImage: (option: SampleImageOption) => void
 	onGenerate: () => void
+	/** 하위 프로파일 섹션도 「chevron만 토글」 규칙을 따르게 한다 — 슬롯 그룹이 그 규칙을 켠다. */
+	section?: ControllerGroupSectionProps
 }
 
 /**
@@ -43,6 +46,7 @@ export function ImageSlotInput({
 	onImageModeChange,
 	onSelectSampleImage,
 	onGenerate,
+	section,
 }: ImageSlotInputProps) {
 	const selected = contracts.find((contract) => contract.config.id === value.profileId)
 	const invalidPrompt = selected
@@ -143,25 +147,11 @@ export function ImageSlotInput({
 								/>
 							</Controller.Row>
 						)}
-						{selected && (
-							<ImageProfileFeatureRenderer
-								config={selected.config}
-								values={value.featureValues}
-								bindings={
-									readonly
-										? Object.fromEntries(
-												selected.config.controller.groups.flatMap((group) =>
-													group.controls.map(({ id }) => [
-														id,
-														{ availability: 'readonly' },
-													]),
-												),
-											)
-										: undefined
-								}
-								onChange={onFeatureChange}
-							/>
-						)}
+						{/*
+						 * 🔴 슬롯 자신의 맨몸 행(비율·Prompt)이 **접히는 그룹보다 앞에** 온다.
+						 * 뒤에 두면 Profile Settings가 접힌 순간 그 행들이 헤더 밑에 붙어 그룹의
+						 * 내용처럼 읽힌다 — 2026-08-24에 사용자가 실제로 그렇게 읽었다.
+						 */}
 						{selected && (
 							<>
 								<ControllerControlRenderer
@@ -192,6 +182,32 @@ export function ImageSlotInput({
 							{value.generating ? '생성 중…' : '이미지 생성'}
 						</Button>
 						{value.error && <FieldError>{value.error}</FieldError>}
+						{/*
+						 * 🔑 색 치환(Profile Settings)은 **생성된 이미지를 마스크로 다시 칠하는 후처리**다
+						 * (`compose`의 `applyImageColorize`) — 생성 파라미터가 아니므로 버튼 뒤가 맞다.
+						 * 그리고 접히는 그룹 뒤에는 아무 맨몸 요소도 두지 않는다(위 주석과 같은 이유).
+						 */}
+						{selected && (
+							<ImageProfileFeatureRenderer
+								config={selected.config}
+								values={value.featureValues}
+								bindings={
+									readonly
+										? Object.fromEntries(
+												selected.config.controller.groups.flatMap((group) =>
+													group.controls.map(({ id }) => [
+														id,
+														{ availability: 'readonly' },
+													]),
+												),
+											)
+										: undefined
+								}
+								attached
+								section={section}
+								onChange={onFeatureChange}
+							/>
+						)}
 					</>
 				)}
 			</Controller.TabPanel>

@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { formatGuidelineReadDocument } from '../domain/reading/format-document'
+import { toGuidelineReadDocument } from '../domain/reading/read-document'
 import {
 	findPublishedMcpGuideline,
 	listPublishedMcpGuidelineChecks,
 	listPublishedMcpGuidelineDocuments,
 } from '../repositories/mcp-guideline.payload.repository'
+import { findPaletteCatalog } from '../repositories/palette.payload.repository'
 import {
 	findMcpChecks,
 	findMcpGuideline,
@@ -16,22 +19,18 @@ vi.mock('../repositories/mcp-guideline.payload.repository', () => ({
 	listPublishedMcpGuidelineDocuments: vi.fn(),
 }))
 
+vi.mock('../repositories/palette.payload.repository', () => ({ findPaletteCatalog: vi.fn() }))
+
 describe('MCP guideline read service', () => {
 	beforeEach(() => vi.resetAllMocks())
 
-	it('문서 level 필터와 level 3 기본 페이지 정책을 적용한다', async () => {
-		const pages = Array.from({ length: 21 }, (_, index) => ({
-			id: index + 1,
-			breadcrumbs: [{}, {}, {}],
-		}))
-		vi.mocked(listPublishedMcpGuidelineDocuments).mockResolvedValue([
-			{ id: 99, breadcrumbs: [{}] },
-			...pages,
-		] as never)
+	it('기본 페이지 정책을 적용한다', async () => {
+		const topics = Array.from({ length: 21 }, (_, index) => ({ id: index + 1 }))
+		vi.mocked(listPublishedMcpGuidelineDocuments).mockResolvedValue(topics as never)
 		const context = { user: { id: 1 } } as never
 
-		await expect(findMcpGuidelineDocuments(context, { level: 3 })).resolves.toMatchObject({
-			docs: pages.slice(0, 20),
+		await expect(findMcpGuidelineDocuments(context, { limit: 20 })).resolves.toMatchObject({
+			docs: topics.slice(0, 20),
 			hasNextPage: true,
 			hasPrevPage: false,
 			nextPage: 2,
@@ -70,4 +69,57 @@ describe('MCP guideline read service', () => {
 		await expect(findMcpGuideline(context)).resolves.toBe(guideline)
 		expect(findPublishedMcpGuideline).toHaveBeenCalledWith(context, 'ko')
 	})
+})
+
+it('신규 MCP JSON은 공통 읽기 모델과 같으며 같은 모델을 Agent 텍스트로 표현한다', async () => {
+	const raw = {
+		id: 9,
+		title: 'Palette',
+		slug: 'palette',
+		contentModel: 'sections' as const,
+		blocks: [],
+		sections: [
+			{
+				id: 'main',
+				type: 'section' as const,
+				download: { source: 'none' as const },
+				containers: [
+					{
+						type: 'carousel' as const,
+						cards: [
+							{
+								id: 'palette',
+								ratio: '4:3' as const,
+								display: { type: 'palette' as const, palette: 'primary' as const },
+								caption: { type: 'basic' as const },
+								download: { source: 'none' as const },
+							},
+						],
+					},
+				],
+			},
+		],
+	}
+	const catalog = {
+		primary: {
+			id: 'p',
+			name: 'Primary',
+			colors: [{ id: '1', label: 'Green', value: '#008855' }],
+		},
+	}
+	vi.mocked(listPublishedMcpGuidelineDocuments).mockResolvedValue([raw])
+	vi.mocked(findPaletteCatalog).mockResolvedValue(catalog)
+	const context = { payload: {}, user: { id: 1 } } as never
+	const result = await findMcpGuidelineDocuments(context, { locale: 'en' })
+	const read = toGuidelineReadDocument(raw, catalog)
+	expect(result.docs).toEqual([read])
+	expect(findPaletteCatalog).toHaveBeenCalledWith({
+		payload: {},
+		user: { id: 1 },
+		req: context,
+		locale: 'en',
+	})
+	expect(formatGuidelineReadDocument(result.docs[0])).toContain('Copy: 팔레트 전체 복사')
+	expect(formatGuidelineReadDocument(result.docs[0])).toContain('"intervalMs":3000')
+	expect(result.docs[0]).not.toHaveProperty('blocks')
 })

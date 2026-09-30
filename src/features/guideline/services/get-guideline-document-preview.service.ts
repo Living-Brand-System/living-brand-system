@@ -1,22 +1,20 @@
 import type { User } from '@/payload-types'
-import {
-	type DraftGuidelineDocumentData,
-	findDraftGuidelineDocumentById,
-	listDraftGuidelineChildren,
-} from '../repositories/guideline-preview.payload.repository'
-import type { GetGuidelineChapterOutput } from './get-guideline-chapter.service'
-import type { GetGuidelineSectionOutput } from './get-guideline-section.service'
+import { findDraftGuidelineDocumentById } from '../repositories/guideline-preview.payload.repository'
+import { findPaletteCatalog } from '../repositories/palette.payload.repository'
+import { needsPaletteCatalog } from '../sections/model'
+import type { GetGuidelineTopicOutput } from './get-guideline-topic.service'
 
 interface GuidelineDocumentPreviewTarget {
 	chapterSlug: string
-	document: DraftGuidelineDocumentData
 	href: string
-	level: 1 | 2 | 3
-	sectionSlug: string | null
+	topicSlug: string
 }
 
 /**
- * Admin의 통합 문서 preview ID를 권한 적용된 draft 문서와 실제 guideline URL로 변환한다.
+ * Admin의 문서 preview ID를 권한 적용된 draft 토픽과 실제 guideline URL로 변환한다.
+ *
+ * 🔴 계층이 사라져(2026-08-26) breadcrumb으로 깊이를 재던 분기가 없다. 문서는 전부 토픽이고
+ *    URL은 챕터 slug + 토픽 slug 두 조각으로 조립한다.
  * Payload 조회는 guideline-preview repository가 소유한다.
  */
 export async function getGuidelineDocumentPreviewTarget(
@@ -24,90 +22,35 @@ export async function getGuidelineDocumentPreviewTarget(
 	user: User,
 ): Promise<GuidelineDocumentPreviewTarget | null> {
 	const document = await findDraftGuidelineDocumentById(documentId, user)
-	if (!document) return null
-
-	const breadcrumbs = document.breadcrumbs ?? []
-	const level = breadcrumbs.length
-	if (level < 1 || level > 3) return null
-
-	const segments = breadcrumbs.at(-1)?.url?.split('/').filter(Boolean).slice(1) ?? []
-	const chapterSlug = segments[0]
-	const sectionSlug = segments[1] ?? null
-	const baseURL = level === 3 ? breadcrumbs[1]?.url : breadcrumbs.at(-1)?.url
-	if (!chapterSlug || !baseURL || (level > 1 && !sectionSlug)) return null
+	if (!document?.chapterSlug || !document.slug) return null
 
 	// #앵커를 붙이지 않는다. Better Editor iframe이 동일 출처 URL의 앵커를 로드하면
 	// 부모 admin 문서까지 스크롤돼 오버레이가 헤더 높이만큼 말려 올라간다.
-	// 문서 위치 이동은 ScrollToPreviewDocument가 iframe 안에서만 수행한다.
 	return {
-		chapterSlug,
-		document,
-		href: `${baseURL}?previewDocument=${document.id}`,
-		level: level as 1 | 2 | 3,
-		sectionSlug,
+		chapterSlug: document.chapterSlug,
+		href: `/guideline/${document.chapterSlug}/${document.slug}?previewDocument=${document.id}`,
+		topicSlug: document.slug,
 	}
 }
 
 /**
- * Chapter preview는 발행 여부와 무관하게 선택한 draft와 최신 draft 하위 문서를 렌더링한다.
+ * 토픽 preview는 발행 여부와 무관하게 선택한 draft 문서의 본문을 그대로 렌더링한다.
+ * 섹션은 그 본문 안의 `section` 블록이라 하위 문서 조회가 없다.
  * Payload 조회는 guideline-preview repository가 소유한다.
  */
-export async function getGuidelineChapterPreview(
+export async function getGuidelineTopicPreview(
 	documentId: number,
 	user: User,
-): Promise<GetGuidelineChapterOutput | null> {
-	const target = await getGuidelineDocumentPreviewTarget(documentId, user)
-	if (target?.level !== 1) return null
+): Promise<GetGuidelineTopicOutput | null> {
+	const document = await findDraftGuidelineDocumentById(documentId, user)
+	if (!document?.chapterSlug) return null
 
-	const sections = await listDraftGuidelineChildren(target.document.id, user)
 	return {
-		title: target.document.title,
-		label: target.document.label || null,
-		description: target.document.descriptionText,
-		sections: sections.map((section) => ({
-			id: section.id,
-			title: section.title,
-			slug: section.slug,
-			description: section.descriptionText,
-		})),
-	}
-}
-
-/**
- * Section preview는 draft 부모와 최신 draft 하위 문서를 함께 읽어 신규 트리도 렌더링한다.
- * Payload 조회는 guideline-preview repository가 소유한다.
- */
-export async function getGuidelineSectionPreview(
-	documentId: number,
-	user: User,
-): Promise<GetGuidelineSectionOutput | null> {
-	const target = await getGuidelineDocumentPreviewTarget(documentId, user)
-
-	if (!target?.sectionSlug || target.level === 1) return null
-
-	let section: DraftGuidelineDocumentData | null = target.document
-	if (target.level === 3) {
-		const parentId = target.document.parentId
-		if (parentId === null) return null
-		section = await findDraftGuidelineDocumentById(parentId, user)
-	}
-	if (section?.breadcrumbs?.length !== 2) return null
-
-	const pages = await listDraftGuidelineChildren(section.id, user)
-	return {
-		title: section.title,
-		headerImage: section.headerImage,
-		blocks: section.blocks,
-		description: section.descriptionText,
-		pages: pages.map((page) => ({
-			id: page.id,
-			title: page.title,
-			slug: page.slug,
-			description: page.description,
-			displayOrder: page.displayOrder,
-			background: page.background,
-			backgroundTone: page.backgroundTone,
-			blocks: page.blocks,
-		})),
+		title: document.title,
+		contentModel: document.contentModel,
+		sections: document.sections,
+		paletteCatalog: needsPaletteCatalog(document) ? await findPaletteCatalog() : undefined,
+		headerImage: document.headerImage,
+		blocks: document.blocks,
 	}
 }

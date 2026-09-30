@@ -1,0 +1,14 @@
+.viewport {
+	container-type: inline-size;
+	overflow: hidden;
+}
+.track {
+	display: flex;
+	align-items: flex-start;
+	touch-action: pan-y pinch-zoom;
+}
+.track > .slide {
+	flex: 0 0 auto;
+	min-width: 0;
+	margin-inline-end: 12px;
+}

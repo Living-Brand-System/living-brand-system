@@ -53,4 +53,40 @@ describe('useImageExport', () => {
 			],
 		})
 	})
+	it('생성 이름을 ZIP과 내부 순번에 적용한다', async () => {
+		vi.clearAllMocks()
+		const artifacts = {
+			raster: [
+				{ kind: 'raster', source: { withSurface: vi.fn() } },
+				{ kind: 'raster', source: { withSurface: vi.fn() } },
+			],
+			original: [],
+		} as ImageArtifacts
+		const { result } = renderHook(() =>
+			useImageExport({
+				artifacts,
+				metadata: {
+					profileName: '제품컷',
+					prompt: '굴착기',
+					createdAt: '2026-09-10T03:00:00Z',
+				},
+				capability: { formats: ['png'], original: false, packages: ['zip'] },
+				selected: 0,
+				size: { width: 1024, height: 1024 },
+			}),
+		)
+
+		act(() => result.current.all.run())
+		await waitFor(() => expect(exportResultsToZip).toHaveBeenCalledOnce())
+
+		expect(executeArtifactExport).toHaveBeenCalledTimes(2)
+		expect(exportResultsToZip).toHaveBeenCalledWith({
+			format: 'zip',
+			filename: '제품컷-굴착기-20260910-120000.zip',
+			items: [
+				expect.objectContaining({ filename: '제품컷-굴착기-20260910-120000-01.png' }),
+				expect.objectContaining({ filename: '제품컷-굴착기-20260910-120000-02.png' }),
+			],
+		})
+	})
 })

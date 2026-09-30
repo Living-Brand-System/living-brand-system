@@ -115,5 +115,7 @@ export async function prepareTemplateSave({
 function allowsPrint(policy: unknown): boolean {
 	if (!policy || typeof policy !== 'object' || Array.isArray(policy)) return true
 	const allowed = (policy as { allowedFormats?: unknown }).allowedFormats
-	return !Array.isArray(allowed) || allowed.includes('tiff') || allowed.includes('pdf')
+	// 빈 배열은 「설정한 적 없음」이다 — `projectStudioOutputPolicy`와 같은 이유로 좁히지 않는다.
+	if (!Array.isArray(allowed) || allowed.length === 0) return true
+	return allowed.includes('tiff') || allowed.includes('pdf')
 }

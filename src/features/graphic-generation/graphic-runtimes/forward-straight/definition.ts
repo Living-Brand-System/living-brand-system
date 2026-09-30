@@ -57,6 +57,18 @@ export default defineGraphicRuntime({
 	type: 'p5',
 	artifacts: { vector: {}, raster: {} },
 	controller: {
+		/**
+		 * 창작자에게 보여줄 축 — 색, 모양, 속도, 위치처럼 직관적이고 변화폭이 큰 것만 남긴다.
+		 *
+		 * 🔑 `speed`가 마스터 시계다(`shader.ts`의 `iTime * uGodraySpeed`). 나머지 속도는 전부
+		 *    그렇게 스케일된 `time`을 곱하므로, 이 하나가 모든 움직임을 함께 늘리고 줄인다.
+		 * 🔴 나머지 컨트롤은 **선언에서 빼기만 한다.** 지우지 않는다 — 창작자에게 감추더라도
+		 *    manager는 Payload에서 그 값을 조정할 수 있어야 한다.
+		 */
+		// 이 런타임의 큰 축은 색뿐이다 — 모양 축이 없다.
+		left: ['lineColor', 'backgroundColor'],
+		// 오른쪽은 공용 4축 — 정지 그래픽이라 속도가 없다. 선 길이·여백·원근은 admin으로 내렸다.
+		right: ['columnGap', 'rowGap', 'weightNear', 'weightFar', 'origin'],
 		groups: [
 			{
 				id: 'graphic',
@@ -68,6 +80,13 @@ export default defineGraphicRuntime({
 						'배경 색상',
 						FORWARD_STRAIGHT_DEFAULT_INPUT.backgroundColor,
 					),
+				],
+			},
+			{
+				id: 'grid',
+				title: 'Grid',
+				controls: [
+					// 선 길이는 색이 아니라 격자 칸 안의 수치다 — Graphic에 두면 그룹이 좌우로 갈린다.
 					rangeControl(
 						'lineLength',
 						'선 길이',
@@ -75,12 +94,6 @@ export default defineGraphicRuntime({
 						2,
 						200,
 					),
-				],
-			},
-			{
-				id: 'grid',
-				title: 'Grid',
-				controls: [
 					rangeControl(
 						'columnGap',
 						'열 간격',

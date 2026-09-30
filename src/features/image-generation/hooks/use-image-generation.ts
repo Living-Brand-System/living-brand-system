@@ -1,8 +1,8 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import type { ImageResultImage } from '../contexts/image-studio-context'
-import type { ImageAspectRatio, ImageOutputSize } from '../image-size'
+import type { ImageGenerationMetadata, ImageResultImage } from '../contexts/image-studio-context'
+import type { ImageAspectRatio, ImageOutputSize } from '../domain/image-size'
 import {
 	type ImageGenerationRequest,
 	requestImageGeneration,
@@ -11,6 +11,7 @@ import {
 const GENERATION_ERROR_MESSAGE = '이미지 생성에 실패했어요. 잠시 후 다시 시도해 주세요.'
 
 export type ImageGenerationSession = {
+	metadata?: ImageGenerationMetadata
 	/** 이 요청이 만든 것. */
 	images: readonly ImageResultImage[]
 	/** 무엇을 보고 만들었나 — null이면 프롬프트에서 바로 나온 세션. */
@@ -41,12 +42,21 @@ export function useImageGeneration() {
 
 			try {
 				const next = await requestImageGeneration(input)
+				const downloadPrompt = input.prompt.trim() || reference?.downloadPrompt || ''
+				const createdAt = next.generatedImages?.[0]?.createdAt
+
 				const images = next.images.map((src, index) => ({
 					src,
+					downloadPrompt,
 					generatedImageId: next.generatedImages?.[index]?.id ?? null,
 					profileId: next.profileId ?? null,
 				}))
 				setSession({
+					metadata: {
+						profileName: next.profileName || 'image',
+						prompt: downloadPrompt,
+						createdAt: createdAt || new Date().toISOString(),
+					},
 					images,
 					reference,
 					output: { aspectRatio: next.aspectRatio, imageSize: next.imageSize },

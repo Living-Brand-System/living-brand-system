@@ -111,9 +111,10 @@ export function createForwardStraightRuntime({
 		instance.redraw()
 	}
 
-	if (!canvas) throw new Error('Forward Straight canvas를 사용할 수 없습니다.')
+	// 🔴 여기서 canvas를 요구하지 않는다 — p5가 `setup`을 `load`까지 미루면 아직 null이고,
+	//    throw하면 Artifact가 등록되지 않아 내보내기·미리보기 갱신이 사라진다(간헐적).
 	const raster = createGraphicRasterArtifact({
-		canvas,
+		canvas: () => canvas,
 		getViewport: () => viewport,
 		render,
 	})

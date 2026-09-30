@@ -84,6 +84,40 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * 클릭 어포던스 — 커서로도 「누를 수 있다」를 말한다.
+ *
+ * 🔴 Tailwind v4의 preflight는 버튼에 `cursor: pointer`를 주지 않는다. 브라우저 기본값인 `default`가
+ *    남아 **누를 수 있는 것이 누를 수 있어 보이지 않는다**(2026-08-24 실측: 스튜디오 사이드바의 섹션
+ *    접기 6개·On/Off·Preset/Generate 토글·select 4개·내보내기 버튼이 전부 `default`였고, 색 입력만
+ *    `pointer`였다).
+ * 🔑 컴포넌트마다 `cursor-pointer`를 붙이지 않고 여기서 한 번에 잡는다 — 킷 프리미티브가 16곳에서
+ *    쓰이고, 새 컨트롤이 생길 때마다 빠뜨릴 자리를 만들지 않는다.
+ * 🔴 `@layer base` 안이어야 한다. 레이어 **밖**에 두면 utilities 레이어를 이겨서
+ *    `disabled:cursor-not-allowed`·`cursor-ew-resize` 같은 유틸 선언이 죽는다
+ *    (`.bg-highlight`가 그 성질을 일부러 이용하는 반례로 이 파일 아래에 있다).
+ */
+@layer base {
+	button:not(:disabled),
+	[role="button"]:not([aria-disabled="true"]) {
+		cursor: pointer;
+	}
+
+	/* 비활성은 색만으로 전달하지 않는다 — 커서도 「지금은 안 된다」를 말한다(docs/08). */
+	button:disabled,
+	[role="button"][aria-disabled="true"] {
+		cursor: not-allowed;
+	}
+
+	/*
+	 * 🔑 라벨은 킷에서 **실제 클릭 대상**이다 — `Controller.Row`가 readonly 행의 라벨을 span으로
+	 *    바꿔 죽은 어포던스를 만들지 않기 때문에(`row.tsx`), `for`가 붙은 것은 항상 컨트롤을 잡는다.
+	 */
+	label[for] {
+		cursor: pointer;
+	}
+}
+
 @theme inline {
 	--font-body: "Pretendard", system-ui, sans-serif;
 	--font-sans: var(--font-body);
@@ -95,6 +129,7 @@
 	--text-sm: 0.8125rem;
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
+	--color-action-hover-foreground: var(--action-hover-foreground);
 	--color-inverted: var(--inverted);
 	--color-inverted-foreground: var(--inverted-foreground);
 	--color-card: var(--card);
@@ -158,6 +193,7 @@
 	--floating-control-inset: 1rem;
 	--background: oklch(1 0 0);
 	--foreground: oklch(0.145 0 0);
+	--action-hover-foreground: oklch(0.371 0 0);
 	--inverted: var(--foreground);
 	--inverted-foreground: var(--background);
 	--card: oklch(1 0 0);
@@ -209,6 +245,7 @@
 	--background: oklch(0.1822 0 0);
 	/* #121212 — pure black 대신 Material 다크 배경(순흑 이미지 구분) */
 	--foreground: oklch(0.985 0 0);
+	--action-hover-foreground: oklch(0.87 0 0);
 	--inverted: var(--foreground);
 	--inverted-foreground: var(--background);
 	--card: oklch(0.1822 0 0);

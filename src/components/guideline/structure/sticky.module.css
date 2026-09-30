@@ -1,0 +1,68 @@
+.container {
+	container-type: inline-size;
+	width: 100%;
+	max-width: 1415px;
+	margin-inline: auto;
+}
+.cards {
+	display: grid;
+	gap: 24px;
+}
+.card {
+	display: grid;
+	gap: 24px;
+}
+.caption {
+	grid-row: 1;
+}
+.display {
+	grid-row: 2;
+	min-width: 0;
+}
+.sharedRail {
+	margin: 0;
+	display: none;
+}
+@container (min-width: 788px) {
+	.card,
+	.container[data-mode="switch"] .layout {
+		display: grid;
+		grid-template-columns: 370px minmax(0, 1fr);
+		column-gap: 48px;
+		align-items: start;
+	}
+	.caption,
+	.sharedRail {
+		position: sticky;
+		top: var(--sticky-top);
+		max-height: calc(100dvh - var(--sticky-top) - 24px);
+		overflow-y: auto;
+		grid-column: 1;
+		grid-row: 1;
+	}
+	.sharedRail {
+		display: block;
+	}
+	.display {
+		grid-column: 2;
+		grid-row: 1;
+	}
+	.container[data-mode="switch"] .cards {
+		grid-column: 2;
+		grid-row: 1;
+	}
+	.container[data-mode="switch"] .card {
+		display: block;
+	}
+	/* 원본 설명은 읽기 순서에 유지하고, 고정 영역은 시각 복제만 표시합니다. */
+	.container[data-mode="switch"] .caption {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+}

@@ -6,18 +6,18 @@ import {
 	slugField,
 } from 'payload'
 import {
-	deriveImageStudioConfig,
-	type PublishedImageProfileDefinition,
-} from '@/features/image-generation/domain/image-studio-config'
-import {
 	DEFAULT_IMAGE_MODEL_PRESET,
 	IMAGE_MODEL_PRESET_OPTIONS,
-} from '@/features/image-generation/image-model'
+} from '@/features/image-generation/domain/image-model'
 import {
 	imagePromptNormalizationRequestSchema,
 	validateImageProfilePromptRows,
 	validateImagePromptNormalizationRows,
-} from '@/features/image-generation/image-profile-prompt'
+} from '@/features/image-generation/domain/image-profile-prompt'
+import {
+	deriveImageStudioConfig,
+	type PublishedImageProfileDefinition,
+} from '@/features/image-generation/domain/image-studio-config'
 import { imageGenerationErrorResponse } from '@/features/image-generation/respond-image-generation'
 import { normalizeImageProfilePrompt } from '@/features/image-generation/services/normalize-image-profile-prompt.service'
 import {

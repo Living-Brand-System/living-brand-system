@@ -54,6 +54,64 @@ describe('Controller.Group', () => {
 		await waitFor(() => expect(content).toHaveStyle({ height: '0px', opacity: '0' }))
 	})
 
+	it('onActivate가 없으면 헤더 전체가 토글한다 — 이 컴포넌트를 쓰는 나머지 화면의 기본', () => {
+		render(
+			<Controller.Group title="Sec">
+				<div>내용물</div>
+			</Controller.Group>,
+		)
+		// 제목 자체가 트리거의 접근 가능한 이름이다 = 헤더 전체가 버튼이다.
+		expect(screen.getByRole('button', { name: 'Sec' })).toHaveClass('w-full')
+		expect(screen.queryByRole('button', { name: 'Sec 섹션 접고 펴기' })).toBeNull()
+	})
+
+	it('onActivate를 주면 chevron만 토글하고 헤더의 나머지는 섹션을 활성화한다', async () => {
+		const onActivate = vi.fn()
+		const { container } = render(
+			<Controller.Group title="Sec" onActivate={onActivate}>
+				<div>내용물</div>
+			</Controller.Group>,
+		)
+		const toggle = screen.getByRole('button', { name: 'Sec 섹션 접고 펴기' })
+		const content = container.querySelector('[data-slot="controller-group-content"]')
+
+		// 제목을 눌러도 접히지 않는다 — 활성화만 된다.
+		fireEvent.click(screen.getByText('Sec'))
+		expect(onActivate).toHaveBeenCalledTimes(1)
+		expect(toggle).toHaveAttribute('aria-expanded', 'true')
+
+		// 본문을 눌러도 활성화된다 — 섹션 안 아무 곳이나.
+		fireEvent.click(screen.getByText('내용물'))
+		expect(onActivate).toHaveBeenCalledTimes(2)
+
+		// chevron은 접기만 한다 — 활성화로 새지 않는다(stopPropagation).
+		fireEvent.click(toggle)
+		expect(onActivate).toHaveBeenCalledTimes(2)
+		expect(toggle).toHaveAttribute('aria-expanded', 'false')
+		await waitFor(() => expect(content).toHaveStyle({ height: '0px', opacity: '0' }))
+	})
+
+	it('활성 섹션은 패널 폭 전체로 번지는 면을 갖는다 — 경계가 읽히게', () => {
+		const { container, rerender } = render(
+			<Controller.Group title="Sec" onActivate={() => {}}>
+				<div>내용물</div>
+			</Controller.Group>,
+		)
+		const group = () => container.querySelector('[data-slot="controller-group"]')
+		expect(group()).not.toHaveAttribute('data-active')
+
+		rerender(
+			<Controller.Group title="Sec" active onActivate={() => {}}>
+				<div>내용물</div>
+			</Controller.Group>,
+		)
+		expect(group()).toHaveAttribute('data-active', 'true')
+		// Content의 px-4를 상쇄해 좌우 끝까지 닿는다.
+		expect(group()).toHaveClass('data-[active]:-mx-4', 'data-[active]:px-4')
+		// 🔴 hover가 bg-muted이므로 활성은 primary로만 칠한다(docs/09 §5).
+		expect(group()).toHaveClass('data-[active]:bg-primary/5')
+	})
+
 	it('잠금 중에도 사용자의 접힘 상태를 보존한다 — 풀려도 닫힌 채 남는다', async () => {
 		const { container, rerender } = render(
 			<Controller.Group title="Sec">
@@ -485,6 +543,48 @@ describe('Controller.Status', () => {
 		)
 
 		expect(screen.getByText('통과')).toHaveClass('sr-only')
+	})
+})
+
+describe('Controller 색 선택 라디오 묶음', () => {
+	afterEach(cleanup)
+
+	const COLORWAYS = [
+		{ value: 'white', label: '화이트 · 연그린', colors: ['#FFFFFF', '#DCF5D2'] },
+		{ value: 'dark', label: '다크그린 · 그린', colors: ['#00280A', '#007332'] },
+	]
+
+	it('ColorChips: 라벨 클릭이 값을 바꾸지 않고, 묶음이 라벨로 읽힌다', () => {
+		const onChange = vi.fn()
+		render(
+			<Controller.ColorChips
+				label="컬러"
+				options={COLORWAYS}
+				value="dark"
+				onChange={onChange}
+			/>,
+		)
+		// 🔴 라벨이 첫 칩을 가리키면 클릭이 포커스가 아니라 '첫 조합 선택'이 된다.
+		fireEvent.click(screen.getByText('컬러'))
+		expect(onChange).not.toHaveBeenCalled()
+		// 스크린리더가 "무엇의 라디오인지"를 말할 수 있어야 한다.
+		expect(screen.getByRole('radiogroup', { name: '컬러' })).toBeInTheDocument()
+		expect(screen.getByRole('radio', { name: '다크그린 · 그린' })).toBeChecked()
+	})
+
+	it('ColorPalette: 라벨 클릭이 값을 바꾸지 않고, 묶음이 라벨로 읽힌다', () => {
+		const onChange = vi.fn()
+		render(
+			<Controller.ColorRow
+				label="선 색"
+				value="#00af41"
+				values={['#ff0000', '#00af41']}
+				onChange={onChange}
+			/>,
+		)
+		fireEvent.click(screen.getByText('선 색'))
+		expect(onChange).not.toHaveBeenCalled()
+		expect(screen.getByRole('radiogroup', { name: '선 색' })).toBeInTheDocument()
 	})
 })
 

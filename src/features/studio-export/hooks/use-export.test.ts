@@ -21,7 +21,7 @@ describe('useExport', () => {
 			artifact: 'raster',
 			format: 'pdf',
 			colorProfile: { space: 'cmyk', icc: 'cgats21-crpc6' },
-			options: { bleedMm: 0, ppi: 300 },
+			options: { bleedMm: 0, ppi: 300, scale: 1 },
 		} as const satisfies Request
 		const execute = vi.fn().mockRejectedValue(new Error('내보내기 실패'))
 		const { result } = renderHook(() =>
@@ -40,5 +40,8 @@ describe('useExport', () => {
 		expect(result.current.canExport(pdf)).toBe(false)
 		await act(() => result.current.run(pdf))
 		expect(execute).toHaveBeenCalledOnce()
+		// 🔴 지원 밖 요청을 조용히 삼키지 않는다 — 예전에는 오류도 없이 무반응이라
+		//    같은 버튼이 스튜디오마다 다르게 동작했다.
+		expect(result.current.error).toBe('이 프로파일에서는 PDF 내보내기를 지원하지 않습니다.')
 	})
 })

@@ -46,7 +46,7 @@ export function useControllerPointerDrag({
 	// 임계 통과 여부는 ref다 — 같은 pointermove 안에서 곧바로 읽으므로 state의 다음 렌더를 기다릴 수 없다.
 	const passedRef = useRef(false)
 
-	const ratios = (event: PointerEvent<HTMLDivElement>) => {
+	const ratios = (event: PointerEvent<HTMLElement>) => {
 		const bounds = boundsRef.current
 		// 접힘·전환 중 0 크기 실측은 NaN으로 상태를 오염시키므로 버린다.
 		if (!bounds?.width || !bounds?.height) return null
@@ -66,7 +66,7 @@ export function useControllerPointerDrag({
 		/** 드래그가 진행 중인지 — 핸들 강조처럼 값이 아니라 조작 자체를 보여줄 때 쓴다. */
 		dragging,
 		handlers: {
-			onPointerDown: (event: PointerEvent<HTMLDivElement>) => {
+			onPointerDown: (event: PointerEvent<HTMLElement>) => {
 				if (disabled || event.button !== 0) return
 				boundsRef.current = event.currentTarget.getBoundingClientRect()
 				originRef.current = { x: event.clientX, y: event.clientY }
@@ -82,7 +82,7 @@ export function useControllerPointerDrag({
 				const point = ratios(event)
 				if (point) onDrag(...point)
 			},
-			onPointerMove: (event: PointerEvent<HTMLDivElement>) => {
+			onPointerMove: (event: PointerEvent<HTMLElement>) => {
 				const origin = originRef.current
 				if (!origin) return
 				if (!passedRef.current) {
@@ -94,7 +94,7 @@ export function useControllerPointerDrag({
 				const point = ratios(event)
 				if (point) onDrag(...point)
 			},
-			onPointerUp: (event: PointerEvent<HTMLDivElement>) => {
+			onPointerUp: (event: PointerEvent<HTMLElement>) => {
 				if (!originRef.current) return
 				if (!passedRef.current) {
 					const point = ratios(event)

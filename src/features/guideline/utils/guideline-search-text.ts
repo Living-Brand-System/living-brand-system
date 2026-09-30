@@ -1,7 +1,7 @@
 import type { GuidelineDocument } from '@/payload-types'
-import { formatBlockForAgent } from '../blocks/runtime/project-guideline-block'
+import { formatBlockForAgent } from '../blocks/projection'
+import { projectSection } from '../sections/projection'
 import { compact } from './block-text'
-import { extractTextFromLexical } from './lexical-text'
 
 export interface GuidelineSearchRuleSummary {
 	key: string
@@ -15,11 +15,11 @@ export function buildGuidelineSearchText(
 ): string {
 	return compact([
 		document.title,
-		document.label,
 		document.slug,
-		document.breadcrumbs?.map(({ label }) => label).join(' '),
-		extractTextFromLexical(document.description),
-		...(document.blocks?.map(formatBlockForAgent) ?? []),
+		typeof document.chapter === 'object' && document.chapter ? document.chapter.title : null,
+		...(document.contentModel === 'sections'
+			? (document.sections ?? []).map((section) => projectSection(section).text)
+			: (document.blocks?.map(formatBlockForAgent) ?? [])),
 		...rules.map(({ key, title }) => `${key} ${title}`),
 	]).join('\n')
 }

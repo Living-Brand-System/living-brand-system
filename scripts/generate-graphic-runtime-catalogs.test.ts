@@ -39,6 +39,9 @@ afterEach(async () => {
 	)
 })
 
+/** 카탈로그가 어느 스튜디오 것이든 생성 규칙은 같다 — 접두어와 실행 계약 경로만 다르다. */
+const TEST_TARGET = { prefix: 'graphic', runtimeImportBase: '../../runtime' } as const
+
 describe('graphic runtime catalog generator', () => {
 	it('자산 폴더를 이름순으로 발견한다', async () => {
 		const directory = await createTemporaryRuntimesDirectory()
@@ -72,11 +75,23 @@ describe('graphic runtime catalog generator', () => {
 		await createRuntime(directory, 'example')
 
 		await expect(
-			generateGraphicRuntimeCatalogs({ runtimesDirectory: directory, check: true }),
+			generateGraphicRuntimeCatalogs({
+				...TEST_TARGET,
+				runtimesDirectory: directory,
+				check: true,
+			}),
 		).rejects.toThrow('최신이 아닙니다')
-		await generateGraphicRuntimeCatalogs({ runtimesDirectory: directory, check: false })
+		await generateGraphicRuntimeCatalogs({
+			...TEST_TARGET,
+			runtimesDirectory: directory,
+			check: false,
+		})
 		await expect(
-			generateGraphicRuntimeCatalogs({ runtimesDirectory: directory, check: true }),
+			generateGraphicRuntimeCatalogs({
+				...TEST_TARGET,
+				runtimesDirectory: directory,
+				check: true,
+			}),
 		).resolves.toBeUndefined()
 	})
 })

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { applyControllerRestrictions } from '@/modules/studio-controller/controller-definition'
-import { CI_LOCKUP_CONTROLS, CI_LOCKUP_MANIFEST } from '../widgets/ci-lockup/manifest'
-import { LAYOUT_GRID_MANIFEST } from '../widgets/layout-grid/manifest'
+import {
+	CI_LOCKUP_CONTROLS,
+	CI_LOCKUP_MANIFEST,
+} from '../cards/displays/dynamics/ci-lockup/manifest'
+import { LAYOUT_GRID_MANIFEST } from '../cards/displays/dynamics/layout-grid/manifest'
 import { controllerEntryFor } from './registry'
 
 const entry = controllerEntryFor('layoutGridControlsWidget')
@@ -201,4 +204,17 @@ describe('CI 락업 계층별 선택지 좁히기', () => {
 		expect(() => ciEffective({ form: 'horizontalA' })).not.toThrow()
 		expect(ciEffective({ form: 'horizontalA' }).get('form')?.defaultValue).toBe('horizontal')
 	})
+})
+
+it('CI 카드가 기존 초기값과 숨김 제한을 가진 컨트롤러에 연결된다', async () => {
+	const { cardControllerFor } = await import('./registry')
+	const display = {
+		blockType: 'ciLockupWidget' as const,
+		language: 'en' as const,
+		hiddenControls: ['language' as const],
+	}
+	const controller = cardControllerFor(display)
+	expect(controller?.manifest).toBe(ciEntry?.manifest)
+	expect(controller?.restrictions).toEqual(ciEntry?.toRestrictions(display))
+	expect(cardControllerFor({ blockType: 'ciLockupHeroWidget' })).toBeNull()
 })

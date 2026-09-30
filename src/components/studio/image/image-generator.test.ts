@@ -1,18 +1,44 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { createElement } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { GeneratedImageHistoryItem } from '@/features/image-generation/domain/generated-image-history'
+import type { ImageModelPreset } from '@/features/image-generation/domain/image-model'
 import {
 	deriveImageStudioConfig,
 	IMAGE_STUDIO_GROUP_IDS,
 	type ImageStudioConfig,
 } from '@/features/image-generation/domain/image-studio-config'
-import type { ImageModelPreset } from '@/features/image-generation/image-model'
 import { ImageGenerator } from './image-generator'
+
+vi.mock(
+	'@/features/image-generation/runtime/reference-image/prepare-reference-image.client',
+	() => ({
+		prepareReferenceImage: vi.fn(
+			async () => new Blob([new Uint8Array([4, 5, 6])], { type: 'image/webp' }),
+		),
+	}),
+)
 
 const browseMocks = vi.hoisted(() => ({
 	fetchImageStudioConfigs: vi.fn(async () => [] as unknown[]),
 }))
 vi.mock('@/features/image-generation/services/list-image-studio-configs.client', () => browseMocks)
+
+const historyMocks = vi.hoisted(() => ({
+	fetchGeneratedImageHistory: vi.fn(
+		async (
+			_page: number,
+			_options?: { bestOnly?: boolean },
+		): Promise<{ hasMore: boolean; items: GeneratedImageHistoryItem[] }> => ({
+			hasMore: false,
+			items: [],
+		}),
+	),
+}))
+vi.mock(
+	'@/features/image-generation/services/list-generated-image-history.client',
+	() => historyMocks,
+)
 
 const SESSION = {
 	images: [
@@ -70,6 +96,7 @@ function config(
 		colorAdjustment?: { line: string; background?: string }
 		imageModelPreset?: ImageModelPreset
 		maxPromptLength?: number
+		referenceImage?: boolean
 	} = {},
 ) {
 	return deriveImageStudioConfig({
@@ -87,6 +114,7 @@ function config(
 					]
 				: []),
 			...(options.cameraControl === false ? [] : [{ blockType: 'cameraControl' }]),
+			...(options.referenceImage ? [{ blockType: 'referenceImage' }] : []),
 		],
 		controllerRestrictions: {
 			controls: [
@@ -133,13 +161,17 @@ describe('ImageGenerator', () => {
 		})
 		fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
 
-		expect(mocks.generate).toHaveBeenCalledWith({
-			aspectRatio: '2:3',
-			count: 4,
-			imageSize: '1K',
-			profileId: 5,
-			prompt: '파란 세럼병',
-		})
+		expect(mocks.generate).toHaveBeenCalledWith(
+			{
+				aspectRatio: '2:3',
+				count: 4,
+				imageSize: '1K',
+				profileId: 5,
+				prompt: '파란 세럼병',
+			},
+			// 첨부가 없으면 참조 카드도 없다 — 그리드 0번을 차지하는 것이 없다.
+			null,
+		)
 	})
 
 	// 어느 프로파일로 시작할지는 라우트(page)가 정한다 — 여기서는 받은 계약을 그리는지만 본다.
@@ -149,18 +181,60 @@ describe('ImageGenerator', () => {
 		expect(screen.getByText('그라디언트')).toBeInTheDocument()
 	})
 
-	it('빈 캔버스의 예시를 프롬프트에 반영한다', () => {
+	it('첨부를 열지 않은 프로파일에는 Reference Image 섹션이 없다', () => {
 		render(createElement(ImageGenerator, { config: config(5, '제품컷') }))
 
-		fireEvent.click(
-			screen.getByRole('button', {
-				name: '신제품을 위한 깨끗한 스튜디오 제품 이미지',
+		expect(screen.queryByText('Reference Image')).not.toBeInTheDocument()
+	})
+
+	it('첨부한 이미지를 참조로 함께 보내고 그리드 0번 카드로 넘긴다', async () => {
+		const { container } = render(
+			createElement(ImageGenerator, {
+				config: config(5, '제품컷', { referenceImage: true }),
 			}),
 		)
+		const input = container.querySelector('input[type="file"]')
+		if (!input) throw new Error('첨부 입력이 없습니다')
 
-		expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue(
-			'신제품을 위한 깨끗한 스튜디오 제품 이미지',
+		fireEvent.change(input, {
+			target: {
+				files: [new File([new Uint8Array([1, 2, 3])], 'ref.png', { type: 'image/png' })],
+			},
+		})
+		// 변환한 WebP가 미리보기에 반영될 때까지 기다린다.
+		await waitFor(() => expect(screen.getByAltText(/ref\.png/)).toBeInTheDocument())
+
+		fireEvent.change(screen.getByRole('textbox', { name: 'Prompt' }), {
+			target: { value: '파란 세럼병' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
+
+		expect(mocks.generate).toHaveBeenCalledWith(
+			expect.objectContaining({ reference: { upload: 'data:image/webp;base64,BAUG' } }),
+			// 첨부도 참조라서 결과 그리드 0번을 차지한다. 저장하지 않으므로 id는 없다.
+			{ src: 'data:image/webp;base64,BAUG', generatedImageId: null, profileId: 5 },
 		)
+	})
+
+	it('JPG·PNG·WebP가 아닌 파일은 첨부하지 않고 사유를 보여준다', async () => {
+		const { container } = render(
+			createElement(ImageGenerator, {
+				config: config(5, '제품컷', { referenceImage: true }),
+			}),
+		)
+		const input = container.querySelector('input[type="file"]')
+		if (!input) throw new Error('첨부 입력이 없습니다')
+
+		fireEvent.change(input, {
+			target: { files: [new File(['%PDF'], 'ref.pdf', { type: 'application/pdf' })] },
+		})
+
+		await waitFor(() =>
+			expect(
+				screen.getByText('JPG, PNG, WebP 이미지만 첨부할 수 있어요.'),
+			).toBeInTheDocument(),
+		)
+		expect(screen.queryByAltText(/ref\.pdf/)).not.toBeInTheDocument()
 	})
 
 	it('색을 개방하지 않은 프로파일에는 Profile Settings 섹션이 없다', () => {
@@ -302,7 +376,8 @@ describe('ImageProfilePicker', () => {
 		const initial = configs.find(({ id }) => id === initialProfileId) ?? configs[0]
 		render(createElement(ImageGenerator, { config: initial ?? null }))
 		const trigger = screen.getByRole('button', { name: '프로파일 변경' })
-		expect(trigger.closest('[data-slot="controller-header"]')).not.toBeNull()
+		// 프로파일 교체는 좌측 패널이 갖는다 — 「무엇을 캔버스에 올릴지」를 고르는 자리다.
+		expect(trigger.closest('[data-slot="studio-left-panel"]')).not.toBeNull()
 		fireEvent.click(trigger)
 		const panel = screen.getByRole('dialog', { name: 'Image Profiles' })
 		await within(panel).findByRole('button', { name: new RegExp(configs[0]?.name ?? '') })
@@ -374,6 +449,7 @@ describe('ImageProfilePicker', () => {
 		fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
 		expect(mocks.generate).toHaveBeenCalledWith(
 			expect.objectContaining({ profileId: 7, prompt: '노란 배경' }),
+			null,
 		)
 	})
 
@@ -398,5 +474,124 @@ describe('ImageProfilePicker', () => {
 		expect(
 			within(panel).getByText('교체할 다른 이미지 프로파일이 없습니다.'),
 		).toBeInTheDocument()
+	})
+})
+
+describe('이미지 이력 — 본보기 패널과 캔버스 스트립', () => {
+	function historyItem(
+		overrides: Partial<GeneratedImageHistoryItem> = {},
+	): GeneratedImageHistoryItem {
+		return {
+			aspectRatio: '16:9',
+			batchKey: null,
+			createdAt: '2026-09-20T00:00:00.000Z',
+			id: 42,
+			imageSize: '2K',
+			profileId: 5,
+			profileName: '제품컷',
+			prompt: '파란 세럼병',
+			url: '/api/generated-images/file/past.png',
+			...overrides,
+		}
+	}
+
+	/** 본보기 패널과 스트립이 같은 클라이언트 서비스를 쓰므로 bestOnly로 갈라 답한다. */
+	function respond(input: {
+		best?: GeneratedImageHistoryItem[]
+		history?: GeneratedImageHistoryItem[]
+	}) {
+		historyMocks.fetchGeneratedImageHistory.mockImplementation(async (_page, options) => ({
+			hasMore: false,
+			items: (options?.bestOnly ? input.best : input.history) ?? [],
+		}))
+	}
+
+	beforeEach(() => {
+		vi.clearAllMocks()
+		mocks.state = { session: null, selected: null }
+		respond({})
+	})
+	afterEach(cleanup)
+
+	it('본보기는 bestOnly로만 조회한다', async () => {
+		respond({ best: [historyItem({ id: 1, prompt: '본보기' })] })
+		render(createElement(ImageGenerator, { config: config(5, '제품컷') }))
+
+		await screen.findByRole('button', { name: '본보기' })
+		expect(historyMocks.fetchGeneratedImageHistory).toHaveBeenCalledWith(1, {
+			bestOnly: true,
+		})
+	})
+
+	it('지정된 본보기가 없으면 그 사실을 적는다', async () => {
+		render(createElement(ImageGenerator, { config: config(5, '제품컷') }))
+
+		expect(await screen.findByText('아직 지정된 본보기가 없습니다')).toBeInTheDocument()
+	})
+
+	// 🔴 묶음은 겹치지 않고 구분선으로만 갈린다 — 스트립은 이력 전체를 한 줄로 보여주는 자리다.
+	it('스트립이 이력 전체를 그리고 묶음 사이에 구분선을 넣는다', async () => {
+		respond({
+			history: [
+				historyItem({ batchKey: 'b1', id: 1, prompt: '첫 묶음' }),
+				historyItem({ batchKey: 'b1', id: 2, prompt: '첫 묶음' }),
+				historyItem({ batchKey: 'b2', id: 3, prompt: '둘째 묶음' }),
+			],
+		})
+		render(createElement(ImageGenerator, { config: config(5, '제품컷') }))
+
+		const strip = await screen.findByTestId('strip')
+		expect(within(strip).getAllByRole('button')).toHaveLength(3)
+		// 묶음이 둘이므로 구분선은 하나다(첫 묶음 앞에는 없다).
+		expect(strip.querySelectorAll('[aria-hidden="true"]')).toHaveLength(1)
+	})
+
+	it('아무것도 안 골랐으면 가장 최근 것이 자동으로 선택된다', async () => {
+		respond({
+			history: [
+				historyItem({ batchKey: 'b1', id: 1, prompt: '최근 것' }),
+				historyItem({ batchKey: 'b2', id: 2, prompt: '옛날 것' }),
+			],
+		})
+		render(createElement(ImageGenerator, { config: config(5, '제품컷') }))
+
+		expect(await screen.findByDisplayValue('최근 것')).toBeInTheDocument()
+	})
+
+	it('스트립에서 고른 장의 값으로 컨트롤러를 덮는다', async () => {
+		respond({
+			history: [
+				historyItem({ batchKey: 'b1', id: 1, prompt: '최근 것' }),
+				historyItem({
+					aspectRatio: '2:3',
+					batchKey: 'b2',
+					id: 2,
+					imageSize: '4K',
+					prompt: '옛날 것',
+				}),
+			],
+		})
+		render(createElement(ImageGenerator, { config: config(5, '제품컷') }))
+
+		fireEvent.click(await screen.findByRole('button', { name: '옛날 것' }))
+
+		expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue('옛날 것')
+		fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
+		expect(mocks.generate).toHaveBeenCalledWith(
+			expect.objectContaining({ aspectRatio: '2:3', imageSize: '4K', prompt: '옛날 것' }),
+			null,
+		)
+	})
+
+	// 권한이 없으면 Payload가 메타 필드를 빼고 내려준다 — 고를 수는 있고 덮이지만 않는다.
+	it('복원 값이 없는 장은 골라도 컨트롤러를 안 바꾼다', async () => {
+		respond({
+			history: [historyItem({ profileId: null, profileName: null, prompt: null })],
+		})
+		render(createElement(ImageGenerator, { config: config(5, '제품컷') }))
+
+		fireEvent.click(await screen.findByRole('button', { name: '생성 이미지' }))
+
+		expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue('')
 	})
 })

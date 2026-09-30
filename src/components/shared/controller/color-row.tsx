@@ -30,10 +30,20 @@ export function ControllerColorRow({
 	disabled,
 	className,
 }: ControllerColorRowProps) {
+	// 팔레트는 라디오 묶음이라 자동 배선(첫 스와치)을 쓸 수 없다 — 라벨 클릭이 첫 색 선택이 된다.
+	const paletteId = useId()
 	return (
 		// 라벨 클릭이 피커를 연다 — Row의 자동 배선이 label과 스와치 input을 잇는다.
-		<ControllerRow label={label} disabled={disabled} className={className}>
-			<span className="flex shrink-0 items-center gap-2">
+		<ControllerRow
+			label={label}
+			htmlFor={values?.length ? paletteId : undefined}
+			disabled={disabled}
+			className={className}
+		>
+			{/* 🔴 `shrink-0`을 주지 않는다 — 팔레트가 길면 이 덩어리가 행을 밀어내 패널 밖으로
+			    나간다(브랜드 컬러 19색에서 실제로 깨졌다). 줄어드는 쪽은 팔레트 하나뿐이고,
+			    hex 표기와 초기화는 각자 `shrink-0`으로 자리를 지킨다. */}
+			<span className="flex min-w-0 items-center gap-2">
 				{!isEmpty && onReset && (
 					<button
 						type="button"
@@ -44,11 +54,12 @@ export function ControllerColorRow({
 						초기화
 					</button>
 				)}
-				<span className="font-mono text-sm text-muted-foreground lowercase">
+				<span className="shrink-0 font-mono text-sm text-muted-foreground lowercase">
 					{isEmpty ? '—' : value}
 				</span>
 				{values?.length ? (
 					<ColorPalette
+						label={label}
 						value={value}
 						values={values}
 						onChange={onChange}
@@ -72,22 +83,30 @@ export function ControllerColorRow({
  * `input[type=color]`은 목록 밖 색을 막을 수 없어 계약이 좁혀진 control에는 쓸 수 없다.
  */
 function ColorPalette({
+	label,
 	value,
 	values,
 	onChange,
 	isEmpty,
 }: Required<Pick<ControllerColorRowProps, 'value' | 'values'>> &
-	Pick<ControllerColorRowProps, 'onChange' | 'isEmpty'>) {
+	Pick<ControllerColorRowProps, 'label' | 'onChange' | 'isEmpty'>) {
 	const row = useRowControl()
 	const groupName = useId()
 	const selected = isEmpty ? null : value.toLowerCase()
 	return (
-		<span className="flex items-center gap-1">
-			{values.map((candidate, index) => (
+		// 행 라벨이 가리키는 것은 묶음이다 — span은 label 대상이 아니라 클릭이 값을 바꾸지 않고,
+		// 묶음의 이름은 radiogroup의 aria-label이 준다.
+		// 🔴 색이 몇 개인지는 브랜드가 정한다 — 19색이든 40색이든 **행이 그만큼 넓어지면 안 된다.**
+		//    행 높이(36px)는 킷 계약이라 줄바꿈 대신 이 안에서 가로로 민다.
+		<span
+			id={row?.controlId}
+			role="radiogroup"
+			aria-label={label}
+			className="flex min-w-0 items-center gap-1 overflow-x-auto"
+		>
+			{values.map((candidate) => (
 				<input
 					key={candidate}
-					// 행 라벨이 가리키는 것은 첫 스와치다 — 라벨 클릭이 팔레트로 포커스를 옮긴다.
-					id={index === 0 ? row?.controlId : undefined}
 					type="radio"
 					name={groupName}
 					aria-label={candidate}

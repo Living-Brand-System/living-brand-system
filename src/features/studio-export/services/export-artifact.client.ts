@@ -14,8 +14,9 @@ import { canvasFramesToMp4 } from '../adapters/canvas-frames-to-mp4.mediabunny.c
 import { elementToJpeg } from '../adapters/element-to-jpeg.client'
 import { elementToPng } from '../adapters/element-to-png.client'
 import { vectorSceneToSvg } from '../adapters/vector-scene-to-svg'
-import type { ExportRequest, ExportResult } from '../export-contract'
-import { requestPrintExport } from './export-print.client'
+import type { CmykIccProfile, ExportRequest, ExportResult } from '../export-contract'
+import type { PrintPpi } from '../print-policy'
+import { printFailureMessage, requestPrintExport } from './export-print.client'
 
 export type ExportableStudioArtifact =
 	| RasterArtifact
@@ -38,7 +39,10 @@ export async function executeArtifactExport({
 	if (artifact.kind !== request.artifact) throw new Error('Export Artifact가 요청과 다릅니다.')
 	switch (request.artifact) {
 		case 'original':
-			return exportOriginalArtifact(artifact as OriginalArtifact<BlobOriginalSource>)
+			return exportOriginalArtifact(
+				artifact as OriginalArtifact<BlobOriginalSource>,
+				fileName,
+			)
 		case 'raster': {
 			const raster = artifact as RasterArtifact
 			switch (request.format) {
@@ -55,7 +59,18 @@ export async function executeArtifactExport({
 			throw new Error('지원하지 않는 Raster export 형식입니다.')
 		}
 		case 'vector':
-			return exportVectorArtifactAsSvg(fileName, artifact as VectorSceneArtifact)
+			return request.format === 'pdf'
+				? exportVectorArtifactAsPrintPdf(
+						fileName,
+						artifact as VectorSceneArtifact,
+						request.options.ppi,
+						request.colorProfile.icc,
+					)
+				: exportVectorArtifactAsSvg(
+						fileName,
+						artifact as VectorSceneArtifact,
+						request.options.ppi,
+					)
 		case 'video':
 			return exportVideoArtifactAsMp4(
 				fileName,
@@ -69,11 +84,51 @@ export async function executeArtifactExport({
 export function exportVectorArtifactAsSvg(
 	fileName: string,
 	artifact: VectorSceneArtifact,
+	ppi: PrintPpi,
 ): ExportResult {
 	return {
-		data: new Blob([vectorSceneToSvg(artifact)], { type: 'image/svg+xml' }),
+		data: new Blob([vectorSceneToSvg(artifact, ppi)], { type: 'image/svg+xml' }),
 		filename: `${fileName}.svg`,
 		mimeType: 'image/svg+xml',
+	}
+}
+
+/**
+ * Vector Artifact를 인쇄용 PDF로 만든다.
+ * 🔴 직렬화는 서버가 한다 — pdf-lib을 클라이언트 번들에 넣지 않는다.
+ */
+export async function exportVectorArtifactAsPrintPdf(
+	fileName: string,
+	artifact: VectorSceneArtifact,
+	ppi: PrintPpi,
+	colorProfile: CmykIccProfile,
+): Promise<ExportResult> {
+	const response = await fetch('/api/studio-exports/vector-print', {
+		// 🔴 프로파일을 안 실으면 서버가 기본값으로 떨어진다. 지금은 CMYK 프로파일이 하나뿐이라
+		//    결과가 같지만, 두 번째가 들어오는 순간 같은 판의 벡터 PDF만 조용히 다른 잉크로 나간다.
+		//    래스터 경로는 이미 싣고 있다.
+		body: JSON.stringify({ colorProfile, ppi, scene: artifact.source }),
+		headers: { 'Content-Type': 'application/json' },
+		method: 'POST',
+	})
+	if (!response.ok) {
+		// 🔴 서버는 이유를 구분해서 주는데 여기서 한 문구로 접으면 「잠시 후 다시」가 거짓말이 된다.
+		const body = (await response.json().catch(() => null)) as { code?: string } | null
+		throw new Error(
+			body?.code === 'text-not-outlined'
+				? '윤곽선으로 바꾸지 못한 글자가 있어 PDF를 만들지 않았습니다.'
+				: body?.code === 'color-not-convertible'
+					? '인쇄 잉크로 바꿀 수 없는 색이 있어 PDF를 만들지 않았습니다.'
+					: body?.code === 'image-not-convertible'
+						? '인쇄 색으로 바꿀 수 없는 이미지가 있어 PDF를 만들지 않았습니다.'
+						: // 래스터 경로와 같은 표를 쓴다 — 같은 401·413이 형식에 따라 다른 문구로 보이면 안 된다.
+							printFailureMessage('pdf', response.status),
+		)
+	}
+	return {
+		data: await response.blob(),
+		filename: `${fileName}.pdf`,
+		mimeType: 'application/pdf',
 	}
 }
 
@@ -183,9 +238,11 @@ export async function exportRasterArtifactAsPrint(
 		colorProfile: request.colorProfile.icc,
 		fileName,
 		format: request.format,
+		// 🔴 여기 `scale: 1`이 하드코딩돼 있었다 — 어떤 해상도를 골라도 인쇄물이 캔버스 픽셀
+		//    그대로 나가, A4 300ppi가 요구하는 픽셀을 만들 경로가 아예 없었다.
 		png: await renderRasterArtifactToPng(
 			artifact,
-			{ scale: 1, transparent: false },
+			{ scale: request.options.scale, transparent: false },
 			renderSize,
 		),
 		ppi: request.options.ppi,
@@ -200,11 +257,12 @@ export async function exportRasterArtifactAsPrint(
 /** Original Artifact의 원본 Blob을 변환 없이 전달한다. */
 export async function exportOriginalArtifact(
 	artifact: OriginalArtifact<BlobOriginalSource>,
+	fileName: string,
 ): Promise<ExportResult> {
 	const data = await artifact.source.load()
 	return {
 		data,
-		filename: artifact.source.filename(data),
+		filename: `${fileName}.${artifact.source.extension(data)}`,
 		mimeType: artifact.source.mimeType(data),
 	}
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CAMERA_AZIMUTHS, CAMERA_ELEVATIONS } from '../camera-control'
+import { CAMERA_AZIMUTHS, CAMERA_ELEVATIONS } from './camera-control'
 import { getImageRuntimeManifest } from './image-runtime-manifest'
 import {
 	deriveImageStudioConfig,
@@ -38,6 +38,7 @@ describe('deriveImageStudioConfig', () => {
 					azimuths: CAMERA_AZIMUTHS,
 					elevations: CAMERA_ELEVATIONS,
 				},
+				{ type: 'reference-image' },
 			],
 		})
 		expect(first.controller.groups.flatMap((group) => group.controls)).toEqual(
@@ -189,6 +190,17 @@ describe('deriveImageStudioConfig', () => {
 		expect(config.output).toMatchObject({ formats: ['png'], original: false })
 	})
 
+	it('Nano Banana 2는 1K 기본값과 2K·4K 선택을 제공한다', () => {
+		const config = deriveImageStudioConfig({
+			...profile,
+			imageModelPreset: 'google-nano-banana-2',
+		})
+		expect(getImageStudioControls(config).resolution).toMatchObject({
+			defaultValue: '1K',
+			options: ['1K', '2K', '4K'].map((value) => ({ label: value, value })),
+		})
+	})
+
 	it('descriptor의 알 수 없는 필드를 거부한다', () => {
 		const config = deriveImageStudioConfig(profile)
 		expect(() =>
@@ -212,6 +224,27 @@ describe('projectImageProfileFeatureSelections', () => {
 				},
 			]),
 		).toEqual([{ type: 'camera-control' }, { type: 'color-adjustment', background: true }])
+	})
+
+	it('참조 이미지 첨부는 세부 설정 없이 켜고 끄는 feature로 투영된다', () => {
+		expect(
+			projectImageProfileFeatureSelections([
+				{ id: 'ref-1', blockType: 'referenceImage', blockName: null },
+			]),
+		).toEqual([{ type: 'reference-image' }])
+		expect(
+			getImageStudioFeature(
+				deriveImageStudioConfig({
+					...profile,
+					features: [{ blockType: 'referenceImage' }],
+				}),
+				'reference-image',
+			),
+		).toEqual({ type: 'reference-image' })
+		// 끈 프로파일에는 계약 자체가 없다 — 서비스의 신뢰 경계가 이 부재로 첨부를 거부한다.
+		expect(getImageStudioFeature(deriveImageStudioConfig(profile), 'reference-image')).toBe(
+			undefined,
+		)
 	})
 
 	it('카메라 구간을 고르면 그대로 투영하고, 비우면 좁히지 않는다', () => {

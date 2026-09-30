@@ -5,6 +5,7 @@ import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/g
 import type { LazyResource } from '@/hooks/use-lazy-resource'
 import type {
 	ControllerControlValue,
+	ControllerGroupDefinition,
 	ControllerRuntimeBindings,
 	ControllerValues,
 } from '@/modules/studio-controller/controller-definition'
@@ -16,6 +17,11 @@ export type GraphicStudioValue = {
 		select: (profileId: string) => void
 	}
 	config: GraphicStudioConfig
+	/**
+	 * 현재 값이 좁힌 뒤의 control 그룹. 🔴 화면은 `config.controller.groups`가 아니라 이것을 읽는다 —
+	 * 값에 따라 선택지가 달라지는 축(면 색에 따라 좁아지는 선 색)이 여기서만 보인다.
+	 */
+	groups: readonly ControllerGroupDefinition[]
 	controls: {
 		values: ControllerValues
 		bindings: ControllerRuntimeBindings

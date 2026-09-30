@@ -7,10 +7,12 @@ import type {
 	ResolvedTemplateImageConfig,
 	TemplateBackgroundType,
 	TemplateStudioConfig,
+	TemplateStudioConfigSlot,
 	TemplateVectorSlot,
 } from '@/features/template-customization/domain/template-studio-config'
 import type {
 	TemplateRasterArtifact,
+	TemplateVectorArtifactResult,
 	TemplateVideoArtifactProducer,
 } from '@/features/template-customization/runtime/template-runtime.client'
 import type { GetCreateNavigationOutput } from '@/features/template-customization/services/get-create-navigation.service'
@@ -83,6 +85,60 @@ export type TemplateBackgroundPatch = Partial<
 	Pick<TemplateBackgroundState, 'imageMode' | 'prompt' | 'dimmer' | 'dimmerOpacity'>
 >
 
+/**
+ * 활성 섹션이 캔버스에서 무엇을 집는가.
+ *
+ * 🔑 **「활성 섹션」과 「집을 대상」을 나눈 이유**는 둘의 개수가 다르기 때문이다. 섹션은 하나인데
+ *    Text 섹션은 텍스트 슬롯을 여럿 담고, Background 섹션은 노드를 하나도 담지 않는다. 대상을
+ *    슬롯 하나로 고정했을 때 그 두 섹션에서 강조가 성립하지 않았다(2026-08-24).
+ * 🔴 **배경의 주소는 노드가 아니라 도화지 자체다** — `composeTemplateHtml`의 `canvasBackground`가
+ *    이미 그 경계를 갖는다(노드 오버라이드가 아니라 루트 프레임에 얹는다). 여기서도 같게 가른다.
+ *
+ * `sectionId`는 사이드바 면이 자기가 켜졌는지 아는 값이다 — 섹션당 하나이고, 그 섹션 안의 한 행만
+ * 만질 때도 같은 값이 온다(그때는 `nodeIds`만 좁아진다).
+ */
+export type TemplateFocusTarget = { sectionId: string } & (
+	| {
+			kind: 'nodes'
+			nodeIds: readonly string[]
+			/**
+			 * 이 슬롯의 입력칸으로 **커서까지** 옮겨 달라는 요청. 판에서 글자를 누른 사람은 곧바로
+			 * 타이핑할 참이기 때문이다(사용자 지시, 2026-09-29).
+			 *
+			 * 🔴 상태를 따로 만들지 않는다 — 입력칸이 포커스를 받으면 그 자신이 이 플래그 없는
+			 *    같은 대상으로 focus를 다시 세워서 **저절로 꺼진다.** 끄는 코드를 두면 누가 언제
+			 *    끄는지가 또 하나의 규칙이 된다.
+			 */
+			caret?: boolean
+	  }
+	| { kind: 'canvas' }
+)
+
+/**
+ * 텍스트 섹션의 식별자 — 텍스트는 상자가 여럿이어도 컨트롤 그룹이 하나다.
+ * 🔴 Figma 노드 id는 `82:11` 꼴이라 이 값과 겹치지 않는다.
+ */
+export const TEMPLATE_TEXT_SECTION_ID = 'section:text'
+export const TEMPLATE_BACKGROUND_SECTION_ID = 'section:background'
+
+/**
+ * 슬롯 하나를 집는 focus 대상 — **사이드바와 캔버스가 같은 규칙을 쓴다.**
+ * 🔴 두 입구가 각자 만들면 같은 슬롯을 집었는데 사이드바 면이 한쪽에서만 켜진다. 실제로
+ *    텍스트는 섹션이 하나(`section:text`)이고 이미지·CI는 슬롯마다 섹션이라 규칙이 갈린다.
+ */
+export function templateSlotFocusTarget(
+	kind: 'text' | 'image' | 'vector',
+	nodeId: string,
+	options: { caret?: boolean } = {},
+): TemplateFocusTarget {
+	return {
+		sectionId: kind === 'text' ? TEMPLATE_TEXT_SECTION_ID : nodeId,
+		kind: 'nodes',
+		nodeIds: [nodeId],
+		...(options.caret ? { caret: true } : {}),
+	}
+}
+
 export type TemplateStudioValue = {
 	navigation: {
 		/** 현재 템플릿이 속한 카테고리 이름 — 식별 카드의 부제다. 목록 없이도 알아야 해서 서버가 함께 내린다. */
@@ -108,7 +164,8 @@ export type TemplateStudioValue = {
 		updateFeature: (slotId: string, controlId: string, value: ControllerControlValue) => void
 		selectProfile: (slotId: string, profileId: number) => void
 		selectSampleImage: (slotId: string, option: SampleImageOption) => void
-		generate: (slotId: string) => Promise<void>
+		/** `prompt`를 주면 세션 상태 대신 그 값으로 생성한다 — 챗이 얹은 패치를 같은 tick에 태우는 통로. */
+		generate: (slotId: string, prompt?: string) => Promise<void>
 	}
 	vectors: {
 		slots: readonly TemplateVectorSlot[]
@@ -118,6 +175,17 @@ export type TemplateStudioValue = {
 	layers: {
 		visibility: Record<string, boolean>
 		setVisible: (slotId: string, visible: boolean) => void
+		/**
+		 * 레이어 패널에서 고른 **종류**. 고르는 단위는 레이어 하나가 아니라 Text·Image·CI·Background
+		 * 묶음이다(사용자 지시, 2026-09-29) — 텍스트를 고치려는 사람은 텍스트 상자 하나가 아니라
+		 * 텍스트 전부를 한 번에 본다. 그래서 하위 줄은 목록에만 있고 고를 수 없다.
+		 *
+		 * 🔴 **`focus`와 다른 것이다.** 컨트롤러는 평소에 아무것도 보여주지 않고 이 값이 있을 때만
+		 *    그 묶음의 컨트롤을 낸다 — `focus`로 대신하면 입력칸에 커서를 넣는 것만으로 대상이
+		 *    바뀌어 방금 고른 것이 사라진다(`focus`는 「지금 만지는 자리」이고 이것은 「고른 것」이다).
+		 */
+		selectedKind: TemplateStudioConfigSlot['kind'] | null
+		select: (kind: TemplateStudioConfigSlot['kind'] | null) => void
 	}
 	background: {
 		state: TemplateBackgroundState
@@ -135,9 +203,26 @@ export type TemplateStudioValue = {
 		updateGraphic: (controlId: string, value: ControllerControlValue) => void
 		generate: () => Promise<void>
 	}
+	/**
+	 * 사이드바에서 지금 만지는 섹션과, 캔버스가 집어 보여 줄 대상.
+	 * 🔑 사이드바와 캔버스는 서로를 모르므로 이 컨텍스트가 유일한 연결이다.
+	 * 🔴 편집 세션이 아니라 이 화면의 표현 상태다 — 내보내는 HTML에 흔적을 남기지 않는다.
+	 */
+	focus: {
+		target: TemplateFocusTarget | null
+		set: (target: TemplateFocusTarget | null) => void
+		/**
+		 * 강조에 쓰는 브랜드 색(hex). 값의 정본은 `brand-colors` 컬렉션이고 서버가 이름으로 찾아
+		 * 내린다 — 코드에 hex를 박지 않는다(`docs/09` §4의 색-데이터 예외).
+		 * 🔴 못 찾으면 null이고 캔버스가 토큰으로 폴백한다.
+		 */
+		color: string | null
+	}
 	canvas: {
 		html: string
 		artifact: () => TemplateRasterArtifact
+		/** 인쇄용 벡터. 같은 판을 굽지 않고 재서 도형으로 옮긴다(진단이 함께 나온다). */
+		vectorArtifact: () => Promise<TemplateVectorArtifactResult>
 		/** 배경 Graphic이 켜져 있을 때만 시간축이 있다 — 그 밖에는 MP4도 정지 화면이 정답이다. */
 		videoArtifact: TemplateVideoArtifactProducer | null
 		previewRef: RefObject<HTMLDivElement | null>

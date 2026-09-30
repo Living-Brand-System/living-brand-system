@@ -834,3 +834,183 @@ describe('composeTemplateHtml canvas background', () => {
 		expect(composeTemplateHtml(once, {}, { canvasBackground: background })).toBe(once)
 	})
 })
+
+/**
+ * 레이어 겹침 순서의 정본은 **Admin의 `childOrder`** 이고, compose가 그것으로 DOM을 재배치한다
+ * (사용자 결정, 2026-09-10).
+ *
+ * 🔴 z-index를 쓰지 않는 이유를 이 테스트가 지킨다: 벡터 내보내기가 DOM 순서로만 걷고
+ *    z-index를 읽지 않으므로(`template-dom-to-vector-scene.client.ts`), 정본이 DOM 순서 하나여야
+ *    화면과 PDF·SVG가 갈리지 않는다.
+ */
+describe('composeTemplateHtml childOrder', () => {
+	const frame = (...ids: string[]) =>
+		`<div data-node-id="root" data-figma-type="FRAME">${ids
+			.map((id) => `<p data-node-id="${id}" data-figma-type="TEXT">${id}</p>`)
+			.join('')}</div>`
+
+	const idsOf = (html: string) =>
+		Array.from(
+			new DOMParser()
+				.parseFromString(html, 'text/html')
+				.querySelectorAll('[data-node-id="root"] > *'),
+			(child) => child.getAttribute('data-node-id'),
+		)
+
+	it('나열한 순서대로 형제를 재배치한다 — 문서 순서가 곧 그리는 순서다', () => {
+		const html = composeTemplateHtml(frame('a', 'b', 'c'), {
+			root: { childOrder: ['c', 'b', 'a'] },
+		})
+
+		expect(idsOf(html)).toEqual(['c', 'b', 'a'])
+	})
+
+	/**
+	 * 🔴 재import로 생긴 노드가 **Figma가 놓은 자리에 그대로 남는다.** 목록 끝으로 쓸어 보내면
+	 * 그 노드가 다른 레이어에 가려지거나 위를 덮는다 — 어느 쪽이든 디자이너 의도가 아니다.
+	 * 「초안은 Figma, 수정은 Admin」(사용자, 2026-09-10)이 이 규칙이다.
+	 */
+	it('목록에 없는 자식은 제 자리를 지킨다 — 이름 댄 것들의 자리에만 순서를 채운다', () => {
+		// a·c가 쓰던 자리는 0·2. 그 두 자리에만 [c, a]가 채워지고 new는 1에 남는다.
+		expect(
+			idsOf(
+				composeTemplateHtml(frame('a', 'new', 'c'), { root: { childOrder: ['c', 'a'] } }),
+			),
+		).toEqual(['c', 'new', 'a'])
+	})
+
+	it('없는 id는 건너뛰고, 이미 그 순서면 출력이 base와 같다', () => {
+		// 한 개만 남으면 뒤바꿀 것이 없다 — 자리도 그대로다.
+		expect(
+			idsOf(composeTemplateHtml(frame('a', 'b'), { root: { childOrder: ['사라진', 'a'] } })),
+		).toEqual(['a', 'b'])
+		expect(composeTemplateHtml(frame('a', 'b'), { root: { childOrder: ['a', 'b'] } })).toBe(
+			frame('a', 'b'),
+		)
+	})
+
+	it('🔴 다른 부모의 자식은 옮기지 않는다 — 좌표 기준이 바뀌어 위치가 깨진다', () => {
+		const nested =
+			'<div data-node-id="root" data-figma-type="FRAME">' +
+			'<p data-node-id="a" data-figma-type="TEXT">a</p>' +
+			'<div data-node-id="group" data-figma-type="GROUP">' +
+			'<p data-node-id="deep" data-figma-type="TEXT">deep</p>' +
+			'</div>' +
+			'</div>'
+		const html = composeTemplateHtml(nested, { root: { childOrder: ['deep', 'a'] } })
+
+		// `deep`은 root의 자식이 아니므로 무시되고, 이름 댄 것이 하나뿐이라 아무것도 움직이지 않는다.
+		expect(idsOf(html)).toEqual(['a', 'group'])
+		expect(
+			new DOMParser()
+				.parseFromString(html, 'text/html')
+				.querySelector('[data-node-id="group"] > [data-node-id="deep"]'),
+		).not.toBeNull()
+	})
+
+	it('디머는 재배치 뒤에 깔려 항상 맨 아래에 남는다', () => {
+		const html = composeTemplateHtml(
+			frame('a', 'b'),
+			{ root: { childOrder: ['b', 'a'] } },
+			{ canvasBackground: { dimmer: 0.4 } },
+		)
+		const children = Array.from(
+			new DOMParser()
+				.parseFromString(html, 'text/html')
+				.querySelectorAll('[data-node-id="root"] > *'),
+		)
+
+		expect(children[0]?.hasAttribute('data-canvas-dimmer')).toBe(true)
+		expect(children.slice(1).map((child) => child.getAttribute('data-node-id'))).toEqual([
+			'b',
+			'a',
+		])
+	})
+})
+
+/**
+ * 레이어 이름의 정본은 **Admin의 `label`** 이고, compose가 그것을 노드의 `data-name`에 쓴다
+ * (사용자 지시, 2026-09-10).
+ *
+ * 🔑 `data-name` 한 자리로 모으는 이유: 스튜디오 레이어 패널 · Admin 레이어 목록 · **인쇄 PDF의
+ *    Illustrator 레이어명**(`template-dom-to-vector-scene.client.ts`의 group label → PDF OCG)이
+ *    전부 그것을 읽는다. 새 필드를 따로 내려보내면 셋 중 하나가 조용히 Figma 이름에 머문다.
+ */
+describe('composeTemplateHtml label', () => {
+	const nameOf = (html: string) =>
+		new DOMParser()
+			.parseFromString(html, 'text/html')
+			.querySelector('[data-node-id="t1"]')
+			?.getAttribute('data-name')
+
+	const base = '<p data-node-id="t1" data-name="Frame 12">TITLE</p>'
+
+	it('Admin이 정한 이름이 data-name을 덮는다 — PDF 레이어명까지 그것을 읽는다', () => {
+		expect(nameOf(composeTemplateHtml(base, { t1: { label: 'Title' } }))).toBe('Title')
+	})
+
+	it('🔴 비우면 Figma 이름이 남는다 — 초안은 Figma, 수정은 Admin이다', () => {
+		expect(nameOf(composeTemplateHtml(base, { t1: {} }))).toBe('Frame 12')
+		expect(nameOf(composeTemplateHtml(base, { t1: { label: '' } }))).toBe('Frame 12')
+	})
+
+	it('이름이 없던 노드에도 붙는다', () => {
+		const html = composeTemplateHtml('<p data-node-id="t1">TITLE</p>', {
+			t1: { label: 'Subtitle' },
+		})
+
+		expect(nameOf(html)).toBe('Subtitle')
+	})
+})
+
+/**
+ * 🔴 레이어 이름의 유일한 관문. Figma가 준 이름에 **보이지 않는 문자**가 섞여 오고, 그것이 그대로
+ * 인쇄 PDF의 Illustrator 레이어 이름으로 나갔다(실측 2026-09-10: 발행 68개 중 하나가
+ * `"Title\u2028"`). Admin이 눈으로 잡을 수 없는 종류다.
+ */
+describe('composeTemplateHtml 레이어 이름 정리', () => {
+	const nameOf = (html: string) =>
+		new DOMParser()
+			.parseFromString(html, 'text/html')
+			.querySelector('[data-node-id="t1"]')
+			?.getAttribute('data-name')
+
+	it('보이지 않는 줄 구분자를 지운다 — 실물에서 나온 그 이름', () => {
+		const html = composeTemplateHtml('<p data-node-id="t1" data-name="Title\u2028">A</p>', {})
+
+		expect(nameOf(html)).toBe('Title')
+	})
+
+	it('제어문자·앞뒤 공백·연속 공백을 정리한다', () => {
+		const html = composeTemplateHtml(
+			'<p data-node-id="t1" data-name="  Slogan\u0009\u0009 2  ">A</p>',
+			{},
+		)
+
+		expect(nameOf(html)).toBe('Slogan 2')
+	})
+
+	it('설정이 없는 노드도 정리한다 — 군더더기는 Admin이 손대지 않은 이름에 있다', () => {
+		const html = composeTemplateHtml(
+			'<p data-node-id="t1" data-name="CI\u2028">A</p><p data-node-id="t2" data-name="Title">B</p>',
+			{},
+		)
+
+		expect(nameOf(html)).toBe('CI')
+	})
+
+	it('이미 깨끗한 이름은 건드리지 않는다 — 재합성 멱등', () => {
+		const base = '<p data-node-id="t1" data-name="Title">A</p>'
+
+		expect(composeTemplateHtml(base, {})).toBe(base)
+		expect(composeTemplateHtml(composeTemplateHtml(base, { t1: { label: 'CI' } }), {})).toBe(
+			composeTemplateHtml(base, { t1: { label: 'CI' } }),
+		)
+	})
+
+	it('🔴 정리해서 빈 이름이 되면 원래 값을 남긴다 — 이름을 잃는 것이 더 나쁘다', () => {
+		const html = composeTemplateHtml('<p data-node-id="t1" data-name="\u2028">A</p>', {})
+
+		expect(nameOf(html)).toBe('\u2028')
+	})
+})

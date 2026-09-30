@@ -55,6 +55,12 @@ import {
 	UnsupportedImageOutputSizeError,
 } from './generate-image.service'
 
+// 실제 1x1 PNG — 첨부 검증(sharp)이 모의가 아니라 진짜로 형식을 읽는지 falsifiable하게 둔다.
+const ONE_PIXEL_PNG_BASE64 =
+	'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+const ONE_PIXEL_PNG = `data:image/png;base64,${ONE_PIXEL_PNG_BASE64}`
+const ONE_PIXEL_PNG_BYTES = Buffer.from(ONE_PIXEL_PNG_BASE64, 'base64')
+
 describe('generateImages', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
@@ -696,6 +702,100 @@ describe('generateImages', () => {
 			}),
 		).rejects.toBeInstanceOf(InvalidSeedImageError)
 		// 하드 거부의 실질: null이 조용히 프롬프트-only 생성으로 흘러가지 않는다.
+		expect(mocks.generateBrandImages).not.toHaveBeenCalled()
+	})
+
+	it('프로파일이 첨부를 열지 않았으면 업로드 참조를 거부한다', async () => {
+		mocks.env.OPENAI_API_KEY = 'key'
+		mocks.findPublishedImageProfile.mockResolvedValue({
+			id: 5,
+			name: 'Technical Illustration',
+			imageModelPreset: 'openai-gpt-image-2',
+			aspectRatio: '1:1',
+			imageSize: '1K',
+			profilePrompt: [],
+			userPromptNormalization: [],
+			features: [],
+		})
+
+		await expect(
+			generateImages({
+				userInput: '유조선',
+				profileId: 5,
+				user: { id: 1 },
+				count: 1,
+				reference: { upload: ONE_PIXEL_PNG },
+			}),
+		).rejects.toBeInstanceOf(InvalidImageControllerInputError)
+		// 거부는 유료 호출보다 앞선다 — 정규화도 모델도 부르지 않는다.
+		expect(mocks.normalizeImageProfilePrompt).not.toHaveBeenCalled()
+		expect(mocks.generateBrandImages).not.toHaveBeenCalled()
+	})
+
+	it('첨부한 참조는 시드로 쓰지만 저장하지 않으므로 sourceImage를 남기지 않는다', async () => {
+		mocks.env.OPENAI_API_KEY = 'key'
+		mocks.findPublishedImageProfile.mockResolvedValue({
+			id: 5,
+			name: 'Technical Illustration',
+			imageModelPreset: 'openai-gpt-image-2',
+			aspectRatio: '1:1',
+			imageSize: '1K',
+			profilePrompt: [],
+			userPromptNormalization: [],
+			features: [{ blockType: 'referenceImage' }],
+		})
+		mocks.normalizeImageProfilePrompt.mockResolvedValue({
+			finalPrompt: { subject: '유조선' },
+			normalizedInput: {},
+		})
+		mocks.generateBrandImages.mockResolvedValue({
+			images: ['data:image/png;base64,seeded'],
+			model: 'gpt-image-2',
+			provider: 'openai',
+		})
+
+		await generateImages({
+			userInput: '유조선',
+			profileId: 5,
+			user: { id: 1 },
+			count: 1,
+			reference: { upload: ONE_PIXEL_PNG },
+		})
+
+		// 저장된 생성 결과를 다시 받아 오는 경로를 타지 않는다 — 첨부는 본문에 이미 들어 있다.
+		expect(mocks.resolveGeneratedImageReference).not.toHaveBeenCalled()
+		const [call] = mocks.generateBrandImages.mock.calls[0]
+		expect([...call.seedImage]).toEqual([...ONE_PIXEL_PNG_BYTES])
+		expect(mocks.storeGeneratedImages).toHaveBeenCalledWith(
+			expect.not.objectContaining({ sourceImage: expect.anything() }),
+		)
+	})
+
+	it('첨부 data URI가 실제 이미지가 아니면 시드 오류로 거부한다', async () => {
+		mocks.env.OPENAI_API_KEY = 'key'
+		mocks.findPublishedImageProfile.mockResolvedValue({
+			id: 5,
+			name: 'Technical Illustration',
+			imageModelPreset: 'openai-gpt-image-2',
+			aspectRatio: '1:1',
+			imageSize: '1K',
+			profilePrompt: [],
+			userPromptNormalization: [],
+			features: [{ blockType: 'referenceImage' }],
+		})
+
+		await expect(
+			generateImages({
+				userInput: '유조선',
+				profileId: 5,
+				user: { id: 1 },
+				count: 1,
+				// MIME은 png라고 주장하지만 내용은 이미지가 아니다 — sharp가 잡는다.
+				reference: {
+					upload: `data:image/png;base64,${Buffer.from('nope').toString('base64')}`,
+				},
+			}),
+		).rejects.toBeInstanceOf(InvalidSeedImageError)
 		expect(mocks.generateBrandImages).not.toHaveBeenCalled()
 	})
 

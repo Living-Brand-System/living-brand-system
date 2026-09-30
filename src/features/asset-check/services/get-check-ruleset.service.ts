@@ -15,27 +15,55 @@ import type { GuidelineCheckSource } from '@/features/guideline/checks/collect-g
  */
 export const getCheckRuleset = cache(async (): Promise<CheckSection[]> => {
 	const { documents } = await getCheckSourceDocuments()
-	const byId = new Map(documents.map((document) => [document.id, document]))
-	const items = documents.map((document) => ({
-		documentOrder: document.breadcrumbDocumentIds.length < 3 ? -1 : document.displayOrder,
-		item: {
-			title: document.title,
-			slug: document.slug,
-			...toCheckPlacement(document, byId),
-			checks: document.checks.map(toRuntimeCheck),
-		},
-	}))
+	// 🔴 배치 단위는 문서가 아니라 **섹션**이다. 2026-08-26 이관으로 섹션이 문서에서 블록이 되면서
+	//    한 토픽의 Check가 전부 한 덩어리로 뭉쳤고, 검수 화면의 딥링크가 토픽까지만 갔다.
+	//    근거가 지목하는 섹션(`source.section`)으로 다시 가른다. 섹션이 없는 것은 문서 자신의 rule이다.
+	const items = documents.flatMap((document) =>
+		groupChecksBySection(document.checks).map(({ section, checks }) => ({
+			documentOrder: section?.order ?? -1,
+			item: {
+				title: section?.title ?? document.title,
+				// 🔴 섹션의 slug 자리에 앵커를 넣는다 — `toGuidelineHref`가 slug와 topicSlug가
+				//    다를 때 `#앵커`를 붙이므로, 문서 자신의 rule은 앵커 없이 토픽으로 남는다.
+				slug: section?.anchor ?? document.slug,
+				...toCheckPlacement(document),
+				checks: checks.map(toRuntimeCheck),
+			},
+		})),
+	)
 
 	return items
 		.filter(({ item }) => item.checks.length > 0)
 		.sort(
 			(a, b) =>
 				a.item.chapterOrder - b.item.chapterOrder ||
-				a.item.sectionOrder - b.item.sectionOrder ||
+				a.item.topicOrder - b.item.topicOrder ||
 				a.documentOrder - b.documentOrder,
 		)
 		.map(({ item }) => item)
 })
+
+/**
+ * Check를 근거가 놓인 섹션별로 가른다. 문서 자신의 rule은 섹션 없는 한 덩어리로 남는다.
+ * 순서는 첫 등장 순 — `collectGuidelineCheckSources`가 문서 본문 순서로 수집한다.
+ */
+function groupChecksBySection(
+	checks: GuidelineCheckSource[],
+): { section: GuidelineCheckSource['source']['section']; checks: GuidelineCheckSource[] }[] {
+	const groups = new Map<
+		string,
+		{ section: GuidelineCheckSource['source']['section']; checks: GuidelineCheckSource[] }
+	>()
+
+	for (const check of checks) {
+		const key = check.source.section?.anchor ?? ''
+		const group = groups.get(key) ?? { section: check.source.section, checks: [] }
+		group.checks.push(check)
+		groups.set(key, group)
+	}
+
+	return [...groups.values()]
+}
 
 /**
  * 검수 실행용 Check snapshot을 checkKeys 순서로 반환하며 누락·미구현 실행 구성을 거부한다.
@@ -197,23 +225,18 @@ function mergeCheckPlacements(placements: RuntimeCheck[]): RuntimeCheck {
 	}
 }
 
-function toCheckPlacement(
-	document: CheckRulesetSourceDocument,
-	documents: Map<number, CheckRulesetSourceDocument>,
-) {
-	const chapter = documents.get(document.breadcrumbDocumentIds[0] ?? -1) ?? document
-	const section = documents.get(document.breadcrumbDocumentIds[1] ?? -1) ?? chapter
-	const sectionSlug = section.slug
-	const chapterSlug = chapter.slug
+// 🔴 문서 자신이 토픽이다(2026-08-26). 계층이 사라져 breadcrumb으로 조상을 되짚을 필요가 없다.
+function toCheckPlacement(document: CheckRulesetSourceDocument) {
+	const chapter = document.chapter
 
 	return {
-		groupTitle: section.title,
-		groupSlug: sectionSlug,
-		chapterTitle: chapter.title,
-		chapterSlug,
-		chapterOrder: chapter.displayOrder,
-		sectionTitle: section.title,
-		sectionSlug,
-		sectionOrder: section.displayOrder,
+		groupTitle: document.title,
+		groupSlug: document.slug,
+		chapterTitle: chapter?.title ?? document.title,
+		chapterSlug: chapter?.slug ?? document.slug,
+		chapterOrder: chapter?.displayOrder ?? -1,
+		topicTitle: document.title,
+		topicSlug: document.slug,
+		topicOrder: document.displayOrder,
 	}
 }

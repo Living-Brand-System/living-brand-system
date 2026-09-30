@@ -1,22 +1,9 @@
 import type { PayloadRequest } from 'payload'
-import type { Guideline, GuidelineDocument, Rule } from '@/payload-types'
+import type { Guideline, Rule } from '@/payload-types'
 import { collectGuidelineCheckSources } from '../checks/collect-guideline-check-sources'
 import { formatCheckEvidence } from '../checks/format-check-evidence'
+import type { GuidelineSourceDocument } from '../domain/reading/read-document'
 import { findPublishedUnifiedGuidelineCheckDocuments } from './published-guideline-checks.payload.repository'
-
-export type McpGuidelineDocument = Pick<
-	GuidelineDocument,
-	| 'id'
-	| 'title'
-	| 'slug'
-	| 'description'
-	| 'headerImage'
-	| 'rules'
-	| 'blocks'
-	| 'displayOrder'
-	| 'parent'
-	| 'breadcrumbs'
->
 
 export interface McpGuidelineCheck {
 	evidence: string
@@ -26,14 +13,14 @@ export interface McpGuidelineCheck {
 	title: string
 }
 
-/** published MCP 문서 조회와 Payload 레코드→MCP DTO 변환을 소유한다. */
+/** 접근 제어된 원본 조회만 담당한다. 읽기 모델 변환은 service에서 수행한다. */
 export async function listPublishedMcpGuidelineDocuments(
 	req: PayloadRequest,
 	locale: 'en' | 'ko',
-): Promise<McpGuidelineDocument[]> {
+): Promise<GuidelineSourceDocument[]> {
 	const { docs } = await req.payload.find({
 		collection: 'guideline-documents',
-		depth: 1,
+		depth: 2,
 		draft: false,
 		fallbackLocale: 'en',
 		limit: 2000,
@@ -46,13 +33,13 @@ export async function listPublishedMcpGuidelineDocuments(
 		select: {
 			title: true,
 			slug: true,
-			description: true,
 			headerImage: true,
 			rules: true,
 			blocks: true,
+			contentModel: true,
+			sections: true,
 			displayOrder: true,
-			parent: true,
-			breadcrumbs: true,
+			chapter: true,
 		},
 	})
 
@@ -60,13 +47,13 @@ export async function listPublishedMcpGuidelineDocuments(
 		id: document.id,
 		title: document.title,
 		slug: document.slug,
-		description: document.description,
 		headerImage: document.headerImage,
 		rules: document.rules,
+		contentModel: document.contentModel,
+		sections: document.sections,
 		blocks: document.blocks,
 		displayOrder: document.displayOrder,
-		parent: document.parent,
-		breadcrumbs: document.breadcrumbs,
+		chapter: document.chapter,
 	}))
 }
 

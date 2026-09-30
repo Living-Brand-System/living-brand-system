@@ -4,14 +4,17 @@
  * 화면 상태(로딩·에러 표시)는 호출자(useImageGeneration, Admin AiImageForm)가 담당한다.
  */
 
-import type { CameraControlInput } from '@/features/image-generation/camera-control'
-import type { ImageModelPreset } from '@/features/image-generation/image-model'
+import type { CameraControlInput } from '@/features/image-generation/domain/camera-control'
+import type { ImageModelPreset } from '@/features/image-generation/domain/image-model'
 import type {
 	FlatImagePrompt,
 	ImageProfilePromptRow,
 	ImagePromptNormalizationRow,
-} from '@/features/image-generation/image-profile-prompt'
-import type { ImageAspectRatio, ImageOutputSize } from '@/features/image-generation/image-size'
+} from '@/features/image-generation/domain/image-profile-prompt'
+import type {
+	ImageAspectRatio,
+	ImageOutputSize,
+} from '@/features/image-generation/domain/image-size'
 
 export interface ImageGenerationRequest {
 	count: number
@@ -21,8 +24,8 @@ export interface ImageGenerationRequest {
 	aspectRatio?: ImageAspectRatio
 	/** 스튜디오 해상도 선택 오버라이드 — 없으면 프로파일 해상도로 생성한다. */
 	imageSize?: ImageOutputSize
-	/** 참조 이미지 — 없으면 프롬프트만으로 생성한다. */
-	reference?: { generatedImageId: number }
+	/** 참조 이미지 — 없으면 프롬프트만으로 생성한다. 첨부(`upload`)는 저장하지 않는 1회용 data URI다. */
+	reference?: { generatedImageId: number } | { upload: string }
 	/** 카메라 컨트롤 값 — 프로파일이 카메라를 열었을 때만 보낸다. */
 	camera?: CameraControlInput
 }

@@ -175,15 +175,13 @@ describe('agent chat errors', () => {
 						{
 							collection: 'guideline-documents',
 							id: '1',
-							level: 2,
-							parentId: null,
+							chapterId: null,
 							title: 'Core',
 						},
 						{
 							collection: 'guideline-documents',
 							id: '2',
-							level: 3,
-							parentId: '1',
+							chapterId: '1',
 							title: 'Name',
 						},
 					],

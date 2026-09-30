@@ -37,14 +37,9 @@ const { docs } = await payload.find({
 	overrideAccess: true,
 })
 
-// 부모를 id가 아니라 slug로 적는다 — id는 환경마다 다르다.
-const slugById = new Map(docs.map((doc) => [doc.id as number, doc.slug as string]))
-const parentSlug = (parent: unknown): string | null => {
-	if (parent == null) return null
-	const id =
-		typeof parent === 'object' ? ((parent as { id?: number }).id ?? null) : Number(parent)
-	return id == null ? null : (slugById.get(id) ?? null)
-}
+// 챕터를 id가 아니라 slug로 적는다 — id는 환경마다 다르다.
+const chapterSlug = (chapter: unknown): string | null =>
+	typeof chapter === 'object' && chapter ? ((chapter as { slug?: string }).slug ?? null) : null
 
 // 🔴 개발용 픽스처(slug `block-widget-test*`)는 published라도 스냅샷 대상이 아니다.
 //    이걸 심던 seed는 삭제됐지만 기존 DB에 남은 문서가 있어 필터는 유지한다.
@@ -54,14 +49,13 @@ const content = {
 	documents: selected.map((doc) => ({
 		slug: doc.slug,
 		title: doc.title,
-		label: doc.label ?? null,
-		parent: parentSlug(doc.parent),
+		chapter: chapterSlug(doc.chapter),
 		order: doc.displayOrder ?? 0,
-		// 문서 본문 설명. 관계 노드가 없는 richText라 그대로 옮긴다.
-		description: doc.description ?? null,
 		headerImage: toPortable(doc.headerImage ?? null),
 		rules: toPortable(doc.rules ?? []),
 		blocks: toPortable(doc.blocks ?? []),
+		contentModel: doc.contentModel ?? 'legacy',
+		sections: toPortable(doc.sections ?? []),
 	})),
 }
 

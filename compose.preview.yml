@@ -1,0 +1,74 @@
+name: lbs-cms-preview
+
+services:
+  payload:
+    image: node:22-alpine
+    working_dir: /app
+    ports:
+      - '127.0.0.1:3102:3000'
+    volumes:
+      - .:/app
+      - dependencies:/app/node_modules
+      - next:/app/.next
+      # 기존 호스트의 DB·스토리지 자격 증명을 컨테이너에서 읽지 않는다.
+      - ./.env.docker.local:/app/.env:ro
+      - ./.env.docker.local:/app/.env.local:ro
+    env_file: .env.docker.local
+    environment:
+      DATABASE_URL: postgresql://payload:payload@postgres:5432/lbs_cms_preview
+      PAYLOAD_DB_PUSH: 'false'
+      NEXT_PUBLIC_SITE_URL: http://localhost:3102
+      NEXT_TELEMETRY_DISABLED: '1'
+      S3_ENDPOINT: http://storage:9000
+      S3_BUCKET: lbs-preview
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY_ID: local-preview
+      S3_SECRET_ACCESS_KEY: local-preview-storage
+    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm migrate && pnpm dev --hostname 0.0.0.0 --port 3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: lbs_cms_preview
+      POSTGRES_USER: payload
+      POSTGRES_PASSWORD: payload
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U payload -d lbs_cms_preview']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  storage:
+    image: quay.io/minio/minio:latest
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: local-preview
+      MINIO_ROOT_PASSWORD: local-preview-storage
+    volumes:
+      - uploads:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  storage-init:
+    image: quay.io/minio/mc:latest
+    depends_on:
+      storage:
+        condition: service_healthy
+    entrypoint: /bin/sh
+    command: -c "mc alias set preview http://storage:9000 local-preview local-preview-storage && mc mb --ignore-existing preview/lbs-preview"
+
+volumes:
+  dependencies:
+  next:
+  database:
+  uploads:

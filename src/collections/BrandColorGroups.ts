@@ -29,6 +29,21 @@ export const BrandColorGroups: CollectionConfig = {
 				description: '팔레트에 표시할 그룹 이름입니다. 예: Primary Color',
 			},
 		},
+		{
+			name: 'family',
+			type: 'select',
+			label: '팔레트 분류',
+			unique: true,
+			options: [
+				{ label: 'Primary', value: 'primary' },
+				{ label: 'Supportive', value: 'supportive' },
+				{ label: 'Monotone', value: 'monotone' },
+			],
+			admin: {
+				description:
+					'신규 팔레트의 안정적인 분류입니다. Brand는 Primary + Supportive로 자동 조합합니다.',
+			},
+		},
 		// ponytail: 정렬 필드를 두지 않는다. 그룹이 3개뿐이라 생성 순서로 충분하다.
 		{
 			name: 'colors',

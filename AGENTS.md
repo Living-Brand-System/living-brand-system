@@ -27,7 +27,6 @@
 | **새 UI 컴포넌트** | `docs/10-component-authoring.md` |
 | **가이드라인 위젯** | `docs/11-widget-authoring.md` |
 | **CI 락업의 수치·서체** | `docs/12-ci-lockup-canon.md` |
-| **CI 락업의 수치·서체** | `docs/12-ci-lockup-canon.md` |
 
 문서끼리 충돌하면 더 새롭거나 더 구체적인 쪽을 따른다. **이 파일과 `docs/`가 충돌하면 `docs/`가 이긴다** — 이 파일은 라우팅과 팀 규약만 갖고 도메인 세부는 갖지 않는다. 코드가 의도적으로 문서를 벗어나면 같은 변경에서 그 문서를 고친다(사용자가 소스만 요청한 경우는 예외).
 

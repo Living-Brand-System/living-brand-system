@@ -3,18 +3,18 @@ import {
 	CAMERA_ELEVATIONS,
 	type CameraAzimuth,
 	type CameraElevation,
-} from '@/features/image-generation/camera-control'
+} from '@/features/image-generation/domain/camera-control'
 import {
 	IMAGE_BATCH_DEFAULT,
 	IMAGE_BATCH_SIZES,
 	IMAGE_PROMPT_MAX_LENGTH,
-} from '@/features/image-generation/image-generation-limits'
-import type { ImageModelPreset } from '@/features/image-generation/image-model'
+} from '@/features/image-generation/domain/image-generation-limits'
+import type { ImageModelPreset } from '@/features/image-generation/domain/image-model'
 import {
 	IMAGE_ASPECT_RATIOS,
 	IMAGE_OUTPUT_SIZES,
 	supportsImageOutputSize,
-} from '@/features/image-generation/image-size'
+} from '@/features/image-generation/domain/image-size'
 import type {
 	ControllerControlDefinition,
 	StudioRuntimeManifest,
@@ -46,6 +46,8 @@ export type ImageRuntimeFeature =
 			azimuths: readonly CameraAzimuth[]
 			elevations: readonly CameraElevation[]
 	  }
+	/** 사용자가 첨부한 이미지 한 장을 시드로 쓴다. 첨부는 저장하지 않으므로 세부 설정이 없다. */
+	| { type: 'reference-image' }
 
 export type ImageRuntimeManifest = StudioRuntimeManifest & {
 	supportedFeatures: readonly ImageRuntimeFeature[]
@@ -128,6 +130,7 @@ export function getImageRuntimeManifest(modelPreset: ImageModelPreset): ImageRun
 				},
 			},
 			{ type: 'camera-control', azimuths: CAMERA_AZIMUTHS, elevations: CAMERA_ELEVATIONS },
+			{ type: 'reference-image' },
 		],
 	}
 }

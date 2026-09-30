@@ -8,11 +8,21 @@ import {
 import { graphicRuntimeCatalog } from '@/features/graphic-generation/graphic-runtimes/catalog/runtime.generated.client'
 import type { GraphicRuntime } from '@/features/graphic-generation/runtime/client/graphic-runtime.client'
 import { cn } from '@/lib/utils'
-import { createControllerValues } from '@/modules/studio-controller/controller-definition'
+import {
+	type ControllerControlValue,
+	createControllerValues,
+} from '@/modules/studio-controller/controller-definition'
 
 type PageHeroProps = {
 	/** 배경을 그릴 그래픽 런타임. 카탈로그의 어떤 런타임이든 기본값으로 재생한다. */
 	runtimeId: GraphicRuntimeId
+	/**
+	 * 런타임 기본값 위에 덮을 컨트롤 값. 한 런타임이 여러 모양을 갖는 경우(Fluted Glass의
+	 * 가로·세로·스윕·방사) 어느 모양으로 재생할지를 이것으로 고른다.
+	 *
+	 * 🔴 **모듈 상수로 넘긴다.** 렌더마다 새로 만든 객체를 넘기면 shader가 매 렌더 다시 마운트된다.
+	 */
+	values?: Readonly<Record<string, ControllerControlValue>>
 	/** 정지 폴백 이미지. shader가 붙지 않는 경우(WebGL 불가, 모션 감소 설정)에 그대로 남는다. */
 	fallbackSrc: string
 	className?: string
@@ -30,7 +40,13 @@ type PageHeroProps = {
  * 수치는 px로 고정한다: Payload admin은 root가 13px이라 rem 유틸리티가 표면마다
  * 다르게 그려지므로, 두 표면이 공유하는 컴포넌트는 px만 동일하게 렌더된다.
  */
-export function PageHero({ runtimeId, fallbackSrc, className, children }: PageHeroProps) {
+export function PageHero({
+	runtimeId,
+	values: overrides,
+	fallbackSrc,
+	className,
+	children,
+}: PageHeroProps) {
 	const containerRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => {
@@ -55,7 +71,10 @@ export function PageHero({ runtimeId, fallbackSrc, className, children }: PageHe
 			.then((adapter) =>
 				adapter.mount({
 					container,
-					values: createControllerValues(manifest.controller.groups),
+					values: {
+						...createControllerValues(manifest.controller.groups),
+						...overrides,
+					},
 					onChange: () => false,
 				}),
 			)
@@ -77,7 +96,7 @@ export function PageHero({ runtimeId, fallbackSrc, className, children }: PageHe
 			observer.disconnect()
 			runtime?.destroy()
 		}
-	}, [runtimeId])
+	}, [overrides, runtimeId])
 
 	return (
 		<div

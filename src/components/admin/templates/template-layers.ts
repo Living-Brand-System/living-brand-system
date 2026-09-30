@@ -7,6 +7,8 @@ import type { TemplateNodeConfig, TemplateNodeConfigMap } from '@/types/template
 
 export interface LayerRow {
 	id: string
+	/** 부모 노드 id — 루트 프레임은 없다. 겹침 순서를 **형제 안에서만** 바꾸므로 필요하다. */
+	parentId?: string
 	depth: number
 	name: string
 	figmaType: string
@@ -92,7 +94,7 @@ export function parseLayers(html: string): LayerRow[] {
 	const rows: LayerRow[] = []
 	const doc = new DOMParser().parseFromString(html, 'text/html')
 
-	const walk = (element: Element, depth: number) => {
+	const walk = (element: Element, depth: number, parentId?: string) => {
 		if (isImageColorizeOverlayId(element.getAttribute('data-node-id') ?? '')) return
 		const tag = element.tagName.toLowerCase()
 		const figmaType =
@@ -102,8 +104,10 @@ export function parseLayers(html: string): LayerRow[] {
 			element instanceof HTMLElement && element.hasAttribute('data-image-carrier')
 		const frameAddress = isCarrierFrameAddress(element, depth)
 
+		const id = element.getAttribute('data-node-id') || `${depth}-${rows.length}`
 		rows.push({
-			id: element.getAttribute('data-node-id') || `${depth}-${rows.length}`,
+			id,
+			...(parentId ? { parentId } : {}),
 			depth,
 			name: element.getAttribute('data-name') || typeLabel(figmaType),
 			figmaType,
@@ -128,11 +132,44 @@ export function parseLayers(html: string): LayerRow[] {
 			text: isText ? (element.textContent ?? '') : '',
 		})
 
-		for (const child of Array.from(element.children)) walk(child, depth + 1)
+		for (const child of Array.from(element.children)) walk(child, depth + 1, id)
 	}
 
 	for (const root of Array.from(doc.body.children)) walk(root, 0)
 	return rows
+}
+
+/**
+ * 레이어를 형제 안에서 한 칸 옮긴 `overrides`를 낸다 — **겹침 순서의 정본을 쓰는 유일한 함수**다.
+ *
+ * 🔴 `direction`은 **화면에서 보이는 방향**이다: `'up'` = 다른 레이어 위로 올라간다(= 문서에서
+ *    뒤로 간다). 목록이 겹침의 역순으로 그려지므로 목록에서도 위로 간다.
+ * 🔴 옮길 수 없으면 **`null`을 낸다.** 조용히 같은 값을 돌려주면 admin이 「눌렸는데 안 움직였다」를
+ *    보여 주게 된다 — 부를 쪽이 손잡이를 잠그게 한다.
+ * 🔑 부모의 `childOrder`에 **형제 전부**를 적는다. 부분만 적으면 목록에 없는 자식이 맨 위로
+ *    올라가(compose 규칙) 안 건드린 레이어가 움직인다.
+ */
+export function moveLayer(
+	configs: TemplateNodeConfigMap,
+	rows: readonly LayerRow[],
+	id: string,
+	direction: 'up' | 'down',
+): TemplateNodeConfigMap | null {
+	const row = rows.find((candidate) => candidate.id === id)
+	if (!row?.parentId) return null
+	// 문서 순서 그대로의 형제 목록 — parseLayers가 문서 순서로 쌓는다.
+	const siblings = rows.filter((candidate) => candidate.parentId === row.parentId)
+	const at = siblings.findIndex((candidate) => candidate.id === id)
+	// 화면에서 위로 = 문서에서 뒤로.
+	const to = direction === 'up' ? at + 1 : at - 1
+	if (at < 0 || to < 0 || to >= siblings.length) return null
+
+	const order = siblings.map((candidate) => candidate.id)
+	;[order[at], order[to]] = [order[to], order[at]]
+	return {
+		...configs,
+		[row.parentId]: { ...configs[row.parentId], childOrder: order },
+	}
 }
 
 export function pruneCarrierChildImageKeys(

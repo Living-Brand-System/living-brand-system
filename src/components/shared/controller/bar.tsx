@@ -60,7 +60,7 @@ export function ControllerBar({
 						: { type: 'spring', visualDuration: 0.25, bounce: 0.15 }
 				}
 				className={cn(
-					'pointer-events-auto hidden items-center gap-2 rounded-3xl bg-background p-3 shadow-lg lg:flex',
+					'pointer-events-auto hidden items-center gap-2 rounded-xl bg-background p-3 shadow-lg lg:flex',
 					PLACEMENT[placement],
 					className,
 				)}

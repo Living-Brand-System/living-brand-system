@@ -48,6 +48,7 @@ export const DASHBOARD_CARD_BLOCKS: DashboardBlock[] = [
 		entries: [
 			collection('image-profiles'),
 			collection('graphic-profiles'),
+			collection('graph-profiles'),
 			collection('templates'),
 		],
 		wide: true,

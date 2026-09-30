@@ -12,7 +12,7 @@ function mockAgentSettings(settings: Record<string, string>) {
 }
 
 describe('agent default instructions', () => {
-	it('wraps configured sections with stable instruction tags', async () => {
+	it('wraps configured topics with stable instruction tags', async () => {
 		mockAgentSettings({
 			productInformation: 'Brand production workspace.',
 			toolCalling: 'Use templates first.',
@@ -27,7 +27,7 @@ describe('agent default instructions', () => {
 		expect(instructions).toContain('<refusal_handling>')
 	})
 
-	it('falls back to default section text when a stored value is blank', async () => {
+	it('falls back to default topic text when a stored value is blank', async () => {
 		mockAgentSettings({ defaultStance: '   ' })
 
 		const instructions = await getAgentDefaultInstructions({ id: 1 })

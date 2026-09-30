@@ -1,0 +1,4 @@
+/* Figma 176:15060의 도판 배경 데이터. */
+.safetyHelmet[data-slot="guideline-card-display"] {
+	--guideline-display-background: #dcf5d2;
+}

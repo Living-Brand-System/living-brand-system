@@ -1,0 +1,4 @@
+/* Figma 176:16472 대표 도판의 배경 데이터. */
+.overview[data-slot="guideline-card-display"] {
+	--guideline-display-background: #dcf5d2;
+}

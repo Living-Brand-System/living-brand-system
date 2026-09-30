@@ -25,6 +25,12 @@ vi.mock('@/features/image-generation/services/list-image-studio-configs.service'
 vi.mock('@/features/graphic-generation/services/list-graphic-studio-configs.service', () => ({
 	listGraphicStudioConfigs: vi.fn(async () => []),
 }))
+// 🔴 이것이 빠져 있어 단위 테스트가 Payload를 실제로 부팅했다 — 빈 DB에서는 스키마 생성까지
+//    이 테스트가 떠안아 CI가 타임아웃으로 죽었다.
+vi.mock(
+	'@/features/template-customization/repositories/brand-highlight-color.payload.repository',
+	() => ({ getTemplateHighlightColor: vi.fn(async () => '#1d7a4c') }),
+)
 
 describe('getTemplateStudio', () => {
 	it('published 템플릿이 없으면 null을 반환한다', async () => {
@@ -44,5 +50,7 @@ describe('getTemplateStudio', () => {
 		})
 		expect(JSON.stringify(studio?.template)).not.toContain('controllerRestrictions')
 		expect(JSON.stringify(studio?.template)).not.toContain('exportPolicy')
+		// 강조색 배선이 끊겨도 테스트가 통과하지 않게 값까지 본다.
+		expect(studio?.highlightColor).toBe('#1d7a4c')
 	})
 })

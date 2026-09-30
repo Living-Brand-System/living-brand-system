@@ -9,7 +9,7 @@ describe('EXPORTER_ARTIFACT_COMPATIBILITY', () => {
 			png: { artifacts: ['raster'] },
 			jpeg: { artifacts: ['raster'] },
 			tiff: { artifacts: ['raster'] },
-			pdf: { artifacts: ['raster'] },
+			pdf: { artifacts: ['vector', 'raster'] },
 			svg: { artifacts: ['vector'] },
 			mp4: { artifacts: ['video', 'raster'] },
 		})

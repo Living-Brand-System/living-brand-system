@@ -1,0 +1,66 @@
+.actions {
+	position: absolute;
+	inset: 24px 24px auto;
+	z-index: 1;
+	height: 36px;
+	pointer-events: none;
+}
+.actions:has([data-slot="toggle-group"]) {
+	height: 44px;
+}
+.position {
+	position: absolute;
+	top: 50%;
+	width: max-content;
+	transform: translateY(-50%);
+	pointer-events: auto;
+}
+.position[data-position="start"] {
+	inset-inline-start: 0;
+}
+/* ponytail: 좁은 카드의 겹침을 허용한다. 실제 사용처에서 필요할 때 조합 제한을 추가한다. */
+.position[data-position="center"] {
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+.position[data-position="end"] {
+	inset-inline-end: 0;
+}
+.position:focus-within {
+	z-index: 1;
+}
+
+.colorPicker {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	flex-shrink: 0;
+	border-radius: 50%;
+	background: var(--border);
+	color: var(--muted-foreground);
+}
+.colorPicker:focus-within {
+	outline: 2px solid var(--ring);
+	outline-offset: 2px;
+}
+.colorInput {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	opacity: 0;
+	cursor: pointer;
+}
+.breadcrumb {
+	border-radius: 100px;
+	padding-inline: 10px;
+	background: var(--border);
+	max-width: 100%;
+	overflow-x: auto;
+}
+.position[data-position="center"]:has([data-slot="breadcrumb"]) {
+	max-width: 100%;
+}

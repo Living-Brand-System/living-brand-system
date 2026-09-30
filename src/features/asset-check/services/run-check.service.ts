@@ -37,6 +37,11 @@ export interface ImmediateCheckResult {
 export interface HeuristicCheckResult {
 	results: Record<string, CheckResult>
 	aiUsage?: AiUsage
+	/**
+	 * 합치기 전의 모델 그룹별 사용량. `aiUsage`는 세션 문서에 남길 단일 값이라 모델명을 이어 붙이므로
+	 * 계정별 집계에는 쓸 수 없다 — 모델마다 단가가 달라서 한 행으로 뭉치면 뜻을 잃는다.
+	 */
+	aiUsages?: AiUsage[]
 }
 
 /** AI 호출 1건에 싣는 최대 Check 수 — structured output 문법 컴파일 한도 이내로 유지한다. */
@@ -168,9 +173,11 @@ export async function runHeuristicCheck(
 		}
 	}
 
+	const aiUsages = runs.flatMap(({ run }) => (run.aiUsage ? [run.aiUsage] : []))
 	return {
 		results,
-		aiUsage: mergeAiUsages(runs.flatMap(({ run }) => (run.aiUsage ? [run.aiUsage] : []))),
+		aiUsage: mergeAiUsages(aiUsages),
+		aiUsages,
 	}
 }
 

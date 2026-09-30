@@ -1,6 +1,6 @@
 import type { Field } from 'payload'
 import { describe, expect, it } from 'vitest'
-import { CAMERA_AZIMUTHS } from '@/features/image-generation/camera-control'
+import { CAMERA_AZIMUTHS } from '@/features/image-generation/domain/camera-control'
 import { STUDIO_OUTPUT_FORMAT_OPTIONS } from '@/features/studio-export/export-contract'
 import { GraphicProfiles } from '../GraphicProfiles'
 import { ImageProfiles } from '../ImageProfiles'
@@ -171,6 +171,7 @@ describe('imageProfileFeaturesField', () => {
 		expect(features.blocks.map((block) => block.slug)).toEqual([
 			'colorAdjustment',
 			'cameraControl',
+			'referenceImage',
 		])
 		expect(features.blocks[0]?.fields).toEqual([
 			expect.objectContaining({ name: 'background', type: 'checkbox' }),
@@ -180,6 +181,8 @@ describe('imageProfileFeaturesField', () => {
 			expect.objectContaining({ name: 'azimuths', type: 'json' }),
 			expect.objectContaining({ name: 'elevations', type: 'json' }),
 		])
+		// 첨부는 저장하지 않는 1회용이라 프로파일이 좁힐 값이 없다 — 켜고 끄는 것이 전부다.
+		expect(features.blocks[2]?.fields).toEqual([])
 		// 고를 수 있는 값은 런타임 구간뿐이다 — 임의 값을 적는 칸이 아니다. 렌더는 features
 		// 필드 컴포넌트가 통째로 소유하고(토글 On=블록 추가), 구간 옵션을 clientProps로 받는다.
 		expect(features.admin?.components?.Field).toMatchObject({

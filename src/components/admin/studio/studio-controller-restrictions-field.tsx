@@ -5,10 +5,11 @@ import type { JSONFieldClientComponent } from 'payload'
 import type { ComponentProps } from 'react'
 import { AdminSectionHeading } from '@/components/admin/shared/admin-section-heading'
 import { Controller } from '@/components/shared/controller'
-import type {
-	ControllerControlDefinition,
-	ControllerControlRestriction,
-	StudioControllerRestrictions,
+import {
+	type ControllerControlDefinition,
+	type ControllerControlRestriction,
+	isControllerPadValue,
+	type StudioControllerRestrictions,
 } from '@/modules/studio-controller/controller-definition'
 import {
 	type StudioAdminBaseConfig,
@@ -420,7 +421,8 @@ function DefaultValueEditor({
 		)
 	}
 	if (control.kind === 'pad') {
-		const point = typeof value === 'object' && value ? value : control.defaultValue
+		const point =
+			value !== undefined && isControllerPadValue(value) ? value : control.defaultValue
 		return (
 			<div className="grid grid-cols-1 gap-1 md:grid-cols-2">
 				{(['x', 'y'] as const).map((axis) => (

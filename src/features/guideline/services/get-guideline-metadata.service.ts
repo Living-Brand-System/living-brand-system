@@ -1,6 +1,6 @@
 import { cache } from 'react'
+import { findGuidelineMetadataGlobal } from '@/features/guideline/repositories/guideline-view.payload.repository'
 import { getContrastingForeground, isValidHex } from '@/lib/color'
-import { findGuidelineMetadataGlobal } from '../repositories/guideline-view.payload.repository'
 
 export interface GetGuidelineMetadataOutput {
 	companyName: string

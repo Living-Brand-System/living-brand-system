@@ -1,7 +1,7 @@
 import { DEFAULT_CMYK_ICC_PROFILE } from '../color-profile'
 import type { ExportRequest, StudioOutputFormat, VideoExportSpec } from '../export-contract'
-import type { PrintPpi } from '../print-policy'
-import type { StudioOutputCapability } from '../studio-output'
+import { type PrintPpi, resolveDefaultPrintPpi } from '../print-policy'
+import { acceptsPrintPpi, type StudioOutputCapability } from '../studio-output'
 
 export type RasterExportSettings = {
 	width: number
@@ -38,15 +38,21 @@ export function createRasterExportRequest(
 			}
 		case 'tiff':
 		case 'pdf': {
-			const ppi = settings.ppi ?? capability.print?.ppi[0]
-			if (!ppi || !capability.print?.ppi.includes(ppi)) return null
+			// 🔴 목록의 첫 값을 폴백으로 쓰면 72ppi로 떨어져 인쇄물이 조용히 4배 크게 나간다.
+			const ppi = settings.ppi ?? resolveDefaultPrintPpi(capability.print?.ppi)
+			if (!acceptsPrintPpi(capability, ppi)) return null
 			const colorProfile = {
 				space: 'cmyk' as const,
 				icc: capability.colorProfiles?.cmyk?.[0] ?? DEFAULT_CMYK_ICC_PROFILE,
 			}
 			return format === 'tiff'
-				? { artifact: 'raster', format, colorProfile, options: { ppi, compression: 'lzw' } }
-				: { artifact: 'raster', format, colorProfile, options: { ppi, bleedMm: 0 } }
+				? {
+						artifact: 'raster',
+						format,
+						colorProfile,
+						options: { ppi, compression: 'lzw', scale },
+					}
+				: { artifact: 'raster', format, colorProfile, options: { ppi, bleedMm: 0, scale } }
 		}
 		case 'mp4': {
 			const video = capability.video?.mp4

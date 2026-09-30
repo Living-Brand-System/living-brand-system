@@ -3,8 +3,30 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const REQUIRED_FILES = ['definition.ts', 'model.ts', 'runtime.client.ts'] as const
+
+/**
+ * 🔴 이 스크립트가 내는 파일은 biome의 formatter 대상에서 빼 두었다(`biome.json`).
+ *
+ * 여기서 줄바꿈을 문자열로 박기 때문이다 — 런타임 이름이 짧아지면 그 줄이 biome의 lineWidth
+ * 안에 들어가 버려 formatter가 한 줄로 접고, 그러면 `--check`가 영원히 실패한다(Fluted 넷을
+ * `fluted-glass` 하나로 합칠 때 실제로 그랬다). 이름 길이에 따라 검사가 켜졌다 꺼졌다 하는
+ * 것보다 생성물을 formatter 밖에 두는 것이 낫다 — `payload-types.ts`도 그렇게 두었다.
+ */
 const GENERATED_HEADER =
 	'// 이 파일은 scripts/generate-graphic-runtime-catalogs.ts로 생성됩니다. 직접 수정하지 마세요.\n\n'
+
+/**
+ * 캔버스 스튜디오는 둘이고 **카탈로그만 갈린다** — 실행 계약(plugin·adapter)은 한 벌을 공유한다.
+ * 그래서 생성기는 폴더와 이름 접두어만 바꿔 같은 파일 세 벌을 두 번 낸다.
+ */
+export type CatalogTarget = {
+	/** 런타임 폴더. */
+	runtimesDirectory: string
+	/** 내보내는 이름의 접두어 — `graphic` 또는 `graph`. */
+	prefix: string
+	/** 공용 실행 계약이 사는 곳(카탈로그 기준 상대경로). */
+	runtimeImportBase: string
+}
 
 export interface GraphicRuntimeRegistration {
 	directory: string
@@ -54,7 +76,14 @@ export async function discoverGraphicRuntimeRegistrations(
 	)
 }
 
-function renderManifestCatalog(runtimes: GraphicRuntimeRegistration[]): string {
+function capitalize(value: string): string {
+	return value.charAt(0).toUpperCase() + value.slice(1)
+}
+
+function renderManifestCatalog(
+	runtimes: GraphicRuntimeRegistration[],
+	target: CatalogTarget,
+): string {
 	const imports = runtimes
 		.map(
 			({ directory, symbol }) => `import ${symbol}Manifest from '../${directory}/definition'`,
@@ -62,15 +91,15 @@ function renderManifestCatalog(runtimes: GraphicRuntimeRegistration[]): string {
 		.join('\n')
 	return `${GENERATED_HEADER}${imports}
 
-export const graphicRuntimeManifests = [
+export const ${target.prefix}RuntimeManifests = [
 ${runtimes.map(({ directory, symbol }) => `\t${symbol}Manifest, // ${directory}`).join('\n')}
 ] as const
 
-export type GraphicRuntimeId = (typeof graphicRuntimeManifests)[number]['id']
+export type ${capitalize(target.prefix)}RuntimeId = (typeof ${target.prefix}RuntimeManifests)[number]['id']
 `
 }
 
-function renderModelCatalog(runtimes: GraphicRuntimeRegistration[]): string {
+function renderModelCatalog(runtimes: GraphicRuntimeRegistration[], target: CatalogTarget): string {
 	const imports = runtimes
 		.map(
 			({ directory, symbol }) =>
@@ -81,16 +110,19 @@ function renderModelCatalog(runtimes: GraphicRuntimeRegistration[]): string {
 		.map(({ symbol }) => `\t{ manifest: ${symbol}Manifest, ...${symbol}Model },`)
 		.join('\n')
 
-	return `${GENERATED_HEADER}import type { GraphicStudioPlugin } from '../../runtime/graphic-plugin'
+	return `${GENERATED_HEADER}import type { GraphicStudioPlugin } from '${target.runtimeImportBase}/graphic-plugin'
 ${imports}
 
-export const graphicStudioPlugins = [
+export const ${target.prefix}StudioPlugins = [
 ${entries}
 ] as const satisfies readonly GraphicStudioPlugin[]
 `
 }
 
-function renderClientRuntimeCatalog(runtimes: GraphicRuntimeRegistration[]): string {
+function renderClientRuntimeCatalog(
+	runtimes: GraphicRuntimeRegistration[],
+	target: CatalogTarget,
+): string {
 	const entries = runtimes
 		.map(
 			({ directory }) =>
@@ -100,35 +132,34 @@ function renderClientRuntimeCatalog(runtimes: GraphicRuntimeRegistration[]): str
 
 	return `${GENERATED_HEADER}'use client'
 
-import type { GraphicRuntimeLoader } from '../../runtime/client/graphic-runtime.client'
-import type { GraphicRuntimeId } from './manifest.generated'
+import type { GraphicRuntimeLoader } from '${target.runtimeImportBase}/client/graphic-runtime.client'
+import type { ${capitalize(target.prefix)}RuntimeId } from './manifest.generated'
 
-export const graphicRuntimeCatalog = {
+export const ${target.prefix}RuntimeCatalog = {
 ${entries}
-} satisfies Record<GraphicRuntimeId, GraphicRuntimeLoader>
+} satisfies Record<${capitalize(target.prefix)}RuntimeId, GraphicRuntimeLoader>
 `
 }
 
 export function renderGraphicRuntimeCatalogs(
 	runtimes: GraphicRuntimeRegistration[],
+	target: CatalogTarget,
 ): Record<string, string> {
 	return {
-		'manifest.generated.ts': renderManifestCatalog(runtimes),
-		'model.generated.ts': renderModelCatalog(runtimes),
-		'runtime.generated.client.ts': renderClientRuntimeCatalog(runtimes),
+		'manifest.generated.ts': renderManifestCatalog(runtimes, target),
+		'model.generated.ts': renderModelCatalog(runtimes, target),
+		'runtime.generated.client.ts': renderClientRuntimeCatalog(runtimes, target),
 	}
 }
 
 export async function generateGraphicRuntimeCatalogs({
-	runtimesDirectory,
 	check,
-}: {
-	runtimesDirectory: string
-	check: boolean
-}): Promise<void> {
+	...target
+}: CatalogTarget & { check: boolean }): Promise<void> {
+	const { runtimesDirectory } = target
 	const runtimes = await discoverGraphicRuntimeRegistrations(runtimesDirectory)
 	const catalogDirectory = path.join(runtimesDirectory, 'catalog')
-	const catalogs = renderGraphicRuntimeCatalogs(runtimes)
+	const catalogs = renderGraphicRuntimeCatalogs(runtimes, target)
 	const staleFiles: string[] = []
 
 	if (!check) await mkdir(catalogDirectory, { recursive: true })
@@ -149,16 +180,28 @@ export async function generateGraphicRuntimeCatalogs({
 }
 
 const scriptPath = fileURLToPath(import.meta.url)
-const runtimesDirectory = path.resolve(
-	path.dirname(scriptPath),
-	'../src/features/graphic-generation/graphic-runtimes',
-)
+const sourceRoot = path.resolve(path.dirname(scriptPath), '../src/features')
+
+/** 🔴 캔버스 스튜디오를 새로 세우면 여기 한 줄을 더한다 — 카탈로그는 손으로 쓰지 않는다. */
+export const CATALOG_TARGETS: readonly CatalogTarget[] = [
+	{
+		runtimesDirectory: path.join(sourceRoot, 'graphic-generation/graphic-runtimes'),
+		prefix: 'graphic',
+		runtimeImportBase: '../../runtime',
+	},
+	{
+		runtimesDirectory: path.join(sourceRoot, 'graph-generation/graph-runtimes'),
+		prefix: 'graph',
+		// 실행 계약은 Graphic과 한 벌을 공유한다 — 복제하면 같은 규칙을 두 번 구현하게 된다.
+		runtimeImportBase: '@/features/graphic-generation/runtime',
+	},
+]
 
 if (process.argv[1] && path.resolve(process.argv[1]) === scriptPath) {
-	generateGraphicRuntimeCatalogs({
-		runtimesDirectory,
-		check: process.argv.includes('--check'),
-	}).catch((error: unknown) => {
+	const check = process.argv.includes('--check')
+	Promise.all(
+		CATALOG_TARGETS.map((target) => generateGraphicRuntimeCatalogs({ ...target, check })),
+	).catch((error: unknown) => {
 		console.error(error instanceof Error ? error.message : error)
 		process.exitCode = 1
 	})

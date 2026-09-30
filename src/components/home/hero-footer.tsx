@@ -1,11 +1,17 @@
 import Image from 'next/image'
 import Link from 'next/link'
 
+import { STUDIO_NAV_ITEMS } from '@/components/global/studio-nav'
 import { Typography } from '@/components/ui/typography'
 import { getGuidelineMetadata } from '@/features/guideline/services/get-guideline-metadata.service'
 import { routes } from '@/lib/routes'
 import { cn } from '@/lib/utils'
 
+/**
+ * 🔴 Studio 목록을 여기서 다시 적지 않는다 — GNB와 두 벌이 되면 갈린다(QA C1: Graph가 빠져
+ *    있었고, 푸터가 유일한 입구인 화면 크기에서는 그 스튜디오에 닿을 길이 없었다).
+ *    정본은 `studio-nav`이고, 새 스튜디오가 빠지면 타입 검사가 떨어진다.
+ */
 const FOOTER_LINK_GROUPS = [
 	{
 		label: 'Guideline',
@@ -13,17 +19,7 @@ const FOOTER_LINK_GROUPS = [
 	},
 	{
 		label: 'Studio',
-		links: [
-			{ href: routes.studio.template, label: 'Templates' },
-			{ href: routes.studio.image, label: 'Image' },
-			{ href: routes.studio.graphic, label: 'Graphic' },
-			{ href: routes.studio.review, label: 'Review' },
-			{ href: routes.studio.assets, label: 'Assets' },
-		],
-	},
-	{
-		label: 'System',
-		links: [{ href: routes.admin, label: 'Admin ↗' }],
+		links: STUDIO_NAV_ITEMS.map(({ href, label }) => ({ href, label })),
 	},
 ] as const
 
@@ -55,7 +51,7 @@ export async function HeroFooter() {
 						© {new Date().getFullYear()} {companyName}. All rights reserved.
 					</Typography>
 				</div>
-				<nav aria-label="푸터 메뉴" className="grid grid-cols-3 gap-8 md:gap-16">
+				<nav aria-label="푸터 메뉴" className="grid grid-cols-2 gap-8 md:gap-16">
 					{FOOTER_LINK_GROUPS.map((group) => (
 						<div key={group.label}>
 							<Typography as="p" size="xs" weight="semibold">

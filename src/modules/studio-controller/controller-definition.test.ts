@@ -5,13 +5,183 @@ import {
 	acceptsControllerExecutionValues,
 	applyControllerRestrictions,
 	type ControllerGroupDefinition,
+	controllerRemountKey,
 	createControllerValues,
+	followsChangedDefault,
 	isControllerPadValue,
 	parseStudioControllerConfig,
 	projectPayloadControllerRestrictions,
 	resolveControllerPresentation,
+	splitControllerGroups,
 	toStudioPreviewImage,
+	visibleControllerGroups,
 } from './controller-definition'
+
+describe('splitControllerGroups', () => {
+	const groups: readonly ControllerGroupDefinition[] = [
+		{
+			id: 'palette',
+			title: 'Ray Palette',
+			controls: [
+				{ id: 'rayColor1', label: '광선 색상 1', kind: 'color', defaultValue: '#ffffff' },
+				{ id: 'rayColor2', label: '광선 색상 2', kind: 'color', defaultValue: '#000000' },
+			],
+		},
+		{
+			id: 'position',
+			title: 'Position',
+			controls: [
+				{
+					id: 'sourceOffsetX',
+					label: '광원 X 오프셋',
+					kind: 'range',
+					defaultValue: 0,
+					min: -1,
+					max: 1,
+					step: 0.01,
+				},
+			],
+		},
+	]
+
+	it('왼쪽에 남긴 컨트롤과 나머지를 그룹 구조 그대로 가른다', () => {
+		const split = splitControllerGroups(groups, ['sourceOffsetX'])
+
+		expect(split.left.map((group) => group.id)).toEqual(['position'])
+		expect(split.right.map((group) => group.id)).toEqual(['palette'])
+		expect(split.right[0]?.controls.map((control) => control.id)).toEqual([
+			'rayColor1',
+			'rayColor2',
+		])
+	})
+
+	it('🔴 선언이 없으면 전부 왼쪽이다 — 안 정한 런타임의 화면이 비면 안 된다', () => {
+		const split = splitControllerGroups(groups, undefined)
+
+		expect(split.left).toEqual(groups)
+		expect(split.right).toEqual([])
+	})
+
+	it('빈 배열은 전부 오른쪽이다 — 빈 선언과 미선언을 같게 취급하지 않는다', () => {
+		const split = splitControllerGroups(groups, [])
+
+		expect(split.left).toEqual([])
+		expect(split.right.map((group) => group.id)).toEqual(['palette', 'position'])
+	})
+
+	it('🔴 보이는 축만 남긴다 — 좌·우 어디에도 없는 축은 admin 전용이다', () => {
+		// 좌·우를 한 자리에 이어 그리는 화면(Template 배경)이 쓰는 갈래다.
+		const visible = visibleControllerGroups(groups, ['rayColor1'], ['sourceOffsetX'])
+
+		expect(visible.map((group) => [group.id, group.controls.map((c) => c.id)])).toEqual([
+			['palette', ['rayColor1']],
+			['position', ['sourceOffsetX']],
+		])
+	})
+
+	it('🔴 한 그룹이 좌·우로 갈려도 제목이 두 번 그려지지 않는다', () => {
+		// splitControllerGroups의 두 벌을 이어 붙이면 같은 제목이 두 번 나온다 — 그래서 별 갈래다.
+		const visible = visibleControllerGroups(groups, ['rayColor1'], ['rayColor2'])
+
+		expect(visible.map((group) => group.title)).toEqual(['Ray Palette'])
+		expect(visible[0]?.controls.map((c) => c.id)).toEqual(['rayColor1', 'rayColor2'])
+	})
+
+	it('선언이 반쪽이면 전부 보인다 — 안 정한 런타임의 화면이 비면 안 된다', () => {
+		expect(visibleControllerGroups(groups, undefined, ['sourceOffsetX'])).toEqual(groups)
+		expect(visibleControllerGroups(groups, ['rayColor1'], undefined)).toEqual(groups)
+	})
+
+	it('🔴 색 조합 그룹의 색 칸에 허용 색을 걸면 admin 저장에서 거부한다', () => {
+		// 걸면 그 칸이 띠에서 빠져 팔레트 칩이 채울 짝을 잃는다 — 칩은 눌리는데 색이 안 바뀐다.
+		const paletteGroups: readonly ControllerGroupDefinition[] = [
+			{
+				id: 'palette',
+				title: 'Ray Palette',
+				controls: [
+					{
+						id: 'palette',
+						kind: 'select',
+						label: '팔레트',
+						defaultValue: 'green',
+						options: [
+							{ value: 'green', label: '그린', colors: ['#000000', '#ffffff'] },
+						],
+					},
+					{
+						id: 'rayColor1',
+						label: '광선 색상 1',
+						kind: 'color',
+						defaultValue: '#ffffff',
+					},
+					{
+						id: 'rayColor2',
+						label: '광선 색상 2',
+						kind: 'color',
+						defaultValue: '#000000',
+					},
+				],
+			},
+		]
+
+		expect(() =>
+			applyControllerRestrictions(paletteGroups, {
+				controls: [{ controlId: 'rayColor1', colorValues: ['#ffffff', '#000000'] }],
+			}),
+		).toThrow(/허용 색을 지정할 수 없습니다: rayColor1/)
+
+		// 색이 아닌 축의 제한은 그대로 통과한다 — 팔레트를 못 쓰게 만드는 것만 막는다.
+		expect(() =>
+			applyControllerRestrictions(paletteGroups, {
+				controls: [{ controlId: 'palette', defaultValue: 'green' }],
+			}),
+		).not.toThrow()
+	})
+
+	it('🔴 재마운트 지문은 remountOn 축만 담는다 — 두 화면이 같은 값을 봐야 한다', () => {
+		const values = { shape: 'vertical', rayIntensity: 0.9 }
+
+		expect(controllerRemountKey(['shape'], values)).toBe('shape=vertical')
+		// 선언이 없으면 지문이 비어 재마운트가 걸리지 않는다.
+		expect(controllerRemountKey(undefined, values)).toBe('')
+		// 지문 밖의 축이 바뀌어도 문자열이 같아야 한다(살아 있는 런타임에 흘려 넣는 값이다).
+		expect(controllerRemountKey(['shape'], { ...values, rayIntensity: 0.1 })).toBe(
+			'shape=vertical',
+		)
+	})
+
+	it('한 그룹이 양쪽으로 갈려도 각자 자기 제목을 지킨다', () => {
+		const split = splitControllerGroups(groups, ['rayColor1', 'sourceOffsetX'])
+
+		expect(split.left.map((group) => [group.title, group.controls.length])).toEqual([
+			['Ray Palette', 1],
+			['Position', 1],
+		])
+		expect(split.right.map((group) => [group.title, group.controls.length])).toEqual([
+			['Ray Palette', 1],
+		])
+	})
+	it('🔴 어느 쪽에도 없는 컨트롤은 어느 쪽에도 그려지지 않는다 — admin 전용 층', () => {
+		const split = splitControllerGroups(groups, ['rayColor1'], ['sourceOffsetX'])
+
+		expect(split.left.flatMap((group) => group.controls.map((c) => c.id))).toEqual([
+			'rayColor1',
+		])
+		expect(split.right.flatMap((group) => group.controls.map((c) => c.id))).toEqual([
+			'sourceOffsetX',
+		])
+		// rayColor2는 두 목록에 없다 — 선언은 남지만 창작자 화면에는 서지 않는다.
+	})
+
+	it('오른쪽 빈 배열과 미선언은 다르다 — 하나는 아무것도, 하나는 나머지 전부', () => {
+		expect(splitControllerGroups(groups, ['rayColor1'], []).right).toEqual([])
+		expect(
+			splitControllerGroups(groups, ['rayColor1'], undefined).right.flatMap((group) =>
+				group.controls.map((c) => c.id),
+			),
+		).toEqual(['rayColor2', 'sourceOffsetX'])
+	})
+})
 
 describe('createControllerValues', () => {
 	it('가변 그룹의 기본값을 control id 기준 세션 값으로 만든다', () => {
@@ -257,6 +427,56 @@ describe('parseStudioControllerConfig', () => {
 		expect(() =>
 			parseStudioControllerConfig(configWith({ ...select, variant: 'dropdown' })),
 		).toThrow('variant')
+	})
+
+	// 선택지가 곧 색 조합일 때만 색 칩으로 그려진다 — 반쪽으로 그려질 여지를 계약이 먼저 막는다.
+	it('select 선택지의 색 조합은 전 선택지가 함께 갖거나 함께 없어야 한다', () => {
+		const colorway = {
+			id: 'colorway',
+			kind: 'select' as const,
+			label: 'Colorway',
+			variant: 'list' as const,
+			defaultValue: 'darkGreenGreen',
+			options: [
+				{
+					value: 'darkGreenGreen',
+					label: '다크그린 · 그린',
+					colors: ['#00280a', '#007332'],
+				},
+				{ value: 'navyBlue', label: '네이비 · 블루', colors: ['#000a32', '#003087'] },
+			],
+		}
+		expect(parseStudioControllerConfig(configWith(colorway))).toEqual(configWith(colorway))
+		expect(() =>
+			parseStudioControllerConfig(
+				configWith({
+					...colorway,
+					options: [colorway.options[0], { value: 'navyBlue', label: '네이비 · 블루' }],
+				}),
+			),
+		).toThrow('colors는 모든 선택지에')
+		expect(() =>
+			parseStudioControllerConfig(
+				configWith({
+					...colorway,
+					options: [
+						{
+							value: 'darkGreenGreen',
+							label: '다크그린 · 그린',
+							colors: ['#00280a', 'green'],
+						},
+					],
+				}),
+			),
+		).toThrow('#rrggbb')
+		expect(() =>
+			parseStudioControllerConfig(
+				configWith({
+					...colorway,
+					options: [{ value: 'darkGreenGreen', label: '다크그린 · 그린', colors: [] }],
+				}),
+			),
+		).toThrow('하나 이상의 색')
 	})
 
 	it('공통 Runtime Artifact parser가 unknown kind를 거부한다', () => {
@@ -507,6 +727,50 @@ describe('Payload Controller projection과 Override 적용', () => {
 		expect(acceptsControllerExecutionValue(control, '#0000ff')).toBe(false)
 	})
 
+	it('색 조합 선택지를 좁혀도 남은 선택지의 색은 살아남는다', () => {
+		const base = [
+			{
+				id: 'graphic',
+				title: 'Graphic',
+				controls: [
+					{
+						id: 'colorway',
+						kind: 'select' as const,
+						label: '컬러',
+						variant: 'list' as const,
+						defaultValue: 'darkGreenGreen',
+						options: [
+							{
+								value: 'darkGreenGreen',
+								label: '다크그린 · 그린',
+								colors: ['#00280a', '#007332'],
+							},
+							{
+								value: 'navyBlue',
+								label: '네이비 · 블루',
+								colors: ['#000a32', '#003087'],
+							},
+						],
+					},
+				],
+			},
+		] satisfies readonly ControllerGroupDefinition[]
+		const narrowed = applyControllerRestrictions(
+			base,
+			projectPayloadControllerRestrictions({
+				controls: [
+					{ controlId: 'colorway', defaultValue: 'navyBlue', optionValues: ['navyBlue'] },
+				],
+			}),
+		)
+		const control = narrowed[0]?.controls[0]
+		if (control?.kind !== 'select') throw new Error('select control이 필요합니다.')
+
+		expect(control.options).toEqual([
+			{ value: 'navyBlue', label: '네이비 · 블루', colors: ['#000a32', '#003087'] },
+		])
+	})
+
 	it('팔레트를 이미 가진 색 control을 넓히려 하면 거부한다', () => {
 		const base = [
 			{
@@ -531,6 +795,56 @@ describe('Payload Controller projection과 Override 적용', () => {
 				}),
 			),
 		).toThrow('colorValues가 기본 계약을 확장합니다')
+	})
+
+	it('색을 갖지 않는 kind에 colorValues를 주면 거부한다', () => {
+		// colorValues는 color control의 팔레트를 좁히는 축이다. select가 options에 colors를 갖게 된
+		// 뒤로는 컬러웨이를 좁히려는 사람이 optionValues 대신 이것을 집을 수 있어, 조용히 무시되면
+		// Admin은 좁혔다고 믿는데 발행된 계약은 그대로다.
+		const base = [
+			{
+				id: 'graphic',
+				title: 'Graphic',
+				controls: [
+					{
+						id: 'colorway',
+						kind: 'select' as const,
+						label: '컬러',
+						defaultValue: 'navyBlue',
+						options: [
+							{
+								value: 'navyBlue',
+								label: '네이비 · 블루',
+								colors: ['#000a32', '#003087'],
+							},
+						],
+					},
+					{
+						id: 'variableWeight',
+						kind: 'toggle' as const,
+						label: '가변 두께',
+						defaultValue: true,
+					},
+					{
+						id: 'origin',
+						kind: 'pad' as const,
+						label: '기준점',
+						defaultValue: { x: 0, y: 0 },
+					},
+				],
+			},
+		] satisfies readonly ControllerGroupDefinition[]
+
+		for (const controlId of ['colorway', 'variableWeight', 'origin']) {
+			expect(() =>
+				applyControllerRestrictions(
+					base,
+					projectPayloadControllerRestrictions({
+						controls: [{ controlId, colorValues: ['#000a32'] }],
+					}),
+				),
+			).toThrow('지원하지 않는 restriction입니다')
+		}
 	})
 })
 
@@ -641,3 +955,25 @@ function configWith(control: unknown) {
 		},
 	}
 }
+
+describe('기본값이 바뀌면 값이 따라가는가', () => {
+	const 파이 = '아시아\t34\n유럽\t33'
+	const 히트맵 = '구분\t1월\t2월\n설계\t18\t22'
+
+	it('손대지 않은 값은 새 기본값을 따라간다 — 표현을 바꾸면 그 표현의 데이터가 온다', () => {
+		expect(followsChangedDefault(파이, 파이, 히트맵)).toBe(true)
+	})
+
+	it('🔴 손댄 값은 따라가지 않는다 — 덮으면 적은 것이 되돌릴 방법 없이 사라진다', () => {
+		expect(followsChangedDefault('내가 적은 표\t1', 파이, 히트맵)).toBe(false)
+	})
+
+	it('기본값이 그대로면 아무것도 하지 않는다 — 매번 새 값을 만들면 무한 루프가 된다', () => {
+		expect(followsChangedDefault(파이, 파이, 파이)).toBe(false)
+		expect(followsChangedDefault('내가 적은 표', 파이, 파이)).toBe(false)
+	})
+
+	it('직전 기본값을 모르면(첫 렌더) 따라가지 않는다', () => {
+		expect(followsChangedDefault(파이, undefined, 히트맵)).toBe(false)
+	})
+})

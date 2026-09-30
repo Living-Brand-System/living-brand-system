@@ -35,6 +35,26 @@ describe('Forward Straight client runtime', () => {
 		expect(canvas).toMatchObject({ width: 640, height: 480 })
 	})
 
+	it('캔버스가 아직 없어도 Artifact를 만들고, 캡처 시점에만 실패한다', () => {
+		// 🔴 p5는 document가 load되기 전이면 setup을 미룬다(p5 1.x 생성자). mount 시점에 캔버스를
+		//    요구하면 런타임이 통째로 실패해 내보내기·미리보기 갱신이 조용히 사라진다.
+		let late: HTMLCanvasElement | null = null
+		const artifact = createGraphicRasterArtifact({
+			canvas: () => late,
+			getViewport: () => ({ width: 100, height: 100 }),
+			render: vi.fn(),
+		})
+
+		expect(artifact.kind).toBe('raster')
+		expect(() => artifact.source.withSurface({}, () => 'x')).toThrow(
+			'Canvas가 아직 준비되지 않았습니다.',
+		)
+
+		// setup이 뒤늦게 돌면 같은 Artifact가 그대로 동작한다.
+		late = document.createElement('canvas')
+		expect(artifact.source.withSurface({}, (surface) => surface.kind)).toBe('canvas')
+	})
+
 	it('Raster frame 읽기가 실패해도 preview를 복원한다', () => {
 		const canvas = document.createElement('canvas')
 		vi.spyOn(canvas, 'toDataURL').mockImplementation(() => {

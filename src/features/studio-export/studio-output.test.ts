@@ -118,6 +118,17 @@ describe('StudioOutputCapability', () => {
 		)
 	})
 
+	it('건드리지 않아 빈 배열로 실체화된 allowedFormats는 좁히지 않는다', () => {
+		// Payload가 hasMany를 []로 채우므로 이것이 admin에서 새 프로파일을 만든 기본 상태다.
+		expect(projectStudioOutputPolicy({ allowedFormats: [] })).toEqual({})
+		expect(
+			resolveStudioOutputCapability(
+				{ vector: {}, raster: {} },
+				projectStudioOutputPolicy({ allowedFormats: [] }),
+			).formats,
+		).toEqual(resolveStudioOutputCapability({ vector: {}, raster: {} }, null).formats)
+	})
+
 	it('Runtime Artifact와 Admin 제한을 PPI·FPS·영상 상한까지 한 번에 계산한다', () => {
 		const policy = projectStudioOutputPolicy({
 			allowedFormats: ['pdf', 'mp4'],

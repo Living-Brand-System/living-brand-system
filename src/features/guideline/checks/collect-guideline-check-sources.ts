@@ -1,16 +1,32 @@
 import type { ApplicationImage, GuidelineDocument, Rule } from '@/payload-types'
 import {
+	type CheckEvidence,
+	type CheckReferenceAssetRole,
+	type GuidelineBlock,
+	snapshotBlock,
+} from '../blocks/projection'
+import { sectionTitle } from '../sections/model'
+import { projectSection } from '../sections/projection'
+import { relationshipId } from '../utils/block-text'
+import {
 	buildCheckSourceSnapshot,
 	type GuidelineCheckDocument,
-} from '../blocks/runtime/build-check-source-snapshot'
-import { type CheckEvidence, snapshotBlock } from '../blocks/runtime/project-guideline-block'
-import type { CheckReferenceAssetRole } from '../blocks/types'
-import { relationshipId } from '../utils/block-text'
+} from './build-check-source-snapshot'
+
+/** 근거가 놓인 섹션. 문서 자신의 rule이면 null이다. */
+export interface GuidelineCheckSection {
+	anchor: string
+	title: string
+	/** 문서 본문에서의 위치. 검수 화면이 섹션 순서를 지면 순서와 맞추는 데 쓴다. */
+	order: number
+}
 
 export interface GuidelineCheckSource {
 	rule: Rule
 	blockName: string | null
-	source: { documentId: number }
+	// 🔴 documentId만으로는 근거가 토픽까지만 좁혀진다. 섹션이 문서였을 때의 정밀도를 되돌리려면
+	//    앵커가 함께 있어야 한다(2026-08-26 이관으로 3단계 문서가 section 블록이 됐다).
+	source: { documentId: number; section: GuidelineCheckSection | null }
 	evidence: CheckEvidence
 	referenceAssets: { asset: ApplicationImage; role: CheckReferenceAssetRole }[]
 }
@@ -21,23 +37,47 @@ export function collectGuidelineCheckSources(
 ): GuidelineCheckSource[] {
 	const assets = collectApplicationImages(document)
 	const documentSnapshot = buildCheckSourceSnapshot(document)
-	const documentSources = toSources(document.rules, document.id, null, documentSnapshot, assets)
-	const blockSources = (document.blocks ?? []).flatMap((block) =>
+	const documentSources = toSources(
+		document.rules,
+		document.id,
+		null,
+		null,
+		documentSnapshot,
+		assets,
+	)
+	const blockSources = flattenBlocks(
+		document.contentModel === 'sections' ? [] : document.blocks,
+	).flatMap(({ block, section }) =>
 		toSources(
 			block.rules,
 			document.id,
+			section,
 			block.blockName?.trim() || block.blockType,
 			snapshotBlock(block),
 			assets,
 		),
 	)
 
-	return [...documentSources, ...blockSources]
+	const sectionSources =
+		document.contentModel === 'sections'
+			? (document.sections ?? []).flatMap((section, order) =>
+					toSources(
+						section.rules,
+						document.id,
+						{ anchor: section.anchor ?? '', title: sectionTitle(section), order },
+						sectionTitle(section),
+						projectSection(section),
+						assets,
+					),
+				)
+			: []
+	return [...documentSources, ...blockSources, ...sectionSources]
 }
 
 function toSources(
 	rules: GuidelineDocument['rules'] | undefined,
 	documentId: number,
+	section: GuidelineCheckSection | null,
 	blockName: string | null,
 	snapshot: ReturnType<typeof buildCheckSourceSnapshot>,
 	assets: Map<number, ApplicationImage>,
@@ -52,7 +92,7 @@ function toSources(
 			{
 				rule,
 				blockName,
-				source: { documentId },
+				source: { documentId, section },
 				evidence: snapshot.evidence,
 				referenceAssets: snapshot.referenceAssets.flatMap((reference) => {
 					const asset = assets.get(reference.id)
@@ -63,35 +103,36 @@ function toSources(
 	})
 }
 
+/**
+ * 모든 루트 블록을 읽되 section에만 앵커 출처를 붙인다. 카드·디스플레이는 rules를 갖지 않아
+ * 내려가지 않는다. 카드 캡션의 평문은 snapshotBlock이 조립한다(docs/11 §4).
+ */
+function flattenBlocks(
+	blocks: GuidelineCheckDocument['blocks'],
+): { block: GuidelineBlock; section: GuidelineCheckSection | null }[] {
+	return (blocks ?? []).map((block, order) => ({
+		block,
+		section:
+			block.blockType === 'section' && block.title
+				? {
+						// 앵커는 저장 시 제목에서 자동으로 채워지지만(section/schema.ts) 타입은 선택이다.
+						anchor: block.anchor ?? '',
+						title: block.title,
+						order,
+					}
+				: null,
+	}))
+}
+
 function collectApplicationImages(document: GuidelineCheckDocument): Map<number, ApplicationImage> {
 	const values: unknown[] = []
 	if ('headerImage' in document) values.push(document.headerImage)
 
-	for (const block of document.blocks ?? []) {
-		switch (block.blockType) {
-			case 'contentColumns':
-				values.push(...(block.columns ?? []).map((column) => column.image))
-				break
-			case 'block':
-				// 컨테이너 블록의 자식 위젯이 가진 이미지를 id→이미지 조회 맵에 넣는다.
-				//
-				// 🔴 이것만으로는 AI 검수 커버리지가 복구되지 않는다. 이 맵은 조회용이고, 실제로
-				//    어떤 이미지를 참조하는지 지목하는 건 `blocks/block/projection.ts`의 projectBlock인데
-				//    그게 아직 `referenceAssets: []`를 반환한다(evidence도 childCount 자리표시자다).
-				//    즉 rules를 가진 컨테이너 블록은 지금도 참조 이미지를 못 내보낸다.
-				//    위젯별 evidence 설계가 그 파일에 미뤄져 있고, 그게 끝나야 이 case가 실제로 쓰인다.
-				values.push(
-					...(block.children ?? []).flatMap((child) =>
-						child.blockType === 'doDontWidget'
-							? (child.examples ?? []).map((example) => example.image)
-							: child.blockType === 'image'
-								? [child.image]
-								: [],
-					),
-				)
-				break
-		}
-	}
+	// 🔴 컨테이너 Block의 자식 위젯 이미지는 넣지 않는다 — 검수가 읽는 것은 Block이 소유한
+	//    title·description·rule뿐이고 자식 위젯은 사람이 보는 표현이라는 결정(2026-08-12,
+	//    `blocks/block/projection.ts`가 정본)이다. projectBlock·projectSection이 referenceAssets를
+	//    비워 돌려주므로 여기서 모아 봐야 참조하는 쪽이 없다. 그래서 지금 여기 들어오는 것은
+	//    헤더 이미지 하나뿐이다.
 
 	return new Map(
 		values.flatMap((value): [number, ApplicationImage][] => {

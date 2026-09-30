@@ -30,7 +30,15 @@ export function useExport<Request extends ExportRequest>({
 	)
 	const run = useCallback(
 		async (request: Request): Promise<void> => {
-			if (running.current || !supports(request)) return
+			if (running.current) return
+			// 🔴 지원 밖 요청을 조용히 삼키면 버튼을 눌러도 오류도 없이 정지 상태로 보인다 —
+			//    같은 「PDF」 버튼이 한 스튜디오에서는 오류를, 다른 스튜디오에서는 무반응을 냈다.
+			//    버튼 disabled가 1차 방어이므로 여기서는 이유 한 줄로 충분하다.
+			if (!supports(request)) {
+				const label = 'format' in request ? request.format.toUpperCase() : '원본'
+				setError(`이 프로파일에서는 ${label} 내보내기를 지원하지 않습니다.`)
+				return
+			}
 			running.current = true
 			setError(null)
 			setExporting(request)

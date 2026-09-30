@@ -52,10 +52,13 @@ function layerTypeTag(label: string) {
 function CreatorLayerPolicyEditor({
 	access,
 	config,
+	fallbackName,
 	onChange,
 }: {
 	access: TemplateLayerAccess
 	config: TemplateNodeConfig
+	/** Admin이 이름을 정하지 않았을 때 실제로 쓰이는 이름 — Figma가 준 `data-name`이다. */
+	fallbackName: string
 	onChange: (patch: TemplateNodeConfig) => void
 }) {
 	const visibility = config.creator?.visibility
@@ -63,6 +66,15 @@ function CreatorLayerPolicyEditor({
 		onChange({ creator: { access, visibility: { ...visibility, ...part } } })
 	return (
 		<Controller.Group title="기본 설정" collapsible={false}>
+			{/* 🔑 이름은 `data-name` 한 자리로 들어가 **스튜디오 레이어 패널 · 이 목록 · 인쇄 PDF의
+			    Illustrator 레이어명**이 함께 따라온다. 비우면 Figma 이름으로 돌아간다. */}
+			<Controller.Row label="레이어 이름">
+				<Controller.Input
+					value={config.label ?? ''}
+					placeholder={fallbackName}
+					onChange={(event) => onChange({ label: event.target.value || undefined })}
+				/>
+			</Controller.Row>
 			<Controller.Row label="사용 상태">
 				<Controller.Segmented
 					aria-label="사용 상태"
@@ -301,6 +313,7 @@ export function TemplateLayerEditor({
 		<CreatorLayerPolicyEditor
 			access={access}
 			config={config}
+			fallbackName={selected.name}
 			onChange={(patch) => {
 				const nextAccess = patch.creator?.access
 				onCommit({

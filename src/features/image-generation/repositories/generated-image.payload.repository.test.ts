@@ -2,6 +2,7 @@ import { getPayload } from 'payload'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MAX_IMAGE_BYTES } from '../image-data-uri'
 import {
+	listGeneratedImageHistory,
 	resolveGeneratedImageReference,
 	storeGeneratedImages,
 } from './generated-image.payload.repository'
@@ -143,6 +144,9 @@ describe('GeneratedImage repository', () => {
 			data: {
 				_status: 'published',
 				aspectRatio: '3:2',
+				// 요청마다 새로 만드는 키라 값 자체는 못박지 않는다 — 한 호출이 같은 키를
+				// 나눠 갖는지는 아래 테스트가 본다.
+				batchKey: expect.any(String),
 				createdBy: 1,
 				effectivePrompt: '{"subject":"파란 세럼병"}',
 				imageSize: '2K',
@@ -210,5 +214,102 @@ describe('GeneratedImage repository', () => {
 			}),
 		).rejects.toThrow()
 		expect(create).not.toHaveBeenCalled()
+	})
+	// 🔑 한 번의 생성 요청이 곧 한 묶음이다 — 장마다 키가 다르면 갤러리에서 겹침이 안 생긴다.
+	it('한 호출로 만든 장들은 같은 batchKey를 나눠 갖는다', async () => {
+		create.mockResolvedValue({
+			createdAt: '2026-07-31T03:00:00.000Z',
+			id: 8,
+			url: '/api/generated-images/file/generated.png',
+		})
+
+		await storeGeneratedImages({
+			createdBy: 1,
+			effectivePrompt: '{"subject":"파란 세럼병"}',
+			images: [ONE_PIXEL_PNG, ONE_PIXEL_PNG, ONE_PIXEL_PNG],
+			inputPrompt: '파란 세럼병',
+			model: 'gpt-image-2',
+			profile: { aspectRatio: '3:2', id: 5, imageSize: '2K', name: '제품 이미지' },
+		})
+
+		const keys = create.mock.calls.map(([args]) => args.data.batchKey)
+		expect(keys).toHaveLength(3)
+		expect(new Set(keys).size).toBe(1)
+		expect(keys[0]).toEqual(expect.any(String))
+	})
+
+	describe('생성 이미지 목록', () => {
+		// isPayloadUser는 role·email로 판정한다.
+		const user = { email: 'a@b.c', id: 1, role: 'admin' }
+
+		function row(overrides: Record<string, unknown> = {}) {
+			return {
+				aspectRatio: '16:9',
+				batchKey: 'batch-1',
+				createdAt: '2026-09-20T00:00:00.000Z',
+				filename: 'generated-1.jpg',
+				id: 7,
+				imageSize: '2K',
+				inputPrompt: '파란 세럼병',
+				scenario: 6,
+				scenarioName: 'Technical Illustration',
+				url: '/api/generated-images/file/generated-1.jpg',
+				...overrides,
+			}
+		}
+
+		// 🔴 2026-09-21에 실제로 겪은 결함이다. Payload는 url을 filename에서 파생하므로 select에
+		//    url만 적으면 파생이 꺼져 url이 null로 오고, 매핑이 519행을 전부 조용히 버렸다.
+		//    화면에는 「아직 만들어진 이미지가 없습니다」만 떠서 조회가 성공한 것처럼 보였다.
+		it('url을 파생시키려면 filename까지 select한다', async () => {
+			find.mockResolvedValue({ docs: [], hasNextPage: false })
+
+			await listGeneratedImageHistory({ limit: 10, page: 1, user })
+
+			const select = find.mock.calls[0]?.[0]?.select
+			expect(select).toMatchObject({ filename: true, url: true })
+		})
+
+		it('사용자 권한을 태워 published만 최신순으로 읽는다', async () => {
+			find.mockResolvedValue({ docs: [], hasNextPage: false })
+
+			await listGeneratedImageHistory({ limit: 10, page: 2, user })
+
+			expect(find).toHaveBeenCalledWith(
+				expect.objectContaining({
+					collection: 'generated-images',
+					limit: 10,
+					overrideAccess: false,
+					page: 2,
+					sort: '-createdAt',
+					where: { _status: { equals: 'published' } },
+				}),
+			)
+		})
+
+		// 권한이 없는 사용자에게는 Payload가 메타 필드를 빼고 내려준다 — 그림은 남아야 한다.
+		it('메타가 빠진 행도 그림은 남기고 복원 값만 비운다', async () => {
+			find.mockResolvedValue({
+				docs: [
+					row({ aspectRatio: undefined, inputPrompt: undefined, scenario: undefined }),
+				],
+				hasNextPage: false,
+			})
+
+			const { items } = await listGeneratedImageHistory({ limit: 10, page: 1, user })
+
+			expect(items).toHaveLength(1)
+			expect(items[0]).toMatchObject({ aspectRatio: null, profileId: null, prompt: null })
+			expect(items[0]?.url).toBe('/api/generated-images/file/generated-1.jpg')
+		})
+
+		it('url이 없는 행은 그릴 수 없으므로 뺀다', async () => {
+			find.mockResolvedValue({ docs: [row({ url: null })], hasNextPage: true })
+
+			const { hasMore, items } = await listGeneratedImageHistory({ limit: 10, page: 1, user })
+
+			expect(items).toHaveLength(0)
+			expect(hasMore).toBe(true)
+		})
 	})
 })

@@ -37,6 +37,7 @@ import { detectCheckImageMediaType } from '@/features/asset-check/utils/image-fo
 import { type CheckScenario, getCheckScenario } from '@/features/quality-rule/check-scenario'
 import { findPublishedCheckScenarios } from '@/features/quality-rule/repositories/check-scenario.payload.repository'
 import type { AgentChatSession, User } from '@/payload-types'
+import { recordCheckAiUsage } from './record-check-ai-usage'
 
 interface StartCheckSessionInput {
 	agentChatSessionId?: AgentChatSession['id']
@@ -119,6 +120,7 @@ export async function startCheckSession(input: StartCheckSessionInput) {
 				rulesetSnapshot,
 			)
 			session.applyAiResults(aiCheck)
+			await recordCheckAiUsage(aiCheck.aiUsages, input.user, session.id)
 		}
 		await saveCheckSessionRecord(session, input.user)
 
@@ -157,6 +159,7 @@ export async function completeCheckSessionAiCheck(input: CompleteCheckSessionAiC
 			session.rulesetSnapshot,
 		)
 		session.applyAiResults(aiCheck)
+		await recordCheckAiUsage(aiCheck.aiUsages, input.user, session.id)
 		await saveCheckSessionRecord(session, input.user)
 
 		return { checkSessionId: session.id, results: aiCheck.results }

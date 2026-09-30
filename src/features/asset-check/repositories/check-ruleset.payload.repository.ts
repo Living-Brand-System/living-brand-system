@@ -5,7 +5,6 @@ import {
 	type GuidelineCheckSource,
 } from '@/features/guideline/checks/collect-guideline-check-sources'
 import { findPublishedUnifiedGuidelineCheckDocuments } from '@/features/guideline/repositories/published-guideline-checks.payload.repository'
-import { relationshipId } from '@/features/quality-rule/relationship-id'
 import { DEFAULT_LOCALE as LOCALE } from '@/lib/locale'
 import type { GuidelineDocument } from '@/payload-types'
 
@@ -14,7 +13,8 @@ export interface CheckRulesetSourceDocument {
 	title: string
 	slug: string
 	displayOrder: number
-	breadcrumbDocumentIds: number[]
+	// 🔴 챕터는 별도 컬렉션이다(2026-08-26). 계층을 breadcrumb에서 읽던 자리를 관계가 대신한다.
+	chapter: { title: string; slug: string; displayOrder: number } | null
 	checks: GuidelineCheckSource[]
 }
 
@@ -37,9 +37,14 @@ function toCheckRulesetSourceDocument(document: GuidelineDocument): CheckRuleset
 		title: document.title,
 		slug: document.slug,
 		displayOrder: document.displayOrder,
-		breadcrumbDocumentIds: (document.breadcrumbs ?? []).map(
-			({ doc }) => relationshipId(doc) ?? -1,
-		),
+		chapter:
+			typeof document.chapter === 'object' && document.chapter
+				? {
+						title: document.chapter.title,
+						slug: document.chapter.slug,
+						displayOrder: document.chapter.displayOrder,
+					}
+				: null,
 		checks: collectGuidelineCheckSources(document),
 	}
 }

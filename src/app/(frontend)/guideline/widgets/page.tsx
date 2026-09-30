@@ -1,16 +1,8 @@
-import { notFound } from 'next/navigation'
-import { ContentFrame } from '@/components/shared/content-frame'
+import { notFound, redirect } from 'next/navigation'
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-static'
 
-export default async function GuidelineWidgetsPage() {
+export default function GuidelineWidgetsPage() {
 	if (process.env.NODE_ENV !== 'development') notFound()
-	const { GuidelineWidgetGallery } = await import(
-		'@/features/guideline/components/widgets/gallery'
-	)
-	return (
-		<ContentFrame>
-			<GuidelineWidgetGallery />
-		</ContentFrame>
-	)
+	redirect('/guideline/playground')
 }

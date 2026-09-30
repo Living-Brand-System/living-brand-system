@@ -8,7 +8,7 @@
 
 ## 2. 핵심 계약
 
-재사용 단위는 유스케이스 서비스 **`startCheckSession`**입니다. 어떤 표면에서도 호출하도록 feature 폴더가 아닌 최상위(`src/services/start-check-session.service.ts`)에 둡니다.
+재사용 단위는 유스케이스 서비스 **`startCheckSession`**입니다. 검수 도메인을 소유하는 `asset-check` 안(`src/features/asset-check/services/start-check-session.service.ts`)에 두고, 다른 표면은 그 공개 계약을 소비합니다(`docs/06` §3).
 
 - 입력: 이미지 바이트(Buffer), CheckScenario Key(Check 실행 범위 선택), 콘텐츠 플래그(logo/typography/illustration/photography), 호출 출처(`review-page`/`chat`/`mcp-call`), 사용자
 - 출력: `{ checkSessionId, results(checkKey→CheckResult), pendingCheckKeys }`

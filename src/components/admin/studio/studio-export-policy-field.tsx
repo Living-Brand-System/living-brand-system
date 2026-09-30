@@ -9,6 +9,7 @@ import {
 	resolveStudioArtifactOutputFormats,
 	resolveStudioOutputCapability,
 } from '@/features/studio-export/studio-output'
+import { GUARANTEED_TEMPLATE_FORMATS } from '@/features/template-customization/domain/template-studio-config'
 import {
 	type StudioAdminBaseConfig,
 	type StudioAdminRuntimeSource,
@@ -156,9 +157,15 @@ export function StudioExportPolicyField({
 		if (next.length !== formatsValue.length) setFormats(next)
 	}, [supportedKey, formatsValue, setFormats])
 
+	// 🔴 템플릿의 벡터(svg·pdf)는 정책이 지울 수 없다(`GUARANTEED_TEMPLATE_FORMATS`가 정본).
+	//    끌 수 있어 보이는데 안 꺼지는 토글을 남기면 「껐는데 왜 나오지」로 다시 헤맨다 —
+	//    그 형식을 범주에서 빼고, 그래서 빈 범주가 되면 범주째 지운다(벡터가 그렇다).
+	const guaranteed: readonly string[] = source === 'template' ? GUARANTEED_TEMPLATE_FORMATS : []
 	const categories = FORMAT_CATEGORIES.map((category) => ({
 		...category,
-		supported: category.formats.filter((format) => supportedFormats.includes(format)),
+		supported: category.formats.filter(
+			(format) => supportedFormats.includes(format) && !guaranteed.includes(format),
+		),
 	})).filter((category) => category.supported.length > 0)
 	const onCategories = categories
 		.filter((category) => category.supported.every((format) => selectedFormats.has(format)))

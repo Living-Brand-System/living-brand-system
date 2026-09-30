@@ -3,16 +3,17 @@ import {
 	parseGraphicStudioConfig,
 } from '@/features/graphic-generation/domain/graphic-studio-config'
 import {
-	getImageStudioControls,
-	type ImageStudioConfig,
-	parseImageStudioConfig,
-} from '@/features/image-generation/domain/image-studio-config'
-import {
 	IMAGE_ASPECT_RATIOS,
 	IMAGE_OUTPUT_SIZES,
 	type ImageAspectRatio,
 	type ImageOutputSize,
-} from '@/features/image-generation/image-size'
+} from '@/features/image-generation/domain/image-size'
+import {
+	getImageStudioControls,
+	type ImageStudioConfig,
+	parseImageStudioConfig,
+} from '@/features/image-generation/domain/image-studio-config'
+import { isPrintPpi, type PrintPpi } from '@/features/studio-export/print-policy'
 import {
 	DEFAULT_RASTER_VIDEO_CAPABILITY,
 	parseStudioOutputCapability,
@@ -143,6 +144,8 @@ export type PublishedHtmlTemplate = {
 	nodeConfigs: Record<string, PublishedTemplateNodeConfig>
 	width: number
 	height: number
+	/** 판형 선언 — 이 px를 몇 ppi로 그렸는가. 없으면 디지털판이라 물리 크기가 없다. */
+	canvasPpi?: PrintPpi
 	templateVersion: string
 	exportPolicy?: unknown
 	backgroundPolicy?: TemplateBackgroundPolicy
@@ -173,6 +176,8 @@ export type TemplateStudioConfig = StudioControllerConfig<'template', number> & 
 		graphicConfigs: readonly GraphicStudioConfig[]
 		exportOption: {
 			canvas: { width: number; height: number }
+			/** 판형이 선언된 템플릿의 인쇄 해상도. 있으면 창작자가 크기도 해상도도 고르지 않는다. */
+			canvasPpi?: PrintPpi
 			/** 캔버스 좌표계 대비 허용 최대 출력 배율. MP4 인코딩 한도에서 되짚어 구한다. */
 			maxScale: number
 		}
@@ -323,7 +328,7 @@ export function parseTemplateStudioConfig(input: unknown): TemplateStudioConfig 
 	}
 
 	const exportOption = templateRecord(template.exportOption, 'TemplateStudioConfig exportOption')
-	assertTemplateKeys(exportOption, ['canvas', 'maxScale'])
+	assertTemplateKeys(exportOption, ['canvas', 'canvasPpi', 'maxScale'])
 	resolveStudioArtifactOutputFormats(
 		common.artifacts,
 		(root.output as StudioOutputCapability).formats,
@@ -333,6 +338,9 @@ export function parseTemplateStudioConfig(input: unknown): TemplateStudioConfig 
 	assertPositiveNumber(canvas.width, 'canvas.width')
 	assertPositiveNumber(canvas.height, 'canvas.height')
 	assertPositiveNumber(exportOption.maxScale, 'exportOption.maxScale')
+	if (exportOption.canvasPpi !== undefined && !isPrintPpi(exportOption.canvasPpi)) {
+		throw new Error('TemplateStudioConfig canvasPpi: 인쇄 해상도 범위의 정수여야 합니다.')
+	}
 
 	const typed = input as TemplateStudioConfig
 	const { text, background } = partitionTemplateSlots(typed.template.slots)
@@ -367,6 +375,75 @@ export const isBackgroundSlot = (slot: TemplateStudioConfigSlot): slot is Templa
 	slot.kind === 'background'
 
 /** slot kind 추가 시 모든 소비 경로가 한 exhaustive switch에서 컴파일 실패하도록 분류한다. */
+/**
+ * 레이어 패널이 보여 주는 **묶음(그룹)** — 슬롯 하나하나가 아니다(사용자 지시, 2026-09-10).
+ *
+ * 🔑 「좀 더 포괄적으로 묶음」: text는 title·subtitle·body 등 **모든 텍스트**를, image는 n개의
+ *    이미지를, CI는 CI를, background는 판의 배경(solid color·image·graphic)을 하나로 묶는다.
+ *    그래서 슬롯이 7개인 템플릿(`poster`)도 목록은 4줄이다 — 「컨트롤러가 너무 많다」의 답이다.
+ * 🔴 순서는 **고정**이다. 그룹은 겹침에서 한 자리를 갖지 않으므로(텍스트와 이미지가 z에서
+ *    엇갈린다) 겹침 순서로 정렬할 수 없다 — 대신 모든 템플릿에서 목록이 같은 모양이 된다.
+ *    배경만은 언제나 맨 아래라서 마지막이다.
+ * 🔴 비어 있는 그룹은 줄을 내지 않는다. 배경은 노드가 아니라 도화지라 항상 있다.
+ */
+export type TemplateLayerGroup = {
+	kind: TemplateStudioConfigSlot['kind']
+	label: string
+	/**
+	 * 이 묶음에 든 슬롯 — 캔버스 하이라이트가 한 번에 집는 대상이고, 레이어 패널이 묶음 아래에
+	 * 이름을 늘어놓는 대상이다(Title·Subtitle·Image 1 …).
+	 * 🔴 이름의 정본은 CMS다 — 텍스트는 Admin의 `input.label`, 그 밖은 노드의 `data-name`이다.
+	 * 🔴 배경은 노드가 아니라 도화지라 **비어 있다.** 하위가 없는 것이 사실이다.
+	 */
+	members: readonly { id: string; label: string }[]
+}
+
+/**
+ * 배경 묶음의 이름. 🔴 **묶음에 들지 않은 노드가 모이는 자리**이기도 하다 — 배경은 노드가 아니라
+ * 도화지라 정의상 나머지를 받는다(`mapTemplateNodeLayers`가 목록을 내지 않는 이유).
+ */
+export const TEMPLATE_BACKGROUND_LAYER = 'Background'
+
+const LAYER_GROUP_ORDER = [
+	{ kind: 'text', label: 'Text' },
+	{ kind: 'image', label: 'Image' },
+	// 벡터 슬롯의 실제 이름은 12개 템플릿에서 CI 10 · Logo 1 · Vector 1이다 — 묶음 이름은 CI다.
+	{ kind: 'vector', label: 'CI' },
+	{ kind: 'background', label: TEMPLATE_BACKGROUND_LAYER },
+] as const satisfies readonly { kind: TemplateStudioConfigSlot['kind']; label: string }[]
+
+export function listTemplateLayerGroups(
+	slots: readonly TemplateStudioConfigSlot[],
+): TemplateLayerGroup[] {
+	const groups: TemplateLayerGroup[] = []
+	for (const { kind, label } of LAYER_GROUP_ORDER) {
+		const matched = slots.filter((slot) => slot.kind === kind)
+		if (!matched.length) continue
+		groups.push({
+			kind,
+			label,
+			// 배경은 도화지 하나라 하위를 갖지 않는다 — 자기 이름을 한 번 더 적지 않는다.
+			members: kind === 'background' ? [] : matched.map(({ id, label }) => ({ id, label })),
+		})
+	}
+	return groups
+}
+
+/**
+ * nodeId → 묶음 이름. 인쇄 PDF가 묶음을 Form XObject로 싣는 데 쓴다 — 레이어 패널과 **같은 정본**을
+ * 읽으므로 화면의 묶음과 파일의 그룹이 갈라지지 않는다.
+ * 🔴 여기 없는 노드는 배경이다. 배경 슬롯은 도화지라 member가 없고, 그래서 항목도 내지 않는다.
+ */
+export function mapTemplateNodeLayers(
+	slots: readonly TemplateStudioConfigSlot[],
+): ReadonlyMap<string, string> {
+	return new Map(
+		listTemplateLayerGroups(slots).flatMap((group) =>
+			group.members.map((member) => [member.id, group.label] as const),
+		),
+	)
+}
+
 export function partitionTemplateSlots(slots: readonly TemplateStudioConfigSlot[]) {
 	const text: TemplateTextSlot[] = []
 	const image: TemplateImageConfigSlot[] = []
@@ -636,7 +713,8 @@ export function getTemplateRuntimeManifest({
 				}
 			: null
 	return {
-		artifacts: { raster: {}, ...(videoFrame ? { video: videoFrame } : {}) },
+		// 벡터는 캔버스 크기와 무관하게 항상 낼 수 있다 — 재서 도형으로 옮기는 것이라 배율 예산이 없다.
+		artifacts: { raster: {}, vector: {}, ...(videoFrame ? { video: videoFrame } : {}) },
 		controller: {
 			groups: [
 				...(textControls.length
@@ -749,6 +827,19 @@ export function deriveTemplateStudioConfig(
 		},
 	]
 
+	// 🔴 슬롯을 **그리는 순서(아래 → 위)** 로 정렬한다. 위에서 세 수집기(text·image·vector)를
+	//    이어 붙였을 뿐이라 그 순서는 판에서 무엇이 위인지와 무관했다 — 레이어 패널이 그것을
+	//    그대로 보여 주면 「겹침 순서」로 읽히는데 사실이 아니었다.
+	// 🔑 문서 순서가 곧 겹침 순서다(템플릿 12개 전부 z-index 0건 · 전부 `position: absolute`).
+	//    그래서 Admin의 `childOrder`가 compose에서 DOM을 재배치하면 이 정렬이 그것을 따라간다.
+	//    배경은 노드가 아니라 도화지라 언제나 맨 아래다.
+	const documentOrder = new Map(
+		Array.from(html.matchAll(/data-node-id="([^"]*)"/g), (match, index) => [match[1], index]),
+	)
+	const orderOf = (slot: TemplateStudioConfigSlot) =>
+		slot.kind === 'background' ? Number.NEGATIVE_INFINITY : (documentOrder.get(slot.id) ?? 0)
+	slots.sort((left, right) => orderOf(left) - orderOf(right))
+
 	const runtimeManifest = getTemplateRuntimeManifest(template)
 	const controllerGroups = runtimeManifest.controller.groups
 
@@ -759,7 +850,7 @@ export function deriveTemplateStudioConfig(
 		name: template.name,
 		output: resolveStudioOutputCapability(
 			runtimeManifest.artifacts,
-			projectStudioOutputPolicy(template.exportPolicy),
+			withGuaranteedTemplateFormats(projectStudioOutputPolicy(template.exportPolicy)),
 		),
 		artifacts: runtimeManifest.artifacts,
 		controller: {
@@ -775,12 +866,33 @@ export function deriveTemplateStudioConfig(
 			graphicConfigs: scopedGraphicConfigs,
 			exportOption: {
 				canvas: { width: template.width, height: template.height },
+				...(template.canvasPpi === undefined ? {} : { canvasPpi: template.canvasPpi }),
 				maxScale: resolveMaxExportScale(template.width, template.height),
 			},
 		},
 	}
 	parseTemplateStudioConfig(config)
 	return config
+}
+
+/**
+ * 🔑 템플릿은 어떤 정책이든 **벡터(svg·pdf)** 를 낸다. 벡터는 고르는 선택지가 아니라 판이 가진
+ *    성질이라, 정책이 지우면 「왜 벡터가 없지」를 템플릿마다 다시 디버깅하게 된다(2026-08-27에
+ *    실제로 그랬다 — 발행된 12개 중 벡터를 허용한 것이 하나도 없었다).
+ *    콘텐츠에 따라 벡터라도 사실상 이미지 덩어리일 수 있으나 그것은 결과의 성격이지 가부가 아니다.
+ * 🔴 래스터는 보장하지 않는다 — png를 못 끄게 만들면 admin의 「래스터」 토글이 거짓말을 한다.
+ */
+export const GUARANTEED_TEMPLATE_FORMATS = ['svg', 'pdf'] as const
+
+function withGuaranteedTemplateFormats(
+	policy: ReturnType<typeof projectStudioOutputPolicy>,
+): ReturnType<typeof projectStudioOutputPolicy> {
+	// 좁히지 않는 정책은 이미 전부 낸다 — 손대면 오히려 의미가 바뀐다.
+	if (!policy?.allowedFormats) return policy
+	return {
+		...policy,
+		allowedFormats: [...new Set([...policy.allowedFormats, ...GUARANTEED_TEMPLATE_FORMATS])],
+	}
 }
 
 function templateRecord(value: unknown, name: string): Record<string, unknown> {

@@ -88,7 +88,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ for
 	if (!routeParams.success) {
 		return Response.json({ message: 'Invalid route parameters.' }, { status: 400 })
 	}
-	if (!takeRateLimit(request) || activeExports >= 1) {
+	// 🔴 순서가 중요하다 — rate limit을 먼저 보면 동시성 때문에 거부된 요청도 사용자 분당 예산을
+	//    이미 깎아, 붐빌 때 재시도하면 1분간 429가 고착된다. 동시성 검사를 앞에 둔다.
+	if (activeExports >= 1 || !takeRateLimit(request)) {
 		return Response.json(
 			{ message: 'Print export is busy.' },
 			{ headers: { 'Retry-After': '60' }, status: 429 },

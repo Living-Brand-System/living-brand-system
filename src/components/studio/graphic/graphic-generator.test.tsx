@@ -4,21 +4,20 @@ import { createElement } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
 import { resolveGraphicStudioOutput } from '@/features/graphic-generation/domain/graphic-studio-manifest'
+import flutedGlassRuntimeManifest from '@/features/graphic-generation/graphic-runtimes/fluted-glass/definition'
+import { toFlutedGlassInput } from '@/features/graphic-generation/graphic-runtimes/fluted-glass/model'
 import forwardStraightRuntimeManifest, {
 	FORWARD_STRAIGHT_DEFAULT_INPUT,
 } from '@/features/graphic-generation/graphic-runtimes/forward-straight/definition'
 import { createForwardStraightScene } from '@/features/graphic-generation/graphic-runtimes/forward-straight/model'
-import radialFlutedGlassRuntimeManifest, {
-	RADIAL_FLUTED_GLASS_DEFAULT_INPUT,
-} from '@/features/graphic-generation/graphic-runtimes/radial-fluted-glass/definition'
 import type { ControllerValues } from '@/modules/studio-controller/controller-definition'
 import { GraphicGenerator } from './graphic-generator'
 
 const browseMocks = vi.hoisted(() => ({
-	fetchGraphicStudioConfigs: vi.fn(async () => [] as unknown[]),
+	fetchCanvasStudioConfigs: vi.fn(async () => [] as unknown[]),
 }))
 vi.mock(
-	'@/features/graphic-generation/services/list-graphic-studio-configs.client',
+	'@/features/graphic-generation/services/list-canvas-studio-configs.client',
 	() => browseMocks,
 )
 
@@ -27,9 +26,9 @@ const forwardStraightConfig = {
 	output: resolveGraphicStudioOutput(forwardStraightRuntimeManifest),
 } satisfies GraphicStudioConfig
 
-const radialFlutedGlassConfig = {
-	...radialFlutedGlassRuntimeManifest,
-	output: resolveGraphicStudioOutput(radialFlutedGlassRuntimeManifest),
+const flutedGlassConfig = {
+	...flutedGlassRuntimeManifest,
+	output: resolveGraphicStudioOutput(flutedGlassRuntimeManifest),
 } satisfies GraphicStudioConfig
 
 const mocks = vi.hoisted(() => {
@@ -125,17 +124,14 @@ vi.mock('@/features/graphic-generation/graphic-runtimes/forward-straight/runtime
 	},
 }))
 
-vi.mock(
-	'@/features/graphic-generation/graphic-runtimes/radial-fluted-glass/runtime.client',
-	() => ({
-		createRadialFlutedGlassRuntime: mocks.createShaderPreview,
-		default: {
-			type: 'shader',
-			mount: ({ container, values }: { container: HTMLElement; values: ControllerValues }) =>
-				mocks.createShaderPreview({ container, input: values }),
-		},
-	}),
-)
+vi.mock('@/features/graphic-generation/graphic-runtimes/fluted-glass/runtime.client', () => ({
+	createFlutedGlassRuntime: mocks.createShaderPreview,
+	default: {
+		type: 'shader',
+		mount: ({ container, values }: { container: HTMLElement; values: ControllerValues }) =>
+			mocks.createShaderPreview({ container, input: values }),
+	},
+}))
 
 vi.mock('@/features/studio-export/adapters/canvas-frames-to-mp4.mediabunny.client', () => ({
 	canvasFramesToMp4: mocks.canvasFramesToMp4,
@@ -160,6 +156,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+	vi.useRealTimers()
 	cleanup()
 	vi.unstubAllGlobals()
 })
@@ -229,17 +226,63 @@ describe('GraphicGenerator', () => {
 			'aria-valuenow',
 			'40',
 		)
-		const gamma = screen.getByRole('slider', { name: '원근 압축' })
-		expect(gamma).toHaveAttribute('aria-valuenow', '1')
-
-		gamma.focus()
+		const gap = screen.getByRole('slider', { name: '열 간격' })
+		gap.focus()
 		await user.keyboard('{ArrowRight}')
 
 		await waitFor(() =>
 			expect(mocks.preview.update).toHaveBeenLastCalledWith(
-				expect.objectContaining({ perspectiveGamma: 1.1 }),
+				expect.objectContaining({ columnGap: 41 }),
 			),
 		)
+		// 좌·우 어느 목록에도 없는 축은 창작자 화면에 없다 — 선언은 남아 admin에서 조정한다.
+		expect(screen.queryByRole('slider', { name: '원근 압축' })).toBeNull()
+	})
+
+	it('🔴 축은 세 층으로 갈린다 — 왼쪽·오른쪽·admin 전용', () => {
+		const { container } = render(
+			createElement(GraphicGenerator, { config: forwardStraightConfig }),
+		)
+		const panelOf = (slot: string) =>
+			container.querySelector<HTMLElement>(`[data-slot="${slot}"]`) ??
+			(() => {
+				throw new Error(`패널이 없다: ${slot}`)
+			})()
+		const left = panelOf('studio-workspace-left-panel')
+		const right = panelOf('studio-workspace-sidebar')
+
+		// 왼쪽 — 이 런타임의 큰 축은 색뿐이다.
+		expect(within(left).getByLabelText('선 색상 색상 선택')).toBeInTheDocument()
+		expect(within(left).getByLabelText('배경 색상 색상 선택')).toBeInTheDocument()
+
+		// 오른쪽 — 공용 4축(밀도·속도·기준점·두께). 정지 그래픽이라 속도는 없다.
+		expect(within(right).getByRole('slider', { name: '열 간격' })).toBeInTheDocument()
+		expect(within(right).getByRole('slider', { name: '기준점 두께' })).toBeInTheDocument()
+
+		// admin 전용 — 선언은 남아 있지만 창작자 화면에는 없다.
+		expect(screen.queryByRole('slider', { name: '선 길이' })).toBeNull()
+		expect(screen.queryByRole('slider', { name: '여백' })).toBeNull()
+		expect(screen.queryByRole('slider', { name: '두께 감쇠 거리' })).toBeNull()
+		// 「고급 설정」으로 접는 장치는 없다 — 접는 것이 아니라 층을 나눈 것이다.
+		expect(screen.queryByRole('button', { name: /고급/ })).not.toBeInTheDocument()
+	})
+
+	it('선언이 없는 런타임은 전부 왼쪽이다 — 정하지 않은 런타임의 화면이 비면 안 된다', () => {
+		const { controller, ...rest } = forwardStraightConfig
+		const { left: _left, ...controllerWithoutLeft } = controller
+		const config = {
+			...rest,
+			controller: controllerWithoutLeft,
+		} as unknown as GraphicStudioConfig
+
+		const { container } = render(createElement(GraphicGenerator, { config }))
+		const left = container.querySelector<HTMLElement>(
+			'[data-slot="studio-workspace-left-panel"]',
+		)
+		if (!left) throw new Error('왼쪽 패널이 없다')
+
+		expect(within(left).getByRole('slider', { name: '기준점 두께' })).toBeInTheDocument()
+		expect(within(left).getByRole('slider', { name: '원근 압축' })).toBeInTheDocument()
 	})
 
 	it('Raster Artifact가 있는 Graphic은 공통 PNG adapter를 실행할 수 있다', async () => {
@@ -259,34 +302,68 @@ describe('GraphicGenerator', () => {
 	})
 
 	it('Shader Definition을 WebGL preview와 MP4 Export UI에 연결한다', async () => {
-		const { unmount } = render(
-			createElement(GraphicGenerator, { config: radialFlutedGlassConfig }),
+		const { container, unmount } = render(
+			createElement(GraphicGenerator, { config: flutedGlassConfig }),
 		)
 
-		await waitFor(() =>
-			expect(mocks.createShaderPreview).toHaveBeenCalledWith(
-				expect.objectContaining({ input: RADIAL_FLUTED_GLASS_DEFAULT_INPUT }),
-			),
+		await waitFor(() => expect(mocks.createShaderPreview).toHaveBeenCalledOnce())
+		// 기본 모양은 스윕이다 — 배선이 어긋나면 다른 셰이더가 뜬다.
+		expect(
+			toFlutedGlassInput(mocks.createShaderPreview.mock.lastCall?.[0].input ?? {}).family,
+		).toBe('sweep')
+
+		const left = container.querySelector<HTMLElement>(
+			'[data-slot="studio-workspace-left-panel"]',
 		)
-		expect(screen.getByRole('button', { name: 'Ray Palette' })).toBeInTheDocument()
-		expect(screen.getByText('Rays')).toBeInTheDocument()
-		expect(screen.getByRole('button', { name: 'Pulse' })).toBeInTheDocument()
-		expect(screen.getByText('Glass')).toBeInTheDocument()
-		expect(screen.getByRole('button', { name: 'Glass Motion' })).toBeInTheDocument()
-		expect(screen.getByText('Position')).toBeInTheDocument()
-		expect(screen.getByRole('combobox', { name: '왜곡 형태' })).toHaveTextContent('Lens')
+		const right = container.querySelector<HTMLElement>('[data-slot="studio-workspace-sidebar"]')
+		if (!left || !right) throw new Error('좌우 패널이 둘 다 있어야 한다')
+
+		// 왼쪽은 색 조합과 형태뿐이다.
+		expect(within(left).getByText('Shape')).toBeInTheDocument()
+		expect(within(left).getByText('Style')).toBeInTheDocument()
+		expect(within(left).getByRole('button', { name: 'Ray Palette' })).toBeInTheDocument()
+		// 🔑 오른쪽 축은 **종류가 서로 달라야** 읽힌다 — 빛·짜임·결·굴절·틀·기준점.
+		expect(within(right).getByRole('slider', { name: '광선 강도' })).toBeInTheDocument()
+		expect(within(right).getByRole('slider', { name: '광선 연속성' })).toBeInTheDocument()
+		expect(within(right).getByRole('slider', { name: '속도' })).toBeInTheDocument()
+		expect(within(right).getByRole('slider', { name: '빛무리 크기' })).toBeInTheDocument()
+		expect(within(right).getByRole('slider', { name: '줄 굵기' })).toBeInTheDocument()
+		expect(within(right).getByRole('slider', { name: '결 흐름' })).toBeInTheDocument()
+		expect(within(right).getByRole('slider', { name: '확대' })).toBeInTheDocument()
+		expect(within(right).getByRole('slider', { name: '기울기' })).toBeInTheDocument()
+		expect(within(right).getByText('Position')).toBeInTheDocument()
+		// 🔴 세웠다가 사용자가 「체감 불가」로 내린 축들 — 픽셀차가 있어도 창작자는 알아보지 못했다.
+		//    선언은 남아 있어 manager가 Payload에서 조정한다. 다시 올리지 말 것.
+		for (const axis of [
+			'광선 밀도',
+			'블룸 강도',
+			'시작 시점',
+			'빔 세기',
+			'빔 폭',
+			'굴절',
+			'유리 반짝임',
+			'모서리 어둡기',
+		]) {
+			expect(screen.queryByRole('slider', { name: axis }), axis).toBeNull()
+		}
+		// 모양의 정체를 이루는 값과 마스터 시계에 딸린 속도는 admin 전용으로 남는다.
+		expect(screen.queryByRole('slider', { name: '광선 회전' })).toBeNull()
+		// 🔴 「Sweep」은 왼쪽 모양의 이름이기도 하다 — 그 제목이 오른쪽에 뜨면 같은 말이 두 뜻이 된다.
+		expect(screen.queryByRole('button', { name: 'Sweep' })).toBeNull()
+		expect(screen.queryByRole('button', { name: 'Glass Motion' })).toBeNull()
+		// 남은 컨트롤이 없는 그룹은 그 쪽 패널에서 제목째 사라진다.
+		expect(screen.queryByRole('button', { name: 'Beam' })).toBeNull()
 		expect(screen.getByRole('spinbutton', { name: 'Width' })).toHaveValue(1920)
 		expect(screen.getByRole('spinbutton', { name: 'Height' })).toHaveValue(1080)
 		expect(screen.getByRole('combobox', { name: 'FPS' })).toHaveTextContent('30')
 		expect(screen.getByRole('spinbutton', { name: 'Duration' })).toHaveValue(5)
 		await waitFor(() => expect(screen.getByRole('button', { name: '내보내기' })).toBeEnabled())
 
-		fireEvent.keyDown(screen.getByRole('slider', { name: '광선 강도' }), {
-			key: 'ArrowRight',
-		})
+		// 🔑 `속도`가 마스터 시계다 — 이 하나가 모든 움직임을 함께 늘리고 줄인다.
+		fireEvent.keyDown(screen.getByRole('slider', { name: '속도' }), { key: 'ArrowRight' })
 		await waitFor(() =>
 			expect(mocks.shaderPreview.update).toHaveBeenLastCalledWith(
-				expect.objectContaining({ rayIntensity: 0.96 }),
+				expect.objectContaining({ speed: 0.73 }),
 			),
 		)
 
@@ -296,7 +373,7 @@ describe('GraphicGenerator', () => {
 
 	it('VideoControls 변경값을 MP4 ExportRequest에 연결한다', async () => {
 		const user = userEvent.setup()
-		const createObjectURL = vi.fn(() => 'blob:radial-fluted-glass')
+		const createObjectURL = vi.fn(() => 'blob:fluted-glass')
 		Object.defineProperty(URL, 'createObjectURL', {
 			configurable: true,
 			value: createObjectURL,
@@ -307,7 +384,7 @@ describe('GraphicGenerator', () => {
 		})
 		vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
 
-		render(createElement(GraphicGenerator, { config: radialFlutedGlassConfig }))
+		render(createElement(GraphicGenerator, { config: flutedGlassConfig }))
 		await waitFor(() => expect(mocks.createShaderPreview).toHaveBeenCalledOnce())
 
 		const width = screen.getByRole('spinbutton', { name: 'Width' })
@@ -341,7 +418,7 @@ describe('GraphicGenerator', () => {
 	})
 
 	it('출력 사이즈 비율을 프리뷰 영역에 맞춰 반영한다', async () => {
-		render(createElement(GraphicGenerator, { config: radialFlutedGlassConfig }))
+		render(createElement(GraphicGenerator, { config: flutedGlassConfig }))
 		await waitFor(() => expect(mocks.createShaderPreview).toHaveBeenCalledOnce())
 		const observerCount = mocks.resizeObserverCount
 
@@ -459,6 +536,8 @@ describe('GraphicGenerator', () => {
 	})
 
 	it('현재 Controller 값과 화면 크기로 SVG를 다운로드한다', async () => {
+		vi.useFakeTimers({ toFake: ['Date'] })
+		vi.setSystemTime(new Date('2026-09-10T03:00:00Z'))
 		const createObjectURL = vi.fn((_blob: Blob) => 'blob:forward-straight')
 		const revokeObjectURL = vi.fn()
 		Object.defineProperties(URL, {
@@ -499,7 +578,7 @@ describe('GraphicGenerator', () => {
 		expect(svg.split('<line').length - 1).toBe(expected.dashes.length)
 		expect(svg).toContain(`x1="${expected.dashes[0].x1.toFixed(2)}"`)
 		expect(click.mock.instances[0]).toMatchObject({
-			download: 'forward-straight.svg',
+			download: 'Forward-Straight-20260910-120000.svg',
 			href: 'blob:forward-straight',
 		})
 		expect(revokeObjectURL).toHaveBeenCalledWith('blob:forward-straight')
@@ -510,15 +589,15 @@ describe('GraphicGenerator', () => {
 
 	it('Change 브라우저에서 Graphic을 교체하고 새 계약의 기본값으로 초기화한다', async () => {
 		// 교체 후보 목록은 패널이 열릴 때 /api/graphic-profiles에서 온다.
-		browseMocks.fetchGraphicStudioConfigs.mockResolvedValue([
+		browseMocks.fetchCanvasStudioConfigs.mockResolvedValue([
 			forwardStraightConfig,
-			radialFlutedGlassConfig,
+			flutedGlassConfig,
 		])
 		render(createElement(GraphicGenerator, { config: forwardStraightConfig }))
 		await waitFor(() => expect(mocks.createPreview).toHaveBeenCalledOnce())
-		const gamma = screen.getByRole('slider', { name: '원근 압축' })
-		fireEvent.keyDown(gamma, { key: 'ArrowRight' })
-		await waitFor(() => expect(gamma).not.toHaveAttribute('aria-valuenow', '1'))
+		const gap = screen.getByRole('slider', { name: '열 간격' })
+		fireEvent.keyDown(gap, { key: 'ArrowRight' })
+		await waitFor(() => expect(gap).toHaveAttribute('aria-valuenow', '41'))
 
 		const trigger = screen.getByRole('button', { name: '그래픽 변경' })
 		expect(trigger.closest('[data-slot="controller-header"]')).not.toBeNull()
@@ -528,7 +607,7 @@ describe('GraphicGenerator', () => {
 			name: new RegExp(forwardStraightRuntimeManifest.name),
 		})
 		const shaderCard = within(panel).getByRole('button', {
-			name: new RegExp(radialFlutedGlassRuntimeManifest.name),
+			name: new RegExp(flutedGlassRuntimeManifest.name),
 		})
 		expect(forwardCard).toHaveAttribute('aria-current', 'true')
 
@@ -546,9 +625,9 @@ describe('GraphicGenerator', () => {
 		)
 
 		await waitFor(() => expect(mocks.createPreview).toHaveBeenCalledTimes(2))
-		expect(screen.getByRole('slider', { name: '원근 압축' })).toHaveAttribute(
+		expect(screen.getByRole('slider', { name: '열 간격' })).toHaveAttribute(
 			'aria-valuenow',
-			'1',
+			'40',
 		)
 	})
 })

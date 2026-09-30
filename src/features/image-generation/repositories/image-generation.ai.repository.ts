@@ -4,14 +4,16 @@ import { generateImage } from 'ai'
 import { env } from '@/env'
 import {
 	GOOGLE_NANO_BANANA_2_LITE_MODEL,
+	GOOGLE_NANO_BANANA_2_MODEL,
 	type ImageModelPreset,
 	OPENAI_GPT_IMAGE_2_MODEL,
-} from '@/features/image-generation/image-model'
+} from '@/features/image-generation/domain/image-model'
 import {
 	type ImageAspectRatio,
 	type ImageOutputSize,
 	toOpenAIImageSize,
-} from '@/features/image-generation/image-size'
+} from '@/features/image-generation/domain/image-size'
+import { type AiUsageTokens, sumAiUsageTokens } from '@/modules/ai-usage/ai-usage'
 
 /** 프리셋별 실제 모델 호출 입력 — 시드 이미지는 편집 프롬프트 형태로 이미 합성돼 있다. */
 interface ImageProviderCallInput {
@@ -21,9 +23,15 @@ interface ImageProviderCallInput {
 	imageSize: ImageOutputSize
 }
 
+/** 한 프리셋 호출의 결과 — data URI와, provider가 보고한 토큰 사용량. */
+interface ProviderImages {
+	images: string[]
+	usage: AiUsageTokens
+}
+
 interface ImageModelProviderEntry {
 	apiKey: () => string | undefined
-	generate: (input: ImageProviderCallInput) => Promise<string[]>
+	generate: (input: ImageProviderCallInput) => Promise<ProviderImages>
 	model: string
 	provider: 'google' | 'openai'
 }
@@ -34,36 +42,29 @@ const imageModelProviders = {
 		apiKey: () => env.GEMINI_API_KEY,
 		model: GOOGLE_NANO_BANANA_2_LITE_MODEL,
 		provider: 'google',
-		generate: ({ prompt, count, aspectRatio, imageSize }) => {
-			const google = createGoogle({ apiKey: env.GEMINI_API_KEY })
-			return Promise.all(
-				Array.from({ length: count }, async () => {
-					const { image } = await generateImage({
-						model: google.image(GOOGLE_NANO_BANANA_2_LITE_MODEL),
-						prompt,
-						providerOptions: {
-							google: {
-								imageConfig: { aspectRatio, imageSize },
-							},
-						},
-					})
-					return `data:${image.mediaType};base64,${image.base64}`
-				}),
-			)
-		},
+		generate: (input) => generateGoogleImages(GOOGLE_NANO_BANANA_2_LITE_MODEL, input),
+	},
+	'google-nano-banana-2': {
+		apiKey: () => env.GEMINI_API_KEY,
+		model: GOOGLE_NANO_BANANA_2_MODEL,
+		provider: 'google',
+		generate: (input) => generateGoogleImages(GOOGLE_NANO_BANANA_2_MODEL, input),
 	},
 	'openai-gpt-image-2': {
 		apiKey: () => env.OPENAI_API_KEY,
 		model: OPENAI_GPT_IMAGE_2_MODEL,
 		provider: 'openai',
 		generate: async ({ prompt, count, aspectRatio, imageSize }) => {
-			const { images } = await generateImage({
+			const { images, usage } = await generateImage({
 				model: openai.image(OPENAI_GPT_IMAGE_2_MODEL),
 				prompt,
 				n: count,
 				size: toOpenAIImageSize(aspectRatio, imageSize),
 			})
-			return images.map((image) => `data:${image.mediaType};base64,${image.base64}`)
+			return {
+				images: images.map((image) => `data:${image.mediaType};base64,${image.base64}`),
+				usage,
+			}
 		},
 	},
 } satisfies Record<ImageModelPreset, ImageModelProviderEntry>
@@ -95,13 +96,47 @@ export async function generateBrandImages({
 	images: string[]
 	model: string
 	provider: ImageModelProvider
+	usage: AiUsageTokens
 }> {
 	const entry = imageModelProviders[modelPreset]
 	const imagePrompt = seedImage ? { text: prompt, images: [seedImage] } : prompt
+	const { images, usage } = await entry.generate({
+		prompt: imagePrompt,
+		count,
+		aspectRatio,
+		imageSize,
+	})
 
 	return {
-		images: await entry.generate({ prompt: imagePrompt, count, aspectRatio, imageSize }),
+		images,
 		model: entry.model,
 		provider: entry.provider,
+		usage,
+	}
+}
+
+async function generateGoogleImages(
+	model: string,
+	{ prompt, count, aspectRatio, imageSize }: ImageProviderCallInput,
+): Promise<ProviderImages> {
+	const google = createGoogle({ apiKey: env.GEMINI_API_KEY })
+	// 장수만큼 따로 호출하므로 사용량도 장마다 나온다 — 요청 1건의 값으로 합친다.
+	const results = await Promise.all(
+		Array.from({ length: count }, async () => {
+			const { image, usage } = await generateImage({
+				model: google.image(model),
+				prompt,
+				providerOptions: {
+					google: {
+						imageConfig: { aspectRatio, imageSize },
+					},
+				},
+			})
+			return { image: `data:${image.mediaType};base64,${image.base64}`, usage }
+		}),
+	)
+	return {
+		images: results.map(({ image }) => image),
+		usage: sumAiUsageTokens(results.map(({ usage }) => usage)),
 	}
 }

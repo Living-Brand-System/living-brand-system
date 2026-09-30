@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
 	createTemplateRasterArtifact,
 	type TemplateVideoArtifact,
@@ -20,7 +20,12 @@ vi.mock('../services/export-artifact.client', () => ({
 }))
 
 describe('useTemplateExport', () => {
-	beforeEach(() => vi.mocked(executeArtifactExport).mockClear())
+	beforeEach(() => {
+		vi.mocked(executeArtifactExport).mockClear()
+		vi.useFakeTimers({ toFake: ['Date'] })
+		vi.setSystemTime(new Date('2026-09-10T03:00:00Z'))
+	})
+	afterEach(() => vi.useRealTimers())
 
 	it('Template은 Raster Artifact와 공통 Print request만 executor에 전달한다', async () => {
 		const artifact = createTemplateRasterArtifact({
@@ -51,10 +56,61 @@ describe('useTemplateExport', () => {
 		expect(executeArtifactExport).toHaveBeenCalledWith(
 			expect.objectContaining({
 				artifact,
-				fileName: 'card',
+				fileName: 'card-20260910-120000',
 				request: expect.objectContaining({ artifact: 'raster', format: 'pdf' }),
 			}),
 		)
+	})
+
+	it('벡터가 있으면 PDF를 벡터 경로로 보내고 못 옮긴 것을 경고로 남긴다', async () => {
+		const vector = {
+			artifact: {
+				kind: 'vector',
+				source: { width: 600, height: 300, background: '#ffffff', primitives: [] },
+			},
+			diagnostics: {
+				unsupported: [{ nodeId: 'hero', reason: 'box-shadow' }],
+				notOutlined: [
+					{ text: 'Bold', fontFamily: 'Pretendard', reason: 'variable-weight' },
+				],
+			},
+		} as const
+		const { result } = renderHook(() =>
+			useTemplateExport({
+				artifact: () =>
+					createTemplateRasterArtifact({
+						html: '<div>card</div>',
+						width: 600,
+						height: 300,
+					}),
+				vectorArtifact: async () => vector,
+				capability: {
+					formats: ['pdf'],
+					colorProfiles: { cmyk: ['cgats21-crpc6'] },
+					print: { ppi: [300] },
+				},
+				metadata: {
+					fileName: 'card',
+					width: 600,
+					height: 300,
+					maxScale: 1,
+					controller: { groups: [], values: {} },
+				},
+			}),
+		)
+
+		act(() => result.current.run())
+		await waitFor(() => expect(executeArtifactExport).toHaveBeenCalledOnce())
+		// 판 전체를 굽는 래스터 PDF가 아니라 도형을 싣는 벡터 PDF로 가야 한다.
+		expect(executeArtifactExport).toHaveBeenCalledWith(
+			expect.objectContaining({
+				artifact: vector.artifact,
+				request: expect.objectContaining({ artifact: 'vector', format: 'pdf' }),
+			}),
+		)
+		await waitFor(() => expect(result.current.vectorWarnings).toHaveLength(2))
+		expect(result.current.vectorWarnings[0]).toContain('그림자')
+		expect(result.current.vectorWarnings[1]).toContain('Pretendard')
 	})
 
 	const MP4_CAPABILITY = {
@@ -144,13 +200,14 @@ describe('useTemplateExport', () => {
 			}),
 		)
 
+		// MP4는 인코더 예산에 걸린다 — 이 캔버스는 1배가 상한이다.
 		expect(result.current.scaleOptions).toEqual([1])
 		act(() => result.current.setScale(3))
 		expect(result.current.scale).toBe(1)
 	})
 
-	it('TIFF·PDF에는 배율을 적용하지 않고 Size도 캔버스 크기로 안내한다', () => {
-		// 인쇄 크기는 ppi가 정한다 — 배율을 받은 척하면 사이드바가 안 나올 크기를 안내한다.
+	it('인쇄 형식에도 배율이 그대로 먹는다', () => {
+		// 🔴 예전에는 TIFF·PDF가 배율을 버려서, 어떤 해상도를 골라도 캔버스 픽셀 그대로 나갔다.
 		const { result } = renderHook(() =>
 			useTemplateExport({
 				artifact: () =>
@@ -170,9 +227,10 @@ describe('useTemplateExport', () => {
 		)
 
 		act(() => result.current.setScale(4))
-		expect(result.current.scaleApplies).toBe(false)
-		expect(result.current.scale).toBe(1)
-		expect(result.current.outputSize).toEqual({ width: 600, height: 300 })
+		expect(result.current.scaleApplies).toBe(true)
+		expect(result.current.outputSize).toEqual({ width: 2400, height: 1200 })
+		// 인쇄 배율 상한은 영상 예산이 아니라 캔버스·총 픽셀이 정한다 — 4배를 훨씬 넘겨 갈 수 있다.
+		expect(result.current.scaleOptions.length).toBeGreaterThan(4)
 	})
 
 	it('MP4 Size는 짝수 내림까지 거친 실제 프레임 크기를 안내한다', () => {
@@ -223,7 +281,7 @@ describe('useTemplateExport', () => {
 		expect(result.current.scale).toBe(3)
 	})
 
-	it('PNG는 fps와 무관하게 프레임 크기 예산까지 배율을 쓴다', () => {
+	it('PNG는 영상 예산이 아니라 인쇄·캔버스 한도까지 커진다', () => {
 		const { result } = renderHook(() =>
 			useTemplateExport({
 				artifact: () =>
@@ -238,7 +296,8 @@ describe('useTemplateExport', () => {
 			}),
 		)
 
-		expect(result.current.scaleOptions).toEqual([1, 2, 3, 4])
+		// 🔴 정지 이미지에 H.264 매크로블록 예산을 씌우면 A4 300ppi가 막힌다.
+		expect(result.current.scaleOptions.length).toBeGreaterThan(4)
 	})
 
 	it('시간축이 없어도 MP4는 Raster Artifact로 반드시 나온다', async () => {
@@ -265,5 +324,70 @@ describe('useTemplateExport', () => {
 				request: expect.objectContaining({ artifact: 'raster', format: 'mp4' }),
 			}),
 		)
+	})
+
+	describe('판형 선언', () => {
+		// 🔑 템플릿은 판형이 문서에 선언돼 있어 창작자가 크기도 밀도도 고르지 않는다.
+		it('판형이 선언된 인쇄판은 mm가 고정이고 배율·해상도를 고르지 않는다', () => {
+			const { result } = renderHook(() =>
+				useTemplateExport({
+					artifact: () =>
+						createTemplateRasterArtifact({
+							html: '<div>poster</div>',
+							width: 2480,
+							height: 3508,
+						}),
+					videoArtifact: null,
+					capability: {
+						formats: ['pdf'],
+						colorProfiles: { cmyk: ['cgats21-crpc6'] },
+						print: { ppi: [300] },
+					},
+					metadata: {
+						...MP4_METADATA,
+						width: 2480,
+						height: 3508,
+						maxScale: 4,
+						canvasPpi: 300,
+					},
+				}),
+			)
+
+			expect(result.current.scaleApplies).toBe(false)
+			expect(result.current.ppiApplies).toBe(false)
+			expect(Math.round(result.current.sizeMm?.width ?? 0)).toBe(210)
+			expect(Math.round(result.current.sizeMm?.height ?? 0)).toBe(297)
+
+			// 🔴 배율을 밀어 넣어도 선언한 판이 커지지 않는다.
+			//    2는 이 판의 배율 상한 안이라 실제로 적용될 수 있는 값이다 — 상한 밖 값(4)을 쓰면
+			//    애초에 무시돼 「선언이 배율을 막는다」를 검증하지 못한다.
+			expect(result.current.scaleOptions).toContain(2)
+			act(() => result.current.setScale(2))
+			expect(result.current.outputSize).toEqual({ width: 2480, height: 3508 })
+		})
+
+		it('선언이 없으면 디지털판이라 배율과 해상도를 창작자가 고른다', () => {
+			const { result } = renderHook(() =>
+				useTemplateExport({
+					artifact: () =>
+						createTemplateRasterArtifact({
+							html: '<div>card</div>',
+							width: 600,
+							height: 300,
+						}),
+					videoArtifact: null,
+					capability: {
+						formats: ['pdf'],
+						colorProfiles: { cmyk: ['cgats21-crpc6'] },
+						print: { ppi: [300] },
+					},
+					metadata: { ...MP4_METADATA, maxScale: 4 },
+				}),
+			)
+
+			expect(result.current.scaleApplies).toBe(true)
+			expect(result.current.ppiApplies).toBe(true)
+			expect(result.current.sizeMm).toBeNull()
+		})
 	})
 })

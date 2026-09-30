@@ -3,11 +3,11 @@ import { fileURLToPath } from 'node:url'
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { resendAdapter } from '@payloadcms/email-resend'
 import { type MCPAccessSettings, mcpPlugin } from '@payloadcms/plugin-mcp'
-import { nestedDocsPlugin } from '@payloadcms/plugin-nested-docs'
 import { searchPlugin } from '@payloadcms/plugin-search'
 import { EXPERIMENTAL_TableFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
 import { s3Storage } from '@payloadcms/storage-s3'
 import { ko } from '@payloadcms/translations/languages/ko'
+import { attachDatabasePool } from '@vercel/functions'
 import {
 	type Access,
 	buildConfig,
@@ -20,6 +20,7 @@ import sharp from 'sharp'
 import { migrations } from '../migrations'
 import { AgentChatSessions } from './collections/AgentChatSessions'
 import { AgentSkills } from './collections/AgentSkills'
+import { AiUsageEvents } from './collections/AiUsageEvents'
 import { ApplicationImages } from './collections/ApplicationImages'
 import { BrandColorGroups } from './collections/BrandColorGroups'
 import { BrandColors } from './collections/BrandColors'
@@ -30,6 +31,8 @@ import { CheckScenarios } from './collections/CheckScenarios'
 import { CheckSessions } from './collections/CheckSessions'
 import { GeneratedImages } from './collections/GeneratedImages'
 import { GraphicProfiles } from './collections/GraphicProfiles'
+import { GraphProfiles } from './collections/GraphProfiles'
+import { GuidelineChapters } from './collections/GuidelineChapters'
 import { GuidelineDocuments } from './collections/GuidelineDocuments'
 import { ImageProfiles } from './collections/ImageProfiles'
 import { RuleCheckers } from './collections/RuleCheckers'
@@ -74,6 +77,7 @@ const BetterEditorSettings: GlobalConfig = {
  * Payload에 등록하는 컬렉션 전부. 업로드 저장 대상을 여기서 파생하므로 순서가 곧 등록 순서다.
  */
 const collections = [
+	GuidelineChapters,
 	GuidelineDocuments,
 	BrandLogos,
 	BrandColors,
@@ -84,6 +88,7 @@ const collections = [
 	SampleImages,
 	ImageProfiles,
 	GraphicProfiles,
+	GraphProfiles,
 	GeneratedImages,
 	Templates,
 	TemplateCategories,
@@ -93,6 +98,7 @@ const collections = [
 	RuleCheckers,
 	CheckSessions,
 	AgentChatSessions,
+	AiUsageEvents,
 	AgentSkills,
 	Users,
 ]
@@ -157,24 +163,30 @@ export default buildConfig({
 		migrationDir: './migrations',
 		pool: {
 			connectionString: env.DATABASE_URL,
+			// 🔴 이 풀은 **함수 인스턴스 하나**의 것이다. stage는 Vercel 서버리스라 배포 직후 인스턴스가 여럿 뜨고,
+			//    인스턴스마다 max개씩 붙잡으면 Supavisor 클라이언트 한도(Nano 200)를 넘어 Payload 초기화에서
+			//    `EMAXCONN max client connections reached`로 페이지가 죽었다(2026-09-08 실측). 그래서 max와
+			//    유휴 시간을 서버리스 기준으로 잡고, 접속은 6543 트랜잭션 풀러로 간다(Supabase 문서의 서버리스 권고).
 			// max가 너무 작으면 트랜잭션 안에서 추가 커넥션을 얻지 못해 자기를 기다리는 데드락이 난다.
 			// admin의 2초 autosave(guidelineDraftVersions)로 저장이 겹치면 max:2에선 풀이 즉시 고갈돼
-			// 무한로딩 + 앱 전체 라우트 정지로 번졌다.
-			max: 10,
+			// 무한로딩 + 앱 전체 라우트 정지로 번졌다. 5는 그 아래로 내리지 않는 선이다.
+			max: 5,
 			// 데드락 대신 빠르게 실패시켜 커넥션을 반납한다(무한 대기 방지).
 			connectionTimeoutMillis: 10_000,
-			idleTimeoutMillis: 30_000,
+			// 요청이 끝난 인스턴스가 연결을 오래 쥐고 있으면 인스턴스 수만큼 유휴 연결이 한도를 먹는다.
+			idleTimeoutMillis: 5_000,
 		},
 		prodMigrations: shouldRunProdMigrations ? migrations : undefined,
 		push: env.PAYLOAD_DB_PUSH === 'true',
 	}),
+	// Vercel Fluid Compute는 요청이 끝나면 인스턴스를 재웠다가 되살린다. 그 사이 유휴 연결이 정리될 때까지
+	// 인스턴스를 살려 두는 것이 이 호출이다(@vercel/functions 문서). VERCEL_URL·VERCEL_REGION이 없는
+	// 로컬·CI에서는 안에서 no-op이라 분기가 필요 없다.
+	onInit: async (payload) => {
+		attachDatabasePool(payload.db.pool)
+	},
 	sharp,
 	plugins: [
-		nestedDocsPlugin({
-			collections: ['guideline-documents'],
-			generateLabel: (_, doc) => String(doc.title),
-			generateURL: (docs) => `/guideline/${docs.map((doc) => String(doc.slug)).join('/')}`,
-		}),
 		mcpPlugin({
 			overrideAuth: async (
 				req: PayloadRequest,
@@ -245,6 +257,8 @@ export default buildConfig({
 			bucket: env.S3_BUCKET || '',
 			config: {
 				region: env.S3_REGION || '',
+				endpoint: env.S3_ENDPOINT,
+				forcePathStyle: Boolean(env.S3_ENDPOINT),
 				credentials: {
 					accessKeyId: env.S3_ACCESS_KEY_ID || '',
 					secretAccessKey: env.S3_SECRET_ACCESS_KEY || '',

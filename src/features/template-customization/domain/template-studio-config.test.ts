@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { resolveGraphicStudioOutput } from '@/features/graphic-generation/domain/graphic-studio-manifest'
 import forwardStraightRuntimeManifest from '@/features/graphic-generation/graphic-runtimes/forward-straight/definition'
-import { CAMERA_AZIMUTHS, CAMERA_ELEVATIONS } from '@/features/image-generation/camera-control'
+import {
+	CAMERA_AZIMUTHS,
+	CAMERA_ELEVATIONS,
+} from '@/features/image-generation/domain/camera-control'
 import type { ImageStudioConfig } from '@/features/image-generation/domain/image-studio-config'
 import { createRasterExportRequest } from '@/features/studio-export/services/create-raster-export-request'
 import { supportsStudioExportRequest } from '@/features/studio-export/studio-output'
@@ -199,11 +202,13 @@ describe('deriveTemplateStudioConfig', () => {
 
 	it('Effective output은 Template Artifact와 실제 Exporter capability를 벗어날 수 없다', () => {
 		const config = deriveTemplateStudioConfig(template, [imageConfig], [forwardStraightConfig])
-		const withCommonFormat = {
+		// artifacts에 없는 형식을 output에 적으면 거부한다 — vector를 뺀 채 svg를 요구하는 꼴이다.
+		const withoutVector = {
 			...config,
+			artifacts: { raster: {} },
 			output: { ...config.output, formats: ['svg'] as const },
 		}
-		expect(() => parseTemplateStudioConfig(withCommonFormat)).toThrow(
+		expect(() => parseTemplateStudioConfig(withoutVector)).toThrow(
 			'지원하지 않는 output format',
 		)
 	})
@@ -249,25 +254,35 @@ describe('deriveTemplateStudioConfig', () => {
 
 	it('output은 Raster Exporter capability를 따르고 canvas만 Template 도메인 정보로 남긴다', () => {
 		expect(deriveTemplateStudioConfig(template)).toMatchObject({
-			output: { formats: ['png', 'jpeg', 'tiff', 'pdf', 'mp4'] },
+			// svg는 인쇄용 벡터 내보내기가 열었다 — Template artifacts가 vector를 선언한다.
+			output: { formats: ['png', 'jpeg', 'tiff', 'pdf', 'svg', 'mp4'] },
 			template: {
 				exportOption: {
 					canvas: { width: 800, height: 600 },
 				},
 			},
 		})
+		// 🔑 정책이 무엇을 적든 벡터(svg·pdf)는 남는다 — 판이 가진 성질이라 고르는 것이 아니다.
 		expect(
 			deriveTemplateStudioConfig({
 				...template,
-				exportPolicy: { allowedFormats: ['pdf'] },
+				exportPolicy: { allowedFormats: ['jpeg'] },
 			}).output.formats,
-		).toEqual(['pdf'])
-		expect(() =>
+		).toEqual(['jpeg', 'pdf', 'svg'])
+		// 발행된 템플릿들이 실제로 갖고 있던 값 — 벡터만 더해지고 나머지는 그대로 좁혀진다.
+		expect(
 			deriveTemplateStudioConfig({
 				...template,
-				exportPolicy: { allowedFormats: ['svg'] },
-			}),
-		).toThrow('지원하지 않는 output format')
+				exportPolicy: { allowedFormats: ['png', 'jpeg', 'mp4'] },
+			}).output.formats,
+		).toEqual(['png', 'jpeg', 'pdf', 'svg', 'mp4'])
+		// 래스터는 보장하지 않는다 — admin의 「래스터」 토글이 실제로 먹어야 한다.
+		expect(
+			deriveTemplateStudioConfig({
+				...template,
+				exportPolicy: { allowedFormats: ['mp4'] },
+			}).output.formats,
+		).not.toContain('png')
 	})
 
 	it('동적 published Template에서 만든 envelope도 공통 strict validator를 통과해야 한다', () => {

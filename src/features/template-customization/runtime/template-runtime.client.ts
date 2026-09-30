@@ -1,6 +1,7 @@
 'use client'
 
 import { toCanvas } from 'html-to-image'
+import { outlineVectorScene } from '@/features/studio-export/adapters/outline-vector-scene.client'
 import type { AuthorizedTemplateAssetCollection } from '@/features/template-core/domain/template-asset-policy'
 import { composeTemplateHtml } from '@/features/template-core/runtime/compose-template-html.client'
 import type { TemplateAssignedImage } from '@/features/template-customization/contexts/template-studio-context'
@@ -20,11 +21,13 @@ import type {
 	CanvasVideoSource,
 	RasterArtifact,
 	StudioArtifactProducer,
+	VectorSceneArtifact,
 	VideoArtifact,
 } from '@/modules/studio-artifact/studio-artifact'
 import type { ControllerValues } from '@/modules/studio-controller/controller-definition'
 import type { TemplateNodeConfigMap } from '@/types/template'
 import { withTemplateRasterStage } from './render-template-raster-stage.client'
+import { templateDomToVectorScene } from './template-dom-to-vector-scene.client'
 
 export type TemplateRasterArtifactSource = {
 	height: number
@@ -52,6 +55,41 @@ export function createTemplateRasterArtifact(
 					}),
 				),
 		},
+	}
+}
+
+/**
+ * 인쇄용 벡터 Artifact. Raster와 같은 stage를 쓰지만 굽지 않고 **재서** 도형으로 옮긴다.
+ *
+ * 🔴 벡터로 옮기지 못한 것을 조용히 버리지 않는다 — 그라디언트·그림자처럼 표현 못 하는 효과와,
+ *    서체가 없어 윤곽선으로 못 바꾼 글줄을 진단으로 함께 돌려준다. 인쇄물은 되돌릴 수 없으므로
+ *    무엇이 빠졌는지 사람이 알아야 한다.
+ */
+export type TemplateVectorArtifactResult = {
+	artifact: VectorSceneArtifact
+	diagnostics: {
+		unsupported: readonly { nodeId: string; reason: string }[]
+		notOutlined: readonly { text: string; fontFamily: string; reason: string }[]
+	}
+}
+
+export async function createTemplateVectorArtifact({
+	height,
+	html,
+	nodeLayers,
+	width,
+}: TemplateRasterArtifactSource & {
+	/** nodeId → 묶음 이름(`mapTemplateNodeLayers`). 인쇄 PDF가 묶음을 그룹으로 싣는 데 쓴다. */
+	nodeLayers: ReadonlyMap<string, string>
+}): Promise<TemplateVectorArtifactResult> {
+	const { scene, unsupported } = await withTemplateRasterStage(html, (element) =>
+		templateDomToVectorScene(element, { width, height }, nodeLayers),
+	)
+	const outlined = await outlineVectorScene(scene)
+
+	return {
+		artifact: { kind: 'vector', source: outlined.scene },
+		diagnostics: { notOutlined: outlined.notOutlined, unsupported },
 	}
 }
 

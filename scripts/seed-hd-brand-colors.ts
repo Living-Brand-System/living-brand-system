@@ -23,6 +23,10 @@ type HdColor = {
 	white?: boolean
 	/** 이 배경 위 CI 단색분리형의 색. 단색형은 모든 배경에서 쓸 수 있고 색만 갈린다. */
 	mono: 'black' | 'white'
+	/** 정본 표의 인쇄 CMYK 표기. 인쇄 PDF가 이 값을 잉크로 읽는다(`parseCmykNotation`). */
+	cmyk?: string
+	/** 정본 표의 PMS 표기. */
+	pantone?: string
 }
 
 // 로고 사용 규칙을 짧게 쓰기 위한 헬퍼. `full`·`white`는 생략하면 false다.
@@ -34,15 +38,27 @@ const logoless = (name: string, hex: string, mono: 'black' | 'white'): HdColor =
 	hex,
 	mono,
 })
+/**
+ * 정본 표(B.5 COLOR)의 CMYK·PMS 표기를 붙인다.
+ * 🔴 표에 값이 없는 색은 부르지 않는다 — 없는 것을 계산으로 메우지 않는다.
+ */
+const ink = (color: HdColor, cmyk: string, pantone?: string): HdColor => ({
+	...color,
+	cmyk,
+	...(pantone ? { pantone } : {}),
+})
 
 // 출처: 0730_HD_Guidlines_All-51.svg (COLOR OVERVIEW 페이지) 아트워크에서 직접 추출, 2026-08-06.
-// 🔴 CMYK·PMS는 가이드라인 표기를 그대로 옮긴다(사용자 지시, 2026-08-06). 다만 14칸이 전부 같은 값이라
-//    브랜드팀이 템플릿 스와치를 아직 안 채운 것으로 보인다 — 실값이 오면 아래 상수만 색별로 가르면 된다.
+// 🔴 CMYK·PMS는 가이드라인 표기를 그대로 옮긴다(사용자 지시, 2026-08-06). 2026-09-09에 실값이 도착해
+//    색별로 갈랐다 — 전부 같았던 옛 플레이스홀더(`C 0 M 100 Y 90 K 0`·`485 C`)는 지웠다.
+//    🔴 값의 정본은 브랜드 가이드라인이고 우리는 옮기기만 한다. 인쇄 사고가 나면 가이드라인을 고친다
+//       (사용자 지시, 2026-09-09) — 총 잉크량·순수 검정 같은 판단으로 여기 값을 손대지 않는다.
+//    🔴 Mono Color 8단은 아직 옮기지 않았다. 정본 표(#FAFAFA·#E1E1E1·#C8C8C8·#969696·#646464·
+//       #3C3C3C·#1E1E1E·#000000)와 아래 Brightness Variation 11단이 hex도 이름도 다른 별개 체계라,
+//       어느 쪽이 색 문서가 되는지 정해지기 전에 값을 심으면 두 번 심게 된다. BLACK만 hex가 같아 넣었다.
 //    표에 함께 적힌 RGB·HEX는 옮기지 않는다. 확정된 hex와 어긋나기 때문이다
 //    (표의 HEX는 14칸 모두 #F00F0F, DISCOVERY BLUE·grey 4종은 RGB도 같은 플레이스홀더다).
 //    화면의 RGB는 저장값이 아니라 hex에서 파생한다.
-const CMYK = 'C 0 M 100 Y 90 K 0'
-const PANTONE = '485 C'
 // 🔴 오버뷰 페이지와 배경 예시 페이지의 값이 어긋나는 색이 둘 있다. 오버뷰를 정본으로 채택했다.
 //    HD DISCOVERY BLUE #003087(오버뷰) vs #002F87(배경 예시)
 //    HD LIGHT BLUE     #DCF0F5(오버뷰) vs #DFE4F4(배경 예시)
@@ -58,14 +74,28 @@ const PANTONE = '485 C'
 //    SVG-53 아트워크가 `#FFFFFF → #393636` 선형 블렌드로 그려낸 값이라 이름도 퍼센트뿐이다.
 //    나머지 6단은 Mono Color와 같은 색이라 문서를 공유한다(20%=LIGHT GREY, 40%·60%=MIDDLE GREY, 80%=DARK GREY).
 const COLORS = {
-	ecoGreen: logoless('HD ECO GREEN', '#73D75A', 'black'),
-	heritageGreen: logoless('HD HERITAGE GREEN', '#00AF41', 'black'),
-	prosperityGreen: logoless('HD PROSPERITY GREEN', '#007332', 'white'),
-	discoveryBlue: logoless('HD DISCOVERY BLUE', '#003087', 'white'),
-	lightGreen: light('HD LIGHT GREEN', '#DCF5D2'),
-	lightBlue: light('HD LIGHT BLUE', '#DCF0F5'),
-	deepGreen: dark('HD DEEP GREEN', '#00280A'),
-	deepBlue: dark('HD DEEP BLUE', '#000A32'),
+	ecoGreen: ink(logoless('HD ECO GREEN', '#73D75A', 'black'), 'C 55 M 0 Y 90 K 0', '7488 C'),
+	heritageGreen: ink(
+		logoless('HD HERITAGE GREEN', '#00AF41', 'black'),
+		'C 80 M 0 Y 100 K 0',
+		'354 C',
+	),
+	prosperityGreen: ink(
+		logoless('HD PROSPERITY GREEN', '#007332', 'white'),
+		'C 100 M 30 Y 100 K 25',
+		'356 C',
+	),
+	discoveryBlue: ink(
+		logoless('HD DISCOVERY BLUE', '#003087', 'white'),
+		'C 100 M 80 Y 0 K 25',
+		'287 C',
+	),
+	lightGreen: ink(light('HD LIGHT GREEN', '#DCF5D2'), 'C 15 M 0 Y 20 K 0', '2254 C'),
+	// 🔴 정본 표는 이 칸의 이름을 「HD LIGHT GREEN」으로 적었지만 hex가 파란색이고 PMS 290 C도
+	//    파랑이다. 표의 오기로 보고 리포의 이름을 유지한다.
+	lightBlue: ink(light('HD LIGHT BLUE', '#DCF0F5'), 'C 10 M 0 Y 0 K 0', '290 C'),
+	deepGreen: ink(dark('HD DEEP GREEN', '#00280A'), 'C 80 M 55 Y 80 K 75', '3537 C'),
+	deepBlue: ink(dark('HD DEEP BLUE', '#000A32'), 'C 100 M 70 Y 0 K 80', '2758 C'),
 	white: light('WHITE', '#FFFFFF'),
 	grey10: light('GREY 10%', '#E9E9E9'),
 	lightGrey: light('LIGHT GREY', '#D3D2D2'),
@@ -76,7 +106,9 @@ const COLORS = {
 	grey70: dark('GREY 70%', '#656263'),
 	darkGrey: dark('DARK GREY', '#4F4C4D'),
 	grey90: dark('GREY 90%', '#393636'),
-	black: dark('BLACK', '#000000'),
+	// 🔴 총 잉크량 318%로 CRPC6 상한(300%)을 넘는다. 정본이 그렇게 적혀 있어 그대로 옮긴다 —
+	//    인쇄소가 반려하면 고칠 곳은 이 파일이 아니라 가이드라인이다.
+	black: ink(dark('BLACK', '#000000'), 'C 94 M 77 Y 53 K 94'),
 } satisfies Record<string, HdColor>
 
 const GROUPS: { name: string; colors: HdColor[] }[] = [
@@ -211,8 +243,9 @@ for (const [key, color] of uniqueColors) {
 		hex: color.hex,
 		// 그룹은 이제 brand-color-groups가 소유한다. 색에 남아 있던 옛 그룹 문자열을 지운다.
 		colorGroup: null,
-		cmyk: CMYK,
-		pantone: PANTONE,
+		// 🔴 정본에 값이 없는 색은 비운다. 옛 플레이스홀더가 남아 있으면 인쇄가 틀린 잉크로 나간다.
+		cmyk: color.cmyk ?? null,
+		pantone: color.pantone ?? null,
 		// 배경으로 썼을 때의 로고 사용 규칙. 규정이라 계산하지 않고 정본을 그대로 담는다.
 		allowsFullColorLogo: color.full ?? false,
 		allowsWhiteWordmark: color.white ?? false,

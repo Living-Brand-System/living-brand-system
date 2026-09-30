@@ -128,6 +128,8 @@ describe('POST /api/generate-image', () => {
 			userInput: 'sample',
 			count: 1,
 			profileId: 5,
+			// 이 라우트의 사용량은 언제나 이미지 스튜디오로 집계된다.
+			studio: 'image',
 			user: { id: 1 },
 		})
 	})
@@ -143,6 +145,8 @@ describe('POST /api/generate-image', () => {
 			count: 1,
 			profileId: 5,
 			aspectRatio: '16:9',
+			// 이 라우트의 사용량은 언제나 이미지 스튜디오로 집계된다.
+			studio: 'image',
 			user: { id: 1 },
 		})
 	})
@@ -158,6 +162,8 @@ describe('POST /api/generate-image', () => {
 			count: 1,
 			profileId: 5,
 			imageSize: '4K',
+			// 이 라우트의 사용량은 언제나 이미지 스튜디오로 집계된다.
+			studio: 'image',
 			user: { id: 1 },
 		})
 	})
@@ -224,6 +230,44 @@ describe('POST /api/generate-image', () => {
 
 	it('프롬프트도 참조도 없으면 400으로 거부한다', async () => {
 		const response = await POST(imageRequest({ profileId: 5 }))
+
+		expect(response.status).toBe(400)
+		expect(mocks.generateImages).not.toHaveBeenCalled()
+	})
+
+	it('첨부 참조는 주소 없이 그대로 넘긴다 — 본문에 이미 들어 있다', async () => {
+		const response = await POST(
+			imageRequest({
+				prompt: 'sample',
+				profileId: 5,
+				reference: { upload: 'data:image/png;base64,AAAA' },
+			}),
+		)
+
+		expect(response.status).toBe(200)
+		expect(mocks.generateImages).toHaveBeenCalledWith(
+			expect.objectContaining({
+				reference: { upload: 'data:image/png;base64,AAAA' },
+			}),
+		)
+	})
+
+	it('변환 후 첨부 상한을 넘는 본문은 모델 호출 전에 거부한다', async () => {
+		const response = await POST(
+			imageRequest({
+				profileId: 5,
+				prompt: '제품',
+				reference: { upload: `data:image/webp;base64,${'A'.repeat(1_334_000)}` },
+			}),
+		)
+		expect(response.status).toBe(400)
+		expect(mocks.generateImages).not.toHaveBeenCalled()
+	})
+
+	it('첨부만 보내고 프롬프트를 비우면 400으로 거부한다 — 첨부는 프롬프트를 물려주지 않는다', async () => {
+		const response = await POST(
+			imageRequest({ profileId: 5, reference: { upload: 'data:image/png;base64,AAAA' } }),
+		)
 
 		expect(response.status).toBe(400)
 		expect(mocks.generateImages).not.toHaveBeenCalled()

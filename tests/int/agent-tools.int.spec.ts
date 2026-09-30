@@ -69,8 +69,7 @@ describe('agent tools', () => {
 				{
 					collection: 'guideline-documents',
 					id: '7',
-					level: 3,
-					parentId: '2',
+					chapterId: '2',
 					title: 'Narrative',
 				},
 			])
@@ -85,8 +84,7 @@ describe('agent tools', () => {
 			{
 				collection: 'guideline-documents',
 				id: '7',
-				level: 3,
-				parentId: '2',
+				chapterId: '2',
 				title: 'Narrative',
 			},
 		])
@@ -328,11 +326,11 @@ describe('agent tools', () => {
 		const result = await tools.prepareTemplateImage.execute?.(
 			{
 				templateId: 4,
-				values: {
-					department: { text: 'HX팀' },
-					name: { text: '홍길동입니다' },
-					fixed: { text: 'changed' },
-				},
+				values: [
+					{ slotId: 'department', text: 'HX팀' },
+					{ slotId: 'name', text: '홍길동입니다' },
+					{ slotId: 'fixed', text: 'changed' },
+				],
 			},
 			{ context: { user: { id: 1 } } } as never,
 		)
@@ -341,10 +339,8 @@ describe('agent tools', () => {
 			name: 'Business card',
 			templateId: 4,
 			type: 'template-image',
-			values: {
-				department: { text: 'HX팀' },
-				name: { text: '홍길동입니' },
-			},
+			// 🔑 패치의 키는 원시 nodeId다(컨트롤 id의 `text:` 접두가 아니다). `fixed`는 열린 슬롯이 아니라 탈락한다.
+			patch: { text: { department: 'HX팀', name: '홍길동입니' } },
 		})
 	})
 
@@ -374,12 +370,41 @@ describe('agent tools', () => {
 		])
 	})
 
+	it('요약에 템플릿 선택 근거를 싣는다 — 이름만으로는 같은 크기의 둘을 구별할 수 없다', async () => {
+		vi.spyOn(agentTemplateRepository, 'listAgentTemplates').mockResolvedValue([
+			{
+				id: 6,
+				name: 'Poster',
+				description: null,
+				category: { id: 2, title: 'Editorial' },
+				...htmlTemplate({ t: { input: {} } }, textNode({ id: 't' })),
+				width: 630,
+				height: 891,
+			},
+		] as never)
+		const tools = getAgentTools()
+
+		const result = await tools.findTemplatesForRequest.execute?.({}, {
+			context: { user: { id: 1 } },
+		} as never)
+
+		expect(result).toEqual([
+			expect.objectContaining({
+				id: 6,
+				category: 'Editorial',
+				size: { width: 630, height: 891 },
+				// 🔑 기약분수(70:99)는 사람도 모델도 못 읽는다 — 실제로 쓰이는 축만 준다.
+				orientation: 'portrait',
+			}),
+		])
+	})
+
 	it('throws when the template is missing', async () => {
 		vi.spyOn(agentTemplateRepository, 'findAgentTemplate').mockResolvedValue(null as never)
 		const tools = getAgentTools()
 
 		await expect(
-			tools.prepareTemplateImage.execute?.({ templateId: 99, values: {} }, {
+			tools.prepareTemplateImage.execute?.({ templateId: 99, values: [] }, {
 				context: { user: { id: 1 } },
 			} as never),
 		).rejects.toThrow('Template is not available.')
@@ -391,7 +416,7 @@ describe('agent tools', () => {
 		} as never)
 
 		await expect(
-			tools.prepareTemplateImage.execute?.({ templateId: 99, values: {} }, {
+			tools.prepareTemplateImage.execute?.({ templateId: 99, values: [] }, {
 				context: { user: { id: 1 } },
 			} as never),
 		).rejects.toThrow('Template is not available.')

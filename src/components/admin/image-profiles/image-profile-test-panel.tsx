@@ -8,13 +8,16 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldTitle } from '@/components/ui/field'
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
+import type { ImageModelPreset } from '@/features/image-generation/domain/image-model'
+import type {
+	ImageAspectRatio,
+	ImageOutputSize,
+} from '@/features/image-generation/domain/image-size'
 import {
 	deriveImageProfileController,
 	getImageStudioControls,
 	type ImageStudioConfig,
 } from '@/features/image-generation/domain/image-studio-config'
-import type { ImageModelPreset } from '@/features/image-generation/image-model'
-import type { ImageAspectRatio, ImageOutputSize } from '@/features/image-generation/image-size'
 import type { ImagePromptNormalizationResult } from '@/features/image-generation/services/generate-image.client'
 import {
 	requestAdminImageGeneration,

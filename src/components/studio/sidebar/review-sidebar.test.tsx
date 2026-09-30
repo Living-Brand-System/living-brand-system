@@ -182,9 +182,9 @@ const sections: CheckSection[] = [
 		chapterTitle: 'Brand Design Elements',
 		chapterSlug: 'brand-design-elements',
 		chapterOrder: 1,
-		sectionTitle: 'Color System',
-		sectionSlug: 'color-system',
-		sectionOrder: 1,
+		topicTitle: 'Color System',
+		topicSlug: 'color-system',
+		topicOrder: 1,
 		checks: [
 			{
 				key: 'color.palette',

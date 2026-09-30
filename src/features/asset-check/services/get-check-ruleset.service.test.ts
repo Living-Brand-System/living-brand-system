@@ -34,7 +34,11 @@ function referenceAsset(name: string, url: string, role: 'context' | 'negative')
 	}
 }
 
-function source(key: string, rule: Partial<Rule> = {}): GuidelineCheckSource {
+function source(
+	key: string,
+	rule: Partial<Rule> = {},
+	section: GuidelineCheckSource['source']['section'] = null,
+): GuidelineCheckSource {
 	return {
 		rule: {
 			id: 1,
@@ -49,7 +53,7 @@ function source(key: string, rule: Partial<Rule> = {}): GuidelineCheckSource {
 			...rule,
 		},
 		blockName: null,
-		source: { documentId: 1 },
+		source: { documentId: 1, section },
 		evidence: { type: 'document', blocks: [] },
 		referenceAssets: [],
 	}
@@ -65,7 +69,7 @@ function document(
 		title: `Document ${id}`,
 		slug: `document-${id}`,
 		displayOrder: id,
-		breadcrumbDocumentIds: [],
+		chapter: null,
 		checks,
 		...overrides,
 	}
@@ -95,7 +99,7 @@ describe('getCheckRuleset', () => {
 		const sections = await getCheckRuleset()
 
 		expect(sections[0]?.checks[0]).toMatchObject({
-			source: { documentId: 1 },
+			source: { documentId: 1, section: null },
 			evidence: { type: 'document', blocks: [] },
 			checker: {
 				key: 'logo-layout',
@@ -150,36 +154,49 @@ describe('getCheckRuleset', () => {
 		])
 	})
 
-	it('breadcrumb 배치와 문서 순서를 적용하고 요청된 Check key 순서를 보존한다', async () => {
-		const chapter = document(10, [], { title: 'Chapter', displayOrder: 2 })
-		const section = document(20, [], {
-			title: 'Section',
-			displayOrder: 3,
-			breadcrumbDocumentIds: [10, 20],
-		})
-		const first = document(31, [source('check.first')], {
-			title: 'First',
-			displayOrder: 1,
-			breadcrumbDocumentIds: [10, 20, 31],
-		})
-		const second = document(32, [source('check.second')], {
-			title: 'Second',
-			displayOrder: 2,
-			breadcrumbDocumentIds: [10, 20, 32],
-		})
-		vi.mocked(getCheckSourceDocuments).mockResolvedValue({
-			documents: [second, section, first, chapter],
-		})
+	// 🔴 배치 단위는 문서가 아니라 섹션이다. 2026-08-26 이관으로 3단계 문서가 section 블록이 됐고,
+	//    한 토픽의 Check가 전부 한 덩어리로 뭉치지 않도록 근거가 지목하는 섹션으로 다시 가른다.
+	it('섹션별로 배치를 가르고 지면 순서를 적용하며 요청된 Check key 순서를 보존한다', async () => {
+		const topic = document(
+			20,
+			[
+				source('check.second', {}, { anchor: 'second', title: 'Second', order: 1 }),
+				source('check.first', {}, { anchor: 'first', title: 'First', order: 0 }),
+			],
+			{
+				title: 'Topic',
+				displayOrder: 3,
+				chapter: { title: 'Chapter', slug: 'chapter', displayOrder: 2 },
+			},
+		)
+		vi.mocked(getCheckSourceDocuments).mockResolvedValue({ documents: [topic] })
 
 		const sections = await getCheckRuleset()
 		const selected = await getRuntimeChecks(['check.second', 'check.first'])
 
 		expect(sections.map(({ title }) => title)).toEqual(['First', 'Second'])
+		// 🔴 앵커가 slug 자리에 들어가야 `toGuidelineHref`가 `#앵커`까지 딥링크를 만든다.
+		expect(sections.map(({ slug }) => slug)).toEqual(['first', 'second'])
 		expect(sections[0]).toMatchObject({
 			chapterTitle: 'Chapter',
-			sectionTitle: 'Section',
+			topicTitle: 'Topic',
 		})
 		expect(selected.map(({ key }) => key)).toEqual(['check.second', 'check.first'])
+	})
+
+	it('섹션 없는 문서 자신의 rule은 토픽 단위로 남는다', async () => {
+		const topic = document(20, [source('check.doc')], {
+			title: 'Topic',
+			slug: 'topic',
+			displayOrder: 2,
+			chapter: { title: 'Chapter', slug: 'chapter', displayOrder: 1 },
+		})
+		vi.mocked(getCheckSourceDocuments).mockResolvedValue({ documents: [topic] })
+
+		const sections = await getCheckRuleset()
+
+		// slug가 topicSlug와 같으므로 딥링크에 앵커가 붙지 않는다.
+		expect(sections).toMatchObject([{ title: 'Topic', slug: 'topic', topicSlug: 'topic' }])
 	})
 
 	it('같은 Rule의 다중 배치는 근거와 참조 자산을 병합해 하나의 실행 Check로 만든다', async () => {
@@ -187,11 +204,16 @@ describe('getCheckRuleset', () => {
 		documentPlacement.evidence = {
 			type: 'document',
 			description: 'Doc A',
-			blocks: [{ type: 'callout', kind: 'must', title: undefined, items: [] }],
+			blocks: [{ type: 'section', anchor: 'a', title: 'A', description: undefined }],
 		}
 		documentPlacement.referenceAssets = [referenceAsset('a', '/a.png', 'context')]
 		const blockPlacement = source('shared')
-		blockPlacement.evidence = { type: 'block', childCount: 2 }
+		blockPlacement.evidence = {
+			type: 'section',
+			anchor: 'b',
+			title: 'B',
+			description: undefined,
+		}
 		blockPlacement.referenceAssets = [
 			referenceAsset('a', '/a.png', 'context'),
 			referenceAsset('b', '/b.png', 'negative'),
@@ -207,8 +229,8 @@ describe('getCheckRuleset', () => {
 			type: 'document',
 			description: 'Doc A',
 			blocks: [
-				{ type: 'callout', kind: 'must', title: undefined, items: [] },
-				{ type: 'block', childCount: 2 },
+				{ type: 'section', anchor: 'a', title: 'A', description: undefined },
+				{ type: 'section', anchor: 'b', title: 'B', description: undefined },
 			],
 		})
 		expect(checks[0]?.referenceAssets.map(({ url, role }) => `${url}:${role}`)).toEqual([

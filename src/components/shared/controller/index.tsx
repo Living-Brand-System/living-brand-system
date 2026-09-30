@@ -5,7 +5,10 @@ import { ControllerBrowser } from './browser'
 import { ControllerCameraControl } from './camera-control'
 import { ControllerCard } from './card'
 import { ControllerChips } from './chips'
+import { ControllerColorChips } from './color-chips'
 import { ControllerColorRow } from './color-row'
+import { ControllerColorStrip } from './color-strip'
+import { ControllerDataGrid } from './data-grid'
 import { ControllerField } from './field'
 import { ControllerGroup } from './group'
 import { ControllerInput, ControllerTextarea } from './input'
@@ -13,7 +16,9 @@ import { ControllerItem } from './item'
 import { ControllerContent, ControllerFooter, ControllerHeader, ControllerRoot } from './layout'
 import { ControllerListRow } from './list-row'
 import { ControllerPad } from './pad'
+import { ControllerPadPair } from './pad-pair'
 import { ControllerPagination } from './pagination'
+import { ControllerPreviewChips } from './preview-chips'
 import { ControllerRange } from './range'
 import { ControllerRow } from './row'
 import { ControllerSegmented } from './segmented'
@@ -51,14 +56,19 @@ export const Controller = {
 	Item: ControllerItem,
 	Segmented: ControllerSegmented,
 	TabPanel: ControllerTabPanel,
+	ColorChips: ControllerColorChips,
+	ColorStrip: ControllerColorStrip,
 	ColorRow: ControllerColorRow,
+	PreviewChips: ControllerPreviewChips,
 	Select: ControllerSelect,
 	Input: ControllerInput,
 	Textarea: ControllerTextarea,
 	Range: ControllerRange,
 	Pad: ControllerPad,
+	PadPair: ControllerPadPair,
 	Pagination: ControllerPagination,
 	Action: ControllerAction,
+	DataGrid: ControllerDataGrid,
 	Status: ControllerStatus,
 	Bar: ControllerBar,
 	CameraControl: ControllerCameraControl,
@@ -75,8 +85,11 @@ export {
 	ControllerCameraControl,
 	ControllerCard,
 	ControllerChips,
+	ControllerColorChips,
 	ControllerColorRow,
+	ControllerColorStrip,
 	ControllerContent,
+	ControllerDataGrid,
 	ControllerField,
 	ControllerFooter,
 	ControllerGroup,
@@ -85,7 +98,9 @@ export {
 	ControllerItem,
 	ControllerListRow,
 	ControllerPad,
+	ControllerPadPair,
 	ControllerPagination,
+	ControllerPreviewChips,
 	ControllerRange,
 	ControllerRoot,
 	ControllerRow,

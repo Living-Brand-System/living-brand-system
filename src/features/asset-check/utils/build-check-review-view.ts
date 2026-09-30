@@ -156,8 +156,8 @@ function buildRows({
 
 function toGuidelineHref(section: CheckSection) {
 	const chapterHref = `/guideline/${section.chapterSlug}`
-	if (section.sectionSlug === section.chapterSlug) return chapterHref
+	if (section.topicSlug === section.chapterSlug) return chapterHref
 
-	const sectionHref = `${chapterHref}/${section.sectionSlug}`
-	return section.slug === section.sectionSlug ? sectionHref : `${sectionHref}#${section.slug}`
+	const topicHref = `${chapterHref}/${section.topicSlug}`
+	return section.slug === section.topicSlug ? topicHref : `${topicHref}#${section.slug}`
 }

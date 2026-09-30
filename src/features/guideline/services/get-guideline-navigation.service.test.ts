@@ -2,53 +2,50 @@ import { describe, expect, it, vi } from 'vitest'
 import { buildGuidelineNavigationChapters } from './get-guideline-navigation.service'
 
 vi.mock('../repositories/guideline-view.payload.repository', () => ({
-	listPublishedGuidelineNavigationDocuments: vi.fn(),
+	listGuidelineChapters: vi.fn(),
+	listPublishedGuidelineNavigationTopics: vi.fn(),
 }))
 vi.mock('./get-guideline-metadata.service', () => ({ getGuidelineMetadata: vi.fn() }))
 
 describe('buildGuidelineNavigationChapters', () => {
-	it('기존 장·섹션·페이지 구조와 같은 목차와 Page anchor URL을 만든다', () => {
-		const navigation = buildGuidelineNavigationChapters([
-			{
-				id: 1,
-				title: 'Brand',
-				slug: 'brand',
-				description: 'Brand foundation',
-				parentId: null,
-				href: '/guideline/brand',
-			},
-			{
-				id: 2,
-				title: 'Logo',
-				slug: 'logo',
-				description: null,
-				parentId: 1,
-				href: '/guideline/brand/logo',
-			},
-			{
-				id: 3,
-				title: 'Primary Logo',
-				slug: 'primary-logo',
-				description: null,
-				parentId: 2,
-				href: '/guideline/brand/logo/primary-logo',
-			},
-		])
+	// 🔴 URL은 breadcrumb이 아니라 챕터 slug + 토픽 slug로 조립한다(2026-08-26).
+	it('챕터별로 토픽을 묶고 앵커 URL을 만든다', () => {
+		const navigation = buildGuidelineNavigationChapters(
+			[{ id: 1, title: 'Brand', slug: 'brand', displayOrder: 0 }],
+			[
+				{
+					chapterId: 1,
+					id: 2,
+					sections: [
+						{
+							id: 'primary-logo',
+							headingLevel: 2,
+							parentSectionId: null,
+							anchor: 'primary-logo',
+							title: 'Primary Logo',
+						},
+					],
+					slug: 'logo',
+					title: 'Logo',
+				},
+			],
+		)
 
 		expect(navigation).toEqual([
 			{
 				id: 1,
 				title: 'Brand',
-				description: 'Brand foundation',
-				href: '/guideline/brand',
-				sections: [
+				topics: [
 					{
 						id: 2,
 						title: 'Logo',
 						href: '/guideline/brand/logo',
-						pages: [
+						sections: [
 							{
-								id: 3,
+								id: 'primary-logo',
+								headingLevel: 2,
+								parentSectionId: null,
+								anchor: 'primary-logo',
 								title: 'Primary Logo',
 								href: '/guideline/brand/logo#primary-logo',
 							},
@@ -57,5 +54,23 @@ describe('buildGuidelineNavigationChapters', () => {
 				],
 			},
 		])
+	})
+
+	// chapter는 required지만 초안은 그 검증을 건너뛴다 — 짝 없는 토픽이 트리를 깨면 안 된다.
+	it('어느 챕터에도 속하지 않은 토픽은 목차에 넣지 않는다', () => {
+		const navigation = buildGuidelineNavigationChapters(
+			[{ id: 1, title: 'Brand', slug: 'brand', displayOrder: 0 }],
+			[
+				{
+					chapterId: null,
+					id: 9,
+					sections: [],
+					slug: 'orphan',
+					title: 'Orphan',
+				},
+			],
+		)
+
+		expect(navigation[0]?.topics).toEqual([])
 	})
 })

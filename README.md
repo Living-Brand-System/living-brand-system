@@ -107,7 +107,7 @@ PAYLOAD_DB_PUSH=false
 | AI Chat | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, `CHAT_MODEL`, `AGENT_CHAT_TRIAGE_ENABLED` |
 | Image Generation | `OPENAI_API_KEY`, `GEMINI_API_KEY` |
 | Figma Import | `FIGMA_API_TOKEN` |
-| Object Storage | `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` |
+| Object Storage | `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, 선택 `S3_ENDPOINT`(S3 호환 저장소) |
 | Email | `RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`, `EMAIL_FROM_NAME` |
 
 ### 2. PostgreSQL 실행
@@ -134,6 +134,17 @@ pnpm dev
 `http://localhost:3000`에 접속해 첫 관리자 계정을 만듭니다. 관리자 화면은 `http://localhost:3000/admin`에서 열립니다.
 
 Payload collection, field, index, relationship을 변경할 때는 격리된 로컬 데이터베이스에서만 `PAYLOAD_DB_PUSH=true`를 사용하세요. 작업을 마치면 최종 마이그레이션을 생성하고 새로운 `PAYLOAD_DB_PUSH=false` 데이터베이스에서 검증합니다. 자세한 절차는 [스키마 변경과 마이그레이션 워크플로](docs/06-project-structure.md#16-스키마-변경과-마이그레이션-워크플로)를 따릅니다.
+
+### 격리된 Docker CMS 미리보기
+
+```sh
+printf 'PAYLOAD_SECRET=%s\n' "$(openssl rand -hex 32)" > .env.docker.local
+docker compose -f compose.preview.yml up -d
+```
+
+`http://localhost:3102/admin`에서 확인합니다. `.env.docker.local`은 처음 한 번만 만들고 보관합니다. Node 22·PostgreSQL·MinIO를 사용하며 기존 `.env`와 `.env.local`은 컨테이너에 노출하지 않습니다. 시작할 때 커밋된 마이그레이션을 적용하며 자동 스키마 push는 끕니다. DB와 업로드 파일은 `lbs-cms-preview`의 전용 볼륨에만 저장됩니다. 외부 DB·S3·이메일·AI 서비스는 연결하지 않습니다.
+
+`docker compose -f compose.preview.yml down`으로 중지합니다. 데이터는 남습니다. `down -v`는 작성한 DB와 업로드까지 삭제하므로 초기화할 때만 사용합니다. 콘텐츠는 Admin에서 직접 작성합니다.
 
 ### Development Commands
 

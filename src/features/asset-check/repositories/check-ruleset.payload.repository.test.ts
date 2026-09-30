@@ -19,7 +19,7 @@ describe('getCheckSourceDocuments', () => {
 						title: 'Brand',
 						slug: 'brand',
 						displayOrder: 1,
-						breadcrumbs: [],
+						chapter: null,
 						blocks: [],
 						rules: [],
 					},
@@ -36,7 +36,7 @@ describe('getCheckSourceDocuments', () => {
 				title: 'Brand',
 				slug: 'brand',
 				displayOrder: 1,
-				breadcrumbDocumentIds: [],
+				chapter: null,
 				checks: [],
 			},
 		])
@@ -63,15 +63,6 @@ describe('getCheckSourceDocuments', () => {
 			updatedAt: '2026-07-17',
 			createdAt: '2026-07-17',
 		}
-		const image = {
-			id: 7,
-			name: 'Logo reference',
-			alt: 'Logo',
-			url: '/api/application-images/file/logo.png',
-			mimeType: 'image/png',
-			updatedAt: '2026-07-17',
-			createdAt: '2026-07-17',
-		}
 		const find = vi.fn(() =>
 			Promise.resolve({
 				docs: [
@@ -80,14 +71,16 @@ describe('getCheckSourceDocuments', () => {
 						title: 'Primary Logo',
 						slug: 'primary-logo',
 						displayOrder: 3,
-						breadcrumbs: [{ doc: { id: 10 } }, { doc: 20 }, { doc: { id: 30 } }],
+						chapter: null,
 						rules: [],
 						blocks: [
 							{
 								id: 'logo-examples',
 								blockName: 'Logo examples',
-								blockType: 'contentColumns',
-								columns: [{ image }],
+								blockType: 'section',
+								anchor: 'logo-examples',
+								title: 'Logo examples',
+								children: [],
 								rules: [
 									{
 										id: 91,
@@ -114,7 +107,6 @@ describe('getCheckSourceDocuments', () => {
 
 		expect(documents[0]).toMatchObject({
 			id: 30,
-			breadcrumbDocumentIds: [10, 20, 30],
 			checks: [
 				{
 					rule: {
@@ -129,20 +121,8 @@ describe('getCheckSourceDocuments', () => {
 						messages: { pass: '통과' },
 					},
 					source: { documentId: 30 },
-					evidence: {
-						type: 'contentColumns',
-						columns: [{ heading: undefined, body: undefined }],
-					},
-					referenceAssets: [
-						{
-							asset: {
-								name: 'Logo reference',
-								url: '/api/application-images/file/logo.png',
-								mimeType: 'image/png',
-							},
-							role: 'context',
-						},
-					],
+					evidence: { type: 'section', anchor: 'logo-examples', title: 'Logo examples' },
+					referenceAssets: [],
 				},
 			],
 		})
@@ -156,7 +136,7 @@ describe('getCheckSourceDocuments', () => {
 					title: 'Primary Logo',
 					slug: 'primary-logo',
 					displayOrder: 3,
-					breadcrumbs: [{ doc: null }, { doc: 20 }],
+					chapter: { title: 'Brand', slug: 'brand', displayOrder: 2 },
 					checks: [],
 					blocks: [],
 				},
@@ -166,6 +146,6 @@ describe('getCheckSourceDocuments', () => {
 
 		const { documents } = await getCheckSourceDocuments()
 
-		expect(documents[0]?.breadcrumbDocumentIds).toEqual([-1, 20])
+		expect(documents[0]?.chapter).toEqual({ title: 'Brand', slug: 'brand', displayOrder: 2 })
 	})
 })

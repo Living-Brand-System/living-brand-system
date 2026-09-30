@@ -27,6 +27,32 @@ export interface TemplateLayerCreatorPolicy {
 export interface TemplateNodeConfig {
 	/** Admin이 정하는 Creator 노출·편집·visibility 정책. */
 	creator?: TemplateLayerCreatorPolicy
+	/**
+	 * 이 노드의 **자식 겹침 순서** — Admin이 정하는 정본이다(2026-09-10).
+	 * 값은 자식 nodeId를 **문서 순서(= 아래 → 위)**로 나열한 것이고 compose가 DOM을 그 순서로
+	 * 재배치한다.
+	 *
+	 * 🔴 **z-index를 쓰지 않는 이유**: 벡터 내보내기가 DOM 순서로만 걷고 z-index를 읽지 않는다
+	 *    (`template-dom-to-vector-scene.client.ts`). 정본을 DOM 순서 하나로 두면 화면·PDF·SVG가
+	 *    갈릴 수 없다.
+	 * 🔴 **형제 안에서만** 순서가 성립한다. 다른 부모로 옮기면 `position: absolute`의 좌표 기준이
+	 *    바뀌어 위치가 깨지므로 재배치는 같은 부모 안에서만 한다.
+	 * 🔴 목록에 없는 자식은 **제 자리를 지킨다.** 목록이 이름 댄 자식들이 지금 차지한 자리에만 그
+	 *    순서가 채워진다 — 재import로 새로 생긴 노드가 Figma가 놓은 자리에 그대로 남는다.
+	 *    (끝으로 쓸어 보내면 그 노드가 다른 레이어에 가려지거나 위를 덮는다.)
+	 */
+	childOrder?: string[]
+	/**
+	 * 레이어 이름 — **Admin이 정하는 정본**이다(사용자 지시, 2026-09-10). compose가 이 값을 노드의
+	 * `data-name`에 쓴다.
+	 *
+	 * 🔑 `data-name` **한 자리**로 모으는 이유: 스튜디오 레이어 패널·Admin 레이어 목록·**인쇄
+	 *    PDF의 Illustrator 레이어명**이 전부 그것을 읽는다
+	 *    (`template-dom-to-vector-scene.client.ts`의 group label → PDF OCG). 새 필드를 따로
+	 *    내려보내면 셋 중 하나가 조용히 Figma 이름에 머문다.
+	 * 🔴 비어 있으면 Figma가 준 `data-name`이 그대로 남는다 — 초안은 Figma, 수정은 Admin이다.
+	 */
+	label?: string
 	/** Creator 세션이 compose에만 싣는 실제 표시 상태. Admin 저장 정책과 분리한다. */
 	visible?: boolean
 	text?: string

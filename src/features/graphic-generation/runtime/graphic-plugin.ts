@@ -3,6 +3,7 @@ import type { VectorSceneArtifact } from '@/modules/studio-artifact/studio-artif
 import type {
 	ControllerRuntimeBindings,
 	ControllerValues,
+	StudioControllerRestrictions,
 } from '@/modules/studio-controller/controller-definition'
 
 export type GraphicViewport = { width: number; height: number }
@@ -15,6 +16,15 @@ export type GraphicStudioPlugin<Id extends string = string> = {
 		viewport: GraphicViewport,
 	) => VectorSceneArtifact
 	getBindings?: (viewport: GraphicViewport) => ControllerRuntimeBindings
+	/**
+	 * 현재 값에 따라 **선택지를 좁힌다** — 「면을 고르면 선 색 선택지가 바뀐다」가 사는 자리.
+	 *
+	 * 🔴 좁히기만 된다. `applyControllerRestrictions`가 기본 계약보다 넓히면 던지므로, 여기서
+	 *    낼 수 있는 것은 언제나 Definition의 부분집합이다.
+	 * 🔑 binding이 아니라 restriction인 이유: binding은 `(viewport)`만 받고 값이 바뀌어도
+	 *    다시 계산되지 않는다. 값에 따라 달라지는 것은 이 채널이 갖는다.
+	 */
+	getRestrictions?: (values: ControllerValues) => StudioControllerRestrictions | null
 }
 
 /** 자산 model 파일이 Manifest와 분리해 제공하는 순수 계산 adapter 계약. */

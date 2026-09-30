@@ -1,7 +1,9 @@
 'use client'
 
 import { useCallback, useState } from 'react'
+import type { ImageGenerationMetadata } from '@/features/image-generation/contexts/image-studio-context'
 import type { ImageArtifacts } from '@/features/image-generation/runtime/image-artifact.client'
+import { exportFileName, numberedExportFileName } from '@/features/studio-export/export-file-name'
 import { exportResultsToZip } from '../adapters/export-results-to-zip.client'
 import type {
 	ExportRequest,
@@ -9,10 +11,10 @@ import type {
 	StudioOutputFormat,
 	VideoExportSpec,
 } from '../export-contract'
-import type { PrintPpi } from '../print-policy'
+import { type PrintPpi, resolveDefaultPrintPpi } from '../print-policy'
 import { createRasterExportRequest } from '../services/create-raster-export-request'
 import { executeArtifactExport } from '../services/export-artifact.client'
-import type { StudioOutputCapability } from '../studio-output'
+import { acceptsPrintPpi, type StudioOutputCapability } from '../studio-output'
 import { useExport } from './use-export'
 
 export type ImageExportView = ReturnType<typeof useImageExport>
@@ -24,24 +26,28 @@ type ImageExportRequest = (
 /** Image Artifact의 선택·패키징만 조정하고 형식 변환은 공통 Artifact executor에 맡긴다. */
 export function useImageExport({
 	artifacts,
+	metadata,
 	capability,
 	selected,
 	size,
 }: {
+	metadata?: ImageGenerationMetadata
 	artifacts: ImageArtifacts | null
 	capability: StudioOutputCapability
 	selected: number | null
 	size: { width: number; height: number } | null
 }) {
 	const [selectedFormat, setSelectedFormat] = useState<StudioOutputFormat | null>(null)
-	const [ppi, setPpi] = useState<PrintPpi | undefined>(() => capability.print?.ppi[0])
+	const [ppi, setPpi] = useState<PrintPpi>(() => resolveDefaultPrintPpi(capability.print?.ppi))
 	const [fps, setFps] = useState<VideoExportSpec['fps'] | undefined>(
 		() => capability.video?.mp4.fps[0],
 	)
 	const [durationSeconds, setDurationSeconds] = useState(() =>
 		Math.min(5, capability.video?.mp4.maxDurationSeconds ?? 5),
 	)
-	const effectivePpi = ppi && capability.print?.ppi.includes(ppi) ? ppi : capability.print?.ppi[0]
+	const effectivePpi = acceptsPrintPpi(capability, ppi)
+		? ppi
+		: resolveDefaultPrintPpi(capability.print?.ppi)
 	const effectiveFps =
 		fps && capability.video?.mp4.fps.includes(fps) ? fps : capability.video?.mp4.fps[0]
 	const effectiveDuration = Math.min(
@@ -74,9 +80,16 @@ export function useImageExport({
 		(request: ImageExportRequest) => {
 			if (!artifacts) throw new Error('Image export is unavailable.')
 			const items = request.artifact === 'original' ? artifacts.original : artifacts.raster
-			return exportScope(items, selected, request)
+			const fileName = metadata
+				? exportFileName(
+						metadata.profileName,
+						new Date(metadata.createdAt),
+						metadata.prompt,
+					)
+				: undefined
+			return exportScope(items, selected, request, fileName)
 		},
-		[artifacts, selected],
+		[artifacts, selected, metadata],
 	)
 	const imageExport = useExport<ImageExportRequest>({
 		capability,
@@ -103,9 +116,9 @@ export function useImageExport({
 		setFormat: (next: StudioOutputFormat) => {
 			if (formats.includes(next)) setSelectedFormat(next)
 		},
-		ppi: effectivePpi ?? null,
+		ppi: effectivePpi,
 		setPpi: (next: PrintPpi) => {
-			if (capability.print?.ppi.includes(next)) setPpi(next)
+			if (acceptsPrintPpi(capability, next)) setPpi(next)
 		},
 		fps: effectiveFps ?? null,
 		setFps: (next: VideoExportSpec['fps']) => {
@@ -132,9 +145,14 @@ async function exportScope(
 	artifacts: ImageArtifacts['original'] | ImageArtifacts['raster'],
 	selected: number | null,
 	request: ImageExportRequest,
+	fileName?: string,
 ): Promise<ExportResult | readonly ExportResult[]> {
 	const exportOne = (artifact: (typeof artifacts)[number], index: number) =>
-		executeArtifactExport({ artifact, fileName: `hd-image-${index + 1}`, request })
+		executeArtifactExport({
+			artifact,
+			fileName: fileName ? numberedExportFileName(fileName, index) : `hd-image-${index + 1}`,
+			request,
+		})
 	if (request.scope === 'selected') {
 		if (selected === null || !artifacts[selected])
 			throw new Error('저장할 이미지를 선택해 주세요.')
@@ -142,7 +160,11 @@ async function exportScope(
 	}
 	const items = await Promise.all(artifacts.map(exportOne))
 	return request.package
-		? exportResultsToZip({ format: request.package, filename: 'hd-images.zip', items })
+		? exportResultsToZip({
+				format: request.package,
+				filename: `${fileName ?? 'hd-images'}.zip`,
+				items,
+			})
 		: items
 }
 

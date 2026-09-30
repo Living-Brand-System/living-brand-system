@@ -1,0 +1,5 @@
+/* Weight 표본의 브랜드 컬러. 프레임 배경과 표본 글자색을 함께 지정합니다. */
+.weightDisplay[data-slot="guideline-card-display"] {
+	--guideline-display-background: #dcf5d2;
+	color: #008233;
+}

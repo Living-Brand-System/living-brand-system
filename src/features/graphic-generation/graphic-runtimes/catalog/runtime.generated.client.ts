@@ -6,14 +6,14 @@ import type { GraphicRuntimeLoader } from '../../runtime/client/graphic-runtime.
 import type { GraphicRuntimeId } from './manifest.generated'
 
 export const graphicRuntimeCatalog = {
+	'fluted-glass': () =>
+		import('../fluted-glass/runtime.client').then((module) => module.default),
 	'forward-straight': () =>
 		import('../forward-straight/runtime.client').then((module) => module.default),
-	'linear-fluted-glass': () =>
-		import('../linear-fluted-glass/runtime.client').then((module) => module.default),
-	'radial-fluted-glass': () =>
-		import('../radial-fluted-glass/runtime.client').then((module) => module.default),
-	'sweep-fluted-glass': () =>
-		import('../sweep-fluted-glass/runtime.client').then((module) => module.default),
-	'vertical-fluted-glass': () =>
-		import('../vertical-fluted-glass/runtime.client').then((module) => module.default),
+	'key-visual-formation': () =>
+		import('../key-visual-formation/runtime.client').then((module) => module.default),
+	'key-visual-line': () =>
+		import('../key-visual-line/runtime.client').then((module) => module.default),
+	'key-visual-pattern': () =>
+		import('../key-visual-pattern/runtime.client').then((module) => module.default),
 } satisfies Record<GraphicRuntimeId, GraphicRuntimeLoader>

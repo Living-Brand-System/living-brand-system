@@ -223,7 +223,8 @@ describe('TemplateLayersField 폼 계약', () => {
 		)
 
 		render(createElement(TemplateLayersField))
-		fireEvent.click(screen.getByRole('button', { name: /제목/ }))
+		// 🔴 이름 끝으로 맞춘다 — 겹침 순서 손잡이가 `제목 위로`/`제목 아래로`로 같이 걸린다.
+		fireEvent.click(screen.getByRole('button', { name: /제목$/ }))
 		fireEvent.change(screen.getByLabelText('내용'), {
 			target: { value: '변경' },
 		})

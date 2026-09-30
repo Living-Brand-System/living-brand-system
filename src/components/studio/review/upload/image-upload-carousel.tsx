@@ -17,8 +17,9 @@ import type { CheckImage } from '@/features/asset-check/types'
  *
  * 크기 계약은 Template·Graphic 캔버스와 같다: 스테이지를 실측해 가용 영역을 구하고,
  * 100%가 그 영역을 채우는 크기가 되며, 슬라이더는 그 위에 배율을 곱한다.
- * 🔴 슬라이더 게이팅은 두 캔버스와 다르게 `lg:`를 걸지 않는다 — 바가 좁은 화면에서도 보이므로
- *    게이팅하면 보이는 컨트롤이 아무 일도 하지 않게 된다.
+ * 🔴 배율은 두 캔버스와 다르게 `lg:` 게이팅 없이 모든 폭에서 걸린다. 그런데 바 자체가
+ *    `hidden lg:flex`(`controller/bar.tsx`)라 좁은 화면에는 슬라이더가 없다 — 기본값이 상한이라
+ *    지금은 문제가 없지만, 기본값을 100% 아래로 내리면 좁은 화면에서 되돌릴 수단이 사라진다.
  */
 export function ImageUploadCarousel({ previewSize }: { previewSize: number }) {
 	const { images, selectedId, select, addFiles } = useCheckImages()

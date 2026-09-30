@@ -1,7 +1,8 @@
 import sharp from 'sharp'
 
 export const MAX_IMAGE_BYTES = 20_000_000
-const MAX_IMAGE_PIXELS = 16_777_216
+// Nano Banana 2의 지원 4K 비율은 최대 17,203,200픽셀이다.
+const MAX_IMAGE_PIXELS = 18_000_000
 
 export interface DecodedImageDataUri {
 	data: Buffer

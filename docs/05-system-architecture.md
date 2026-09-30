@@ -258,7 +258,7 @@ Brand resource records는 메타데이터와 참조만 보관하고, 실제 파�
 ##### 가이드라인 관리
 
 가이드라인 관리는 Payload CMS supported 흐름으로 처리합니다.
-가이드라인 본문, 섹션, 페이지, Rule 배치, 자원 연결의 편집, draft/publish 상태, 예약 발행, Payload revision, diff/restore는 Payload CMS가 맡습니다.
+가이드라인 본문, 챕터·토픽, 섹션 블록, Rule 배치, 자원 연결의 편집, draft/publish 상태, 예약 발행, Payload revision, diff/restore는 Payload CMS가 맡습니다.
 Rule 정의·Checker 계약·CheckScenario 발행은 Quality rule publishing service가 별도로 맡고, Guideline publishing service와 Brand resource publishing service는 가이드라인 및 자원 publish 결과 후처리를 담당합니다.
 사용자에게 보여주는 화면은 별도 서브도메인이 아니라 Server render route handler가 published guideline과 linked resource를 읽어 만든 결과입니다.
 
@@ -504,7 +504,8 @@ Plugin은 collection으로 두지 않습니다 — 2026-08-18에 삭제했습니
 | 후보 | 관리 단위 | 주요 관계 |
 | --- | --- | --- |
 | `guideline` global | BrandGuideline | 단일 가이드라인 설정 |
-| `guideline-documents` | GuidelineDocument | 계층 깊이로 장·섹션·페이지를 표현하고 blocks와 Rule 배치·근거를 소유 |
+| `guideline-chapters` | GuidelineChapter | 토픽을 묶는 분류. 제목·slug·순서만 갖고 자기 화면은 없다 |
+| `guideline-documents` | GuidelineDocument | 챕터를 필수로 참조하는 토픽. blocks(섹션 `section` 포함)와 Rule 배치·근거를 소유 |
 | `rules` | Rule | 문서와 독립된 검수 기준, 메시지, RuleChecker 관계를 관리 |
 | `check-scenarios` | CheckScenario | 검수 목적별 이름, 설명과 순서가 있는 CheckKey 목록을 관리 |
 | `rule-checkers` | RuleChecker | executor 유형과 checker 또는 model binding을 1:1로 관리하는 검사 도구 계약 |
@@ -606,8 +607,8 @@ flowchart TD
 
 | 종류 | 예 | 동작 |
 | --- | --- | --- |
-| 동적 | 가이드라인 챕터·섹션·페이지 | 매 요청 렌더. 편집이 즉시 보입니다 |
-| 정적 | 홈, `/guideline`, `/studio`, `/login` | 빌드 시점에 굳습니다. 무효화하지 않으면 재배포까지 그대로입니다 |
+| 동적 | 가이드라인 챕터·섹션·페이지, `/studio/*`, `/login`, `/account` | 매 요청 렌더. 편집이 즉시 보입니다 |
+| 정적 | 홈, `/guideline` | 빌드 시점에 굳습니다. 무효화하지 않으면 재배포까지 그대로입니다 |
 
 **모든 프런트엔드 라우트는 자기 렌더링 방식을 선언합니다**(`export const dynamic`). 선언이 없으면 Next가 추론하는데, 추론의 기준은 그 라우트가 쿠키·헤더를 읽는지 여부이고 결과는 프로덕션 빌드에서만 드러납니다. 그러면 미리보기나 권한 조회를 넣거나 빼는 무관한 수정 하나로 정적↔동적이 조용히 뒤집혀도 리뷰에서 보이지 않습니다. 선언을 강제하는 것은 `app/(frontend)/rendering-declaration.test.ts`이며, 선언은 페이지 자신이나 조상 layout 어디에 있어도 됩니다. 실제 결과는 빌드 출력의 `○`/`ƒ` 표시로 대조합니다.
 

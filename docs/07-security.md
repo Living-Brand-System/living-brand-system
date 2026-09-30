@@ -26,7 +26,7 @@
 | 20 | 취약한 패스워드 복구 | 비밀번호 재설정 token은 1회성, 짧은 만료 시간, 서버 저장 검증을 적용합니다. |  |
 | 21 | 쿠키 변조 | 권한 판단에 클라이언트 쿠키 값을 직접 사용하지 않고 서버 세션과 Payload user를 기준으로 판단합니다. |  |
 | 22 | 환경 변수 및 Secret 관리 | `PAYLOAD_SECRET`, DB URL, API key가 코드, 로그, 클라이언트 번들에 노출되지 않도록 관리합니다. |  |
-| 23 | 관리자 권한 분리 | Admin, Manager, Creator 역할별 권한을 분리하고, 관리자 기능 접근을 최소 권한으로 제한합니다. |  |
+| 23 | 관리자 권한 분리 | admin·manager·worker 역할별 권한을 분리하고, 관리자 기능 접근을 최소 권한으로 제한합니다. Payload Admin 진입은 manager 이상입니다. |  |
 | 24 | API 접근 제어 | Payload REST, GraphQL, Local API에서 collection별 access control 누락이 없는지 확인합니다. Local API는 기본적으로 `user`와 `overrideAccess: false`를 사용합니다. |  |
 | 25 | GraphQL 노출 관리 | 운영 환경에서 GraphQL Playground, introspection, 과도한 query depth 노출을 제한합니다. |  |
 | 26 | 파일 MIME 검증 | 업로드 파일은 확장자뿐 아니라 MIME type과 실제 파일 내용을 함께 검증합니다. |  |
@@ -63,9 +63,9 @@
 
 ### 회원가입과 사용자 생성
 
-- 공개 회원가입은 기본 정책으로 열지 않습니다. 사용자 계정은 admin 생성 또는 초대 기반 흐름으로만 만듭니다.
+- 공개 회원가입은 기본 정책으로 열지 않습니다. 사용자 계정은 manager 이상이 Payload Admin에서 직접 만듭니다. 초대 흐름은 두지 않고, 계정을 만든 사람이 임시 비밀번호를 전달하면 받은 사람이 `/account`에서 바꿉니다.
 - 사용자 생성 endpoint를 추가할 때도 `users` collection의 `create` access를 우회하지 않습니다. Local API를 쓰는 경우 `overrideAccess: false`를 기본값으로 사용합니다.
-- 가입 또는 초대 완료 요청에서 클라이언트가 `role`, `_verified`, 권한 필드, 세션 필드를 직접 지정할 수 없게 합니다. 최초 역할은 서버가 `worker` 같은 최소 권한으로 고정합니다.
+- 클라이언트 요청이 `role`, `_verified`, 권한 필드, 세션 필드를 직접 지정할 수 없게 합니다. 최초 역할의 기본값은 `worker`이고, `role`을 쓰려면 manager 이상이어야 합니다. `admin`은 manager가 지정할 수 없습니다.
 - 비밀번호는 Payload auth collection이 관리하게 하고, 앱 코드에서 비밀번호 원문을 저장하거나 로그에 남기지 않습니다.
 - 로그인과 가입 완료는 HTTPS 전송을 전제로 합니다. 이 흐름은 종단간 암호화가 아니라 TLS 전송 암호화, 서버 측 비밀번호 해시, JWT 서명, 보안 쿠키 조합으로 보호합니다.
 - Payload auth token은 `PAYLOAD_SECRET`으로 서명합니다. 운영 `PAYLOAD_SECRET`은 긴 난수로 관리하고, 코드·로그·클라이언트 번들에 노출하지 않습니다.
@@ -79,9 +79,9 @@
 
 | 영역 | 보안 기준 | 확인 방법 |
 | --- | --- | --- |
-| 공개 범위 | 공개 회원가입 endpoint를 만들지 않습니다. 가입은 admin 생성 또는 초대 token을 가진 사용자만 완료할 수 있습니다. | 비로그인 사용자가 `/api/users`와 가입 관련 route로 임의 계정을 만들 수 없는지 확인합니다. |
-| 접근 제어 | `users` collection의 `create` access는 admin 또는 초대 검증 서버 로직만 통과합니다. | Local API 호출에 `overrideAccess: false`가 있는지 확인하고, access 우회 테스트를 추가합니다. |
-| 역할 부여 | 최초 역할은 서버가 최소 권한으로 지정합니다. 클라이언트 입력의 `role`, `_verified`, 권한 관련 필드는 무시하거나 거부합니다. | 가입 요청 body에 `role: "admin"`을 넣어도 admin 계정이 만들어지지 않는지 확인합니다. |
+| 공개 범위 | 공개 회원가입 endpoint를 만들지 않습니다. 계정은 manager 이상만 만들 수 있습니다. | 비로그인 사용자가 `/api/users`와 가입 관련 route로 임의 계정을 만들 수 없는지 확인합니다. |
+| 접근 제어 | `users` collection의 `create` access는 manager 이상만 통과합니다. 조회·수정·삭제에서 manager에게 `admin` 역할 행은 보이지 않고, manager는 자기 계정을 삭제할 수 없습니다. | Local API 호출에 `overrideAccess: false`가 있는지 확인하고, access 우회 테스트를 추가합니다. |
+| 역할 부여 | 최초 역할은 서버가 최소 권한(`worker`)으로 지정합니다. manager가 바꿀 수 있는 값은 `worker`와 `manager` 둘뿐입니다. | 가입 요청 body에 `role: "admin"`을 넣어도 admin 계정이 만들어지지 않는지 확인합니다. |
 | 비밀번호 | 비밀번호 원문은 저장·응답·로그에 남기지 않습니다. Payload auth collection의 해시 저장과 검증 흐름만 사용합니다. | DB와 로그에서 비밀번호 원문이 남지 않는지 확인합니다. |
 | 비밀번호 정책 | 내부 사용자 비밀번호는 최소 12자 이상이어야 하고, 흔한 약한 비밀번호는 거부합니다. | 서버 검증에서 짧거나 단순한 비밀번호가 실패하는지 확인합니다. |
 | 전송 보안 | 로그인, 가입 완료, 초대 수락, 비밀번호 재설정은 HTTPS에서만 처리합니다. | 운영 환경에서 HTTP 요청이 HTTPS로 리디렉션되거나 거부되는지 확인합니다. |

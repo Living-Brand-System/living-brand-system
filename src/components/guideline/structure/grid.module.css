@@ -1,0 +1,62 @@
+.grid {
+	--grid-column-gap: 12px;
+	display: grid;
+	width: 100%;
+	max-width: calc(
+		var(--display-width) *
+		var(--grid-columns) +
+		var(--grid-column-gap) *
+		(var(--grid-columns) - 1)
+	);
+	margin-inline: auto;
+	grid-template-columns: repeat(
+			auto-fill,
+			minmax(min(100%, var(--display-width)), var(--display-width))
+		);
+	justify-content: center;
+	align-items: start;
+	gap: 24px var(--grid-column-gap);
+}
+.fluid {
+	grid-template-columns: repeat(
+			auto-fill,
+			minmax(
+				min(
+					100%,
+					max(
+						var(--min-display-width),
+						calc(
+							(100% - var(--grid-column-gap) * (var(--grid-columns) - 1)) /
+							var(--grid-columns)
+						)
+					)
+				),
+				1fr
+			)
+		);
+}
+.card {
+	min-width: 0;
+	width: 100%;
+	margin: 0;
+}
+.fluid > .card {
+	max-width: var(--display-width);
+	justify-self: center;
+}
+.display {
+	--guideline-display-background: var(--muted);
+	position: relative;
+	width: 100%;
+	aspect-ratio: var(--display-ratio, 1);
+	overflow: hidden;
+	border-radius: var(--radius-lg);
+	background: var(--guideline-card-background, var(--guideline-display-background));
+}
+.content {
+	color: var(--guideline-card-foreground, inherit);
+}
+.image {
+	object-position: center;
+	transform-origin: center;
+}

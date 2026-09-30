@@ -1,5 +1,8 @@
 import type { Block, Field } from 'payload'
-import { CAMERA_AZIMUTHS, CAMERA_ELEVATIONS } from '@/features/image-generation/camera-control'
+import {
+	CAMERA_AZIMUTHS,
+	CAMERA_ELEVATIONS,
+} from '@/features/image-generation/domain/camera-control'
 
 const AZIMUTH_LABELS: Record<(typeof CAMERA_AZIMUTHS)[number], string> = {
 	front: '정면',
@@ -44,6 +47,13 @@ const featureBlocks: Block[] = [
 			{ name: 'azimuths', type: 'json', label: '허용 방향' },
 			{ name: 'elevations', type: 'json', label: '허용 높이' },
 		],
+	},
+	{
+		slug: 'referenceImage',
+		interfaceName: 'ImageProfileReferenceImageFeature',
+		labels: { singular: '참조 이미지 첨부', plural: '참조 이미지 첨부' },
+		// 첨부는 저장하지 않는 1회용이라 프로파일이 좁힐 세부 설정이 없다 — 켜고 끄는 것이 전부다.
+		fields: [],
 	},
 ]
 

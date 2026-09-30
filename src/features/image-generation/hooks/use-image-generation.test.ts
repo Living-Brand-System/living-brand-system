@@ -7,11 +7,22 @@ const RESPONSE = {
 	imageSize: '1K' as const,
 	images: ['/file/a.png', '/file/b.png'],
 	generatedImages: [
-		{ collection: 'generated-images', createdAt: '', id: 1, url: '/file/a.png' },
-		{ collection: 'generated-images', createdAt: '', id: 2, url: '/file/b.png' },
+		{
+			collection: 'generated-images',
+			createdAt: '2026-09-10T03:00:00Z',
+			id: 1,
+			url: '/file/a.png',
+		},
+		{
+			collection: 'generated-images',
+			createdAt: '2026-09-10T03:00:00Z',
+			id: 2,
+			url: '/file/b.png',
+		},
 	],
 	model: 'gpt-image-2',
 	profileId: 5,
+	profileName: '제품컷',
 	prompt: '{"subject":"유조선"}',
 }
 
@@ -33,6 +44,11 @@ describe('useImageGeneration', () => {
 		await act(() => result.current.generate({ count: 2, prompt: '유조선', profileId: 5 }))
 
 		expect(result.current.session?.reference).toBeNull()
+		expect(result.current.session?.metadata).toEqual({
+			profileName: '제품컷',
+			prompt: '유조선',
+			createdAt: '2026-09-10T03:00:00Z',
+		})
 		expect(result.current.session?.images).toHaveLength(2)
 		expect(result.current.selected).toBe(0)
 	})
@@ -57,6 +73,7 @@ describe('useImageGeneration', () => {
 			),
 		)
 
+		expect(result.current.session?.images[0].downloadPrompt).toBe('유조선')
 		expect(result.current.session?.reference).toEqual(reference)
 		expect(result.current.session?.images).toHaveLength(1)
 		// 참조가 0번을 차지하므로 첫 결과는 1번이다 — 저장 CTA가 결과를 가리켜야 한다.

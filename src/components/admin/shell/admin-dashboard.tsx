@@ -13,6 +13,9 @@ import {
 	type DashboardEntry,
 } from './dashboard-blocks'
 
+/** 🔴 모듈 상수여야 한다 — 렌더마다 새 객체면 히어로 shader가 계속 다시 마운트된다. */
+const ADMIN_HERO_VALUES = { shape: 'radial' } as const
+
 /** 링크 하나를 그리는 데 필요한 것 — 라벨과 목적지. 만들 수 없는 자원은 `createHref`가 없다. */
 type ResolvedEntry = {
 	href: string
@@ -74,7 +77,8 @@ export async function AdminDashboard({ initPageResult }: AdminViewServerProps) {
 			<PageHero
 				className="aspect-[1412/381] w-full"
 				fallbackSrc="/images/hero_admin.png"
-				runtimeId="radial-fluted-glass"
+				runtimeId="fluted-glass"
+				values={ADMIN_HERO_VALUES}
 			>
 				{/* biome-ignore lint/performance/noImgElement: Payload admin은 next/image의 최적화 경로를 타지 않는다. */}
 				<img alt="HD" className="w-[11%] min-w-[96px]" src="/logos/logo_wht.svg" />

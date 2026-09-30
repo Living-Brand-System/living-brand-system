@@ -1,0 +1,39 @@
+.caption {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	width: 100%;
+	max-width: 480px;
+	padding: 12px 24px;
+	font-size: 16px;
+	line-height: 24px;
+	white-space: pre-line;
+	overflow-wrap: anywhere;
+}
+.title,
+.description {
+	font-size: inherit;
+	line-height: inherit;
+}
+.title {
+	font-weight: 600;
+}
+.description {
+	font-weight: 500;
+	color: var(--muted-foreground);
+}
+.list {
+	display: grid;
+	gap: 12px;
+	list-style: none;
+}
+.list,
+.specification {
+	font-size: 14px;
+	line-height: 20px;
+}
+.row {
+	display: grid;
+	grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+	gap: 12px;
+}

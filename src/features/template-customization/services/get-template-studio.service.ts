@@ -5,11 +5,14 @@ import {
 	type PublishedTemplateView,
 	type TemplateStudioConfig,
 } from '@/features/template-customization/domain/template-studio-config'
+import { getTemplateHighlightColor } from '@/features/template-customization/repositories/brand-highlight-color.payload.repository'
 import { getPublishedTemplate } from '@/features/template-customization/services/get-published-template.service'
 
 export type GetTemplateStudioOutput = {
 	config: TemplateStudioConfig
 	template: PublishedTemplateView
+	/** 캔버스에서 편집 중인 슬롯을 집어 보여 줄 때 쓰는 색. 못 찾으면 null이고 화면이 폴백한다. */
+	highlightColor: string | null
 }
 
 /**
@@ -23,10 +26,11 @@ export async function getTemplateStudio(
 	templateSlug: string,
 	user: unknown,
 ): Promise<GetTemplateStudioOutput | null> {
-	const [published, imageConfigs, graphicConfigs] = await Promise.all([
+	const [published, imageConfigs, graphicConfigs, highlight] = await Promise.all([
 		getPublishedTemplate(templateSlug),
 		listImageStudioConfigs(user),
 		listGraphicStudioConfigs(user),
+		getTemplateHighlightColor(),
 	])
 
 	if (!published) return null
@@ -35,5 +39,6 @@ export async function getTemplateStudio(
 	return {
 		config: deriveTemplateStudioConfig(published, imageConfigs, graphicConfigs),
 		template: { id, name, html, width, height },
+		highlightColor: highlight,
 	}
 }

@@ -118,6 +118,11 @@ export function ImageProfileFeaturesField({
 					)}
 				</Controller.Group>
 				<Controller.Group
+					title="참조 이미지 첨부"
+					collapsible={false}
+					trailing={featureToggle('referenceImage', '참조 이미지 첨부')}
+				/>
+				<Controller.Group
 					title="카메라 조정"
 					collapsible={false}
 					trailing={featureToggle('cameraControl', '카메라 조정')}

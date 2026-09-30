@@ -207,7 +207,8 @@ function NavigationHeaderStart({ className, ...props }: React.ComponentProps<'se
 	return (
 		<section
 			data-slot="navigation-header-start"
-			className={cn('flex items-center justify-self-start', className)}
+			// gap-2는 우측 유틸 묶음(End)과 같은 값이다 — 양쪽 묶음이 같은 간격을 쓴다.
+			className={cn('flex items-center justify-self-start gap-2', className)}
 			{...props}
 		/>
 	)
@@ -292,6 +293,44 @@ type NavigationHeaderLinkGroupProps = Omit<React.ComponentProps<'div'>, 'childre
 	items: readonly NavigationHeaderLinkItem[]
 }
 
+type NavigationHeaderActionProps = Omit<React.ComponentProps<'button'>, 'children'> &
+	VariantProps<typeof navigationHeaderLinkVariants> & {
+		label: string
+	}
+
+/**
+ * 링크와 **같은 모양의 버튼.** 헤더 항목이 이동이 아니라 동작일 때(로그아웃) 쓴다.
+ *
+ * 🔴 클래스를 베껴 쓰지 않고 `navigationHeaderLinkVariants`를 그대로 공유한다 — 같은 알약이
+ *    두 자리에서 각자 정의되면 한쪽만 바뀌어 어긋난다(docs/09 §9).
+ */
+function NavigationHeaderAction({
+	className,
+	current = false,
+	label,
+	surface = 'standalone',
+	...props
+}: NavigationHeaderActionProps) {
+	return (
+		<button
+			data-slot="navigation-header-action"
+			data-surface={surface}
+			className={cn(navigationHeaderLinkVariants({ current, surface }), className)}
+			type="button"
+			{...props}
+		>
+			<Typography
+				as="span"
+				className={navigationHeaderLinkLabelVariants({ current, surface })}
+				size="sm"
+				weight="medium"
+			>
+				{label}
+			</Typography>
+		</button>
+	)
+}
+
 function NavigationHeaderLinkGroup({ className, items, ...props }: NavigationHeaderLinkGroupProps) {
 	const groupRef = React.useRef<HTMLDivElement>(null)
 	const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null)
@@ -357,18 +396,20 @@ function NavigationHeaderSymbolLink({
 		<Link
 			data-slot="navigation-header-symbol-link"
 			aria-label="메인으로 이동"
+			// 마크만 있던 자리에 HD 락업이 들어간다 — 2.3:1이라 정사각형에 넣으면 찌그러진다.
 			className={cn(
-				'flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring/30',
+				'flex h-8 shrink-0 items-center justify-center rounded-full bg-foreground px-2.5 outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring/30',
 				className,
 			)}
 			{...props}
 		>
 			<Image
 				alt=""
-				className="size-3.5 dark:brightness-0"
-				height={14}
-				src="/symbols/symbol_wht.svg"
-				width={14}
+				// 🔴 높이 16px이 규정 최소 크기다(docs/12 「색과 최소 크기」). 더 줄이지 말 것.
+				className="h-4 w-auto dark:brightness-0"
+				height={16}
+				src="/logos/logo_wht.svg"
+				width={37}
 			/>
 		</Link>
 	)
@@ -473,6 +514,7 @@ function NavigationHeaderMenuTrigger({
 }
 
 const NavigationHeader = {
+	Action: NavigationHeaderAction,
 	Center: NavigationHeaderCenter,
 	ChatTrigger: NavigationHeaderChatTrigger,
 	Compact: NavigationHeaderCompact,

@@ -2,12 +2,12 @@
 
 import { useFormFields } from '@payloadcms/ui'
 import { getDataByPath } from 'payload/shared'
-import { getImageRuntimeManifest } from '@/features/image-generation/domain/image-runtime-manifest'
-import { deriveImageProfileController } from '@/features/image-generation/domain/image-studio-config'
 import {
 	DEFAULT_IMAGE_MODEL_PRESET,
 	type ImageModelPreset,
-} from '@/features/image-generation/image-model'
+} from '@/features/image-generation/domain/image-model'
+import { getImageRuntimeManifest } from '@/features/image-generation/domain/image-runtime-manifest'
+import { deriveImageProfileController } from '@/features/image-generation/domain/image-studio-config'
 import {
 	getTemplateRuntimeManifest,
 	type TemplateBackgroundPolicy,

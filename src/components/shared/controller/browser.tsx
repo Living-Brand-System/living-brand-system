@@ -95,18 +95,30 @@ type ControllerBrowserPanelProps = {
 	tabs: readonly string[]
 	/** 본문이 비었을 때 그리드 아래 자리에 앉는 안내. */
 	empty?: React.ReactNode
+	/**
+	 * 프레임의 어느 쪽으로 떠오르나. 🔴 **캔버스 쪽으로** 떠야 한다 — 화면 밖으로 나가면
+	 * 패널이 열려도 아무것도 안 보인다(왼쪽 패널의 카드에서 실제로 그랬다).
+	 * 오른쪽 사이드바의 카드는 `'left'`(기본), 왼쪽 패널의 카드는 `'right'`다.
+	 */
+	side?: 'left' | 'right'
 	className?: string
 	children: React.ReactNode
 }
 
 /**
- * 컨트롤러 왼쪽에 떠서 캔버스를 덮는 글래스 패널 — 도메인 무지: 무엇을 고르는 브라우저인지 모른다.
+ * 컨트롤러 옆에 떠서 캔버스를 덮는 글래스 패널 — 도메인 무지: 무엇을 고르는 브라우저인지 모른다.
  * 소유하는 것은 글래스 크롬, 헤더(탭 + 닫기), 본문 영역, 빈 상태 자리뿐이다.
  *
  * 색: 테마와 무관하게 어두운 글래스를 의도한 디자인이지만 생 rgba를 쓰지 않는다(docs/09 §4).
  * `inverted` 표면 쌍으로 내부 겹침을 쌓는다 — 다크 테마에서는 쌍이 함께 뒤집혀 밝은 글래스가 된다.
  */
-function ControllerBrowserPanel({ tabs, empty, className, children }: ControllerBrowserPanelProps) {
+function ControllerBrowserPanel({
+	tabs,
+	empty,
+	side = 'left',
+	className,
+	children,
+}: ControllerBrowserPanelProps) {
 	const frame = React.useContext(BrowserFrameContext)
 
 	const content = (
@@ -116,9 +128,12 @@ function ControllerBrowserPanel({ tabs, empty, className, children }: Controller
 			aria-describedby={undefined}
 			className={cn(
 				// 상한은 top-5만큼 줄인 남은 높이다 — 100%로 두면 컨트롤러 아래로 20px 넘친다.
-				'absolute top-5 right-0 z-20 flex h-168 max-h-[calc(100%-1.25rem)] w-150 max-w-[calc(100vw-2rem)] flex-col gap-1 overflow-hidden rounded-xl border border-inverted-foreground/5 bg-inverted/75 p-2 text-inverted-foreground shadow-lg outline-none backdrop-blur-sm lg:right-full lg:mr-4',
-				// 트리거가 있는 오른쪽에서 밀려 나온다 — 어디서 열렸는지가 방향으로 남는다.
-				'duration-150 data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-right-4 data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-right-4 motion-reduce:animate-none',
+				'absolute top-5 z-20 flex h-168 max-h-[calc(100%-1.25rem)] w-150 max-w-[calc(100vw-2rem)] flex-col gap-1 overflow-hidden rounded-xl border border-inverted-foreground/5 bg-inverted/75 p-2 text-inverted-foreground shadow-lg outline-none backdrop-blur-sm',
+				// 트리거가 있는 쪽에서 밀려 나온다 — 어디서 열렸는지가 방향으로 남는다.
+				'duration-150 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 motion-reduce:animate-none',
+				side === 'left'
+					? 'right-0 data-open:slide-in-from-right-4 data-closed:slide-out-to-right-4 lg:right-full lg:mr-4'
+					: 'left-0 data-open:slide-in-from-left-4 data-closed:slide-out-to-left-4 lg:left-full lg:ml-4',
 				className,
 			)}
 		>

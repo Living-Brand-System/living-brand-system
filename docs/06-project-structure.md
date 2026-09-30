@@ -74,7 +74,7 @@ Creator UI -> Route Handler -> PublishGuidelineService -> GuidelineRepository ->
 | 전역 공유 컴포넌트 | `src/components/shared`, `src/components/global` | 둘 이상의 화면 표면이 공유하는 UI와 공용 탐색 UI는 `shared`, app shell은 `global`에 둡니다. |
 | 화면 상태와 비즈니스 로직 | `src/features/*` | domain, hook, service, repository, util, type을 기능 안에 둡니다. 일반 React 컴포넌트는 두지 않습니다. |
 
-의존 방향은 `app → components → features`입니다. `features`는 `components`를 import하지 않습니다. Payload block은 schema, projection, renderer를 한 단위로 등록해야 하므로 `src/features/guideline/blocks/*/component.tsx`는 예외로 둡니다. 기존 `src/features/guideline/components`도 Guideline 분류를 별도로 정리하기 전까지의 한시적 예외입니다.
+의존 방향은 `app → components → features`입니다. 일반 가이드라인 화면은 `src/components/guideline`에 둡니다. 등록 단위인 `src/features/guideline/blocks`·`cards`의 렌더 파일만 표현 컴포넌트를 import할 수 있습니다. 스키마·정의·투영·계약과 상태·서비스·저장소 계층은 표현 컴포넌트나 렌더 레지스트리를 import하지 않습니다. `definition.ts`와 `registry.ts`는 Payload config가 Node에서 읽으며, React 렌더는 `registry.render.tsx`로 분리합니다.
 
 ## 3. 전체 소스코드 폴더 구조
 
@@ -107,6 +107,14 @@ src/
     admin/
     global/
     home/
+    guideline/
+      pages/
+      controllers/
+      navigation/
+      sections/
+      typography/
+      media/
+      playground/
     shared/
       navigation/
     studio/
@@ -149,20 +157,25 @@ src/
       services/
     <feature>/
       blocks/
-        <block>/
-          schema.ts
-          projection.ts
-          component.tsx
-        runtime/
-          project-guideline-block.ts
-          build-check-source-snapshot.ts
-        shared/
-        types.ts
-      catalog/
-        schema.generated.ts
-        projection.generated.ts
-        renderer.generated.tsx
-        catalog.test.ts
+        registry.ts
+        registry.render.tsx
+        fields.ts
+        card-block.tsx
+        projection.ts
+      cards/
+        schema.ts
+        component.tsx
+        caption/
+        displays/
+          registry.ts
+          registry.render.tsx
+          static/
+          dynamics/
+            <widget>/
+      domain/
+        contract/
+      contexts/
+      providers/
       hooks/
       repositories/
       services/
@@ -190,7 +203,6 @@ tests/
   helpers/
 docs/
 scripts/
-  generate-guideline-block-catalogs.ts
 ```
 
 - `page.tsx`와 `layout.tsx`는 라우팅과 화면 조합만 담당합니다.
@@ -204,7 +216,9 @@ scripts/
 - 기능 전용 read service의 Payload 접근도 같은 기능의 `src/features/*/repositories`에 둡니다.
 - 기능 안의 순수 도메인 계산 계층(예: `review/checkers`)과 정적 시나리오 데이터(예: `review/scenarios`)는 승인된 기능 하위 폴더 확장입니다. 새 하위 폴더는 표준 폴더(`components`, `contexts`, `hooks`, `providers`, `repositories`, `services`, `utils`)로 표현할 수 없을 때만 추가합니다.
 - Feature 디렉터리는 `template-core`, `graphic-generation`, `image-generation`, `template-customization`, `template-import`처럼 `<object>-<capability>`로 이름 짓습니다. 여러 기능이 소비하는 Template 도메인 정본은 `src/features/template-core`, UI 비종속 Controller 계약은 `src/modules/studio-controller`, 공통 출력 실행은 `src/features/studio-export`가 소유합니다. 각 기능의 직렬화 계약과 순수 계산은 `domain`, Context 값 계약은 `contexts`, 화면 세션은 `providers`, Context 소비는 `hooks`, 실행 adapter는 `runtime`, 조회 유즈케이스는 `services`, Payload 접근은 `repositories`에 둡니다. Provider와 소비 훅은 서로 import하지 않고 같은 Context 계약에 의존합니다. Studio 표현 컴포넌트와 라우트는 화면 표면 이름이므로 `src/components/studio`, `/studio`를 유지합니다.
-- 기능 전용 Payload block은 `src/features/<feature>/blocks/<block>`에 schema, projection, component를 함께 둡니다. 생성된 schema/projection catalog는 서버에서 안전하게 사용하고 React renderer catalog는 별도 파일로 유지해 client component가 Payload config에 포함되지 않게 합니다.
+- 가이드라인 블록은 `src/features/guideline/blocks/registry.ts`의 항목으로 정의합니다. 레지스트리·투영(`projection.ts`)은 Payload config가 Node에서 읽으므로 서버 안전해야 하고, React 렌더는 `registry.render.tsx`가 같은 id로 갈라 그립니다. client component가 Payload config에 포함되지 않게 하는 경계입니다.
+- 신규 가이드라인 CMS 본문은 `features/guideline/sections`가 같은 경계를 따릅니다. `schema.ts`·`display-schema.ts`는 저장 필드, `model.ts`는 공통 위계·파일 해석, `projection.ts`는 검색·검수 투영, `render.tsx`·`display-render.tsx`는 공통 표현 API 연결입니다. schema/model은 React 렌더러를 import하지 않습니다. 기존 blocks는 호환 경로로 유지합니다([기능 계약 §2.6](features/guideline.md#26-신규-cms-계약--2026-09-21)).
+- 가이드라인의 MCP·Agent 공통 읽기 모델은 `features/guideline/domain/reading`이 소유합니다. `read-document.ts`는 원본→읽기 문서 변환과 레거시 호환 분기, `read-visual.ts`는 활성 도판·조작·동작 해석, `format-document.ts`는 읽기 모델→텍스트 표현을 담당합니다. 이 계층은 DB·네트워크를 호출하지 않으며, 응답 길이와 페이지 처리는 각 서비스에 둡니다.
 - Agent는 별도 사용자 역할이 아니라 `src/modules/agents`의 실행 모듈입니다.
 - 실제 폴더 구조를 개선할 때는 `src/features`, `src/modules`, `src/components`, `src/lib`, `src/services`, `src/repositories`, `src/types`를 이 순서로 추가합니다.
 
@@ -248,17 +262,58 @@ src/features/guideline/repositories/guideline.payload.repository.ts
 
 ### 가이드라인 블록 등록
 
-새 블록은 `src/features/guideline/blocks/<kebab-case-name>` 폴더 하나를 만들고 아래 세 파일을 기본 export로 제공합니다.
+블록 종류는 `src/features/guideline/blocks/registry.ts`의 `BLOCKS` 배열 **항목 하나**로 정의합니다(2026-09-07). 폴더도 3파일 계약도 생성기도 없습니다.
 
-| 파일 | 최소 계약 |
+```ts
+{ id: 'overview', dbName: 'ovw', name: '한 눈에 보기', description: '…', presets: { layout: 'carousel', rowHeight: 'medium' } }
+```
+
+| 항목 | 뜻 |
 | --- | --- |
-| `schema.ts` | Payload `Block`을 기본 export하고 `slug`는 폴더명에서 변환한 camelCase key와 일치시킵니다. |
-| `projection.ts` | 해당 블록을 `BlockProjection`으로 변환하는 함수를 기본 export합니다. |
-| `component.tsx` | 해당 블록 데이터를 받는 React component를 기본 export합니다. |
+| `id` | Payload `slug`이자 `blockType`. `interfaceName`은 `<Pascal id>Block`으로 파생 |
+| `dbName` | 중첩 테이블명 63자 방어용 짧은 별칭. 테이블 이름이므로 한 번 정하면 바꾸지 않습니다 |
+| `name` | admin 라벨. 슈거 블록에서는 고정 제목이 됩니다 |
+| `description` | 사람이 읽는 정의. Payload 블록 선택기에는 슬롯이 없어 화면에 나오지 않습니다 |
+| `presets` | 있으면 슈거 — 값과 제목이 고정되고 admin에서 숨겨집니다 |
+| `anchor` | URL 앵커를 남기고 좌측 TOC에 오릅니다. `section`만 |
 
-`pnpm generate:block-catalogs`는 기존 Admin 노출 순서를 보존하고 새 블록 폴더는 뒤에 이름순으로 붙여 `src/features/guideline/catalog/*.generated.*`의 정적 import와 map을 갱신합니다. 생성 파일은 커밋하되 직접 수정하지 않습니다. `pnpm check:block-catalogs`는 생성 결과가 최신인지 검사하며 CI의 정적 검사에서 실행합니다.
+스키마 팩토리(`blockSchema`)·투영(`projection.ts`)·렌더(`registry.render.tsx`)는 각각 **하나**이고 전 블록이 공유합니다. 문서 `blocks` 필드는 `guidelineBlocks`(레지스트리 배열 그대로)를 받고, 배열 순서가 admin 선택기 순서입니다. `registry.test.ts`가 id·dbName 유일성과 문서 필드가 레지스트리를 그대로 받는지 지킵니다.
 
-`runtime`은 생성 map을 사용하는 동작만 소유합니다. `project-guideline-block.ts`는 Agent/Check projection, `build-check-source-snapshot.ts`는 문서 snapshot을 담당합니다. React 렌더 진입점은 `components/guideline-blocks.tsx`에 둡니다. 둘 이상의 블록이 실제로 공유하는 필드나 UI만 `shared`에 둡니다.
+`section`도 같은 팩토리에서 나옵니다 — `anchor: true`가 앵커 필드(`fields.ts`의 `anchorField`)를 앞에 붙일 뿐입니다. 옛 leaf `children`은 2026-09-07 마이그레이션 `add_guideline_card_blocks`가 카드로 옮겼습니다.
+
+#### 카드 블록과 슈거 블록
+
+블록은 카드(디스플레이 + 캡션)의 **레이아웃과 줄 높이**, 제목·설명, 에셋 다운로드 유무, rules만 책임집니다(2026-09-07 모델). 배치는 높이 기준이라 카드 폭은 각 카드의 비율에서 나옵니다. 카드 안은 `src/features/guideline/cards/`가 소유합니다.
+
+| 자리 | 소유 |
+| --- | --- |
+| `blocks/fields.ts` | 블록 필드 전부 — rules 관계(`guidelineRulesField`, 문서도 씀), 기본 필드(`baseContentFields`), 슈거용 `presetFields`, 섹션 앵커(`anchorField`) |
+| `blocks/card-block.tsx` | 카드 블록 렌더 하나. 머리(제목·설명)와 카드 배치(격자·캐러셀) |
+| `blocks/projection.ts` | 기계(AI 챗·검색·검수)가 읽는 표현 하나 — `formatBlockForAgent`·`snapshotBlock`과 Check 근거 타입. 카드 이미지는 근거가 아니라 `referenceAssets`는 빈 배열 |
+| `blocks/rhythm.ts` | 세로 리듬·줄 높이·격자 어휘(docs/09 §7) |
+| `cards/schema.ts` | 카드 필드 — 규격 비율, 디스플레이 1개, 캡션(제목·설명). 폭 필드는 없다 |
+| `cards/displays/definition.ts` | `DisplayDefinition`(id·type·dbName·name·description·fields)과 `defineDisplay`·`displaySchema` 팩토리 |
+| `cards/displays/registry.ts` · `registry.render.tsx` | 디스플레이 레지스트리 — 각 폴더의 `definition.ts`를 순서대로 모은 `DISPLAYS`와, 같은 id로 폴더의 기본 export 컴포넌트를 모은 `DISPLAY_COMPONENTS`. 정의와 렌더를 파일로 가르는 이유는 정의 쪽을 Payload config가 Node에서 읽기 때문입니다(graphic-runtimes의 definition/runtime.client와 같은 꼴). 정적 디스플레이 1종 + 프리셋 패널 1종 + 위젯 19종(컨트롤 전용 layout-grid-controls 제외, Do/Don’t 위젯은 2026-09-08에 카드로 대체). 위젯 폴더는 `displays/dynamics/<kebab-name>/`에 있습니다(2026-09-08 이관, 옛 `widgets/`·`leaves/`는 삭제) |
+| `cards/displays/static/` | 정적 디스플레이(배경 이미지)의 스키마·컴포넌트 |
+| `cards/caption/` | 캡션 렌더. 설명 richText의 표를 스펙 리스트로 바꾸는 컨버터 자리 |
+
+🔴 슈거 블록(`overview`·`examples`)은 **새 필드를 만들지 않습니다.** `presetFields`로 기본 필드에 고정값을 덧씌우고 숨길 뿐입니다 — 저작 편의를 위한 사전 정의 블록이고, 데이터 모델과 렌더 규칙은 기본 블록과 같습니다. `fields.test.ts`가 필드 집합이 같은지 지킵니다.
+
+`blocks/`는 이 여섯 파일이 전부입니다(2026-09-08, `shared/`·`runtime/`·`types.ts` 해체). 블록 폴더가 없어진 뒤로 "공유"할 상대가 없어 층을 걷었습니다 — 새 파일을 만들기 전에 이 여섯 중 하나에 들어가는지 먼저 봅니다. 문서 단위 Check snapshot(`build-check-source-snapshot.ts`)은 유일한 소비자인 `checks/`가 갖습니다. React 렌더 진입점은 `src/components/guideline/guideline-sections.tsx`입니다.
+
+### 가이드라인 화면과 상태 경계
+
+| 위치 | 소유 책임 |
+| --- | --- |
+| `src/components/guideline` | 페이지 조합·탐색·섹션·산문·미디어·플레이그라운드와 컨트롤 표현 |
+| `src/features/guideline/domain/contract` | 공유 조회 데이터·카드/디스플레이·컨트롤 매니페스트 타입. 생성된 Payload 타입은 `import type`으로만 참조 |
+| `src/features/guideline/domain/controller-values.ts` | 컨트롤 값의 타입 확인과 기본값 해석 |
+| `src/features/guideline/contexts` | Context와 Context 값 계약 |
+| `src/features/guideline/providers` | 카드별 조작 상태와 활성 영역 관측. 표현 컴포넌트를 import하지 않음 |
+| `src/features/guideline/hooks` | Context 소비와 섹션 탐색. Provider를 import하지 않음 |
+| `src/features/guideline/controllers/registry.ts` | 위젯 매니페스트와 카드 연결 |
+
+위젯의 `definition.ts`·`component.tsx`·선택적 `view.tsx`·`manifest.ts`는 기존 폴더에 함께 둡니다. `services`·`repositories`·`checks`의 책임은 유지합니다. 스키마 ID·DB 필드·콘텐츠는 파일 배치 변경과 함께 바꾸지 않습니다.
 
 ### Graphic runtime 등록
 
@@ -512,7 +567,7 @@ Facade는 기본 구조로 두지 않습니다.
 | 조건 조회 | `find` + 대상 | `findPublishedRule` |
 | 목록 조회 | `list` + 대상 | `listApplicationTypes` |
 | 생성 | `create` + 대상 | `createCheckSession` |
-| 수정 | `update` + 대상 | `updateGuidelineSection` |
+| 수정 | `update` + 대상 | `updateGuidelineTopic` |
 | 삭제 | `delete` + 대상 | `deleteDraftRule` |
 | 권한 확인 | `can` + 동작 | `canPublishGuideline` |
 | 상태 확인 | `is` + 상태 | `isPublished` |

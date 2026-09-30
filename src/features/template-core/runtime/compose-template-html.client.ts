@@ -22,6 +22,29 @@ function replaceImageWithDiv(doc: Document, image: HTMLImageElement): HTMLElemen
 	return replaced
 }
 
+/**
+ * 레이어 이름을 정리한다 — **이름 정본(`data-name`)의 유일한 관문**이다.
+ *
+ * 🔴 Figma가 준 이름에 **보이지 않는 문자**가 섞여 온다. 실측(2026-09-10): 발행된 68개 이름 중
+ *    하나가 `"Title\u2028"`(U+2028 LINE SEPARATOR)이었고, 그것이 그대로 인쇄 PDF의
+ *    Illustrator 레이어 이름으로 나갔다. Admin이 눈으로 잡을 수 없는 종류의 군더더기다.
+ * 🔑 여기서 한 번 지우면 스튜디오 레이어 패널 · Admin 레이어 목록 · PDF의 OCG `/Name`이 **함께**
+ *    깨끗해진다 — 셋이 모두 `data-name`을 읽기 때문이다.
+ * 🔑 이미 깨끗한 이름에는 아무 일도 하지 않는다(재합성 멱등).
+ */
+// biome-ignore lint/suspicious/noControlCharactersInRegex: 제어문자를 **찾는 것**이 목적이다 — 규칙의 전제(「보통 실수다」)가 여기서는 성립하지 않는다
+const LAYER_NAME_JUNK = /data-name="[^"]*(?:[\u0000-\u001f\u007f-\u009f\u2028\u2029]|^\s|\s")/
+
+export function normalizeLayerName(value: string): string {
+	return (
+		value
+			// biome-ignore lint/suspicious/noControlCharactersInRegex: 제어문자를 **지우는 것**이 이 함수의 목적이다
+			.replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, ' ')
+			.replace(/\s+/g, ' ')
+			.trim()
+	)
+}
+
 /** compose가 컬러 치환용으로 만든 오버레이 노드 id — 편집 UI(레이어 패널)에서 숨기는 판별 계약. */
 export function isImageColorizeOverlayId(nodeId: string): boolean {
 	return nodeId.endsWith('-colorize')
@@ -231,7 +254,14 @@ export function composeTemplateHtml(
 			canvasBackground?.imageUrl ||
 			canvasBackground?.dimmer !== undefined,
 	)
-	if (!hasCanvasBackground && (!nodeConfigs || Object.keys(nodeConfigs).length === 0)) {
+	// 🔴 이름에 군더더기가 있으면 설정이 없어도 파싱한다 — 그 군더더기는 Admin이 손대지 않은
+	//    이름에 들어 있으므로, 설정 유무로 일찍 반환하면 영원히 정리되지 않는다.
+	const needsNameCleanup = LAYER_NAME_JUNK.test(baseHtml)
+	if (
+		!hasCanvasBackground &&
+		!needsNameCleanup &&
+		(!nodeConfigs || Object.keys(nodeConfigs).length === 0)
+	) {
 		return baseHtml
 	}
 
@@ -243,6 +273,9 @@ export function composeTemplateHtml(
 		)
 		if (!el) continue // base에 더 이상 없는 노드 설정은 무시한다.
 		if (config.visible === false && el instanceof HTMLElement) el.style.display = 'none'
+		// 🔴 레이어 이름은 `data-name` **한 자리**에만 쓴다 — 스튜디오 패널·Admin 목록·인쇄 PDF의
+		//    Illustrator 레이어명이 모두 그것을 읽으므로, 여기서 쓰면 셋이 함께 따라온다.
+		if (config.label) el.setAttribute('data-name', config.label)
 
 		// 텍스트는 텍스트 노드(<p>)에만. background는 요소(HTMLElement)에.
 		if (typeof config.text === 'string' && el.tagName.toLowerCase() === 'p') {
@@ -341,6 +374,45 @@ export function composeTemplateHtml(
 				el.style.objectFit = config.vectorFit
 			}
 		}
+	}
+
+	// 레이어 이름 정리 — Figma가 준 이름의 보이지 않는 문자를 지운다. 설정이 없는 노드까지 훑는다
+	// (군더더기는 Admin이 손대지 않은 이름에 들어 있다).
+	for (const element of Array.from(doc.querySelectorAll('[data-name]'))) {
+		const current = element.getAttribute('data-name') ?? ''
+		const cleaned = normalizeLayerName(current)
+		if (cleaned && cleaned !== current) element.setAttribute('data-name', cleaned)
+	}
+
+	// 레이어 겹침 순서 — Admin이 정한 `childOrder`대로 DOM을 재배치한다.
+	// 🔴 값을 다 적용한 **뒤에** 돈다. 컬러 치환(`applyImageColorize`)·마스크 치환이 요소를 다른
+	//    요소로 바꿔치기하므로, 그 전에 옮기면 옮긴 것이 버려진 노드일 수 있다.
+	for (const [nodeId, config] of Object.entries(nodeConfigs ?? {})) {
+		if (!config.childOrder?.length) continue
+		// 🔴 selector를 조립하지 않는다 — nodeId에 콜론이 섞인다(`147:16`). 위 배정 루프와 같은 방식.
+		const parent = Array.from(doc.querySelectorAll('[data-node-id]')).find(
+			(candidate) => candidate.getAttribute('data-node-id') === nodeId,
+		)
+		if (!parent) continue
+		const children = Array.from(parent.children)
+		const listed = config.childOrder
+			.map((childId) =>
+				children.find((candidate) => candidate.getAttribute('data-node-id') === childId),
+			)
+			.filter((child): child is Element => child !== undefined)
+		if (listed.length < 2) continue
+
+		// 🔴 **목록이 이름 댄 자식들이 지금 차지한 자리에만** 그 순서를 채운다. 목록에 없는 자식은
+		//    제 자리를 지킨다 — 그래야 재import로 새로 생긴 노드가 Figma가 놓은 자리에 그대로 남고,
+		//    끝으로 쓸려 가 다른 레이어에 가려지거나 위를 덮지 않는다.
+		//    「초안은 Figma, 수정은 Admin」이 이 규칙이다: Admin은 자기가 이름 댄 것만 뒤바꾼다.
+		const positions = children.flatMap((child, index) =>
+			listed.includes(child) ? [index] : [],
+		)
+		const next = [...children]
+		for (const [index, position] of positions.entries()) next[position] = listed[index]
+		// 🔑 순서대로 다시 붙인다 — 이미 그 순서면 DOM이 바뀌지 않는다(재합성 멱등).
+		for (const child of next) parent.appendChild(child)
 	}
 
 	// 캔버스 배경 — 루트 프레임(body 직계 자식)의 inline 배경을 덮는다. 값을 준 갈래만 쓰므로

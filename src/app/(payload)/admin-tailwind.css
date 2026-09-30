@@ -25,6 +25,10 @@
 		padding: 0;
 		cursor: pointer;
 	}
+	/* 비활성은 색만으로 전달하지 않는다 — 프론트 base 레이어와 같은 규칙이다(같은 킷이므로). */
+	.lbs-kit :where(button:disabled) {
+		cursor: not-allowed;
+	}
 	/* v4의 border 유틸리티는 색을 정하지 않는다 — preflight가 없으면 currentColor(글자색)로
 	   그려진다(실측: rgb(47,47,47)). 프론트 preflight처럼 보더 토큰을 기본값으로 깐다. */
 	.lbs-kit,

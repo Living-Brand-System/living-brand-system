@@ -1,77 +1,15 @@
-import { getParents } from '@payloadcms/plugin-nested-docs'
-import type { PayloadRequest, SanitizedCollectionConfig } from 'payload'
-import { relationshipId } from '@/features/guideline/utils/block-text'
+import type { PayloadRequest } from 'payload'
 
-/** Admin 문서 트리에 필요한 draft 문서 필드만 읽고 관계 값을 ID로 정규화한다. */
-export async function listEditableGuidelineDocuments(
-	payload: PayloadRequest['payload'],
-	{
-		locale,
-		user,
-	}: {
-		locale?: 'en' | 'ko'
-		user: Parameters<PayloadRequest['payload']['find']>[0]['user']
-	},
-) {
-	const { docs } = await payload.find({
-		collection: 'guideline-documents',
-		depth: 0,
-		draft: true,
-		limit: 0,
-		locale,
-		overrideAccess: false,
-		sort: 'displayOrder',
-		user,
-	})
-
-	return docs.map((document) => ({
-		id: document.id,
-		title: document.title,
-		parent: relationshipId(document.parent),
-		displayOrder: document.displayOrder,
-		_status: document._status,
-	}))
-}
-
-/** 상위 문서 체인을 루트까지 읽고 ID 목록으로 변환한다. */
-export async function listGuidelineDocumentAncestorIds(
-	req: PayloadRequest,
-	collection: SanitizedCollectionConfig,
-	parentId: number,
-) {
-	const parents = await getParents(req, {}, collection, { parent: parentId })
-
-	return parents.map((parent) => relationshipId(parent) ?? -1)
-}
-
-/** currentId를 포함하는 하위 문서 breadcrumb를 ID 경로로 변환한다. */
-export async function listGuidelineDocumentDescendantPaths(req: PayloadRequest, currentId: number) {
-	const descendants = await req.payload.find({
-		collection: 'guideline-documents',
-		depth: 0,
-		draft: true,
-		limit: 0,
-		pagination: false,
-		req,
-		select: { breadcrumbs: true },
-		where: { 'breadcrumbs.doc': { equals: currentId } },
-	})
-
-	return descendants.docs.map(({ breadcrumbs }) =>
-		Array.isArray(breadcrumbs) ? breadcrumbs.map(({ doc }) => relationshipId(doc) ?? -1) : [],
-	)
-}
-
-/** 같은 locale·부모 아래에 slug가 이미 있는지 조회한다. */
+/** 같은 챕터 안에 slug가 이미 있는지 조회한다. slug는 언어 공통이라 locale을 가리지 않는다. */
 export async function hasGuidelineDocumentSlugConflict(
 	req: PayloadRequest,
 	{
+		chapterId,
 		currentId,
-		parentId,
 		slug,
 	}: {
+		chapterId: number | null
 		currentId: number | null
-		parentId: number | null
 		slug: string
 	},
 ) {
@@ -79,18 +17,16 @@ export async function hasGuidelineDocumentSlugConflict(
 		collection: 'guideline-documents',
 		depth: 0,
 		draft: true,
-		fallbackLocale: false,
 		limit: 1,
-		locale: req.locale,
 		overrideAccess: true,
 		pagination: false,
 		req,
 		where: {
 			and: [
 				{ slug: { equals: slug } },
-				parentId === null
-					? { parent: { exists: false } }
-					: { parent: { equals: parentId } },
+				chapterId === null
+					? { chapter: { exists: false } }
+					: { chapter: { equals: chapterId } },
 				...(currentId === null ? [] : [{ id: { not_equals: currentId } }]),
 			],
 		},

@@ -1,0 +1,207 @@
+/* Figma 153:28의 표현 값. 개발용 reference 표면에서만 적용한다. */
+.page {
+	--reference-paper: #fafafa;
+	--reference-panel: #f5f5f5;
+	--reference-ink: #0a0a0a;
+	--reference-copy: #525252;
+	--reference-muted: #737373;
+	--reference-wide: 1464px;
+	--reference-gap: 120px;
+	background: var(--reference-paper);
+	color: var(--reference-ink);
+	width: 100%;
+	font-family: var(--font-body);
+}
+.header {
+	min-height: min(1024px, 75vw);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 24px;
+	padding: 80px 24px;
+	text-align: center;
+}
+.title {
+	font-size: clamp(40px, 7.25vw, 120px);
+	line-height: 1;
+	letter-spacing: -0.012em;
+}
+.subtitle {
+	font-size: clamp(20px, 2.9vw, 48px);
+	line-height: 1;
+	color: var(--reference-muted);
+}
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: var(--reference-gap);
+	padding: var(--reference-gap) 24px;
+	scroll-margin-top: 64px;
+}
+.centerHeading,
+.startHeading {
+	width: 100%;
+	max-width: 1415px;
+	margin-inline: auto;
+}
+.centerHeading {
+	text-align: center;
+}
+.centerHeading > h2 {
+	font-size: clamp(32px, 2.9vw, 48px);
+	line-height: 1;
+	margin-bottom: 12px;
+}
+.startHeading > h2 {
+	font-size: 20px;
+	line-height: 28px;
+}
+.centerHeading > p,
+.startHeading > p {
+	max-width: 480px;
+	font-size: 16px;
+	line-height: 24px;
+	color: var(--reference-copy);
+}
+.centerHeading > p {
+	margin-inline: auto;
+}
+.grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	align-items: start;
+	gap: 24px 12px;
+	width: 100%;
+	max-width: var(--reference-wide);
+	margin-inline: auto;
+}
+.grid[data-columns="1"] {
+	grid-template-columns: minmax(0, 1fr);
+	max-width: 1280px;
+}
+.grid[data-columns="2"] {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	max-width: 984px;
+	gap: 24px;
+}
+.grid[data-layout="carousel"] {
+	display: flex;
+	overflow-x: auto;
+	scroll-snap-type: x mandatory;
+	padding-bottom: 16px;
+}
+.grid[data-layout="carousel"] > * {
+	flex: 0 0 min(480px, 85%);
+	scroll-snap-align: start;
+}
+.grid:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 4px;
+}
+.card {
+	position: relative;
+	min-width: 0;
+	margin: 0;
+}
+.surface {
+	position: relative;
+	width: 100%;
+	aspect-ratio: 1;
+	overflow: hidden;
+	border-radius: 12px;
+	background: var(--reference-panel);
+}
+.surface[data-ratio="16:9"] {
+	aspect-ratio: 16 / 9;
+	border-radius: 24px;
+}
+.surface[data-ratio="9:16"] {
+	aspect-ratio: 9 / 16;
+}
+.caption {
+	padding: 12px 24px;
+}
+.caption > p {
+	font-size: 16px;
+	line-height: 24px;
+}
+.caption > p + p {
+	color: var(--reference-copy);
+}
+.card[data-caption="overlay"] .caption {
+	position: absolute;
+	inset: auto 12px 12px;
+	border-radius: 8px;
+	background: var(--reference-paper);
+}
+.mark {
+	position: absolute;
+	top: 16px;
+	right: 16px;
+	padding: 4px 12px;
+	border-radius: 999px;
+	background: var(--reference-paper);
+	font-weight: 600;
+}
+.display {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 5%;
+}
+.display > img {
+	display: block;
+	width: auto;
+	height: auto;
+	max-width: 100%;
+	max-height: 100%;
+	object-fit: contain;
+}
+.display[data-scale="hero"] > img {
+	width: 53.5%;
+}
+.display[data-scale="small"] > img {
+	width: 32%;
+}
+.footer {
+	min-height: min(1200px, 75vw);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 40px;
+	padding: 80px 24px;
+}
+.footer > img {
+	width: min(623px, 45%);
+	height: auto;
+}
+@media (max-width: 767px) {
+	.page {
+		--reference-gap: 56px;
+	}
+	.header {
+		min-height: 480px;
+	}
+	.section {
+		padding-inline: 16px;
+	}
+	.grid,
+	.grid[data-columns="2"] {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 32px;
+		max-width: 480px;
+	}
+	.caption {
+		padding-inline: 12px;
+	}
+	.footer {
+		min-height: 480px;
+	}
+	.footer > img {
+		width: min(300px, 70%);
+	}
+}

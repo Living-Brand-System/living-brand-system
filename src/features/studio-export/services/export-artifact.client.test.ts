@@ -9,7 +9,6 @@ import { elementToJpeg } from '../adapters/element-to-jpeg.client'
 import { elementToPng } from '../adapters/element-to-png.client'
 import {
 	executeArtifactExport,
-	exportOriginalArtifact,
 	exportRasterArtifactAsJpeg,
 	exportRasterArtifactAsPng,
 	exportVectorArtifactAsSvg,
@@ -106,7 +105,7 @@ describe('Artifact export', () => {
 			},
 		} as const
 
-		expect(exportVectorArtifactAsSvg('graphic', vector)).toMatchObject({
+		expect(exportVectorArtifactAsSvg('graphic', vector, 300)).toMatchObject({
 			filename: 'graphic.svg',
 			mimeType: 'image/svg+xml',
 		})
@@ -202,6 +201,31 @@ describe('Artifact export', () => {
 		expect(toBlob).toHaveBeenNthCalledWith(2, expect.any(Function), 'image/jpeg', 0.9)
 	})
 
+	it('인쇄 경로가 요청한 배율로 굽는다 — ppi는 픽셀을 한 개도 늘리지 않는다', async () => {
+		// 🔴 여기 `scale: 1`이 하드코딩돼 있었다. 그래서 300ppi를 골라도 판이 캔버스 픽셀 그대로
+		//    나갔고, A4 인쇄에 필요한 픽셀을 만들 경로가 아예 없었다.
+		const artifact = createTemplateRasterArtifact({
+			html: '<div>card</div>',
+			width: 600,
+			height: 300,
+		})
+		await executeArtifactExport({
+			artifact,
+			fileName: 'card',
+			request: {
+				artifact: 'raster',
+				format: 'tiff',
+				colorProfile: { space: 'cmyk', icc: 'cgats21-crpc6' },
+				options: { ppi: 300, compression: 'lzw', scale: 4 },
+			},
+		})
+
+		expect(elementToPng).toHaveBeenCalledWith(
+			expect.anything(),
+			expect.objectContaining({ width: 600, height: 300, scale: 4 }),
+		)
+	})
+
 	it('같은 Raster Artifact를 Studio 구분 없이 인쇄와 정적 MP4로 변환한다', async () => {
 		const canvas = document.createElement('canvas')
 		vi.spyOn(canvas, 'toBlob').mockImplementation((callback) => callback(new Blob(['png'])))
@@ -217,7 +241,7 @@ describe('Artifact export', () => {
 				artifact: 'raster',
 				format: 'pdf',
 				colorProfile: { space: 'cmyk', icc: 'cgats21-crpc6' },
-				options: { ppi: 300, bleedMm: 0 },
+				options: { ppi: 300, bleedMm: 0, scale: 1 },
 			},
 		})
 		expect(requestPrintExport).toHaveBeenCalledWith(
@@ -255,8 +279,14 @@ describe('Artifact export', () => {
 		const [artifact] = createImageArtifacts({ images: ['/image.png'], color: null }).original
 		if (!artifact) throw new Error('fixture artifact is missing')
 
-		await expect(exportOriginalArtifact(artifact)).resolves.toMatchObject({
-			filename: 'hd-image-1.png',
+		await expect(
+			executeArtifactExport({
+				artifact,
+				fileName: '제품컷-굴착기-20260910-120000-01',
+				request: { artifact: 'original', options: {} },
+			}),
+		).resolves.toMatchObject({
+			filename: '제품컷-굴착기-20260910-120000-01.png',
 			mimeType: 'image/png',
 		})
 		expect(elementToPng).not.toHaveBeenCalled()

@@ -3,8 +3,8 @@ import {
 	type CameraElevation,
 	isCameraAzimuth,
 	isCameraElevation,
-} from '@/features/image-generation/camera-control'
-import type { ImageModelPreset } from '@/features/image-generation/image-model'
+} from '@/features/image-generation/domain/camera-control'
+import type { ImageModelPreset } from '@/features/image-generation/domain/image-model'
 import {
 	parseStudioOutputCapability,
 	projectStudioOutputPolicy,
@@ -45,6 +45,7 @@ export type ImageStudioFeature =
 			azimuths: readonly CameraAzimuth[]
 			elevations: readonly CameraElevation[]
 	  }
+	| { type: 'reference-image' }
 
 export type ImageProfileFeatureSelection =
 	| { type: 'color-adjustment'; background: boolean }
@@ -54,6 +55,7 @@ export type ImageProfileFeatureSelection =
 			azimuths?: readonly CameraAzimuth[]
 			elevations?: readonly CameraElevation[]
 	  }
+	| { type: 'reference-image' }
 
 /** Image Studio Config를 파생하는 서버측 published 프로파일 read model. */
 export type PublishedImageProfileDefinition = {
@@ -129,6 +131,8 @@ export function parseImageStudioConfig(input: unknown): ImageStudioConfig {
 			assertKeys(feature, ['type', 'azimuths', 'elevations'])
 			assertSectors(feature.azimuths, isCameraAzimuth, 'azimuths')
 			assertSectors(feature.elevations, isCameraElevation, 'elevations')
+		} else if (feature.type === 'reference-image') {
+			assertKeys(feature, ['type'])
 		} else if (feature.type === 'color-adjustment') {
 			assertKeys(feature, ['type', 'controls'])
 			const controls = record(feature.controls, 'ImageStudioConfig color controls')
@@ -212,6 +216,7 @@ export function getImageStudioFeatureControlIds(config: ImageStudioConfig): read
 					(value): value is string => Boolean(value),
 				)
 			case 'camera-control':
+			case 'reference-image':
 				return []
 			default:
 				return assertNeverFeature(feature)
@@ -303,6 +308,9 @@ export function projectImageProfileFeatureSelections(
 					type: 'color-adjustment' as const,
 					background: feature.background === true,
 				}
+			case 'referenceImage':
+				assertFeatureKeys(feature, ['id', 'blockName', 'blockType'])
+				return { type: 'reference-image' as const }
 			case 'cameraControl': {
 				assertFeatureKeys(feature, [
 					'id',
@@ -458,6 +466,7 @@ function projectEffectiveFeatures(
 	features: readonly ImageProfileFeatureSelection[],
 ): readonly ImageStudioFeature[] {
 	return features.map((feature) => {
+		if (feature.type === 'reference-image') return { type: 'reference-image' }
 		if (feature.type === 'camera-control') {
 			const capability = manifest.supportedFeatures.find(
 				(candidate) => candidate.type === 'camera-control',

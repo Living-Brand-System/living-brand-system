@@ -50,11 +50,11 @@ Creator가 사용하는 기준과 자원은 이 도메인에서 발행된 것만
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | GL-01 | 가이드라인 기본 정보 편집 | Manager, System | 회사명, 문서 제목, 발행 표기, 테마 | Manager가 공통 표시 정보를 수정하면 System이 BrandGuideline global을 갱신합니다. | Updated BrandGuideline | BrandGuideline | 가이드라인 문서 초안 생성 |
 | GL-02 | 가이드라인 문서 초안 생성 | Manager, System | 제목, 설명, slug, 표시 순서 | Manager가 문서를 만들면 System이 독립 GuidelineDocument draft를 저장합니다. | Draft GuidelineDocument | GuidelineDocument, Payload revision | 문서 계층 구성 |
-| GL-03 | 문서 계층 구성 | Manager, System | GuidelineDocument, 상위 문서 | Manager가 상위 문서를 선택하면 System이 깊이 제한과 slug 중복을 확인해 관계를 저장합니다. | Hierarchical GuidelineDocument | ParentDocumentRef, Breadcrumbs | 문서 블록 작성 |
+| GL-03 | 토픽을 챕터에 배치 | Manager, System | GuidelineDocument, GuidelineChapter | Manager가 챕터를 선택하면 System이 같은 챕터 안의 slug 중복을 확인해 관계를 저장합니다. 챕터는 분류일 뿐 자기 화면이 없습니다. | Categorized GuidelineDocument | ChapterRef | 문서 블록 작성 |
 | GL-04 | 문서 블록 작성 | Manager, System | GuidelineDocument, 블록 유형, 콘텐츠 | Manager가 본문 블록을 작성하면 System이 GuidelineBlock 목록을 문서에 임베드합니다. | GuidelineBlock | GuidelineBlock, Payload revision | 규칙을 문서에 연결 |
 | GL-05 | 규칙을 문서에 연결 | Manager, System | GuidelineDocument 또는 GuidelineBlock, Rule | Manager가 발행 규칙을 선택하면 System이 Rule 관계를 저장합니다. Rule 정의는 변경하지 않습니다. | Rule reference | RuleRef, Payload revision | 문서 초안 미리보기 |
 | GL-06 | 에셋을 문서에 연결 | Manager, System | GuidelineDocument 또는 GuidelineBlock, 공식 에셋 | Manager가 헤더나 블록 에셋을 선택하면 System이 공식 에셋 관계를 저장합니다. | Asset reference | ApplicationImageRef 또는 BrandAssetRef, Payload revision | 문서 초안 미리보기 |
-| GL-07 | 문서 초안 미리보기 | Manager, System | Draft GuidelineDocument | Manager가 미리보기를 열면 System이 draft 문서와 하위 문서를 읽어 실제 화면 구조로 렌더합니다. | Draft preview | - | 가이드라인 문서 발행 |
+| GL-07 | 문서 초안 미리보기 | Manager, System | Draft GuidelineDocument | Manager가 미리보기를 열면 System이 draft 문서(섹션 블록 포함)를 읽어 실제 화면 구조로 렌더합니다. | Draft preview | - | 가이드라인 문서 발행 |
 | GL-08 | 가이드라인 문서 발행 | Manager, System | Draft GuidelineDocument | Manager가 발행하면 System이 해당 GuidelineDocument revision을 published 상태로 전환합니다. | Published GuidelineDocument | Payload revision, GuidelinePublished | 발행 가이드라인 조회 |
 | GL-09 | 가이드라인 문서 예약 발행 | Manager, System | Draft GuidelineDocument, 예약 시각 | Manager가 예약하면 Payload가 해당 문서 revision의 예약 발행을 실행합니다. | Scheduled GuidelineDocument | Payload revision | 발행 가이드라인 조회 |
 | GL-10 | 발행 가이드라인 조회 | Creator, Agent, System | locale, 문서 경로 | System이 published GuidelineDocument 계층과 BrandGuideline 표시 설정을 조합해 제공합니다. | Published guideline view | - | 검수 또는 Agent 답변 |

@@ -13,12 +13,12 @@ describe('validateGuidelineDocumentSlug', () => {
 		vi.clearAllMocks()
 	})
 
-	it('같은 locale·부모의 중복만 거부하고 현재 문서는 제외한다', async () => {
+	it('같은 locale·챕터의 중복만 거부하고 현재 문서는 제외한다', async () => {
 		hasSlugConflict.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
 		const req = { locale: 'ko' } as never
 		const args = {
 			collection: { slug: 'guideline-documents' },
-			data: { parent: 2 },
+			data: { chapter: 2 },
 			originalDoc: { id: 7, slug: 'logo' },
 			req,
 			value: 'logo',
@@ -27,7 +27,7 @@ describe('validateGuidelineDocumentSlug', () => {
 		await expect(validateGuidelineDocumentSlug(args)).resolves.toBe('logo')
 		expect(hasSlugConflict).toHaveBeenLastCalledWith(req, {
 			slug: 'logo',
-			parentId: 2,
+			chapterId: 2,
 			currentId: 7,
 		})
 		await expect(validateGuidelineDocumentSlug(args)).rejects.toMatchObject({

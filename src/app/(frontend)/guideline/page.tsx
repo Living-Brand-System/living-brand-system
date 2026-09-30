@@ -1,4 +1,4 @@
-import { GuidelineOnboard } from '@/features/guideline/components/pages/guideline-onboard'
+import { GuidelineOnboard } from '@/components/guideline/deprecated/pages/guideline-onboard'
 import { getGuidelineNavigation } from '@/features/guideline/services/get-guideline-navigation.service'
 
 // 렌더링: 정적 + 온디맨드 무효화. 목차를 읽으므로 낡을 수 있고, 콘텐츠 변경 훅이 이 캐시를 버린다

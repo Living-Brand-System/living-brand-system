@@ -23,11 +23,11 @@ export function createImageArtifacts({
 }): ImageArtifacts {
 	return {
 		raster: images.map((src) => ({ kind: 'raster', source: createRasterSource(src, color) })),
-		original: images.map((src, index) => ({
+		original: images.map((src) => ({
 			kind: 'original',
 			source: {
 				load: () => loadOriginal(src),
-				filename: (blob) => `hd-image-${index + 1}.${imageExtension(blob.type, src)}`,
+				extension: (blob) => imageExtension(blob.type, src),
 				mimeType: (blob) => blob.type || `image/${imageExtension(blob.type, src)}`,
 			},
 		})),

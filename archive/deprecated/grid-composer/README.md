@@ -1,7 +1,7 @@
 # GridComposer POC (Deprecated)
 
 `GridComposer`는 grid 메타데이터를 편집 가능한 셀 모델로 역변환하던 초기 저작 POC입니다.
-현재 Create 실행 경로는 저장된 요소 좌표를 `AssetGenerator`로 직접 렌더링하므로 이 POC를 호출하지 않습니다.
+현재 Create 실행 경로는 저장된 요소 좌표를 `projectTemplateRenderModel`(`src/features/template-core/domain`)로 직접 렌더 모델화하므로 이 POC를 호출하지 않습니다.
 
 - 상태: Deprecated / 런타임에서 격리
 - 격리일: 2026-07-17

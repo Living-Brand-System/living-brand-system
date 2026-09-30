@@ -12,6 +12,7 @@
 
 | Feature | 상태 | 명세 |
 | --- | --- | --- |
+| Guideline | 구현·위계 조사 | [guideline.md](guideline.md) |
 | Studio | 구현 | [studio.md](studio.md) |
 | Image | 구현 | [image.md](image.md) |
 | Review | 구현 | [review.md](review.md) |

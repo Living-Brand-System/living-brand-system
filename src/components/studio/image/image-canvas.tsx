@@ -1,81 +1,63 @@
 'use client'
 
-import { Image as ImageIcon } from '@carbon/icons-react'
 import { ImageGenerationResults } from '@/components/studio/image/image-generation-results'
-import { Button } from '@/components/ui/button'
-import {
-	Empty,
-	EmptyContent,
-	EmptyDescription,
-	EmptyHeader,
-	EmptyMedia,
-	EmptyTitle,
-} from '@/components/ui/empty'
-import { Typography } from '@/components/ui/typography'
+import { ImageHistoryStrip } from '@/components/studio/image/image-history-strip'
 import { useImageStudio } from '@/features/image-generation/hooks/use-image-studio'
 
-const EXAMPLE_PROMPTS = [
-	'신제품을 위한 깨끗한 스튜디오 제품 이미지',
-	'브랜드 캠페인을 위한 자연광 라이프스타일 이미지',
-	'가이드 배경에 사용할 추상적인 자연 텍스처',
-] as const
-
-// 결과 캔버스: 컨텍스트의 결과를 그리고 선택만 되돌려 쓴다 — 컨트롤러를 모른다.
+/**
+ * 결과 캔버스 — 컨텍스트가 주는 것만 그리고 컨트롤러를 모른다.
+ *
+ * 🔑 위는 지금 보고 있는 한 장, 아래는 이 앱에서 만든 이미지 전체가 선 스트립이다
+ *    (사용자 지시, 2026-09-21). 방금 만든 결과가 있으면 위쪽은 그 결과 그리드가 차지한다.
+ * 🔴 「이미지를 생성하세요」 안내가 없다 — 스트립이 열리자마자 가장 최근 묶음을 골라 주므로
+ *    빈 화면으로 남지 않는다.
+ */
 export function ImageCanvas() {
-	const { prompt, generation, results } = useImageStudio()
-
-	if (!generation.busy && results.items.length === 0) {
-		return <EmptyCanvas onSelectExample={prompt.setValue} />
-	}
+	const { generation, results } = useImageStudio()
+	const showingResults = generation.busy || results.items.length > 0
 
 	return (
-		<ImageGenerationResults
-			aspectRatio={
-				generation.busy
-					? generation.ratio
-					: (results.output?.aspectRatio ?? generation.ratio)
-			}
-			color={results.color}
-			items={results.items}
-			loading={generation.busy}
-			onSelect={results.select}
-			referenceIndex={results.referenceIndex}
-			requested={results.requested}
-			selected={results.selected}
-		/>
+		<div className="flex h-full min-h-0 flex-col">
+			<div className="flex min-h-0 flex-1 flex-col">
+				{showingResults ? (
+					<ImageGenerationResults
+						aspectRatio={
+							generation.busy
+								? generation.ratio
+								: (results.output?.aspectRatio ?? generation.ratio)
+						}
+						color={results.color}
+						items={results.items}
+						loading={generation.busy}
+						onSelect={results.select}
+						referenceIndex={results.referenceIndex}
+						requested={results.requested}
+						selected={results.selected}
+					/>
+				) : (
+					<SelectedImageView />
+				)}
+			</div>
+			<ImageHistoryStrip />
+		</div>
 	)
 }
 
-function EmptyCanvas({ onSelectExample }: { onSelectExample: (prompt: string) => void }) {
+/** 고른 한 장을 크게. 아직 아무것도 안 골랐으면 아무것도 그리지 않는다. */
+function SelectedImageView() {
+	const { history } = useImageStudio()
+	const selected =
+		history.stack.find((item) => item.id === history.selectedId) ?? history.stack[0]
+	if (!selected) return null
+
 	return (
-		<Empty className="h-full border-0">
-			<EmptyHeader>
-				<EmptyMedia variant="icon">
-					<ImageIcon aria-hidden />
-				</EmptyMedia>
-				<EmptyTitle>브랜드 이미지를 생성하세요</EmptyTitle>
-				<EmptyDescription>
-					왼쪽 컨트롤러에 프롬프트를 입력하거나 예시로 시작할 수 있습니다.
-				</EmptyDescription>
-			</EmptyHeader>
-			<EmptyContent className="max-w-2xl">
-				<Typography size="xs" weight="medium">
-					예시로 시작하기
-				</Typography>
-				<div className="grid w-full gap-2 md:grid-cols-3">
-					{EXAMPLE_PROMPTS.map((example) => (
-						<Button
-							key={example}
-							type="button"
-							variant="muted"
-							className="h-auto min-h-16 justify-start whitespace-normal px-3 py-3 text-left"
-							onClick={() => onSelectExample(example)}
-						>
-							{example}
-						</Button>
-					))}
-				</div>
-			</EmptyContent>
-		</Empty>
+		<div className="flex min-h-0 flex-1 items-center justify-center p-4">
+			{/* biome-ignore lint/performance/noImgElement: 스튜디오 미리보기, 최적화 불필요 */}
+			<img
+				src={selected.url}
+				alt={selected.prompt ?? selected.profileName ?? '생성 이미지'}
+				className="max-h-full max-w-full object-contain"
+			/>
+		</div>
 	)
 }

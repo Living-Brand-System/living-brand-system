@@ -1,5 +1,5 @@
 import { deriveGraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-manifest'
-import { listPublishedGraphicProfileDefinitions } from '@/features/graphic-generation/repositories/graphic-profile.payload.repository'
+import { listPublishedGraphicProfileDefinitions } from '@/features/graphic-generation/repositories/canvas-profile.payload.repository'
 
 /**
  * 유스케이스 경계: published Graphic Profile을 runtime 기본값보다 좁은 Studio Config 목록으로 만든다.

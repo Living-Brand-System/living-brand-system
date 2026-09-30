@@ -74,3 +74,34 @@ describe('createRasterExportRequest 배율', () => {
 		expect(request?.options).toMatchObject({ width: 630, height: 890 })
 	})
 })
+
+describe('인쇄 해상도 기본값', () => {
+	// 🔴 목록의 첫 값(72)로 떨어지면 인쇄물이 조용히 4배 크게 나간다 — print-policy가 경고하는 자리다.
+	it('해상도를 안 주면 표준값 300으로 간다 — 목록의 첫 값이 아니다', () => {
+		const request = createRasterExportRequest(
+			'tiff',
+			{
+				formats: ['tiff'],
+				colorProfiles: { cmyk: ['cgats21-crpc6'] },
+				print: { ppi: [72, 150, 300] },
+			},
+			{ width: 600, height: 300 },
+		)
+
+		expect(request?.format === 'tiff' && request.options.ppi).toBe(300)
+	})
+
+	it('표준값이 목록에 없으면 있는 것 중 가장 낮은 값으로 떨어진다', () => {
+		const request = createRasterExportRequest(
+			'tiff',
+			{
+				formats: ['tiff'],
+				colorProfiles: { cmyk: ['cgats21-crpc6'] },
+				print: { ppi: [72, 150] },
+			},
+			{ width: 600, height: 300 },
+		)
+
+		expect(request?.format === 'tiff' && request.options.ppi).toBe(72)
+	})
+})

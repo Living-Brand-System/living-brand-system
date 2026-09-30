@@ -8,7 +8,7 @@ import {
 	type CameraAzimuth,
 	type CameraElevation,
 	resolveCameraControl,
-} from '@/features/image-generation/camera-control'
+} from '@/features/image-generation/domain/camera-control'
 
 const CameraOrbitControl = dynamic(
 	() =>

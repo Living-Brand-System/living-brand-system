@@ -2,7 +2,12 @@
 
 import { ControllerRange } from '@/components/shared/controller'
 
-export const DEFAULT_PREVIEW_SIZE = 50
+/**
+ * 🔑 「100%」는 원본 픽셀이 아니라 **스테이지 꽉 채움**이다 — 기준 크기를 `fitPreviewSize`가
+ *    실측으로 정하고 이 값이 그 위에 곱해진다. 그래서 기본이 100%면 프리뷰가 가용 영역에 딱 맞고,
+ *    줄이는 쪽으로만 움직인다(2026-09-08에 50→100).
+ */
+export const DEFAULT_PREVIEW_SIZE = 100
 
 /**
  * 출력에는 영향 없이 데스크톱 캔버스의 표시 크기만 조절한다.

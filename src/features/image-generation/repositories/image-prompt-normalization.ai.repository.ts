@@ -3,14 +3,22 @@ import { z } from 'zod'
 import type {
 	FlatImagePrompt,
 	ImagePromptNormalizationRow,
-} from '@/features/image-generation/image-profile-prompt'
+} from '@/features/image-generation/domain/image-profile-prompt'
 import { anthropicTextModel } from '@/lib/anthropic-model'
+import type { AiUsageTokens } from '@/modules/ai-usage/ai-usage'
+
+/** 정규화 결과와, 그 호출이 쓴 토큰. 모델이 없어 호출하지 않으면 null이다. */
+export interface NormalizedImagePrompt {
+	prompt: FlatImagePrompt
+	model: string
+	usage: AiUsageTokens
+}
 
 /** AI SDK 호출을 소유하며, 각 키의 결과를 관리자가 정한 후보 중 하나로 강제한다. */
 export async function normalizeImagePromptWithAi(
 	userPrompt: string,
 	rows: ImagePromptNormalizationRow[],
-): Promise<FlatImagePrompt | null> {
+): Promise<NormalizedImagePrompt | null> {
 	const model = anthropicTextModel()
 	if (!model) return null
 
@@ -22,7 +30,7 @@ export async function normalizeImagePromptWithAi(
 			]),
 		),
 	)
-	const { output } = await generateText({
+	const { output, usage } = await generateText({
 		model,
 		output: Output.object({ schema }),
 		providerOptions: { anthropic: { structuredOutputMode: 'outputFormat' } },
@@ -35,5 +43,17 @@ export async function normalizeImagePromptWithAi(
 		}),
 	})
 
-	return output as FlatImagePrompt
+	return {
+		prompt: output as FlatImagePrompt,
+		model: model.modelId,
+		// 계량이 생성을 깨뜨리지 않도록 세부 항목은 없을 수 있다고 본다.
+		usage: {
+			inputTokens: usage?.inputTokens,
+			outputTokens: usage?.outputTokens,
+			totalTokens: usage?.totalTokens,
+			cacheReadInputTokens: usage?.inputTokenDetails?.cacheReadTokens,
+			cacheWriteInputTokens: usage?.inputTokenDetails?.cacheWriteTokens,
+			reasoningTokens: usage?.outputTokenDetails?.reasoningTokens,
+		},
+	}
 }

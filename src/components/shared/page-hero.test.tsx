@@ -1,9 +1,9 @@
 import { act, cleanup, render } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import radialFlutedGlassManifest, {
-	RADIAL_FLUTED_GLASS_DEFAULT_INPUT,
-} from '@/features/graphic-generation/graphic-runtimes/radial-fluted-glass/definition'
-import { toRadialFlutedGlassInput } from '@/features/graphic-generation/graphic-runtimes/radial-fluted-glass/model'
+import flutedGlassManifest, {
+	FLUTED_GLASS_SHAPE_INPUTS,
+} from '@/features/graphic-generation/graphic-runtimes/fluted-glass/definition'
+import { toFlutedGlassInput } from '@/features/graphic-generation/graphic-runtimes/fluted-glass/model'
 import type { ControllerValues } from '@/modules/studio-controller/controller-definition'
 import { PageHero } from './page-hero'
 
@@ -17,7 +17,7 @@ const mount = vi.fn((_options: { values: ControllerValues }) => ({
 
 vi.mock('@/features/graphic-generation/graphic-runtimes/catalog/runtime.generated.client', () => ({
 	graphicRuntimeCatalog: {
-		'radial-fluted-glass': () => Promise.resolve({ type: 'shader', mount }),
+		'fluted-glass': () => Promise.resolve({ type: 'shader', mount }),
 	},
 }))
 
@@ -39,11 +39,28 @@ afterEach(() => {
 describe('PageHero', () => {
 	it('런타임 manifest 기본값을 채워 mount한다', async () => {
 		await act(async () => {
-			render(<PageHero runtimeId={radialFlutedGlassManifest.id} fallbackSrc="/hero.png" />)
+			render(<PageHero runtimeId={flutedGlassManifest.id} fallbackSrc="/hero.png" />)
 		})
 
 		const values = mount.mock.lastCall?.[0].values ?? {}
 		// 빈 객체를 넘기면 shader 입력 검증이 전부 undefined로 터진다.
-		expect(toRadialFlutedGlassInput(values)).toEqual(RADIAL_FLUTED_GLASS_DEFAULT_INPUT)
+		expect(toFlutedGlassInput(values).shape).toBe('sweep')
+	})
+
+	// 히어로마다 다른 모양을 쓴다(어드민은 방사, 가이드라인 메인은 가로) — 이 통로가 막히면 둘이 같아진다.
+	it('넘긴 값이 런타임 기본값을 덮는다', async () => {
+		await act(async () => {
+			render(
+				<PageHero
+					runtimeId={flutedGlassManifest.id}
+					values={{ shape: 'linear' }}
+					fallbackSrc="/hero.png"
+				/>,
+			)
+		})
+
+		const resolved = toFlutedGlassInput(mount.mock.lastCall?.[0].values ?? {})
+		expect(resolved.shape).toBe('linear')
+		expect(resolved.input.rayRotation).toBe(FLUTED_GLASS_SHAPE_INPUTS.linear.rayRotation)
 	})
 })
