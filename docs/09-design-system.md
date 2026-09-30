@@ -148,7 +148,7 @@ HTML 의미와 시각 역할은 분리합니다. `GuidelineHeader`가 h1/h2를 �
 
 ### 신규 문서 (`contentModel=sections`)
 
-CMS와 레퍼런스·플레이그라운드는 동일한 평면 섹션 구조를 사용합니다. Subsection은 직전 Section에 의미상 소속되며 H3로 표시하지만 DOM에는 중첩하지 않습니다. Section과 Incorrect Usages는 H2입니다. 위계나 패널 표현은 여백을 바꾸지 않습니다.
+CMS와 레퍼런스·플레이그라운드는 동일한 평면 섹션 구조를 사용합니다. Subsection은 직전 Section에 의미상 소속되며 H3로 표시하지만 DOM에는 중첩하지 않습니다. Section과 Incorrect Usages는 H2입니다. 위계나 패널 표현은 내부 간격을 바꾸지 않습니다.
 
 | 레이어 | 소유 책임 |
 | --- | --- |
@@ -169,7 +169,7 @@ CMS와 레퍼런스·플레이그라운드는 동일한 평면 섹션 구조를 
 | 제목–첫 컨테이너 | 120px | 64px |
 | 컨테이너–컨테이너 | 120px | 64px |
 
-`structure/structure.module.css`가 위 간격을 소유합니다. 제목–본문과 컨테이너 사이 간격은 같은 내부 간격 계약으로 하나의 `gap`을 사용합니다. 인접 섹션은 하단·상단 패딩이 합쳐져 콘텐츠 사이에 240px / 128px이 생깁니다. 중첩 예외와 페이지별 보정 패딩은 두지 않으며 Incorrect Usages 바깥에도 별도 여백을 추가하지 않습니다.
+`structure/structure.module.css`가 위 간격을 소유합니다. 제목–본문과 컨테이너 사이 간격은 같은 내부 간격 계약으로 하나의 `gap`을 사용합니다. 인접 섹션은 하단·상단 패딩이 합쳐져 콘텐츠 사이에 240px / 128px이 생깁니다. 중첩 예외와 페이지별 보정 패딩은 두지 않습니다. Incorrect Usages 패널은 `GuidelineSection`의 `variant="incorrect-usages"`로 좌우 외부 마진을 각각 32px / 16px 적용합니다. 내부 패딩·간격과 상하 외부 간격은 공통 Section 계약을 유지합니다.
 
 신규 경로는 `ContentFrame`을 사용하지 않습니다. Section이 가용 폭과 좌우 여백을 제공하고, Heading·Sticky는 최대 1415px에서 중앙 배치합니다. Grid는 목표 카드 너비×열 수+가로 간격으로 최대 폭을 계산하고 Carousel은 가용 폭을 사용합니다. 카드 간격은 Grid 좌우 12px·상하 24px, Carousel 좌우 12px, Sticky 세로 24px입니다. 컴포넌트 API는 [10의 신규 문서 구조 계약](10-component-authoring.md#가이드라인-문서-구조-api-2026-09-23)을 따릅니다.
 

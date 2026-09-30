@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { useActiveSectionAnchor } from '@/features/guideline/hooks/use-guideline-section-navigation'
 import type { GetGuidelineNavigationOutput } from '@/features/guideline/services/get-guideline-navigation.service'
 import { GuidelineSideNavigation } from './guideline-side-navigation'
 
@@ -11,7 +12,7 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/features/guideline/hooks/use-guideline-section-navigation', () => ({
 	scrollToGuidelineSection: vi.fn(),
-	useActiveSectionAnchor: () => 'japanese',
+	useActiveSectionAnchor: vi.fn((anchors: string[]) => anchors[0] ?? null),
 }))
 
 beforeEach(() => {
@@ -73,7 +74,7 @@ const chapters: GetGuidelineNavigationOutput['chapters'] = [
 ]
 
 describe('GuidelineSideNavigation', () => {
-	it('활성 경로를 chapter → topic → 섹션 depth로 표시한다', () => {
+	it('TOC는 depth 2까지만 표시하고 보이는 섹션만 위치 추적한다', () => {
 		const { container } = render(
 			<TooltipProvider>
 				<SidebarProvider>
@@ -91,17 +92,16 @@ describe('GuidelineSideNavigation', () => {
 			'data-depth',
 			'1',
 		)
-		expect(screen.getByRole('link', { name: 'Japanese' })).toHaveAttribute(
+		expect(screen.getByRole('link', { name: 'Naming definition' })).toHaveAttribute(
 			'aria-current',
 			'location',
 		)
-		expect(screen.getByRole('link', { name: 'Japanese' }).closest('li')).toHaveAttribute(
-			'data-depth',
-			'3',
-		)
 		expect(
 			screen.getByRole('link', { name: 'Naming definition' }).closest('li'),
-		).toContainElement(screen.getByRole('link', { name: 'Japanese' }))
+		).toHaveAttribute('data-depth', '2')
+		expect(screen.queryByRole('link', { name: 'Japanese' })).not.toBeInTheDocument()
+		expect(container.querySelector('[data-depth="3"]')).toBeNull()
+		expect(useActiveSectionAnchor).toHaveBeenCalledWith(['naming-definition'])
 		expect(screen.queryByRole('link', { name: 'Identity details' })).not.toBeInTheDocument()
 		expect(container.querySelector('[data-slot="guideline-side-navigation"]')).toHaveClass(
 			'md:w-[265px]',
