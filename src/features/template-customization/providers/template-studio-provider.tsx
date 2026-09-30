@@ -33,6 +33,7 @@ import {
 import {
 	findTemplateControl,
 	listCompatibleTemplateImageConfigs,
+	listTemplateLayerGroups,
 	mapTemplateNodeLayers,
 	type PublishedTemplateView,
 	partitionTemplateSlots,
@@ -58,6 +59,12 @@ import {
 	fetchSampleImages,
 	type SampleImageOption,
 } from '@/features/template-customization/services/list-sample-images.client'
+import {
+	pickKnownSlots,
+	readTemplateDraft,
+	type TemplateDraft,
+	writeTemplateDraft,
+} from '@/features/template-customization/services/template-draft.client'
 import { useLazyResource } from '@/hooks/use-lazy-resource'
 import type { CanvasVideoSource } from '@/modules/studio-artifact/studio-artifact'
 import {
@@ -78,15 +85,24 @@ function useTemplateTextSession(
 	textSlots: readonly TemplateTextSlot[],
 	html: string,
 	previewRef: RefObject<HTMLDivElement | null>,
+	draft: TemplateDraft | null,
 ): TemplateStudioValue['text'] {
 	const colorDefinition = config.template.textColorControlId
 		? findTemplateControl(config, config.template.textColorControlId)
 		: undefined
-	const [values, setValues] = useState<Record<string, string>>(() =>
-		initialTemplateTextValues(config, textSlots),
-	)
+	const [values, setValues] = useState<Record<string, string>>(() => ({
+		...initialTemplateTextValues(config, textSlots),
+		...pickKnownSlots(
+			draft?.text,
+			textSlots.map((slot) => slot.id),
+		),
+	}))
 	const [color, setColor] = useState<string | null>(() =>
-		colorDefinition?.kind === 'color' ? colorDefinition.defaultValue : null,
+		draft
+			? draft.textColor
+			: colorDefinition?.kind === 'color'
+				? colorDefinition.defaultValue
+				: null,
 	)
 	const [clippedSlotIds, setClippedSlotIds] = useState<ReadonlySet<string>>(new Set())
 	const setValue = useCallback(
@@ -121,6 +137,7 @@ function useTemplateTextSession(
 function useTemplateImageSession(
 	config: TemplateStudioConfig,
 	imageSlots: readonly TemplateImageConfigSlot[],
+	draft: TemplateDraft | null,
 ): TemplateStudioValue['images'] {
 	const contracts = useMemo(
 		() =>
@@ -132,11 +149,15 @@ function useTemplateImageSession(
 			),
 		[config.template.imageConfigs, imageSlots],
 	)
-	const [states, setStates] = useState<Record<string, TemplateImageSlotState>>(() =>
-		Object.fromEntries(
+	const [states, setStates] = useState<Record<string, TemplateImageSlotState>>(() => ({
+		...Object.fromEntries(
 			imageSlots.map((slot) => [slot.id, initialImageState(slot, contracts[slot.id] ?? [])]),
 		),
-	)
+		...pickKnownSlots(
+			draft?.images,
+			imageSlots.map((slot) => slot.id),
+		),
+	}))
 	const updateState = useCallback(
 		(slotId: string, patch: Partial<TemplateImageSlotState>) => {
 			setStates((current) => {
@@ -269,10 +290,15 @@ function useTemplateImageSession(
 
 function useTemplateVectorSession(
 	vectorSlots: readonly TemplateVectorSlot[],
+	draft: TemplateDraft | null,
 ): TemplateStudioValue['vectors'] {
-	const [colors, setColors] = useState<Record<string, string | undefined>>(() =>
-		Object.fromEntries(vectorSlots.map((slot) => [slot.id, slot.color])),
-	)
+	const [colors, setColors] = useState<Record<string, string | undefined>>(() => ({
+		...Object.fromEntries(vectorSlots.map((slot) => [slot.id, slot.color])),
+		...pickKnownSlots(
+			draft?.vectorColors,
+			vectorSlots.map((slot) => slot.id),
+		),
+	}))
 	const setColor = useCallback(
 		(slotId: string, color: string) =>
 			setColors((current) => {
@@ -288,16 +314,21 @@ function useTemplateVectorSession(
 }
 
 /**
- * 🔴 목록이 둘인 이유: 표시/숨김은 **편집 가능한 레이어만** 갖고(배경은 정책이 없다), 선택은
- *    배경까지 포함한 **묶음**을 대상으로 한다 — 배경도 레이어 패널의 한 줄이다(사용자 지시, 2026-09-10).
+ * 🔴 목록이 둘인 이유: 표시/숨김은 **편집 가능한 레이어 하나하나**를 갖고(배경은 정책이 없다),
+ *    선택은 배경까지 포함한 **종류**를 대상으로 한다 — 배경도 레이어 패널의 한 줄이다.
  */
 function useTemplateLayerSession(
 	editable: readonly (TemplateTextSlot | TemplateImageConfigSlot | TemplateVectorSlot)[],
 	all: readonly TemplateStudioConfigSlot[],
+	draft: TemplateDraft | null,
 ): TemplateStudioValue['layers'] {
-	const [visibility, setVisibility] = useState<Record<string, boolean>>(() =>
-		Object.fromEntries(editable.map((slot) => [slot.id, slot.visibility.defaultVisible])),
-	)
+	const [visibility, setVisibility] = useState<Record<string, boolean>>(() => ({
+		...Object.fromEntries(editable.map((slot) => [slot.id, slot.visibility.defaultVisible])),
+		...pickKnownSlots(
+			draft?.visibility,
+			editable.map((slot) => slot.id),
+		),
+	}))
 	const setVisible = useCallback(
 		(slotId: string, visible: boolean) =>
 			setVisibility((current) => {
@@ -308,19 +339,31 @@ function useTemplateLayerSession(
 			}),
 		[editable],
 	)
-	const [selected, setSelected] = useState<string | null>(null)
-	// 🔴 읽을 때 걸러 낸다 — 템플릿을 바꾸면 슬롯 id가 통째로 달라지고, 그때 남은 선택은
-	//    아무 컨트롤도 못 내면서 「고른 상태」로 보인다. 초기화 effect를 두는 대신 유도한다.
-	const selectedId = selected && all.some((slot) => slot.id === selected) ? selected : null
+	/**
+	 * 🔴 `undefined`(아직 고른 적 없음)와 `null`(일부러 풀었음)은 다른 상태다. 둘을 합치면
+	 *    고른 묶음을 다시 눌러 푸는 순간 첫 묶음으로 되튄다.
+	 */
+	const [selected, setSelected] = useState<TemplateStudioConfigSlot['kind'] | null | undefined>()
+	// 들어오자마자 만질 것이 보여야 한다(사용자 지시, 2026-09-29) — 아직 안 골랐으면 첫 묶음이다.
+	const initial = listTemplateLayerGroups(all)[0]?.kind ?? null
+	// 🔴 읽을 때 걸러 낸다 — 템플릿을 바꾸면 있는 종류가 달라지고, 그때 남은 선택은 아무 컨트롤도
+	//    못 내면서 「고른 상태」로 보인다. 초기화 effect를 두는 대신 유도한다.
+	const selectedKind =
+		selected === undefined
+			? initial
+			: selected && all.some((slot) => slot.kind === selected)
+				? selected
+				: null
 	return useMemo(
-		() => ({ visibility, setVisible, selectedId, select: setSelected }),
-		[selectedId, setVisible, visibility],
+		() => ({ visibility, setVisible, selectedKind, select: setSelected }),
+		[selectedKind, setVisible, visibility],
 	)
 }
 
 function useTemplateBackgroundSession(
 	config: TemplateStudioConfig,
 	slot: TemplateBackgroundSlot | undefined,
+	draft: TemplateDraft | null,
 ): TemplateStudioValue['background'] {
 	const contracts = useMemo(
 		() =>
@@ -333,8 +376,8 @@ function useTemplateBackgroundSession(
 				: [],
 		[config.template.exportOption.canvas, config.template.imageConfigs, slot],
 	)
-	const [state, setState] = useState<TemplateBackgroundState>(() =>
-		initialBackgroundState(config, slot, contracts),
+	const [state, setState] = useState<TemplateBackgroundState>(
+		() => draft?.background ?? initialBackgroundState(config, slot, contracts),
 	)
 	const typeDefinition = slot ? findTemplateControl(config, slot.typeControlId) : undefined
 	const colorDefinition = slot ? findTemplateControl(config, slot.colorControlId) : undefined
@@ -469,6 +512,46 @@ function useTemplateBackgroundSession(
 	)
 }
 
+/** 값이 멈춘 뒤에 한 번만 쓴다 — 타이핑마다 직렬화하면 키 입력에 비용이 붙는다. */
+const DRAFT_WRITE_DELAY_MS = 600
+
+/**
+ * 편집 중인 화면을 임시 저장한다 — 자동이고, 새로고침 정도를 버티는 것이 목적이다
+ * (사용자 지시, 2026-09-29).
+ *
+ * 🔴 첫 렌더에서는 쓰지 않는다. 초안을 되살린 직후 그대로 다시 쓰면 저장 시각만 갱신돼
+ *    「오래되면 사라진다」가 영영 오지 않는다.
+ */
+function useTemplateDraftAutosave(
+	userId: string | null | undefined,
+	templateId: string,
+	draft: TemplateDraft,
+): void {
+	const restored = useRef(true)
+	// biome-ignore lint/correctness/useExhaustiveDependencies: draft는 매 렌더 새 객체라 의존성에 둘 수 없다 — 값이 바뀌었는지는 아래 필드들이 말한다
+	useEffect(() => {
+		if (!userId) return
+		if (restored.current) {
+			restored.current = false
+			return
+		}
+		const timer = setTimeout(
+			() => writeTemplateDraft(userId, templateId, draft),
+			DRAFT_WRITE_DELAY_MS,
+		)
+		return () => clearTimeout(timer)
+	}, [
+		userId,
+		templateId,
+		draft.text,
+		draft.textColor,
+		draft.vectorColors,
+		draft.visibility,
+		draft.images,
+		draft.background,
+	])
+}
+
 /**
  * Template 편집 세션의 단일 소유자. Sidebar와 Canvas는 서로를 모르고 이 Context만 소비한다.
  * Image Config는 서버 계약을 슬롯 범위에서 좁혀 쓰고 Graphic Config는 순수 runtime adapter로 투영한다.
@@ -480,6 +563,7 @@ export function TemplateStudioProvider({
 	template,
 	categoryTitle,
 	highlightColor = null,
+	userId,
 	children,
 }: {
 	config: TemplateStudioConfig
@@ -487,8 +571,20 @@ export function TemplateStudioProvider({
 	categoryTitle: string | null
 	/** 강조 색 — 서버가 `brand-colors`에서 찾아 내린다. 없으면 캔버스가 토큰으로 폴백한다. */
 	highlightColor?: string | null
+	/**
+	 * 임시 저장의 주인. 🔴 공용 PC에서 남의 초안이 내 화면에 뜨지 않게 저장 키에 섞는다.
+	 * 없으면 임시 저장을 아예 하지 않는다 — 주인을 모르는 초안은 남기지 않는다.
+	 */
+	userId?: string | null
 	children: ReactNode
 }) {
+	/**
+	 * 임시 저장된 화면 — **첫 렌더 전에 한 번만** 읽는다. 값이 자리를 잡은 뒤 되돌리면 기본값이
+	 * 한 프레임 보였다가 바뀌고, 그 사이 도는 effect들이 기본값을 기준으로 측정한다.
+	 */
+	const [draft] = useState<TemplateDraft | null>(() =>
+		userId ? readTemplateDraft(userId, String(template.id)) : null,
+	)
 	// 교체 후보 목록은 자산 브라우저가 열릴 때 가져온다 — 페이지는 현재 카테고리 이름 하나만 싣는다.
 	const templateBrowse = useLazyResource(fetchCreateNavigation)
 	// Preset 목록도 같은 규칙이다 — 배경이든 슬롯이든 처음 여는 브라우저가 한 번만 가져온다.
@@ -523,11 +619,19 @@ export function TemplateStudioProvider({
 		() => [...textSlots, ...imageSlots, ...vectorSlots],
 		[imageSlots, textSlots, vectorSlots],
 	)
-	const text = useTemplateTextSession(config, textSlots, html, previewRef)
-	const images = useTemplateImageSession(config, imageSlots)
-	const vectors = useTemplateVectorSession(vectorSlots)
-	const layers = useTemplateLayerSession(editableSlots, slots)
-	const background = useTemplateBackgroundSession(config, backgroundSlot)
+	const text = useTemplateTextSession(config, textSlots, html, previewRef, draft)
+	const images = useTemplateImageSession(config, imageSlots, draft)
+	const vectors = useTemplateVectorSession(vectorSlots, draft)
+	const layers = useTemplateLayerSession(editableSlots, slots, draft)
+	const background = useTemplateBackgroundSession(config, backgroundSlot, draft)
+	useTemplateDraftAutosave(userId, String(template.id), {
+		text: text.values,
+		textColor: text.color,
+		vectorColors: vectors.colors,
+		visibility: layers.visibility,
+		images: images.states,
+		background: background.state,
+	})
 	const deferredTextColor = useDeferredValue(text.color)
 	const deferredImageStates = useDeferredValue(images.states)
 	const deferredVectorColors = useDeferredValue(vectors.colors)

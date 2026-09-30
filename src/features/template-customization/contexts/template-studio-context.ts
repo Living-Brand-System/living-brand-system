@@ -7,6 +7,7 @@ import type {
 	ResolvedTemplateImageConfig,
 	TemplateBackgroundType,
 	TemplateStudioConfig,
+	TemplateStudioConfigSlot,
 	TemplateVectorSlot,
 } from '@/features/template-customization/domain/template-studio-config'
 import type {
@@ -97,9 +98,46 @@ export type TemplateBackgroundPatch = Partial<
  * 만질 때도 같은 값이 온다(그때는 `nodeIds`만 좁아진다).
  */
 export type TemplateFocusTarget = { sectionId: string } & (
-	| { kind: 'nodes'; nodeIds: readonly string[] }
+	| {
+			kind: 'nodes'
+			nodeIds: readonly string[]
+			/**
+			 * 이 슬롯의 입력칸으로 **커서까지** 옮겨 달라는 요청. 판에서 글자를 누른 사람은 곧바로
+			 * 타이핑할 참이기 때문이다(사용자 지시, 2026-09-29).
+			 *
+			 * 🔴 상태를 따로 만들지 않는다 — 입력칸이 포커스를 받으면 그 자신이 이 플래그 없는
+			 *    같은 대상으로 focus를 다시 세워서 **저절로 꺼진다.** 끄는 코드를 두면 누가 언제
+			 *    끄는지가 또 하나의 규칙이 된다.
+			 */
+			caret?: boolean
+	  }
 	| { kind: 'canvas' }
 )
+
+/**
+ * 텍스트 섹션의 식별자 — 텍스트는 상자가 여럿이어도 컨트롤 그룹이 하나다.
+ * 🔴 Figma 노드 id는 `82:11` 꼴이라 이 값과 겹치지 않는다.
+ */
+export const TEMPLATE_TEXT_SECTION_ID = 'section:text'
+export const TEMPLATE_BACKGROUND_SECTION_ID = 'section:background'
+
+/**
+ * 슬롯 하나를 집는 focus 대상 — **사이드바와 캔버스가 같은 규칙을 쓴다.**
+ * 🔴 두 입구가 각자 만들면 같은 슬롯을 집었는데 사이드바 면이 한쪽에서만 켜진다. 실제로
+ *    텍스트는 섹션이 하나(`section:text`)이고 이미지·CI는 슬롯마다 섹션이라 규칙이 갈린다.
+ */
+export function templateSlotFocusTarget(
+	kind: 'text' | 'image' | 'vector',
+	nodeId: string,
+	options: { caret?: boolean } = {},
+): TemplateFocusTarget {
+	return {
+		sectionId: kind === 'text' ? TEMPLATE_TEXT_SECTION_ID : nodeId,
+		kind: 'nodes',
+		nodeIds: [nodeId],
+		...(options.caret ? { caret: true } : {}),
+	}
+}
 
 export type TemplateStudioValue = {
 	navigation: {
@@ -138,16 +176,16 @@ export type TemplateStudioValue = {
 		visibility: Record<string, boolean>
 		setVisible: (slotId: string, visible: boolean) => void
 		/**
-		 * 레이어 패널에서 고른 **레이어**(슬롯 id). 묶음(Text·Image·CI)은 고를 수 없다 —
-		 * 묶음 헤더는 hover만 되고, 고르는 것은 그 자식이다(사용자 지시, 2026-09-10).
-		 * 배경은 하위가 없으므로 자기 자신이 잎이고 id는 `'background'`다.
+		 * 레이어 패널에서 고른 **종류**. 고르는 단위는 레이어 하나가 아니라 Text·Image·CI·Background
+		 * 묶음이다(사용자 지시, 2026-09-29) — 텍스트를 고치려는 사람은 텍스트 상자 하나가 아니라
+		 * 텍스트 전부를 한 번에 본다. 그래서 하위 줄은 목록에만 있고 고를 수 없다.
 		 *
 		 * 🔴 **`focus`와 다른 것이다.** 컨트롤러는 평소에 아무것도 보여주지 않고 이 값이 있을 때만
-		 *    그 레이어의 컨트롤을 낸다 — `focus`로 대신하면 입력칸에 커서를 넣는 것만으로 대상이
+		 *    그 묶음의 컨트롤을 낸다 — `focus`로 대신하면 입력칸에 커서를 넣는 것만으로 대상이
 		 *    바뀌어 방금 고른 것이 사라진다(`focus`는 「지금 만지는 자리」이고 이것은 「고른 것」이다).
 		 */
-		selectedId: string | null
-		select: (slotId: string | null) => void
+		selectedKind: TemplateStudioConfigSlot['kind'] | null
+		select: (kind: TemplateStudioConfigSlot['kind'] | null) => void
 	}
 	background: {
 		state: TemplateBackgroundState

@@ -29,6 +29,7 @@ type ImageReferenceUploadProps = {
  *    주소로 오므로 `readDroppedImageFile`이 같은 File로 바꿔 준다.
  * 🔴 붙여넣기는 **이 판에 포커스가 있을 때만** 받는다(그래서 `tabIndex`가 있다). window에 붙이면
  *    한 화면에 첨부 판이 둘 이상 뜰 때 모두가 같은 이미지를 집어삼킨다.
+ *    **이 제약이 맞다고 사용자가 확인했다(2026-09-29)** — 「클릭 없이 바로 ⌘V」로 바꾸지 말 것.
  */
 export function ImageReferenceUpload({
 	value,

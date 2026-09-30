@@ -48,6 +48,14 @@ export function clampSlotBox(
  */
 const FILL_ALPHA = '18%'
 
+/** hover는 선택보다 **약해야** 한다 — 같은 세기면 둘 중 무엇이 고른 것인지 알 수 없다. */
+const HOVER_ALPHA = '10%'
+
+/**
+ * hover 테두리의 불투명도. 면보다 진해서 경계가 읽히고, 선택의 실선보다 옅어서 둘이 섞이지 않는다.
+ */
+const HOVER_BORDER_ALPHA = '45%'
+
 /**
  * 강조 색을 못 받았을 때의 폴백. 브랜드 주입을 받는 유일한 토큰이다(`docs/09` §5) —
  * 🔴 채도 0인 `--accent`·`--ring`은 강조로 읽히지 않으므로 쓰지 않는다.
@@ -60,7 +68,8 @@ function cssColor(color: string | null | undefined): string {
 }
 
 /**
- * 오버레이의 생김새. 오버레이는 **캔버스 좌표계** 안에 놓이므로 두께도 캔버스 px로 줘야 한다.
+ * 오버레이 테두리의 굵기. 오버레이는 **캔버스 좌표계** 안에 놓이므로 두께도 캔버스 px로 줘야 한다.
+ * 🔑 선택과 hover가 **같은 굵기**를 쓴다 — 지나가던 상자가 잡히는 순간 크기가 흔들리면 안 된다.
  *
  * 🔴 캔버스는 두 번 축소된다 — `fitPreviewSize`가 정한 `scale`과 Preview Size 컨트롤의
  *    `--preview-scale`이 곱해진다. 앞쪽만 보정하면 배율을 내린 만큼 선이 얇게 찍힌다
@@ -70,16 +79,45 @@ function cssColor(color: string | null | undefined): string {
  * 🔴 그 배율의 transform은 `lg:`에서만 걸리는데 변수는 항상 있다 — 좁은 화면에서는 선이 그만큼
  *    두꺼워진다. 스튜디오는 데스크톱 편집기라 그쪽을 감수한다(브레이크포인트를 코드로 복제하지 않는다).
  */
+function borderWidth(scale: number): string {
+	// scale이 0이나 음수로 오는 순간(측정 전 첫 프레임) 배율이 무의미해진다 — 1로 떨어뜨린다.
+	const fit = scale > 0 ? scale : 1
+	/*
+	 * 🔑 **화면 1px짜리 실선이다**(사용자 판단, 2026-09-30). 전에는 2px이었는데, 그때는 테두리를
+	 *    상자 **안쪽**에 그려 대상 위에 얹히다 보니 굵어야 보였다. 밖으로 나온 뒤로는 빈 바탕에
+	 *    놓이므로 1px로 충분하고, 편집기(Figma·Illustrator)의 선택 윤곽선도 1px이다.
+	 * 🔴 캔버스 px로 1px 아래로는 내려가지 않게 막는다 — 1px 미만 `border-width`는 브라우저가
+	 *    0으로 반올림해 선이 통째로 사라질 수 있다. 판을 키워 맞춘 경우(총배율 > 1)만 걸리고,
+	 *    그때는 화면에서 총배율만큼 두꺼워진다.
+	 */
+	return `max(1px, calc(1px / (${fit} * var(--preview-scale, 1))))`
+}
+
+/**
+ * 상자를 테두리 굵기만큼 **밖으로** 넓힌다(사용자 지시, 2026-09-30).
+ *
+ * 🔴 테두리를 안쪽에 그리면 대상의 **가장자리 픽셀을 덮는다** — 글자의 획 끝이나 이미지의 테두리가
+ *    강조선에 먹혀 「무엇을 고쳤나」가 그 자리에서만 안 보인다.
+ * 🔑 `box-sizing: border-box`라 넓힌 만큼이 그대로 테두리 자리가 되고, 면(`backgroundColor`)은
+ *    테두리 안쪽만 칠하므로 원래 상자를 정확히 덮는다.
+ */
+export function outsetSlotBox(box: SlotHighlightBox, scale: number): CSSProperties {
+	const line = borderWidth(scale)
+	return {
+		left: `calc(${box.left}px - ${line})`,
+		top: `calc(${box.top}px - ${line})`,
+		width: `calc(${box.width}px + 2 * ${line})`,
+		height: `calc(${box.height}px + 2 * ${line})`,
+	}
+}
+
+/** 고른 것의 오버레이 — 실선 테두리에, 여럿 중 하나를 가리킬 때만 면을 깐다. */
 export function slotHighlightStyle(
 	scale: number,
 	color?: string | null,
 	filled = true,
 ): CSSProperties {
-	// scale이 0이나 음수로 오는 순간(측정 전 첫 프레임) 배율이 무의미해진다 — 1로 떨어뜨린다.
-	const fit = scale > 0 ? scale : 1
-	const unit = `calc(1px / (${fit} * var(--preview-scale, 1)))`
-	// 총배율이 2를 넘는 확대(작은 캔버스를 키워 맞춘 경우)에서도 선이 1px 아래로 내려가지 않게.
-	const width = `max(1px, calc(2 * ${unit}))`
+	const width = borderWidth(scale)
 	const ink = cssColor(color)
 	return {
 		position: 'absolute',
@@ -93,5 +131,24 @@ export function slotHighlightStyle(
 		...(filled
 			? { backgroundColor: `color-mix(in srgb, ${ink} ${FILL_ALPHA}, transparent)` }
 			: {}),
+	}
+}
+
+/**
+ * hover 미리보기 — **지금 누르면 무엇이 잡히는지**를 먼저 보여 준다(사용자 지시, 2026-09-29).
+ *
+ * 🔴 테두리도 **반투명**이다(사용자 지시, 2026-09-30). 굵기는 선택과 같게 둬서 잡히는 순간
+ *    상자가 흔들리지 않고, 색만 옅어 「고른 것」의 실선과 구별된다.
+ * 🔑 배경(도화지)에는 쓰지 않는다. 전면을 덮는 면은 콘텐츠만 탁하게 만들고, 판 어디에 있든 늘
+ *    켜져 있어 아무것도 알려 주지 않는다.
+ */
+export function slotHoverStyle(scale: number, color?: string | null): CSSProperties {
+	const ink = cssColor(color)
+	return {
+		position: 'absolute',
+		boxSizing: 'border-box',
+		pointerEvents: 'none',
+		border: `${borderWidth(scale)} solid color-mix(in srgb, ${ink} ${HOVER_BORDER_ALPHA}, transparent)`,
+		backgroundColor: `color-mix(in srgb, ${ink} ${HOVER_ALPHA}, transparent)`,
 	}
 }
