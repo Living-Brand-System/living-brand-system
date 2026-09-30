@@ -295,7 +295,7 @@ export function TemplateCanvas() {
 					{hoverBox && (
 						<div
 							data-slot="template-slot-hover"
-							style={{ ...slotHoverStyle(focus.color), ...hoverBox }}
+							style={{ ...slotHoverStyle(scale, focus.color), ...hoverBox }}
 						/>
 					)}
 					{highlights.map((box) => (

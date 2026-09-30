@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clampSlotBox, slotHighlightStyle } from './slot-highlight'
+import { clampSlotBox, slotHighlightStyle, slotHoverStyle } from './slot-highlight'
 
 const CANVAS = { width: 1920, height: 1080 }
 /** 총배율 0.287(실측값)로 놓인 캔버스 — 화면 폭 551px. */
@@ -128,5 +128,32 @@ describe('slotHighlightStyle', () => {
 			expect(style.border).not.toContain(hostile)
 			expect(style.border).toContain('solid var(--primary)')
 		}
+	})
+})
+
+describe('slotHoverStyle', () => {
+	it('테두리도 반투명으로 낸다 — 고른 것의 실선과 섞이지 않게', () => {
+		const style = slotHoverStyle(1, HD_GREEN)
+		expect(style.border).toContain(`color-mix(in srgb, ${HD_GREEN} 45%, transparent)`)
+		expect(style.backgroundColor).toBe(`color-mix(in srgb, ${HD_GREEN} 10%, transparent)`)
+	})
+
+	it('테두리 굵기는 고른 것과 같다 — 잡히는 순간 상자가 흔들리면 안 된다', () => {
+		const widthOf = (border: string | number | undefined) => String(border).split(' solid ')[0]
+		expect(widthOf(slotHoverStyle(0.5, HD_GREEN).border)).toBe(
+			widthOf(slotHighlightStyle(0.5, HD_GREEN).border),
+		)
+	})
+
+	it('테두리가 상자를 키우지 않고 클릭을 가로채지 않는다', () => {
+		const style = slotHoverStyle(1, HD_GREEN)
+		expect(style.boxSizing).toBe('border-box')
+		expect(style.pointerEvents).toBe('none')
+	})
+
+	it('hex 형태가 아닌 값은 선언에 넣지 않는다', () => {
+		const style = slotHoverStyle(1, 'red;display:none')
+		expect(style.border).not.toContain('display:none')
+		expect(style.border).toContain('var(--primary)')
 	})
 })
