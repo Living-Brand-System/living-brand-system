@@ -655,7 +655,7 @@ const flutedGlassRuntimeManifest = defineGraphicRuntime({
 		 * | `glassHighlights` | 0.052 | 체감 불가 |
 		 * | `vignette` | 새 축 | 체감 불가. 판을 고르게 채우려면 manager가 0으로 내린다 |
 		 *
-		 * 픽셀차는 각 축을 최소·최대로 렌더해 잰 평균 절대 픽셀차다(`.scratch/axis-survey/`).
+		 * 픽셀차는 각 축을 최소·최대로 렌더해 잰 평균 절대 픽셀차다.
 		 * 「새 축」 셋은 재서 고른 것이 아니라 **없던 축**이다 — 판을 담는 틀을 창작자가 정할 수
 		 * 없었다. `source`는 사거리를 `FLUTED_GLASS_SOURCE_SPAN`만큼 넓혀 판 밖까지 닿는다.
 		 *

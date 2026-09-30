@@ -1,8 +1,10 @@
 import { redirect } from 'next/navigation'
 import { AccountCard } from '@/components/auth/account-card'
+import { FigmaTokenCard } from '@/components/auth/figma-token-card'
 import { PayloadEntryLink } from '@/components/auth/payload-entry-link'
 import { McpKeyIssuer } from '@/components/studio/mcp/mcp-key-issuer'
 import { AiUsageCard } from '@/components/studio/usage/ai-usage-card'
+import { hasFigmaToken } from '@/features/template-import/services/figma-token.service'
 import { isManager, isPayloadUser } from '@/lib/auth'
 import { requireUser } from '@/lib/request-auth'
 import { loginHref, routes } from '@/lib/routes'
@@ -23,13 +25,15 @@ export default async function AccountPage({
 }: {
 	searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-	const { user } = await requireUser(routes.account)
+	const { payload, user } = await requireUser(routes.account)
 	// MCP API 키 세션으로는 열 수 없다 — 계정 화면은 사람 계정의 것이므로 로그인으로 돌려보낸다.
 	if (!isPayloadUser(user)) redirect(loginHref(routes.account))
 
 	// 범위 제한은 repository가 소유한다 — manager가 아니면 쿼리 자체가 본인 행으로 좁혀진다.
 	const query = parseAiUsageQuery(await searchParams)
 	const { rows, todayKey } = await getAiUsageBreakdown(user)
+	// Figma 가져오기는 manager 이상만 쓴다 — 쓸 수 없는 사람에게 토큰 칸을 보이지 않는다.
+	const figmaConnected = isManager(user) ? await hasFigmaToken(payload, user) : false
 
 	// 앱 셸이 헤더를 본문 위에 겹치므로 그 높이만큼 비운다(section-layout과 같은 값).
 	return (
@@ -49,6 +53,8 @@ export default async function AccountPage({
 					<AccountCard createdAt={user.createdAt} email={user.email} role={user.role} />
 					{/* MCP 키는 계정당 하나다 — 스튜디오 도구가 아니라 이 계정의 설정이라 여기 선다. */}
 					<McpKeyIssuer />
+					{/* Figma 토큰도 이 계정의 외부 연결 설정이라 MCP 옆에 선다. */}
+					{isManager(user) && <FigmaTokenCard connected={figmaConnected} />}
 					{/* 앱에서 Payload Admin으로 가는 유일한 입구 — worker에게는 그 주소가 404다. */}
 					{isManager(user) && <PayloadEntryLink />}
 				</div>

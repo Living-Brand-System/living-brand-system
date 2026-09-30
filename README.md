@@ -106,9 +106,12 @@ PAYLOAD_DB_PUSH=false
 | --- | --- |
 | AI Chat | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, `CHAT_MODEL`, `AGENT_CHAT_TRIAGE_ENABLED` |
 | Image Generation | `OPENAI_API_KEY`, `GEMINI_API_KEY` |
-| Figma Import | `FIGMA_API_TOKEN` |
 | Object Storage | `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, 선택 `S3_ENDPOINT`(S3 호환 저장소) |
 | Email | `RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`, `EMAIL_FROM_NAME` |
+
+Figma 가져오기는 서버 공용 토큰 없이, 가져오는 manager가 **내 계정**에서 자기 Figma 개인 API 토큰(`file_content:read`)을 등록해 씁니다.
+
+Vercel 배포에서는 Object Storage 네 개(`S3_ENDPOINT` 제외)·Email 세 개·`NEXT_PUBLIC_SITE_URL`이 필수입니다. 하나라도 빠지면 `next build`가 실패하고 이전 배포가 그대로 유지됩니다(`src/env.ts`).
 
 ### 2. PostgreSQL 실행
 
@@ -153,7 +156,6 @@ docker compose -f compose.preview.yml up -d
 | `pnpm dev` | 개발 서버 실행 |
 | `pnpm doctor` | 블록 카탈로그와 타입 생성, 자동 수정, 정적·타입 검사 |
 | `pnpm test:int` | 통합 테스트 실행 |
-| `pnpm test:e2e` | E2E 테스트 실행 |
 | `pnpm build` | 프로덕션 빌드 생성 |
 | `pnpm migrate:status` | 데이터베이스 마이그레이션 상태 확인 |
 | `pnpm ci` | 정적 검사, 타입 검사, 통합 테스트, 빌드 실행 |

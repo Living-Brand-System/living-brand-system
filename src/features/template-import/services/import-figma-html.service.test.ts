@@ -10,6 +10,7 @@ import {
 	findFigmaImageUrls,
 	findFigmaNodeTree,
 } from '@/features/template-import/repositories/figma.rest.repository'
+import { findFigmaToken } from '@/features/template-import/repositories/figma-token.payload.repository'
 import type { FigmaTextStyle } from '@/features/template-import/utils/figma-ir'
 import type { User } from '@/payload-types'
 import { importFigmaHtml } from './import-figma-html.service'
@@ -19,6 +20,10 @@ vi.mock('@/features/template-import/repositories/figma.rest.repository', () => (
 	findFigmaImageFillUrls: vi.fn(),
 	findFigmaImageUrls: vi.fn(),
 	findFigmaNodeTree: vi.fn(),
+}))
+
+vi.mock('@/features/template-import/repositories/figma-token.payload.repository', () => ({
+	findFigmaToken: vi.fn(),
 }))
 
 vi.mock(
@@ -48,7 +53,28 @@ const node = {
 }
 
 describe('importFigmaHtml', () => {
-	beforeEach(() => vi.resetAllMocks())
+	beforeEach(() => {
+		vi.resetAllMocks()
+		vi.mocked(findFigmaToken).mockResolvedValue('user-token')
+	})
+
+	it('요청한 사용자의 토큰으로 Figma를 읽는다', async () => {
+		vi.mocked(findFigmaNodeTree).mockResolvedValue({ ...node, children: [] })
+
+		await importFigmaHtml({ fileKey: 'file', nodeId: '1:1' }, payload, user)
+
+		expect(findFigmaToken).toHaveBeenCalledWith(payload, 1)
+		expect(findFigmaNodeTree).toHaveBeenCalledWith('user-token', 'file', '1:1')
+	})
+
+	it('토큰을 등록하지 않았으면 Figma를 부르기 전에 막는다', async () => {
+		vi.mocked(findFigmaToken).mockResolvedValue(null)
+
+		await expect(
+			importFigmaHtml({ fileKey: 'file', nodeId: '1:1' }, payload, user),
+		).rejects.toMatchObject({ name: 'FigmaConfigurationError' })
+		expect(findFigmaNodeTree).not.toHaveBeenCalled()
+	})
 
 	it('VECTOR를 SVG Application Images draft로 받아 구조화 참조를 HTML에 저장한다', async () => {
 		vi.mocked(findFigmaNodeTree).mockResolvedValue(node)
@@ -68,7 +94,7 @@ describe('importFigmaHtml', () => {
 
 		const result = await importFigmaHtml({ fileKey: 'file', nodeId: '1:1' }, payload, user)
 
-		expect(findFigmaImageUrls).toHaveBeenCalledWith('file', ['1:2'], 'svg')
+		expect(findFigmaImageUrls).toHaveBeenCalledWith('user-token', 'file', ['1:2'], 'svg')
 		expect(storeDraftImportedApplicationImage).toHaveBeenCalledWith(
 			payload,
 			user,
@@ -188,7 +214,7 @@ describe('importFigmaHtml', () => {
 
 		// 노드 렌더가 아니라 파일 단위 fill 원본을 쓴다.
 		expect(findFigmaImageUrls).not.toHaveBeenCalled()
-		expect(findFigmaImageFillUrls).toHaveBeenCalledWith('file')
+		expect(findFigmaImageFillUrls).toHaveBeenCalledWith('user-token', 'file')
 		expect(storeDraftImportedApplicationImage).toHaveBeenCalledWith(
 			payload,
 			user,
@@ -250,7 +276,7 @@ describe('importFigmaHtml', () => {
 
 		await importFigmaHtml({ fileKey: 'file', nodeId: '1:1' }, payload, user)
 
-		expect(findFigmaImageUrls).toHaveBeenCalledWith('file', ['1:6', '1:7'], 'png')
+		expect(findFigmaImageUrls).toHaveBeenCalledWith('user-token', 'file', ['1:6', '1:7'], 'png')
 		expect(findFigmaImageFillUrls).not.toHaveBeenCalled()
 	})
 
@@ -302,7 +328,7 @@ describe('importFigmaHtml', () => {
 
 		const result = await importFigmaHtml({ fileKey: 'file', nodeId: '1:1' }, payload, user)
 
-		expect(findFigmaImageUrls).toHaveBeenCalledWith('file', ['5:1', '6:1'], 'png')
+		expect(findFigmaImageUrls).toHaveBeenCalledWith('user-token', 'file', ['5:1', '6:1'], 'png')
 		expect(result.html).toContain('src="/api/application-images/file/text-path.png"')
 		expect(result.html).toContain('src="/api/application-images/file/future.png"')
 		expect(result.html).toContain('data-node-id="7:1"')
@@ -366,7 +392,7 @@ describe('importFigmaHtml', () => {
 
 		const result = await importFigmaHtml({ fileKey: 'file', nodeId: '1:1' }, payload, user)
 
-		expect(findFigmaImageUrls).toHaveBeenCalledWith('file', ['2:1', '4:1'], 'png')
+		expect(findFigmaImageUrls).toHaveBeenCalledWith('user-token', 'file', ['2:1', '4:1'], 'png')
 		expect(result.html).not.toContain('data-node-id="2:2"')
 		expect(result.html).toContain('src="/api/application-images/file/mask.png"')
 		expect(result.html).toContain('src="/api/application-images/file/scaled.png"')

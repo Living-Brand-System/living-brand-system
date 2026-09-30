@@ -114,6 +114,24 @@ const s3UploadCollections = Object.fromEntries(
 	collections.flatMap((collection) => (collection.upload ? [[collection.slug, true]] : [])),
 )
 
+/**
+ * 메일을 켜면 발신 주소·이름도 배포하는 쪽이 정해야 한다. 기본값을 두면 빠졌을 때 남의 주소로
+ * 조용히 나가므로, 없으면 부팅에서 멈춘다. 키가 없으면 메일 자체를 끈다.
+ */
+function resendEmail() {
+	if (!env.RESEND_API_KEY) return undefined
+	if (!env.EMAIL_FROM_ADDRESS || !env.EMAIL_FROM_NAME) {
+		throw new Error(
+			'RESEND_API_KEY를 쓰려면 EMAIL_FROM_ADDRESS와 EMAIL_FROM_NAME이 필요합니다.',
+		)
+	}
+	return resendAdapter({
+		apiKey: env.RESEND_API_KEY,
+		defaultFromAddress: env.EMAIL_FROM_ADDRESS,
+		defaultFromName: env.EMAIL_FROM_NAME,
+	})
+}
+
 export default buildConfig({
 	admin: {
 		user: Users.slug,
@@ -143,13 +161,7 @@ export default buildConfig({
 		// 가이드라인 수치 규정 표(최소 사이즈, 자간 등) 입력용. EXPERIMENTAL: 업그레이드 시 변경 가능성 있음.
 		features: ({ defaultFeatures }) => [...defaultFeatures, EXPERIMENTAL_TableFeature()],
 	}),
-	email: env.RESEND_API_KEY
-		? resendAdapter({
-				apiKey: env.RESEND_API_KEY,
-				defaultFromAddress: env.EMAIL_FROM_ADDRESS || 'noreply@plus-ex.com',
-				defaultFromName: env.EMAIL_FROM_NAME || 'PROTO',
-			})
-		: undefined,
+	email: resendEmail(),
 	secret: env.PAYLOAD_SECRET,
 	upload: {
 		limits: {

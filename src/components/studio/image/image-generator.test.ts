@@ -152,7 +152,7 @@ describe('ImageGenerator', () => {
 	it('첫 계약의 프로파일로 생성하고 장수·비율·해상도는 계약 시작값을 따른다', () => {
 		render(
 			createElement(ImageGenerator, {
-				config: config(5, '에센허브 브랜드 제품컷'),
+				config: config(5, '브랜드 제품컷'),
 			}),
 		)
 

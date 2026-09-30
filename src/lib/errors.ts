@@ -14,7 +14,8 @@ export class AssetAccessDeniedError extends Error {
 }
 
 export class FigmaConfigurationError extends Error {
-	constructor(message = 'Figma integration is not configured.') {
+	// 사용자 화면에 그대로 나가는 문구다 — 가져오기 전에 할 일을 말한다.
+	constructor(message = 'Figma API 토큰이 등록되지 않았습니다. 내 계정에서 토큰을 등록하세요.') {
 		super(message)
 		this.name = 'FigmaConfigurationError'
 	}

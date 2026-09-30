@@ -1,7 +1,7 @@
 /**
  * Checker 스냅샷 테스트 — registry 바인딩을 경유해 checkKey별 pass/fail 판정을 고정한다.
  * palette-match(deltaE) 교체 같은 색 수학 변경 시 판정이 뒤집히지 않는지 잡는 회귀 안전망.
- * 픽스처 팔레트는 brand-colors 실데이터(Essenherb)의 부분집합이다.
+ * 픽스처 팔레트는 빨강·파랑·회색 계열을 고루 담은 임의 팔레트다. 명함 별색만 HD 값을 쓴다.
  */
 import { describe, expect, it } from 'vitest'
 import { hexToRgb, type Rgb, type Swatch } from './palette-match'
@@ -9,7 +9,7 @@ import { getChecker } from './registry'
 import type { PixelGrid } from './types'
 
 const PALETTE: Swatch[] = [
-	{ name: 'Essenherb Red', hex: '#EA5343', family: 'red' },
+	{ name: 'Red 3', hex: '#EA5343', family: 'red' },
 	{ name: 'Red 1', hex: '#FFF0EB', family: 'red' },
 	{ name: 'Red 2', hex: '#FFB4AA', family: 'red' },
 	{ name: 'Red 4', hex: '#871400', family: 'red' },
@@ -20,6 +20,12 @@ const PALETTE: Swatch[] = [
 	{ name: 'Gray 5', hex: '#151515', family: 'gray' },
 	{ name: 'White', hex: '#FFFFFF', family: 'extreme' },
 	{ name: 'Black', hex: '#000000', family: 'extreme' },
+]
+
+// 명함 별색(spot-color)이 허용하는 HD 색. 팔레트 판정 픽스처와 섞지 않는다.
+const STATIONERY_PALETTE: Swatch[] = [
+	...PALETTE,
+	{ name: 'HD HERITAGE GREEN', hex: '#00AF41', family: 'green' },
 ]
 
 const CHECKER_KEYS: Record<string, string> = {
@@ -206,19 +212,19 @@ describe('color.combination (color-combination)', () => {
 describe('application.print.spec (spot-color)', () => {
 	const check = checkerFor('application.print.spec')
 
-	it('Essenherb Red + White만 쓰면 pass', () => {
+	it('HERITAGE GREEN + White만 쓰면 pass', () => {
 		const result = check({
-			pixels: [...px('#EA5343', 50), ...px('#FFFFFF', 50)],
-			palette: PALETTE,
+			pixels: [...px('#00AF41', 50), ...px('#FFFFFF', 50)],
+			palette: STATIONERY_PALETTE,
 		})
 		expect(result.status).toBe('pass')
 		expect(result.fulfillment).toBe(100)
 	})
 
-	it('팔레트 안이라도 Red+White 외 색(Gray 5)이 섞이면 fail', () => {
+	it('팔레트 안이라도 HERITAGE GREEN+White 외 색(Gray 5)이 섞이면 fail', () => {
 		const result = check({
-			pixels: [...px('#EA5343', 40), ...px('#FFFFFF', 30), ...px('#151515', 30)],
-			palette: PALETTE,
+			pixels: [...px('#00AF41', 40), ...px('#FFFFFF', 30), ...px('#151515', 30)],
+			palette: STATIONERY_PALETTE,
 		})
 		expect(result.status).toBe('fail')
 	})
@@ -228,8 +234,8 @@ describe('color.mode (spot-color 픽셀 프록시 공유)', () => {
 	it('checkKey만 다르고 판정은 application.print.spec과 동일', () => {
 		expect(checkerFor('color.mode')).toBe(checkerFor('application.print.spec'))
 		const result = checkerFor('color.mode')({
-			pixels: [...px('#EA5343', 50), ...px('#FFFFFF', 50)],
-			palette: PALETTE,
+			pixels: [...px('#00AF41', 50), ...px('#FFFFFF', 50)],
+			palette: STATIONERY_PALETTE,
 		})
 		expect(result.status).toBe('pass')
 	})

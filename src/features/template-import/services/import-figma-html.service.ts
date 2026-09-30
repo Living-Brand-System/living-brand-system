@@ -10,6 +10,7 @@ import {
 	findFigmaImageUrls,
 	findFigmaNodeTree,
 } from '@/features/template-import/repositories/figma.rest.repository'
+import { findFigmaToken } from '@/features/template-import/repositories/figma-token.payload.repository'
 import {
 	convertFigmaNodeToHtml,
 	type FigmaHtmlResult,
@@ -21,7 +22,7 @@ import {
 	type FigmaTruncationDiagnostic,
 	planFigmaAssets,
 } from '@/features/template-import/utils/normalize-figma-node'
-import { FigmaImportError } from '@/lib/errors'
+import { FigmaConfigurationError, FigmaImportError } from '@/lib/errors'
 import type { User } from '@/payload-types'
 
 export type {
@@ -61,9 +62,13 @@ export async function importFigmaHtml(
 		truncationDiagnostics: FigmaTruncationDiagnostic[]
 	}
 > {
-	const node = await findFigmaNodeTree(source.fileKey, source.nodeId)
+	// 요청한 사람의 토큰으로 읽는다 — 그 사람이 열 수 있는 파일만 가져와진다.
+	const token = await findFigmaToken(payload, user.id)
+	if (!token) throw new FigmaConfigurationError()
+
+	const node = await findFigmaNodeTree(token, source.fileKey, source.nodeId)
 	const plan = planFigmaAssets(node)
-	const assets = await storePlannedAssets(source.fileKey, plan, payload, user)
+	const assets = await storePlannedAssets(token, source.fileKey, plan, payload, user)
 	const result = convertFigmaNodeToHtml(node, assets.renders, assets.imageFills)
 
 	return {
@@ -82,6 +87,7 @@ const DOWNLOAD_CONCURRENCY = 6
  * 하나라도 실패하면 이번 요청에서 새로 만든 draft를 모두 제거하고 첫 오류를 던진다.
  */
 async function storePlannedAssets(
+	token: string,
 	fileKey: string,
 	plan: FigmaAssetPlan,
 	payload: Payload,
@@ -93,7 +99,7 @@ async function storePlannedAssets(
 	const createdAssetIds: number[] = []
 
 	try {
-		const jobs = await collectDownloadJobs(fileKey, plan)
+		const jobs = await collectDownloadJobs(token, fileKey, plan)
 		await runWithConcurrency(jobs, DOWNLOAD_CONCURRENCY, async (job) => {
 			const asset = await storeDownloadedAsset(job, payload, user)
 			resolved[job.target === 'render' ? 'renders' : 'imageFills'][job.key] = asset
@@ -110,6 +116,7 @@ async function storePlannedAssets(
 
 /** 계획의 렌더(포맷별 배치)·IMAGE fill(파일 단위 1회) 임시 URL을 모아 다운로드 작업 목록으로 만든다. */
 async function collectDownloadJobs(
+	token: string,
 	fileKey: string,
 	plan: FigmaAssetPlan,
 ): Promise<AssetDownloadJob[]> {
@@ -120,6 +127,7 @@ async function collectDownloadJobs(
 		if (formatRequests.length === 0) continue
 
 		const urls = await findFigmaImageUrls(
+			token,
 			fileKey,
 			formatRequests.map((request) => request.nodeId),
 			format,
@@ -143,7 +151,7 @@ async function collectDownloadJobs(
 	}
 
 	if (plan.imageFills.length > 0) {
-		const fillUrls = await findFigmaImageFillUrls(fileKey)
+		const fillUrls = await findFigmaImageFillUrls(token, fileKey)
 		for (const fill of plan.imageFills) {
 			const url = fillUrls[fill.imageRef]
 			if (!url) {

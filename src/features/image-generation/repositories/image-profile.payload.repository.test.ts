@@ -37,7 +37,7 @@ describe('findPublishedImageProfile', () => {
 	})
 
 	it('사용자 권한으로 published 프로파일만 조회한다', async () => {
-		const profile = { id: 5, name: '에센허브 브랜드 제품컷' }
+		const profile = { id: 5, name: '브랜드 제품컷' }
 		const find = vi.fn().mockResolvedValue({ docs: [profile] })
 		vi.mocked(getPayload).mockResolvedValue({ find } as never)
 		const user = { email: 'worker@example.com', id: 1, role: 'worker' }

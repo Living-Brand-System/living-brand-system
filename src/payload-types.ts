@@ -2139,6 +2139,7 @@ export interface User {
    * admin(전체)·manager(계정·기준 관리)·worker(사용)
    */
   role: 'admin' | 'manager' | 'worker';
+  figmaToken?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -4261,6 +4262,7 @@ export interface AgentSkillsSelect<T extends boolean = true> {
  */
 export interface UsersSelect<T extends boolean = true> {
   role?: T;
+  figmaToken?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
