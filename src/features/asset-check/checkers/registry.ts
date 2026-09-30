@@ -86,7 +86,7 @@ function runContrast(ctx: CheckerContext, options: unknown): DeterministicEvalua
 
 /**
  * checker key → checker 레지스트리. options가 유효하지 않으면 항목이 null을 돌려 미구현으로 판정된다.
- * 기존 essenherb color 검수는 palette(허용 색) + pairing(허용 조합)을 유지하고,
+ * 기존 color 검수는 palette(허용 색) + pairing(허용 조합)을 유지하고,
  * 정규화된 contrast는 측정·기준 평가 경로로 별도 등록한다.
  * color.mode는 파일 색모드 메타가 래스터에 없어 spot-color와 같은 픽셀 프록시로 판정한다.
  */

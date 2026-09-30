@@ -1,4 +1,4 @@
-// Figma 4zXBMnMCPay346ohMBrMFA / 153:28의 개발용 표현 표본. CMS 콘텐츠를 쓰거나 대체하지 않는다.
+// Figma HD_LBS_UI 153:28의 개발용 표현 표본. CMS 콘텐츠를 쓰거나 대체하지 않는다.
 export const identityCards = [
 	{
 		id: 'identification',

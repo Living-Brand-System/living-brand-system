@@ -6,7 +6,8 @@
 import { detectLogoRegion, estimateStemWidth } from './logo-geometry'
 import type { AlgorithmChecker } from './types'
 
-// essenherb 규정: clear space 모듈 = stem width × 3 (정사각 배제구역).
+// clear space 모듈 = stem width × 3 (정사각 배제구역).
+// 🔴 HD 규정이 아니다 — HD는 심볼 높이 H 기준(docs/12)이라 값이 아니라 측정 방식부터 바꿔야 한다.
 const MODULE_STEMS = 3
 
 /**
