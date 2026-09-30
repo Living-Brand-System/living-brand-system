@@ -218,7 +218,7 @@ export function KeyVisualsReference() {
 							<GuidelineSection
 								id={`type-${id}-incorrect-usages`}
 								hierarchy="main"
-								className="rounded-3xl bg-destructive/15"
+								variant="incorrect-usages"
 							>
 								<GuidelineSectionHeading
 									id={`type-${id}-incorrect-usages-heading`}

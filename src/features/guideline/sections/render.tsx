@@ -115,7 +115,7 @@ export function CmsGuidelineSections({
 						key={section.id ?? id}
 						id={id}
 						hierarchy={hierarchy}
-						className={incorrect ? 'rounded-3xl bg-destructive/15' : undefined}
+						variant={incorrect ? 'incorrect-usages' : undefined}
 					>
 						<GuidelineSectionHeading
 							id={`${id}-heading`}
