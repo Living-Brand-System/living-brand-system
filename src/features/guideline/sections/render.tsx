@@ -21,6 +21,7 @@ import {
 	type CmsCard,
 	type CmsContainer,
 	type CmsSection,
+	captionSpecificationGroups,
 	cardFiles,
 	isGuidelineActionHref,
 	resolveColor,
@@ -64,7 +65,8 @@ function cardEndActions(card: CmsCard): (GuidelineEndAction & { id: string })[] 
 	]
 }
 
-function captionData(caption: CmsCard['caption']): GuidelineCaption | undefined {
+function captionData(card: CmsCard): GuidelineCaption | undefined {
+	const { caption } = card
 	if (!caption) return undefined
 	const heading = {
 		title: caption.title ?? undefined,
@@ -83,14 +85,13 @@ function captionData(caption: CmsCard['caption']): GuidelineCaption | undefined 
 		return {
 			...heading,
 			type: 'specification',
-			groups: [
-				{
-					items: (caption.rows ?? []).map((row) => ({
-						label: row.label ?? '',
-						value: row.value,
-					})),
-				},
-			],
+			groups: captionSpecificationGroups(card).map((group) => ({
+				title: group.title ?? undefined,
+				items: (group.items ?? []).map((row) => ({
+					label: row.label ?? '',
+					value: row.value,
+				})),
+			})),
 		}
 	return { ...heading, type: 'basic' }
 }
@@ -189,7 +190,7 @@ export function CmsGuidelineSections({
 														),
 														selectionLabel:
 															card.selectionLabel ?? undefined,
-														caption: captionData(card.caption),
+														caption: captionData(card),
 														display,
 													},
 												]

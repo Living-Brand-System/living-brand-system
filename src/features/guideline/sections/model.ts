@@ -7,6 +7,13 @@ export type CmsContainer = NonNullable<CmsSection['containers']>[number]
 export type CmsCard = NonNullable<CmsContainer['cards']>[number]
 export type CmsBody = Pick<GuidelineDocument, 'contentModel' | 'sections'>
 
+/** 그룹이 등록되면 평면 행은 비활성이다. 기존 명세는 제목 없는 한 그룹으로 읽는다. */
+export function captionSpecificationGroups(card: Pick<CmsCard, 'caption' | 'specGroups'>) {
+	return card.specGroups?.length
+		? card.specGroups
+		: [{ title: null, items: card.caption?.rows ?? [] }]
+}
+
 /** CMS 링크는 사이트 경로·앵커·HTTP(S)만 허용합니다. 렌더 경계에서도 같은 검사를 합니다. */
 export function isGuidelineActionHref(value: string | null | undefined): value is string {
 	// biome-ignore lint/suspicious/noControlCharactersInRegex: URL의 제어 문자 우회를 차단합니다.
