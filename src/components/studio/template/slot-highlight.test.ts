@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clampSlotBox, slotHighlightStyle, slotHoverStyle } from './slot-highlight'
+import { clampSlotBox, outsetSlotBox, slotHighlightStyle, slotHoverStyle } from './slot-highlight'
 
 const CANVAS = { width: 1920, height: 1080 }
 /** 총배율 0.287(실측값)로 놓인 캔버스 — 화면 폭 551px. */
@@ -155,5 +155,29 @@ describe('slotHoverStyle', () => {
 		const style = slotHoverStyle(1, 'red;display:none')
 		expect(style.border).not.toContain('display:none')
 		expect(style.border).toContain('var(--primary)')
+	})
+})
+
+describe('outsetSlotBox', () => {
+	const BOX = { left: 10, top: 20, width: 100, height: 50 }
+
+	it('테두리 굵기만큼 사방으로 넓힌다 — 선이 대상의 가장자리를 덮지 않게', () => {
+		const line = slotHighlightStyle(1, HD_GREEN).border?.toString().split(' solid ')[0]
+		const style = outsetSlotBox(BOX, 1)
+		expect(style.left).toBe(`calc(10px - ${line})`)
+		expect(style.top).toBe(`calc(20px - ${line})`)
+		expect(style.width).toBe(`calc(100px + 2 * ${line})`)
+		expect(style.height).toBe(`calc(50px + 2 * ${line})`)
+	})
+
+	it('배율이 달라지면 넓히는 양도 같이 따라간다 — 굵기와 한 곳에서 나온다', () => {
+		expect(outsetSlotBox(BOX, 0.5).left).toContain('0.5 * var(--preview-scale, 1)')
+	})
+
+	it('판에 달라붙은 상자는 음수로 나간다 — 무대가 그만큼 여유를 남긴다', () => {
+		// 도화지 자신(0,0에서 판 전체)을 집으면 네 변이 모두 판 밖이다.
+		expect(outsetSlotBox({ left: 0, top: 0, width: 400, height: 300 }, 1).left).toContain(
+			'calc(0px - ',
+		)
 	})
 })

@@ -18,6 +18,8 @@ import {
 } from '@/components/studio/shared/preview-size-control'
 import {
 	clampSlotBox,
+	outsetSlotBox,
+	SELECTION_OUTSET_PX,
 	type SlotHighlightBox,
 	slotHighlightStyle,
 	slotHoverStyle,
@@ -214,7 +216,17 @@ export function TemplateCanvas() {
 		if (!stage) return
 		const resize = (bounds: { width: number; height: number }) => {
 			if (bounds.width > 0 && bounds.height > 0) {
-				setPreview(fitPreviewSize(bounds, { width, height }))
+				// 🔴 판 둘레에 테두리가 나갈 자리를 남긴다 — 남기지 않으면 무대의 overflow:hidden이
+				//    도화지와 변에 달라붙은 슬롯의 강조선을 잘라 먹는다.
+				setPreview(
+					fitPreviewSize(
+						{
+							width: Math.max(1, bounds.width - SELECTION_OUTSET_PX * 2),
+							height: Math.max(1, bounds.height - SELECTION_OUTSET_PX * 2),
+						},
+						{ width, height },
+					),
+				)
 			}
 		}
 		const observer = new ResizeObserver(([entry]) => {
@@ -231,9 +243,11 @@ export function TemplateCanvas() {
 			ref={stageRef}
 			className="relative grid h-full min-h-0 min-w-0 overflow-hidden lg:pb-28"
 		>
+			{/* 🔴 여기서 자르지 않는다 — 강조선이 판 **밖**에 그려지므로, 자르는 일은 안쪽
+			    클릭 상자가 맡는다(주입 HTML과 그래픽 배경만 가둔다). */}
 			<div
 				data-slot="template-preview"
-				className="m-auto shrink-0 overflow-hidden shadow-lg transition-transform duration-200 ease-out motion-reduce:transition-none lg:[transform:scale(var(--preview-scale))]"
+				className="relative m-auto shrink-0 shadow-lg transition-transform duration-200 ease-out motion-reduce:transition-none lg:[transform:scale(var(--preview-scale))]"
 				style={
 					{
 						...preview,
@@ -254,7 +268,8 @@ export function TemplateCanvas() {
 				    둘 중 무엇을 눌렀든 같은 자리로 올라온다. */}
 				<div
 					ref={clickAreaRef}
-					className="relative"
+					data-slot="template-click-area"
+					className="relative overflow-hidden"
 					onPointerDown={onPointerDown}
 					onPointerUp={onPointerUp}
 					onPointerOver={(event) => previewHover(event.target as Element | null)}
@@ -288,14 +303,28 @@ export function TemplateCanvas() {
 						// biome-ignore lint/security/noDangerouslySetInnerHtml: 서버 컨버터가 만든 inline-style HTML(스크립트 없음) — 어드민 캔버스와 동일 렌더
 						dangerouslySetInnerHTML={{ __html: canvas.html }}
 					/>
-					{/* 🔴 주입된 HTML의 **형제**다 — 루트 프레임 안에 두면 캔버스를 넘는 슬롯의 강조가
-					    그 프레임의 overflow:hidden에 잘린다(`slot-highlight.ts`가 이유를 갖는다).
-					    🔑 여러 개인 이유: Text 섹션은 텍스트 상자를 전부 집는다. */}
+				</div>
+				{/* 🔴 자르는 상자 **밖**이다 — 강조선이 판 밖에 그려지므로 안에 두면 도화지와 변에
+				    달라붙은 슬롯에서 선이 통째로 사라진다. 판과 같은 좌표계·같은 배율을 쓴다.
+				    🔑 여러 개인 이유: Text 섹션은 텍스트 상자를 전부 집는다. */}
+				<div
+					data-slot="template-overlays"
+					className="pointer-events-none absolute top-0 left-0"
+					style={{
+						width,
+						height,
+						transform: `scale(${scale})`,
+						transformOrigin: 'top left',
+					}}
+				>
 					{/* hover가 먼저 깔린다 — 고른 것의 테두리를 가리지 않는다. */}
 					{hoverBox && (
 						<div
 							data-slot="template-slot-hover"
-							style={{ ...slotHoverStyle(scale, focus.color), ...hoverBox }}
+							style={{
+								...slotHoverStyle(scale, focus.color),
+								...outsetSlotBox(hoverBox, scale),
+							}}
 						/>
 					)}
 					{highlights.map((box) => (
@@ -309,7 +338,7 @@ export function TemplateCanvas() {
 									focus.color,
 									target?.kind !== 'canvas',
 								),
-								...box,
+								...outsetSlotBox(box, scale),
 							}}
 						/>
 					))}

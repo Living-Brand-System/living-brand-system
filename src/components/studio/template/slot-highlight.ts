@@ -87,6 +87,33 @@ function borderWidth(scale: number): string {
 	return `max(1px, calc(2 * ${unit}))`
 }
 
+/**
+ * 무대가 판 둘레에 남겨야 하는 여백(화면 px). 🔴 **테두리가 판 밖에 그려지기 때문이다** —
+ * 도화지 자신과 변에 달라붙은 슬롯은 테두리가 통째로 판 밖으로 나가고, 여유가 없으면 잘린다
+ * (사용자 판단, 2026-09-30: 「canvas에 약간의 여유를 줘서 border가 튀어나올 수 있게」).
+ * 🔑 보통 테두리는 화면 2px이고, 작은 판을 키워 맞춘 경우에만 총배율만큼 두꺼워진다 —
+ *    4px이면 총배율 4배까지 덮는다. 더 키우면 바깥쪽 1~2px이 잘리지만 선은 남는다.
+ */
+export const SELECTION_OUTSET_PX = 4
+
+/**
+ * 상자를 테두리 굵기만큼 **밖으로** 넓힌다(사용자 지시, 2026-09-30).
+ *
+ * 🔴 테두리를 안쪽에 그리면 대상의 **가장자리 픽셀을 덮는다** — 글자의 획 끝이나 이미지의 테두리가
+ *    강조선에 먹혀 「무엇을 고쳤나」가 그 자리에서만 안 보인다.
+ * 🔑 `box-sizing: border-box`라 넓힌 만큼이 그대로 테두리 자리가 되고, 면(`backgroundColor`)은
+ *    테두리 안쪽만 칠하므로 원래 상자를 정확히 덮는다.
+ */
+export function outsetSlotBox(box: SlotHighlightBox, scale: number): CSSProperties {
+	const line = borderWidth(scale)
+	return {
+		left: `calc(${box.left}px - ${line})`,
+		top: `calc(${box.top}px - ${line})`,
+		width: `calc(${box.width}px + 2 * ${line})`,
+		height: `calc(${box.height}px + 2 * ${line})`,
+	}
+}
+
 /** 고른 것의 오버레이 — 실선 테두리에, 여럿 중 하나를 가리킬 때만 면을 깐다. */
 export function slotHighlightStyle(
 	scale: number,
