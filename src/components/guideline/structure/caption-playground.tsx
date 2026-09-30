@@ -22,24 +22,18 @@ const captions: GuidelineCaption[] = [
 	},
 	{
 		type: 'specification',
-		title: '명세형',
-		description: '여러 명세 그룹을 하나의 캡션에 담습니다.',
-		groups: [
-			{
-				title: 'Display',
-				items: [
-					{ label: 'Ratio', value: '1:1' },
-					{ label: 'Fit', value: 'Contain' },
-				],
-			},
-			{
-				title: 'Image',
-				items: [
-					{ label: 'Scale', value: '80%' },
-					{ label: 'Alignment', value: 'Center' },
-				],
-			},
-		],
+		title: 'English',
+		description: '영문',
+		groups: ['Headings', 'Subhead', 'Body'].map((title, index) => ({
+			title,
+			items: [
+				{ label: 'Weight', value: index === 2 ? 'Medium' : 'Bold' },
+				{ label: 'Kerning', value: 'Auto' },
+				{ label: 'Scale', value: '100%' },
+				{ label: 'Leading', value: ['130 – 140%', '140 – 150%', '150 – 160%'][index] },
+				{ label: 'Baseline', value: '0pt' },
+			],
+		})),
 	},
 ]
 
