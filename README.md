@@ -153,7 +153,6 @@ docker compose -f compose.preview.yml up -d
 | `pnpm dev` | 개발 서버 실행 |
 | `pnpm doctor` | 블록 카탈로그와 타입 생성, 자동 수정, 정적·타입 검사 |
 | `pnpm test:int` | 통합 테스트 실행 |
-| `pnpm test:e2e` | E2E 테스트 실행 |
 | `pnpm build` | 프로덕션 빌드 생성 |
 | `pnpm migrate:status` | 데이터베이스 마이그레이션 상태 확인 |
 | `pnpm ci` | 정적 검사, 타입 검사, 통합 테스트, 빌드 실행 |
