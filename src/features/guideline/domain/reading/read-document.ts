@@ -4,6 +4,7 @@ import { collectGuidelineCheckSources } from '../../checks/collect-guideline-che
 import {
 	type CmsCard,
 	type CmsContainer,
+	captionSpecificationGroups,
 	cardFiles,
 	isGuidelineActionHref,
 	resolveColor,
@@ -86,7 +87,7 @@ export function toGuidelineReadDocument(
 						backgroundColor: resolveColor(card.backgroundColor),
 						foregroundColor: resolveColor(card.foregroundColor),
 						visual,
-						caption: readCaption(card.caption),
+						caption: readCaption(card),
 						usageStatus:
 							card.status ??
 							(section.type === 'incorrect-usages'
@@ -135,22 +136,35 @@ function readLayout(container: CmsContainer) {
 	}
 }
 
-function readCaption(caption: CmsCard['caption']) {
+function readCaption(card: CmsCard) {
+	const { caption } = card
 	if (!caption) return null
 	const heading = {
 		title: caption.title ?? null,
 		description: caption.description ?? null,
 	}
-	return caption.type === 'basic'
-		? { ...heading, type: 'basic' as const }
-		: {
-				...heading,
-				type: caption.type,
-				rows: (caption.rows ?? []).map((row) => ({
+	if (caption.type === 'specification')
+		return {
+			...heading,
+			type: caption.type,
+			groups: captionSpecificationGroups(card).map((group) => ({
+				title: group.title ?? null,
+				items: (group.items ?? []).map((row) => ({
 					label: row.label ?? null,
 					value: row.value,
 				})),
-			}
+			})),
+		}
+	if (caption.type === 'list')
+		return {
+			...heading,
+			type: caption.type,
+			rows: (caption.rows ?? []).map((row) => ({
+				label: row.label ?? null,
+				value: row.value,
+			})),
+		}
+	return { ...heading, type: 'basic' as const }
 }
 
 function sectionDownloadActions(files: ReturnType<typeof sectionFiles>): GuidelineReadAction[] {

@@ -119,7 +119,8 @@ import * as migration_20260922_005918_add_generated_image_batch_and_best_sample 
 import * as migration_20260922_030641_add_ai_usage_events from './20260922_030641_add_ai_usage_events';
 import * as migration_20260922_044827_add_ai_usage_studio from './20260922_044827_add_ai_usage_studio';
 import * as migration_20260928_080339_nullable_ai_usage_author from './20260928_080339_nullable_ai_usage_author';
-import * as migration_20260930_072022_add_user_figma_token from './20260930_072022_add_user_figma_token';
+import * as migration_20260930_075334_add_caption_specification_groups from './20260930_075334_add_caption_specification_groups';
+import * as migration_20260930_081548_add_user_figma_token from './20260930_081548_add_user_figma_token';
 
 export const migrations = [
   {
@@ -728,8 +729,13 @@ export const migrations = [
     name: '20260928_080339_nullable_ai_usage_author',
   },
   {
-    up: migration_20260930_072022_add_user_figma_token.up,
-    down: migration_20260930_072022_add_user_figma_token.down,
-    name: '20260930_072022_add_user_figma_token'
+    up: migration_20260930_075334_add_caption_specification_groups.up,
+    down: migration_20260930_075334_add_caption_specification_groups.down,
+    name: '20260930_075334_add_caption_specification_groups',
+  },
+  {
+    up: migration_20260930_081548_add_user_figma_token.up,
+    down: migration_20260930_081548_add_user_figma_token.down,
+    name: '20260930_081548_add_user_figma_token'
   },
 ];

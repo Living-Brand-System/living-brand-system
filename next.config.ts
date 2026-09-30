@@ -19,7 +19,11 @@ const nextConfig: NextConfig = {
 	//    빌드가 필요한데, 그것이 `.next`를 덮어써 돌던 dev 서버를 죽이면 아무도 확인하지 않게 된다.
 	distDir: process.env.NEXT_DIST_DIR || '.next',
 	outputFileTracingIncludes: {
-		'/*': ['node_modules/@img/sharp-libvips-linux-x64/**/*'],
+		'/*': [
+			'node_modules/@img/sharp-libvips-linux-x64/**/*',
+			// pnpm의 실제 패키지와 의존 패키지 옆 심볼릭 링크 경로를 함께 포함한다.
+			'node_modules/.pnpm/**/node_modules/@img/sharp-libvips-linux-x64/**/*',
+		],
 	},
 	async redirects() {
 		return legacyPageRedirects.map((redirect) => ({ ...redirect }))

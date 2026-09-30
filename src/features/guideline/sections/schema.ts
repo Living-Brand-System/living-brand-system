@@ -192,6 +192,34 @@ const cards: Field = {
 				},
 			],
 		},
+		{
+			name: 'specGroups',
+			type: 'array',
+			// caption.groups의 긴 버전 조회 별칭이 자식 items와 충돌하므로 카드에 저장합니다.
+			localized: true,
+			dbName: 'specs',
+			label: '캡션 명세 그룹',
+			admin: {
+				condition: (_, sibling) => sibling?.caption?.type === 'specification',
+				description:
+					'그룹을 등록하면 위 항목 대신 표시합니다. 그룹 제목은 생략할 수 있습니다.',
+			},
+			fields: [
+				{ name: 'title', type: 'text', label: '그룹 제목' },
+				{
+					name: 'items',
+					type: 'array',
+					dbName: 'items',
+					label: '명세 항목',
+					required: true,
+					minRows: 1,
+					fields: [
+						{ name: 'label', type: 'text', label: '라벨' },
+						{ name: 'value', type: 'textarea', required: true, label: '값' },
+					],
+				},
+			],
+		},
 	],
 }
 

@@ -20,6 +20,19 @@ it('캡션 형태를 바꿔도 제목·목록·명세는 하나의 figcaption �
 	expect(container.querySelectorAll('figcaption')).toHaveLength(1)
 	expect(container.querySelectorAll('figcaption dl')).toHaveLength(2)
 	expect(screen.getAllByRole('term')).toHaveLength(2)
+	expect(screen.getByRole('group', { name: '색상' }).querySelector('dt')).toHaveTextContent('HEX')
+	expect(screen.getByRole('group', { name: '서체' }).querySelector('dd')).toHaveTextContent(
+		'Bold',
+	)
+	expect(container.querySelector('figcaption')).toHaveAttribute('data-grouped', 'true')
+	expect(screen.queryByRole('heading')).not.toBeInTheDocument()
+	rerender(
+		<GuidelineCardCaption
+			type="specification"
+			groups={[{ items: [{ label: 'Weight', value: 'Bold' }] }]}
+		/>,
+	)
+	expect(container.querySelector('figcaption')).not.toHaveAttribute('data-grouped')
 	rerender(<GuidelineCardCaption />)
 	expect(container).toBeEmptyDOMElement()
 })

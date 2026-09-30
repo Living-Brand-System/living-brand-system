@@ -126,7 +126,7 @@ describe.skipIf(!databaseURL)('신규 섹션 저장·미리보기', () => {
 		expect(
 			(await listPublishedGuidelineNavigationTopics()).find((item) => item.id === doc.id)
 				?.sections,
-		).toContainEqual({ anchor: 'icons', title: 'Icons' })
+		).toContainEqual(expect.objectContaining({ anchor: 'icons', title: 'Icons' }))
 		await payload.update({
 			collection: 'guideline-documents',
 			id: doc.id,
@@ -152,6 +152,142 @@ describe.skipIf(!databaseURL)('신규 섹션 저장·미리보기', () => {
 				overrideAccess: false,
 				user: { ...manager, role: 'worker' },
 				data: { title: 'Forbidden' },
+			}),
+		).rejects.toThrow()
+	})
+
+	it('명세 그룹의 로케일·게시본·초안·버전에서 중첩 항목을 유지한다', async () => {
+		const data = {
+			title: 'Grouped specs',
+			slug: `grouped-${suffix}`,
+			chapter,
+			displayOrder: 0,
+			contentModel: 'sections' as const,
+			_status: 'published' as const,
+			sections: [
+				{
+					type: 'section' as const,
+					title: 'Typography',
+					download: { source: 'none' as const },
+					containers: [
+						{
+							type: 'sticky' as const,
+							cards: [
+								{
+									ratio: '4:3' as const,
+									download: { source: 'none' as const },
+									display: {
+										type: 'image' as const,
+										image: { relationTo: 'brand-icons' as const, value: image },
+									},
+									caption: {
+										type: 'specification' as const,
+										rows: [{ label: 'Legacy', value: '보존' }],
+									},
+									specGroups: [
+										{
+											title: 'Headings',
+											items: [{ label: 'Weight', value: 'Bold' }],
+										},
+										{
+											title: 'Body',
+											items: [{ label: 'Weight', value: 'Medium' }],
+										},
+									],
+								},
+							],
+						},
+					],
+				},
+			],
+		}
+		const doc = await payload.create({ collection: 'guideline-documents', locale: 'ko', data })
+		const enSections = structuredClone(doc.sections ?? [])
+		const card = enSections[0].containers?.[0].cards?.[0]
+		assert(card)
+		if (card.caption?.rows) {
+			card.caption.rows = card.caption.rows.map(({ label, value }) => ({ label, value }))
+		}
+		card.specGroups = [{ title: 'English specs', items: [{ label: 'Weight', value: 'Light' }] }]
+		await payload.update({
+			collection: 'guideline-documents',
+			id: doc.id,
+			locale: 'en',
+			data: { title: 'Grouped specs', sections: enSections, _status: 'published' },
+		})
+		const ko = await payload.findByID({
+			collection: 'guideline-documents',
+			id: doc.id,
+			locale: 'ko',
+			fallbackLocale: false,
+			draft: false,
+		})
+		const koCard = ko.sections?.[0].containers?.[0].cards?.[0]
+		expect(koCard?.specGroups).toMatchObject([
+			{ title: 'Headings', items: [{ value: 'Bold' }] },
+			{ title: 'Body', items: [{ value: 'Medium' }] },
+		])
+		expect(koCard?.caption?.rows).toMatchObject([{ label: 'Legacy', value: '보존' }])
+		const en = await payload.findByID({
+			collection: 'guideline-documents',
+			id: doc.id,
+			locale: 'en',
+			fallbackLocale: false,
+			draft: false,
+		})
+		expect(en.sections?.[0].containers?.[0].cards?.[0].specGroups).toMatchObject([
+			{ title: 'English specs', items: [{ value: 'Light' }] },
+		])
+		await payload.update({
+			collection: 'guideline-documents',
+			id: doc.id,
+			locale: 'ko',
+			draft: true,
+			autosave: true,
+			data: { title: 'Draft grouped specs', _status: 'draft' },
+		})
+		const draft = await payload.findByID({
+			collection: 'guideline-documents',
+			id: doc.id,
+			locale: 'ko',
+			draft: true,
+		})
+		expect(draft.sections?.[0].containers?.[0].cards?.[0].specGroups).toEqual(
+			koCard?.specGroups,
+		)
+		const versions = await payload.findVersions({
+			collection: 'guideline-documents',
+			where: { parent: { equals: doc.id } },
+			locale: 'ko',
+		})
+		expect(
+			versions.docs[0].version.sections?.[0].containers?.[0].cards?.[0].specGroups,
+		).toEqual(koCard?.specGroups)
+		await expect(
+			payload.create({
+				collection: 'guideline-documents',
+				locale: 'ko',
+				data: {
+					...data,
+					slug: `invalid-grouped-${suffix}`,
+					sections: [
+						{
+							...data.sections[0],
+							containers: [
+								{
+									type: 'grid',
+									cards: [
+										{
+											...data.sections[0].containers[0].cards[0],
+											caption: { type: 'specification' },
+											specGroups: [{ title: 'Empty', items: [] }],
+										},
+									],
+								},
+							],
+						},
+					],
+				},
 			}),
 		).rejects.toThrow()
 	})

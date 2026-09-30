@@ -497,6 +497,20 @@ export interface GuidelineDocument {
                           }[]
                         | null;
                     };
+                    /**
+                     * 그룹을 등록하면 위 항목 대신 표시합니다. 그룹 제목은 생략할 수 있습니다.
+                     */
+                    specGroups?:
+                      | {
+                          title?: string | null;
+                          items: {
+                            label?: string | null;
+                            value: string;
+                            id?: string | null;
+                          }[];
+                          id?: string | null;
+                        }[]
+                      | null;
                     id?: string | null;
                   }[]
                 | null;
@@ -2700,7 +2714,7 @@ export interface PayloadMcpApiKey {
   description?: string | null;
   'payload-mcp-tool'?: {
     /**
-     * Find published guideline read documents. The active contentModel returns ordered sections or legacy blocks. sections include id, headingLevel and parentSectionId; contentGroups describe layout; figures combine visual, caption, author-assigned usageStatus, controls and actions. Caption types: basic title/description, list rows pairing label/value as item title/description, specification rows pairing property/value (including original units). Defaults and accessible asset/palette relationships are already resolved. Preserve all orders and figure-caption associations. usageStatus is not a check result. controls describe display changes with options/defaultValue/effect; actions describe download, link, copy or reset, not executable MCP tools or current user state. Legacy blocks retain their compatibility fields and resolved text. Do not infer unavailable assets from null values.
+     * Find published guideline read documents. The active contentModel returns ordered sections or legacy blocks. sections include id, headingLevel and parentSectionId; contentGroups describe layout; figures combine visual, caption, author-assigned usageStatus, controls and actions. Caption types: basic title/description, list rows pairing label/value as item title/description, specification groups with optional titles and ordered items pairing property/value (including original units); legacy flat specification rows resolve to one untitled group. Defaults and accessible asset/palette relationships are already resolved. Preserve all orders and figure-caption associations. usageStatus is not a check result. controls describe display changes with options/defaultValue/effect; actions describe download, link, copy or reset, not executable MCP tools or current user state. Legacy blocks retain their compatibility fields and resolved text. Do not infer unavailable assets from null values.
      */
     findGuidelineDocuments?: boolean | null;
     /**
@@ -3137,6 +3151,19 @@ export interface GuidelineDocumentsSelect<T extends boolean = true> {
                                 value?: T;
                                 id?: T;
                               };
+                        };
+                    specGroups?:
+                      | T
+                      | {
+                          title?: T;
+                          items?:
+                            | T
+                            | {
+                                label?: T;
+                                value?: T;
+                                id?: T;
+                              };
+                          id?: T;
                         };
                     id?: T;
                   };

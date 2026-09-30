@@ -94,6 +94,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
       - run: pnpm run build
+      - name: Verify Proxy native dependency trace
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict'
+          import { existsSync, readFileSync } from 'node:fs'
+          import { resolve } from 'node:path'
+          const trace = JSON.parse(readFileSync('.next/server/middleware.js.nft.json', 'utf8'))
+          const libraries = trace.files.filter(file => /\/sharp-libvips-linux-x64\/lib\/libvips-cpp\.so\./.test(file))
+          assert(libraries.length > 0, 'Proxy trace is missing the sharp libvips shared library')
+          for (const file of libraries) assert(existsSync(resolve('.next/server', file)), `Missing traced file: ${file}`)
+          JS
 
   # 마이그레이션 체인이 "빈 DB에서 처음부터" 끝까지 도는지 검증하는 가드레일.
   # push 없이 실제 migrate만 돌려 order 0 no-op·코어 테이블 누락 같은 재현 불가 문제를 PR에서 잡는다.
