@@ -2,7 +2,7 @@
 	"name": "living-brand-system",
 	"version": "1.0.0",
 	"description": "Living Brand System (LBS) - digital brand guideline operations system",
-	"license": "MIT",
+	"license": "UNLICENSED",
 	"type": "module",
 	"scripts": {
 		"build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
