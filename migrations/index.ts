@@ -118,6 +118,7 @@ import * as migration_20260921_065214_add_guideline_card_colors_actions from './
 import * as migration_20260922_005918_add_generated_image_batch_and_best_sample from './20260922_005918_add_generated_image_batch_and_best_sample';
 import * as migration_20260922_030641_add_ai_usage_events from './20260922_030641_add_ai_usage_events';
 import * as migration_20260922_044827_add_ai_usage_studio from './20260922_044827_add_ai_usage_studio';
+import * as migration_20260930_072705_add_caption_specification_groups from './20260930_072705_add_caption_specification_groups';
 
 export const migrations = [
   {
@@ -718,6 +719,11 @@ export const migrations = [
   {
     up: migration_20260922_044827_add_ai_usage_studio.up,
     down: migration_20260922_044827_add_ai_usage_studio.down,
-    name: '20260922_044827_add_ai_usage_studio'
+    name: '20260922_044827_add_ai_usage_studio',
+  },
+  {
+    up: migration_20260930_072705_add_caption_specification_groups.up,
+    down: migration_20260930_072705_add_caption_specification_groups.down,
+    name: '20260930_072705_add_caption_specification_groups'
   },
 ];

@@ -118,9 +118,14 @@ it('위계·배치·명세·자기 섹션 다운로드를 해석하며 원본과
 		type: 'specification',
 		title: null,
 		description: null,
-		rows: [
-			{ label: '두께', value: '1px' },
-			{ label: '빈 값', value: '' },
+		groups: [
+			{
+				title: null,
+				items: [
+					{ label: '두께', value: '1px' },
+					{ label: '빈 값', value: '' },
+				],
+			},
 		],
 	})
 	expect(read.sections[2].contentGroups[0].figures.map((figure) => figure.usageStatus)).toEqual([
@@ -131,6 +136,88 @@ it('위계·배치·명세·자기 섹션 다운로드를 해석하며 원본과
 	expect(formatGuidelineReadDocument(read)).toContain(
 		'Specification (명세):\n- 두께: 1px\n- 빈 값: ',
 	)
+	expect(raw).toEqual(before)
+})
+
+it('명세 그룹·반복 라벨·순서·빈 값은 JSON과 Agent 텍스트에 보존하고 비활성 입력은 제외한다', () => {
+	const raw = source([
+		section([
+			card(
+				{ type: 'image', image },
+				{
+					caption: {
+						type: 'specification',
+						title: 'English',
+						description: '영문',
+						rows: [{ label: 'HIDDEN', value: 'HIDDEN' }],
+					},
+					specGroups: [
+						{
+							title: 'Headings',
+							items: [
+								{ label: 'Weight', value: 'Bold' },
+								{ label: 'Leading', value: '130 – 140%' },
+							],
+						},
+						{
+							title: 'Body',
+							items: [
+								{ label: 'Weight', value: 'Medium' },
+								{ label: '빈 값', value: '' },
+							],
+						},
+					],
+				},
+			),
+			card(
+				{ type: 'image', image },
+				{
+					caption: {
+						type: 'list',
+						rows: [{ value: '목록' }],
+					},
+					specGroups: [{ title: 'HIDDEN', items: [{ value: 'HIDDEN' }] }],
+				},
+			),
+			card(
+				{ type: 'image', image },
+				{
+					caption: {
+						type: 'basic',
+					},
+					specGroups: [{ title: 'HIDDEN', items: [{ value: 'HIDDEN' }] }],
+				},
+			),
+		]),
+	])
+	const before = structuredClone(raw)
+	const read = toGuidelineReadDocument(raw)
+	if (read.contentModel !== 'sections') throw new Error('Expected sections')
+	expect(read.sections[0].contentGroups[0].figures[0].caption).toEqual({
+		type: 'specification',
+		title: 'English',
+		description: '영문',
+		groups: [
+			{
+				title: 'Headings',
+				items: [
+					{ label: 'Weight', value: 'Bold' },
+					{ label: 'Leading', value: '130 – 140%' },
+				],
+			},
+			{
+				title: 'Body',
+				items: [
+					{ label: 'Weight', value: 'Medium' },
+					{ label: '빈 값', value: '' },
+				],
+			},
+		],
+	})
+	expect(formatGuidelineReadDocument(read)).toContain(
+		'Specification (명세):\nSpecification group: Headings\n- Weight: Bold\n- Leading: 130 – 140%\nSpecification group: Body\n- Weight: Medium\n- 빈 값: ',
+	)
+	expect(JSON.stringify(read)).not.toContain('HIDDEN')
 	expect(raw).toEqual(before)
 })
 
