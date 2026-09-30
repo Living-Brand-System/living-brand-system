@@ -1,6 +1,8 @@
 'use client'
 
+import { sectionProps } from '@/components/studio/sidebar/template-section-focus'
 import { BackgroundSection } from '@/components/studio/template/background-section'
+import { TEMPLATE_BACKGROUND_SECTION_ID } from '@/features/template-customization/contexts/template-studio-context'
 import {
 	findTemplateControl,
 	findTemplateControlGroup,
@@ -18,6 +20,9 @@ import { useTemplateStudio } from '@/features/template-customization/hooks/use-t
  *    꽂아도 그대로 돈다 — 위치를 정하는 코드는 꽂는 자리 한 줄뿐이다.
  * 🔑 정책이 배경 컨트롤을 안 내주는 템플릿에서는 아무것도 그리지 않는다(`null`).
  */
+/** 배경의 주소는 노드가 아니라 도화지 자체다 — 캔버스·레이어 패널과 같은 값을 쓴다. */
+const BACKGROUND_TARGET = { sectionId: TEMPLATE_BACKGROUND_SECTION_ID, kind: 'canvas' } as const
+
 export function TemplateBackgroundPanel() {
 	const { config, background, focus } = useTemplateStudio()
 	const { background: slot } = partitionTemplateSlots(config.template.slots)
@@ -35,7 +40,7 @@ export function TemplateBackgroundPanel() {
 
 	return (
 		<BackgroundSection
-			section={sectionFocus(focus)}
+			section={sectionProps(focus, BACKGROUND_TARGET)}
 			groupDefinition={group}
 			groupPresentation={config.controllerPresentation?.groups.find(
 				({ groupId }) => groupId === group.id,
@@ -64,21 +69,4 @@ export function TemplateBackgroundPanel() {
 			onGenerate={background.generate}
 		/>
 	)
-}
-
-/**
- * 배경 섹션의 강조·포커스 배선 — 사이드바의 `sectionProps`와 **같은 형태여야 한다.**
- * 🔴 `onDeactivate` 같은 이름을 새로 만들면 킷이 안 읽고 조용히 아무 일도 안 한다.
- *    행 포커스는 `onFocusCapture`/`onBlurCapture`다(맨 `div`에 `active`를 주면 React가 경고한다).
- */
-function sectionFocus(focus: ReturnType<typeof useTemplateStudio>['focus']) {
-	const target = { sectionId: 'section:background', kind: 'canvas' } as const
-	return {
-		active: focus.target?.sectionId === target.sectionId,
-		onActivate: () => focus.set(target),
-		onFocusCapture: () => focus.set(target),
-		onBlurCapture: () => {
-			if (focus.target?.sectionId === target.sectionId) focus.set(null)
-		},
-	}
 }

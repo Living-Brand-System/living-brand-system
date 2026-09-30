@@ -366,10 +366,7 @@ function clickCanvas(element: Element) {
 
 type LayerKind = 'text' | 'image' | 'vector' | 'background'
 
-/**
- * 🔑 라벨이 아니라 종류로 집는다 — 이름에 개수가 붙어(Text3) 라벨 일치로는 못 찾는다.
- * 🔴 하위 레이어 이름으로는 고를 수 없다 — 하위 줄은 목록일 뿐 버튼이 아니다.
- */
+/** 🔑 라벨이 아니라 종류로 집는다 — 이름에 개수가 붙어(Text3) 라벨 일치로는 못 찾는다. */
 function layerGroupRow(kind: LayerKind) {
 	const row = document.querySelector(`[data-slot="layer-row"][data-layer-kind="${kind}"]`)
 	if (!row) throw new Error(`레이어 묶음을 찾지 못했습니다: ${kind}`)
@@ -1332,6 +1329,46 @@ describe('TemplateGenerator', () => {
 		// 🔴 배경은 집을 노드가 없다 — 도화지를 집는다(`kind: 'canvas'`). 그래도 활성 면이 켜진다.
 		//    전에는 대상이 슬롯 하나로 고정돼 있어 이것이 안 됐다.
 		expect(named('Background')).toHaveAttribute('data-active', 'true')
+	})
+
+	it('입력칸에서 포커스가 빠져도 활성 섹션이 꺼지지 않는다 — 다음 대상이 덮어쓸 뿐이다', () => {
+		const { container } = render(
+			<TemplateGenerator
+				categoryTitle="카드"
+				template={{
+					...template,
+					html: '<p data-node-id="t1">TITLE</p><p data-node-id="t2">YEARS</p>',
+					nodeConfigs: {
+						t1: { input: { label: 'Title' } },
+						t2: { input: { label: 'Years' } },
+					},
+				}}
+			/>,
+		)
+
+		const textGroup = () =>
+			Array.from(container.querySelectorAll('[data-slot="controller-group"]')).find(
+				(group) => group.querySelector('span')?.textContent?.trim() === 'Text',
+			)
+		const fieldOf = (slotId: string) =>
+			container.querySelector(
+				`[data-text-slot="${slotId}"] textarea, [data-text-slot="${slotId}"] input`,
+			) as HTMLElement
+
+		selectLayerGroup('text')
+		fireEvent.focus(fieldOf('t1'))
+		expect(textGroup()).toHaveAttribute('data-active', 'true')
+
+		/*
+		 * 🔴 다음 대상을 누르는 클릭은 mousedown(blur)과 click 사이에 한 프레임을 둔다. 전에는 그
+		 *    사이에 활성 섹션이 비어 회색 띠가 꺼졌다 켜지면서 패널이 깜빡였다(사용자 지적, 2026-09-30).
+		 */
+		fireEvent.blur(fieldOf('t1'))
+		expect(textGroup()).toHaveAttribute('data-active', 'true')
+
+		// 같은 묶음 안의 다른 글자로 옮겨도 교체만 일어난다.
+		fireEvent.focus(fieldOf('t2'))
+		expect(textGroup()).toHaveAttribute('data-active', 'true')
 	})
 
 	it('Background 섹션은 노드가 아니라 도화지를 집고, 면 없이 테두리만 그린다', () => {
