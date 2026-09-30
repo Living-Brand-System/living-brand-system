@@ -110,6 +110,8 @@ PAYLOAD_DB_PUSH=false
 | Object Storage | `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, 선택 `S3_ENDPOINT`(S3 호환 저장소) |
 | Email | `RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`, `EMAIL_FROM_NAME` |
 
+Vercel 배포에서는 Object Storage 네 개(`S3_ENDPOINT` 제외)·Email 세 개·`NEXT_PUBLIC_SITE_URL`이 필수입니다. 하나라도 빠지면 `next build`가 실패하고 이전 배포가 그대로 유지됩니다(`src/env.ts`).
+
 ### 2. PostgreSQL 실행
 
 ```sh

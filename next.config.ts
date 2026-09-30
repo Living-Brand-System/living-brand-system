@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url'
 import { withPayload } from '@payloadcms/next/withPayload'
 import type { NextConfig } from 'next'
 import { legacyPageRedirects } from './src/lib/routes'
+// 빌드 단계에서 env를 검사한다(t3-env 권장). 누락은 배포 전에 빌드 실패로 드러난다.
+import './src/env'
 
 const __filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(__filename)
