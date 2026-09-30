@@ -208,6 +208,64 @@ it('검색·검수는 선택한 신규 본문과 명세 행을 읽는다', () =>
 	})
 })
 
+it('명세 그룹은 화면·검색·검수에서 제목과 자기 항목을 유지하고 평면 행을 제외한다', () => {
+	const grouped: CmsSection = {
+		...section,
+		containers: [
+			{
+				type: 'grid',
+				cards: [
+					{
+						...section.containers[0].cards[0],
+						caption: {
+							type: 'specification',
+							title: 'English',
+							description: '영문',
+							rows: [{ label: 'HIDDEN', value: '비활성 행' }],
+						},
+						specGroups: [
+							{ title: 'Headings', items: [{ label: 'Weight', value: 'Bold' }] },
+							{ title: 'Body', items: [{ label: 'Weight', value: 'Medium' }] },
+						],
+					},
+				],
+			},
+		],
+	}
+	const { container } = render(<CmsGuidelineSections sections={[grouped]} />)
+	expect(screen.getByRole('group', { name: 'Headings' }).querySelector('dd')).toHaveTextContent(
+		'Bold',
+	)
+	expect(screen.getByRole('group', { name: 'Body' }).querySelector('dd')).toHaveTextContent(
+		'Medium',
+	)
+	expect(container.querySelectorAll('figcaption')).toHaveLength(1)
+	expect(container.querySelector('figcaption h2, figcaption h3')).toBeNull()
+	expect(screen.queryByText('HIDDEN')).not.toBeInTheDocument()
+	const doc = { contentModel: 'sections' as const, sections: [grouped] }
+	expect(
+		buildGuidelineSearchText(doc as Parameters<typeof buildGuidelineSearchText>[0]),
+	).toContain('Headings\nWeight\nBold\nBody\nWeight\nMedium')
+	expect(
+		buildCheckSourceSnapshot(doc as Parameters<typeof buildCheckSourceSnapshot>[0])?.evidence,
+	).toMatchObject({
+		blocks: [
+			{
+				captions: [
+					'English',
+					'영문',
+					'Headings',
+					'Weight',
+					'Bold',
+					'Body',
+					'Weight',
+					'Medium',
+				],
+			},
+		],
+	})
+})
+
 it('세 컨테이너가 동적 카드의 Off/On·상태·다운로드와 캡션을 함께 표시한다', () => {
 	vi.stubGlobal(
 		'ResizeObserver',
