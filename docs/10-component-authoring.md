@@ -437,7 +437,7 @@ PR을 올리기 전 자기 점검용입니다.
 신규 표현 API는 `src/components/guideline/structure/`가 소유하며 CMS sections·레퍼런스·`/guideline/mockup`이 공유합니다. 기존 표현은 `deprecated/` 경로에 남습니다. 간격·폭의 책임과 반응형 수치는 [09 §7](09-design-system.md#7-공통-셸과-프레임-골격)이 소유합니다.
 
 - `GuidelineDisplayHeading`: 필수 `title`(문서의 유일한 h1), 선택 `subtitle`. 중앙 정렬, `min-height: 100dvh`.
-- `GuidelineSection`: `id`, `hierarchy: main | sub`, `children`. 섹션 경계·앵커와 공통 여백을 소유합니다. `hierarchy`는 헤딩 위계이며 레이아웃 간격을 바꾸지 않습니다.
+- `GuidelineSection`: `id`, `hierarchy: main | sub`, `children`, 선택 `variant: incorrect-usages`. 섹션 경계·앵커와 공통 여백을 소유합니다. `hierarchy`는 헤딩 위계이며 레이아웃 간격을 바꾸지 않습니다. Incorrect Usages variant는 적색 패널·모서리와 [09 §7](09-design-system.md#7-공통-셸과-프레임-골격)의 좌우 외부 마진을 공통 적용합니다.
 - `GuidelineSectionHeading`: 필수 `id`·`hierarchy`·`title`, 선택 `description`·`align`·`download`. Main은 h2, Sub는 h3입니다. ID는 소유 섹션의 `${id}-heading`이며 섹션의 `aria-labelledby`와 연결합니다. 제목과 설명은 일반 텍스트이며 설명만 줄바꿈을 지원합니다. 설명이 없으면 영역과 간격을 없앱니다.
 - Start는 텍스트와 다운로드를 `space-between`으로 양끝 배치하고 모바일에서는 버튼을 아래 왼쪽에 놓습니다. Center는 제목·설명·다운로드를 세로 중앙 배치합니다. 정렬은 계층과 독립적입니다.
 - `GuidelineDisplayFooter`: public 로고의 `src`·`alt`·원본 크기를 `logo`로 받습니다. 비율 유지, 중앙 정렬, `min-height: 100dvh`. 목업은 `public/brand/hd/ko-horizontal-default-blk@2x.png`를 사용합니다.
@@ -613,7 +613,7 @@ PR을 올리기 전 자기 점검용입니다.
 
 ### 목표 페이지 적용
 
-- `/guideline/reference/infographics`는 Overview·Charts 12개·Incorrect Usages 6개를 신규 구조로 표시합니다. Incorrect Usages의 헤딩은 유지하고 본문·카드 캡션은 승인된 한국어 문구를 사용합니다. 금지 상태는 START 배지, 설명은 도판 밖 공통 캡션, 판형은 4:3입니다. 섹션 강조는 기존 className 입력과 destructive 토큰으로 구성하며 별도 디스플레이 타입은 추가하지 않습니다. Related Resources의 Infographic Builder는 END 링크 액션으로 예약 경로 `/studio/graph`에 연결합니다. 대상 화면은 다른 팀이 구현하며 이 페이지에서 경로를 생성하지 않습니다. CMS 쓰기는 없습니다.
+- `/guideline/reference/infographics`는 Overview·Charts 12개·Incorrect Usages 6개를 신규 구조로 표시합니다. Incorrect Usages의 헤딩은 유지하고 본문·카드 캡션은 승인된 한국어 문구를 사용합니다. 금지 상태는 START 배지, 설명은 도판 밖 공통 캡션, 판형은 4:3입니다. 섹션 강조는 공통 `variant="incorrect-usages"`와 destructive 토큰으로 구성하며 별도 디스플레이 타입은 추가하지 않습니다. Related Resources의 Infographic Builder는 END 링크 액션으로 예약 경로 `/studio/graph`에 연결합니다. 대상 화면은 다른 팀이 구현하며 이 페이지에서 경로를 생성하지 않습니다. CMS 쓰기는 없습니다.
 
 - `/guideline/reference/illustrations`는 Figma `176:13272`의 Overview·Charts(11개)·Usecase(3개)·Related Resources 순서를 재현합니다. 모든 섹션은 독립 main으로 상하 패딩을 유지하며 Grid·Carousel과 공통 카드/캡션을 조합합니다. Usecase는 표준 3:4 판형, 그리드는 1:1, Overview는 16:9입니다. 원본의 임시 문구와 녹색 Overview 도판을 유지합니다. Related Resources에는 원본과 저장소 모두 연결 주소가 없어 실행 액션을 생성하지 않습니다. 에셋은 `public/guideline/reference/illustrations`에서 제공하며 CMS 쓰기는 없습니다.
 
@@ -654,7 +654,7 @@ PR을 올리기 전 자기 점검용입니다.
 
 - Typography의 HD Typeface는 제공 폴더의 기준 PDF 33쪽 국문·영문 표본, Micro Typography는 35쪽 혼용 조판 도판, Incorrect Usages는 40쪽 여섯 사례와 실제 규정 문구를 사용합니다. PDF 도판은 투명 PNG로 추출하며 원본 가이드선은 이미지의 일부입니다. 별도 글줄·자간·커닝 설명 도판은 제공되지 않아 생성하지 않습니다. Usecases는 제공된 X Banner·Poster·Presentation 에셋으로 구성합니다. 추출·복사 출처는 `public/guideline/reference/typography/README.md`에 기록합니다.
 
-- Typography의 Incorrect Usages도 Infographics와 동일한 외부 여백·`rounded-3xl bg-destructive/15` 패널·중앙 헤딩을 사용합니다. 그리드는 목표 720px·최소 320px·최대 2열이며 공통 Section·Grid 조합을 유지합니다.
+- Typography의 Incorrect Usages도 Infographics와 동일한 `variant="incorrect-usages"` 패널·좌우 외부 여백·중앙 헤딩을 사용합니다. 그리드는 목표 720px·최소 320px·최대 2열이며 공통 Section·Grid 조합을 유지합니다.
 
 - `/guideline/reference/layouts`는 제공 에셋의 Overview·Type A/B/C를 공통 Grid·Carousel로 구성합니다. 전체 및 타입별 Overview는 한 장짜리 일반 카드(1열 Grid)이며 캡션은 도판 아래에 배치합니다. 적용 예시 16개(A 4·B 9·C 3)는 기존 `GuidelineClearspaceDisplay`와 카드별 Off/On을 재사용합니다. `cms-assets.json`의 관계를 따라 이미지와 제작 규칙 SVG를 연결하며, 사용자 승인에 따라 정합 여부와 무관하게 동일 contain 영역에 원본 SVG 전체를 겹칩니다. 신규 1px 가이드 생성이 아니라 제공된 문자가 포함된 도판 중첩이며 원본 에셋을 수정하지 않습니다. CMS 쓰기는 없습니다.
 

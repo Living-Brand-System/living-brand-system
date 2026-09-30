@@ -172,7 +172,7 @@ CMS의 `sections[]`는 평면 배열로 저장합니다. `sections/model.ts`의 
 | `headingLevel` | Section·Incorrect Usages는 2, Subsection은 3 |
 | `parentSectionId` | H2는 null, H3는 가장 가까운 앞선 H2의 ID |
 
-섹션·컨테이너·카드 순서는 저장 순서를 유지합니다. Incorrect Usages도 H2 경계를 시작합니다. 첫 서브섹션의 저장은 기존 검증에서 거부하며, 검증 전 초안 조회에서는 없는 부모를 만들어 붙이지 않고 null로 표시합니다. 목차는 부모 아래에 서브섹션 목록을 중첩하지만 본문 DOM과 간격은 평면 계약을 유지합니다.
+섹션·컨테이너·카드 순서는 저장 순서를 유지합니다. Incorrect Usages도 H2 경계를 시작합니다. 첫 서브섹션의 저장은 기존 검증에서 거부하며, 검증 전 초안 조회에서는 없는 부모를 만들어 붙이지 않고 null로 표시합니다. 왼쪽 TOC는 챕터(depth 0)·문서(depth 1)·메인 섹션(depth 2)까지만 표시합니다. Subsection(depth 3)은 본문과 조회 위계에 유지하지만 TOC에서는 생략하며, 위치 추적도 표시된 메인 섹션 앵커만 사용합니다. 본문 DOM과 간격은 평면 계약을 유지합니다.
 
 MCP 문서 응답은 `contentModel`에 해당하는 `sections` 또는 `blocks`만 반환합니다. 비활성 본문은 응답에서 생략하며 DB에서 삭제하지 않습니다. Agent 문서 읽기는 H1/H2/H3와 컨테이너·카드 경계를 텍스트에 보존합니다. 검색·검수용 기존 투영과 `referenceAssets: []` 정책은 유지합니다.
 

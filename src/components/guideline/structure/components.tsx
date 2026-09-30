@@ -22,15 +22,26 @@ export function GuidelineDisplayHeading({ title, subtitle }: { title: string; su
 	)
 }
 
-type SectionProps = ComponentProps<'section'> & { id: string; hierarchy: 'main' | 'sub' }
-export function GuidelineSection({ hierarchy, id, className, ...props }: SectionProps) {
+type SectionProps = ComponentProps<'section'> & {
+	id: string
+	hierarchy: 'main' | 'sub'
+	variant?: 'incorrect-usages'
+}
+export function GuidelineSection({ hierarchy, id, variant, className, ...props }: SectionProps) {
 	return (
 		<section
 			id={id}
 			aria-labelledby={`${id}-heading`}
 			data-slot="guideline-section"
 			data-hierarchy={hierarchy}
-			className={cn(styles.section, className)}
+			className={cn(
+				styles.section,
+				variant === 'incorrect-usages' && [
+					styles.incorrectUsages,
+					'rounded-3xl bg-destructive/15',
+				],
+				className,
+			)}
 			{...props}
 		/>
 	)

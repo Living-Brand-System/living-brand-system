@@ -29,6 +29,9 @@
 	padding: 120px 32px;
 	scroll-margin-top: 32px;
 }
+.incorrectUsages {
+	margin-inline: 32px;
+}
 .heading {
 	display: flex;
 	gap: 32px;
@@ -82,6 +85,9 @@
 	.section {
 		padding: 64px 16px;
 		gap: 64px;
+	}
+	.incorrectUsages {
+		margin-inline: 16px;
 	}
 	.start {
 		flex-direction: column;

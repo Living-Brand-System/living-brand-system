@@ -299,11 +299,7 @@ export function TypographyReference() {
 				<GuidelineStickyContainer cards={hierarchyCards} mode="switch" />
 			</GuidelineSection>
 
-			<GuidelineSection
-				id="incorrect-usages"
-				hierarchy="main"
-				className="rounded-3xl bg-destructive/15"
-			>
+			<GuidelineSection id="incorrect-usages" hierarchy="main" variant="incorrect-usages">
 				<GuidelineSectionHeading
 					id="incorrect-usages-heading"
 					align="center"

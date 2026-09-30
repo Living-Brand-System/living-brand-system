@@ -1,7 +1,6 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import type { ReactNode } from 'react'
 import { Sidebar } from '@/components/global/sidebar/sidebar'
 import { CopyPageLink } from '@/components/shared/copy-page-link'
 import {
@@ -24,37 +23,14 @@ export function GuidelineSideNavigation({
 	const currentTopic = chapters
 		.flatMap((chapter) => chapter.topics)
 		.find((topic) => pathname === topic.href || pathname.startsWith(`${topic.href}/`))
-	const currentSections = currentTopic?.sections ?? []
+	const currentSections = (currentTopic?.sections ?? []).filter(
+		(section) => section.headingLevel <= 2,
+	)
 	const activeAnchor = useActiveSectionAnchor(currentSections.map((section) => section.anchor))
 
-	const sectionItems = currentSections
-		.filter(
-			(section) =>
-				!section.parentSectionId ||
-				!currentSections.some((parent) => parent.id === section.parentSectionId),
-		)
-		.map((section) => {
-			const children = currentSections.filter((child) => child.parentSectionId === section.id)
-			return (
-				<SectionNavigationItem
-					key={section.id}
-					section={section}
-					activeAnchor={activeAnchor}
-				>
-					{children.length > 0 && (
-						<Sidebar.Children>
-							{children.map((child) => (
-								<SectionNavigationItem
-									key={child.id}
-									section={child}
-									activeAnchor={activeAnchor}
-								/>
-							))}
-						</Sidebar.Children>
-					)}
-				</SectionNavigationItem>
-			)
-		})
+	const sectionItems = currentSections.map((section) => (
+		<SectionNavigationItem key={section.id} section={section} activeAnchor={activeAnchor} />
+	))
 
 	return (
 		<Sidebar.Root
@@ -84,7 +60,6 @@ export function GuidelineSideNavigation({
 										const topicActive =
 											pathname === topic.href ||
 											pathname.startsWith(`${topic.href}/`)
-										const { sections } = topic
 
 										return (
 											<Sidebar.Item
@@ -95,7 +70,7 @@ export function GuidelineSideNavigation({
 												label={topic.title}
 												tone={topicActive ? 'emphasized' : 'subtle'}
 											>
-												{topicActive && sections.length > 0 && (
+												{topicActive && sectionItems.length > 0 && (
 													<Sidebar.Children>
 														{sectionItems}
 													</Sidebar.Children>
@@ -116,11 +91,9 @@ export function GuidelineSideNavigation({
 function SectionNavigationItem({
 	section,
 	activeAnchor,
-	children,
 }: {
 	section: GetGuidelineNavigationOutput['chapters'][number]['topics'][number]['sections'][number]
 	activeAnchor: string | null
-	children?: ReactNode
 }) {
 	const current = section.anchor === activeAnchor
 	return (
@@ -132,8 +105,6 @@ function SectionNavigationItem({
 			label={section.title}
 			onClick={(event) => scrollToGuidelineSection(event, section.anchor)}
 			tone={current ? 'emphasized' : 'subtle'}
-		>
-			{children}
-		</Sidebar.Item>
+		/>
 	)
 }
