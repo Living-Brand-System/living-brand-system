@@ -122,6 +122,7 @@ import * as migration_20260928_080339_nullable_ai_usage_author from './20260928_
 import * as migration_20260930_075334_add_caption_specification_groups from './20260930_075334_add_caption_specification_groups';
 import * as migration_20260930_081548_add_user_figma_token from './20260930_081548_add_user_figma_token';
 import * as migration_20260930_101346_remove_guideline_legacy_access from './20260930_101346_remove_guideline_legacy_access';
+import * as migration_20261001_003924_purge_guideline_legacy_data from './20261001_003924_purge_guideline_legacy_data';
 
 export const migrations = [
   {
@@ -742,6 +743,11 @@ export const migrations = [
   {
     up: migration_20260930_101346_remove_guideline_legacy_access.up,
     down: migration_20260930_101346_remove_guideline_legacy_access.down,
-    name: '20260930_101346_remove_guideline_legacy_access'
+    name: '20260930_101346_remove_guideline_legacy_access',
+  },
+  {
+    up: migration_20261001_003924_purge_guideline_legacy_data.up,
+    down: migration_20261001_003924_purge_guideline_legacy_data.down,
+    name: '20261001_003924_purge_guideline_legacy_data'
   },
 ];
