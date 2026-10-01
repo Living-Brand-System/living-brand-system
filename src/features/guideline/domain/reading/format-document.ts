@@ -12,11 +12,7 @@ export function formatGuidelineReadDocument(document: GuidelineReadDocument) {
 		document.chapter?.title ? `Chapter: ${document.chapter.title}` : null,
 		`# ${document.title}`,
 		`Document: ${JSON.stringify({ id: metadata.id, slug: metadata.slug, chapter: metadata.chapter, displayOrder: metadata.displayOrder, headerImage: metadata.headerImage, rules: metadata.rules, contentModel })}`,
-		...(document.contentModel === 'sections'
-			? document.sections.map(formatSectionForAgent)
-			: document.blocks.map(
-					({ text, ...block }) => `${text}\nLegacy block: ${JSON.stringify(block)}`,
-				)),
+		...document.sections.map(formatSectionForAgent),
 		checks.length
 			? `Checks:\n${checks.map((check) => `- ${check.key}: ${check.title}`).join('\n')}`
 			: null,

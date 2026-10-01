@@ -1,6 +1,6 @@
 import { draftMode } from 'next/headers'
 import { notFound } from 'next/navigation'
-import { GuidelineTopic } from '@/components/guideline/deprecated/pages/guideline-topic'
+import { GuidelineTopic } from '@/components/guideline/pages/guideline-topic'
 import { getGuidelineTopicPreview } from '@/features/guideline/services/get-guideline-document-preview.service'
 import { getGuidelineTopic } from '@/features/guideline/services/get-guideline-topic.service'
 // 🔴 임시(개발용) import — 아래 slug 분기와 함께 지운다.

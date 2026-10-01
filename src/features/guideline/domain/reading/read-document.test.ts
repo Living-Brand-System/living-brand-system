@@ -40,7 +40,6 @@ const source = (sections: CmsSection[]): GuidelineSourceDocument => ({
 	id: 1,
 	title: 'Guide',
 	slug: 'guide',
-	contentModel: 'sections',
 	sections,
 })
 
@@ -85,7 +84,6 @@ it('위계·배치·명세·자기 섹션 다운로드를 해석하며 원본과
 			{ id: 'incorrect', type: 'incorrect-usages' },
 		),
 	])
-	raw.blocks = [{ blockType: 'section', title: 'INACTIVE' } as never]
 	const before = structuredClone(raw)
 	const read = toGuidelineReadDocument(raw)
 	if (read.contentModel !== 'sections') throw new Error('Expected sections')
@@ -324,23 +322,8 @@ it('읽을 수 없는 관계는 링크·프리셋을 추측하지 않으며 잘�
 	}
 })
 
-it('빈 신규 본문은 레거시로 되돌리지 않고 레거시는 기존 필드와 해석된 평문을 유지한다', () => {
-	const raw = {
-		...source([]),
-		blocks: [
-			{
-				blockType: 'section' as const,
-				title: 'Legacy',
-				anchor: 'legacy',
-				layout: 'grid' as const,
-			},
-		],
-	}
-	expect(toGuidelineReadDocument(raw)).toMatchObject({ contentModel: 'sections', sections: [] })
-	expect(toGuidelineReadDocument(raw)).not.toHaveProperty('blocks')
-	const legacy = toGuidelineReadDocument({ ...raw, contentModel: 'legacy' })
-	expect(legacy).not.toHaveProperty('sections')
-	expect(legacy).toMatchObject({
-		blocks: [{ blockType: 'section', title: 'Legacy', text: 'Legacy\nlegacy' }],
-	})
+it('빈 본문은 섹션 읽기 계약만 반환한다', () => {
+	const read = toGuidelineReadDocument(source([]))
+	expect(read).toMatchObject({ contentModel: 'sections', sections: [] })
+	expect(read).not.toHaveProperty('blocks')
 })

@@ -3,29 +3,20 @@ import type { GuidelineDocument } from '@/payload-types'
 import { buildGuidelineSearchText } from './guideline-search-text'
 
 describe('buildGuidelineSearchText', () => {
-	it('제목, 경로, 블록 본문과 Rule 요약을 검색문으로 평탄화한다', () => {
+	it('제목, 경로, 섹션 본문과 Rule 요약을 검색문으로 평탄화한다', () => {
 		const document = {
 			id: 55,
 			title: 'Brand Model',
 			slug: 'brand-model',
 			chapter: { title: 'Design Elements' },
-			blocks: [
+			sections: [
 				{
 					id: 'examples',
-					blockType: 'section',
+					type: 'section',
 					anchor: 'examples',
 					title: 'Examples',
-					description: {
-						root: {
-							children: [
-								{
-									type: 'paragraph',
-									children: [{ text: '과도한 피부 보정을 피합니다.' }],
-								},
-							],
-						},
-					},
-					blocks: [],
+					description: '과도한 피부 보정을 피합니다.',
+					sections: [],
 				},
 			],
 		} as unknown as GuidelineDocument

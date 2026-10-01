@@ -1,8 +1,8 @@
 'use client'
 
-import { GuidelineControllerPill } from '@/components/guideline/deprecated/controllers/pill'
-import { TypeSpecimenWidget } from '@/features/guideline/cards/deprecated/displays/dynamics/type-specimen/component'
+import { GuidelineControllerPill } from '@/components/guideline/controllers/pill'
 import { TYPE_SPECIMEN_MANIFEST } from '@/features/guideline/cards/displays/dynamics/type-specimen/manifest'
+import { TypeSpecimenWidget } from '@/features/guideline/cards/displays/dynamics/type-specimen/view'
 import { GuidelineControllerScope } from '@/features/guideline/providers/guideline-controller-provider'
 import { GuidelineDisplayFrame } from './grid'
 

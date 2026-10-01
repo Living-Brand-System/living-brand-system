@@ -1,5 +1,5 @@
-import { type CheckEvidence, formatCardBlockEvidence } from '../blocks/projection'
 import { compact } from '../utils/block-text'
+import type { CheckBlockEvidence, CheckEvidence } from './check-source'
 
 /**
  * 동결된 CheckSession rulesetSnapshot에만 남아 있는 근거 꼴. 만든 블록은 지워졌지만(콜아웃·콘텐츠 열·
@@ -61,4 +61,10 @@ export function formatCheckEvidence(evidence: CheckEvidence | string): string {
 		case 'examples':
 			return formatCardBlockEvidence(evidence)
 	}
+}
+
+function formatCardBlockEvidence(evidence: CheckBlockEvidence): string {
+	return compact([evidence.title, evidence.description, ...(evidence.captions ?? [])]).join(
+		'\n\n',
+	)
 }

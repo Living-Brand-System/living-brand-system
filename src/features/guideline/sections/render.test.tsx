@@ -242,7 +242,7 @@ it('명세 그룹은 화면·검색·검수에서 제목과 자기 항목을 유
 	expect(container.querySelectorAll('figcaption')).toHaveLength(1)
 	expect(container.querySelector('figcaption h2, figcaption h3')).toBeNull()
 	expect(screen.queryByText('HIDDEN')).not.toBeInTheDocument()
-	const doc = { contentModel: 'sections' as const, sections: [grouped] }
+	const doc = { id: 1, sections: [grouped] }
 	expect(
 		buildGuidelineSearchText(doc as Parameters<typeof buildGuidelineSearchText>[0]),
 	).toContain('Headings\nWeight\nBold\nBody\nWeight\nMedium')

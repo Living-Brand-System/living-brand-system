@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { easeMorph } from '../../../deprecated/displays/dynamics/ci-lockup/view'
+import { easeMorph } from './view'
 
 // 🔴 `easeMorph`는 CSS `cubic-bezier(...)`가 하는 계산을 JS에서 다시 하는 것이다. 두 곡선이 어긋나면
 //    심볼 형태(JS 계산)와 색·판·위치(CSS)가 따로 움직여 어색해진다 — 실제로 겪은 결함이라 여기서 지킨다.

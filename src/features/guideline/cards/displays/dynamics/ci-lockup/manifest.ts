@@ -1,19 +1,13 @@
-import type { GuidelineControllerManifest } from '@/features/guideline/domain/contract/controller'
-import type {
-	ControllerControlDefinition,
-	ControllerControlRestriction,
-} from '@/modules/studio-controller/controller-definition'
+import type { ControllerControlDefinition } from '@/modules/studio-controller/controller-definition'
 import {
 	branchLabel,
 	CLEAR_SPACE_MODE_LABEL,
 	CLEAR_SPACE_MODES,
 	COLOR_TYPE_LABEL,
 	COLOR_TYPES,
-	lockupOptions,
 	MONO_COLORS,
 	OVERSEAS_BRANCHES,
 	SUBSIDIARIES,
-	tierFor,
 } from './rules'
 
 /*
@@ -161,18 +155,6 @@ export const MEASURED = {
 	defaultValue: false,
 } as const satisfies ControllerControlDefinition
 
-/** 알약의 구분선이 곧 그룹 경계다 — 계층 ┃ 형태 ┃ 색 ┃ 표시. */
-export const CI_LOCKUP_MANIFEST = {
-	id: 'ci-lockup',
-	groups: [
-		{ id: 'tier', title: '계층', controls: [SUBSIDIARY_ON, SUBSIDIARY, BRANCH_ON, BRANCH] },
-		{ id: 'shape', title: '형태', controls: [FORM, LANGUAGE] },
-		{ id: 'color', title: '색', controls: [COLOR_TYPE, MONO] },
-		{ id: 'display', title: '표시', controls: [CLEAR_SPACE, MEASURED] },
-		{ id: 'size', title: '크기', controls: [HEIGHT] },
-	],
-} as const satisfies GuidelineControllerManifest
-
 /* 🔑 허용 값 목록은 **매니페스트에서 파생한다** — Canvas가 알약이 줄 수 있는 값만 받아들이도록,
    같은 목록을 두 곳에 적지 않는다(`controllerString`의 세 번째 인자). */
 export const FORM_VALUES = FORM.options.map((option) => option.value)
@@ -220,83 +202,4 @@ export function ciLockupHiddenAxes(fields: {
 	// 🔴 치수는 hover가 소유하므로 알약에 낼 길이 없다 — H와 달리 여는 스위치도 두지 않는다.
 	hidden.add(MEASURED.id)
 	return hidden
-}
-
-/** admin이 알약에서 뺄 수 있는 컨트롤 목록. */
-export const CI_LOCKUP_CONTROL_IDS = CI_LOCKUP_CONTROLS.map((control) => ({
-	value: control.id,
-	label: control.label,
-}))
-
-/** 저장값을 위젯의 허용 범위와 초기값으로 접는다. */
-export function ciLockupRestrictions(
-	fields: Record<string, unknown>,
-): ControllerControlRestriction[] {
-	// 🔑 admin이 고른 목록 + 기본 비노출 축(H). 목록은 매니페스트가 소유한다.
-	const hidden = ciLockupHiddenAxes({
-		hiddenControls: Array.isArray(fields.hiddenControls) ? fields.hiddenControls : null,
-		heightControl: fields.heightControl === true,
-	})
-	// 🔑 계층이 정하는 선택지로 **좁힌다.** 매니페스트는 정적이라 꼴·언어의 합집합을 싣는데, 본사에는
-	//    가로형A·B가 없고 자회사에는 HD형이 없다. 좁히지 않으면 알약에 없는 조합이 떠서 고르면
-	//    렌더가 조용히 첫 항목으로 떨어진다 — 사용자에게는 「눌렀는데 아무 일도 안 일어난다」다.
-	const tier = tierFor(fields.subsidiaryOn === true, fields.branchOn === true)
-	const allowed = lockupOptions(tier)
-	const narrowing: Record<string, readonly string[]> = {
-		form: allowed.forms.map((form) => form.key),
-		language: allowed.languages.map((language) => language.key),
-	}
-
-	return CI_LOCKUP_CONTROLS.map((control) => {
-		const value = fields[control.id]
-		const options = narrowing[control.id]
-		return {
-			controlId: control.id,
-			...(options
-				? { optionValues: options, defaultValue: withinOptions(control, value, options) }
-				: {}),
-			...(!options && usable(control, value) ? { defaultValue: value } : {}),
-			...(hidden.has(control.id) ? { availability: 'readonly' as const } : {}),
-		}
-	})
-}
-
-/**
- * 좁힌 목록 안의 초기값을 고른다 — admin 값 → 매니페스트 기본값 → 목록 첫 항목.
- *
- * 🔴 목록을 좁히면 초기값도 그 안이어야 한다. 아니면 `applyControllerRestrictions`가
- *    「options에 포함되어야 합니다」로 던져 **페이지가 죽는다**. 매니페스트 기본값이 합집합 기준이라
- *    (본사 `horizontal`) 계층을 올리면 그것부터 목록 밖으로 밀려난다 — 테스트가 그것을 잡았다.
- */
-function withinOptions(
-	control: (typeof CI_LOCKUP_CONTROLS)[number],
-	value: unknown,
-	options: readonly string[],
-): string {
-	if (typeof value === 'string' && options.includes(value)) return value
-	const fallback = control.defaultValue
-	if (typeof fallback === 'string' && options.includes(fallback)) return fallback
-	return options[0]
-}
-
-/**
- * admin 값을 초기값으로 쓸 수 있는가.
- *
- * 🔴 **`select` 값이 options에 없으면 버린다.** 그러지 않으면 `applyControllerRestrictions`가 렌더
- *    중에 던져 **페이지가 죽는다**(`controller-definition.ts`: `defaultValue: options에 포함되어야
- *    합니다`). 선택지는 `rules.ts`에서 파생하므로 계열사·지사 목록이 바뀌면 저장된 값이 고아가 되고,
- *    그때 페이지가 죽는 것보다 매니페스트 기본값으로 그려지는 것이 낫다 — 화면은 서고 admin이
- *    다시 고르면 된다.
- */
-function usable(
-	control: (typeof CI_LOCKUP_CONTROLS)[number],
-	value: unknown,
-): value is string | number | boolean {
-	if (control.kind === 'toggle') return typeof value === 'boolean'
-	// 🔴 범위 밖 숫자도 `applyControllerRestrictions`가 던진다 — select와 같은 이유로 버린다.
-	if (control.kind === 'range')
-		return typeof value === 'number' && value >= control.min && value <= control.max
-	if (control.kind === 'select')
-		return typeof value === 'string' && control.options.some((o) => o.value === value)
-	return false
 }

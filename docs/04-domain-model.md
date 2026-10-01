@@ -83,7 +83,7 @@ flowchart LR
 품질 검수는 CheckTarget에 검수 입력을 고정하고, CheckRun의 CheckBasis에서 Guideline, CheckRulesetSnapshot, BrandAsset의 VersionRef를 참조합니다.
 하위 관계도의 엣지는 소유, 참조, 포함, 기록 같은 관계 동사로 표현합니다.
 `GuidelineVersionRef`, `CheckKey`, `BrandAssetVersionRef`, `TemplateVersionRef`, `PluginVersionRef`, `AgentRunRef`처럼 별도 생명주기가 없는 참조 값은 객체 노드로 표현하지 않습니다.
-단, `GuidelineBlock`과 `PageAssetRef`는 화면 구성, 표시 순서, 캡션, 예시 역할을 함께 담으므로 객체로 표현합니다.
+단, `GuidelineSection`과 `PageAssetRef`는 화면 구성, 표시 순서, 캡션, 예시 역할을 함께 담으므로 객체로 표현합니다.
 세부 도메인 이벤트명은 각 도메인 모델 목록에만 둡니다.
 
 ```mermaid
@@ -92,7 +92,7 @@ flowchart LR
     BrandGuideline["BrandGuideline"]
     GuidelineChapter["GuidelineChapter"]
     GuidelineDocument["GuidelineDocument"]
-    GuidelineBlock["GuidelineBlock"]
+    GuidelineSection["GuidelineSection"]
     PageAssetRef["PageAssetRef"]
   end
 
@@ -143,9 +143,9 @@ flowchart LR
 
   BrandGuideline -.->|"공통 표시 설정"| GuidelineDocument
   GuidelineChapter -->|"토픽 묶음"| GuidelineDocument
-  GuidelineDocument -->|"소유"| GuidelineBlock
+  GuidelineDocument -->|"소유"| GuidelineSection
   GuidelineDocument -->|"적용(참조)"| Rule
-  GuidelineBlock -->|"적용(참조)"| Rule
+  GuidelineSection -->|"적용(참조)"| Rule
   Rule -->|"실행 계약"| RuleChecker
   CheckScenario -->|"실행 범위"| Rule
   GuidelineDocument -->|"소유"| PageAssetRef
@@ -186,7 +186,7 @@ flowchart LR
   classDef planned fill:#FFF9DB,stroke:#F59F00,stroke-width:1.5px,stroke-dasharray:5 5,color:#1F1F1F;
 
   class BrandGuideline,GuidelineDocument,Rule,RuleChecker,BrandAsset,Template,Plugin,AgentChatSession,CheckSession,BehaviorEventLog aggregate;
-  class GuidelineBlock,CheckTarget,CheckInputSnapshot,CheckRun,CheckBasis,CheckDecision,CheckResult entity;
+  class GuidelineSection,CheckTarget,CheckInputSnapshot,CheckRun,CheckBasis,CheckDecision,CheckResult entity;
   class PageAssetRef,CheckRecommendation,PageViewEvent,ClickEvent,AssetDownloadEvent,SectionDwellEvent,SearchEvent,OutboundLinkEvent,CustomEvent childEntity;
   class AssetGenerationSession,AssetGenerationInput,AssetGenerationOutput planned;
 ```
@@ -194,9 +194,9 @@ flowchart LR
 | 관계 | 의미 |
 | --- | --- |
 | BrandGuideline -> GuidelineDocument | `BrandGuideline`은 공통 표시 설정만 제공합니다. 문서의 생성·발행·삭제 생명주기를 소유하지 않습니다. |
-| GuidelineChapter -> GuidelineDocument | 챕터는 토픽을 묶는 분류이고, 토픽(GuidelineDocument)이 챕터를 필수로 참조합니다. 챕터는 자기 화면과 본문을 갖지 않습니다. 각 토픽은 독립 애그리거트입니다. 토픽 안의 섹션은 문서가 아니라 `section` 블록입니다. |
-| GuidelineDocument -> GuidelineBlock | 문서는 Block을 임베디드 엔티티로 소유합니다. Block 식별자는 부모 문서 안에서만 유효합니다. |
-| GuidelineDocument / GuidelineBlock -> Rule | 각 문서 단위는 적용할 Rule을 관계로 선택합니다. Rule 정의는 공유 가능하며 source는 참조하는 쪽의 위치가 결정합니다. |
+| GuidelineChapter -> GuidelineDocument | 챕터는 토픽을 묶는 분류이고, 토픽(GuidelineDocument)이 챕터를 필수로 참조합니다. 챕터는 자기 화면과 본문을 갖지 않습니다. 각 토픽은 독립 애그리거트입니다. 토픽 안의 섹션은 별도 문서가 아니며 토픽과 발행 단위를 공유합니다. |
+| GuidelineDocument -> GuidelineSection | 문서는 섹션을 임베디드 엔티티로 소유합니다. 섹션 식별자는 부모 문서 안에서만 유효합니다. |
+| GuidelineDocument / GuidelineSection -> Rule | 각 문서 단위는 적용할 Rule을 관계로 선택합니다. Rule 정의는 공유 가능하며 source는 참조하는 쪽의 위치가 결정합니다. |
 | Rule -> RuleChecker | Rule은 실행 유형에 따라 결정론적 options 또는 AI 추가 판단 기준을 선언하고 RuleChecker 실행 계약을 참조합니다. |
 | GuidelineDocument -> BrandAssetVersion / TemplateVersion / PluginVersion | 문서는 브랜드가 채택한 자원을 Official Version으로 참조합니다. |
 | AssetGenerationSession -> GuidelineDocument / BrandAsset / Template / Plugin | 사용량 추적을 도입할 때 제작에 사용한 ResourceRef를 저장합니다. |
@@ -214,16 +214,16 @@ flowchart LR
 
 품질 규칙 관리는 Rule, RuleChecker, CheckScenario의 정의와 생명주기를 소유하는 독립 바운디드 컨텍스트입니다.
 가이드라인 관리는 브랜드 가이드라인, 공식 자원, Official Version을 관리하며 Rule을 배치하고 문서 근거를 제공합니다.
-현재 구현의 편집·발행 애그리거트는 `GuidelineDocument`(토픽)입니다. 챕터는 별도 컬렉션 `GuidelineChapter`의 분류 항목이고 토픽이 이를 필수 관계로 참조합니다(2026-08-26까지는 문서 자기참조·깊이로 표현했습니다). 각 토픽은 독립적으로 초안·발행·버전 생명주기를 가집니다. 토픽 화면의 섹션은 본문 블록(`section`)이라 토픽과 발행 단위를 공유합니다.
-`GuidelineBlock`은 `GuidelineDocument`가 소유한 임베디드 엔티티이며 식별자는 부모 문서 안에서만 유효합니다.
+현재 구현의 편집·발행 애그리거트는 `GuidelineDocument`(토픽)입니다. 챕터는 별도 컬렉션 `GuidelineChapter`의 분류 항목이고 토픽이 이를 필수 관계로 참조합니다(2026-08-26까지는 문서 자기참조·깊이로 표현했습니다). 각 토픽은 독립적으로 초안·발행·버전 생명주기를 가집니다. 토픽 화면의 섹션은 임베디드 본문이라 토픽과 발행 단위를 공유합니다.
+`GuidelineSection`은 `GuidelineDocument`가 소유한 임베디드 엔티티이며 식별자는 부모 문서 안에서만 유효합니다.
 `BrandGuideline`은 회사명, 문서 제목, 테마 같은 단일 공통 설정입니다. 모든 `GuidelineDocument`를 소유하는 루트가 아닙니다.
 
 Rule과 RuleChecker는 책임이 다릅니다.
-Rule은 사용자가 정한 검수 규칙 정의이며 독립 컬렉션으로 관리합니다. 전역 고유 RuleKey, Title, Tier, Messages, Options, 휴리스틱 판정 기준과 RuleCheckerRef를 보유합니다. GuidelineDocument와 GuidelineBlock은 적용할 Rule을 관계로 선택하며 정의를 소유하지 않고, 하나의 Rule을 여러 문서 단위가 공유할 수 있습니다.
+Rule은 사용자가 정한 검수 규칙 정의이며 독립 컬렉션으로 관리합니다. 전역 고유 RuleKey, Title, Tier, Messages, Options, 휴리스틱 판정 기준과 RuleCheckerRef를 보유합니다. GuidelineDocument와 GuidelineSection은 적용할 Rule을 관계로 선택하며 정의를 소유하지 않고, 하나의 Rule을 여러 문서 단위가 공유할 수 있습니다.
 RuleChecker는 Rule을 실행할 도구 계약입니다. 하나의 RuleChecker는 하나의 ExecutorType과 결합합니다. deterministic은 CheckerKey를 사용하고, heuristic은 ModelRef와 PromptKey를 사용하며, manual은 자동 실행 binding을 갖지 않습니다.
 RuleChecker 하나는 여러 Rule이 재사용합니다. 판정 기준값은 Rule이 소유하므로 배치 위치가 달라도 같은 기준이 적용되며, 기준이 다르면 별도 Rule로 분리합니다.
 CheckScenario는 Rule 정의를 복제하지 않고 순서가 있는 RuleKey 목록만 소유합니다. Manager가 독립적으로 draft를 편집하고 발행하며, 검수 실행 시 해석된 Check 정의는 기존 CheckRulesetSnapshot에 고정합니다.
-Rule은 자체 draft/publish 생명주기를 가지며 문서 발행과 독립적으로 수정될 수 있습니다. 검수 시점의 문서 근거·판정 기준·RuleChecker 계약은 CheckSession의 CheckRulesetSnapshot으로 고정합니다. 문서 근거는 `source.documentId`와 타입별 구조화 evidence로 저장하며 Block 식별자와 문서 제목은 중복 저장하지 않습니다. 휴리스틱 AI는 기준별 관찰만 담당하고 최종 상태는 품질 검수 Service가 결정합니다.
+Rule은 자체 draft/publish 생명주기를 가지며 문서 발행과 독립적으로 수정될 수 있습니다. 검수 시점의 문서 근거·판정 기준·RuleChecker 계약은 CheckSession의 CheckRulesetSnapshot으로 고정합니다. 문서 근거는 `source.documentId`와 타입별 구조화 evidence로 저장하며 섹션 식별자와 문서 제목은 중복 저장하지 않습니다. 휴리스틱 AI는 기준별 관찰만 담당하고 최종 상태는 품질 검수 Service가 결정합니다.
 
 ```text
 [도메인] 브랜드 운영 시스템
@@ -243,13 +243,13 @@ Rule은 자체 draft/publish 생명주기를 가지며 문서 발행과 독립�
       │         ├── 애그리거트(관리 단위): BrandGuideline
       │         │    └── 값 객체: CompanyName, DocumentTitle, Theme
       │         ├── 애그리거트(관리 단위): GuidelineDocument
-      │         │    ├── 엔티티: GuidelineBlock, PageAssetRef
-      │         │    └── 값 객체: ChapterRef, PageBlockType, DisplayOrder
+      │         │    ├── 엔티티: GuidelineSection, PageAssetRef
+      │         │    └── 값 객체: ChapterRef, SectionType, DisplayOrder
       │         ├── 도메인 서비스: GuidelinePublishService, VersionPublishService, VersionCompareService
       │         └── 도메인 이벤트
       │              ├── GuidelineDraftCreated, GuidelineSubmittedForReview, GuidelineApproved
       │              ├── GuidelinePublished, GuidelineScheduled, GuidelineDeprecated
-      │              ├── GuidelineTopicUpdated, GuidelineBlockUpdated, GuidelineCheckUpdated, PageAssetLinked
+      │              ├── GuidelineTopicUpdated, GuidelineSectionUpdated, GuidelineCheckUpdated, PageAssetLinked
       │              └── GuidelineVersionStaged, GuidelineVersionPublished, GuidelineVersionArchived
       ├── [바운디드 컨텍스트] 브랜드 자원 관리
       │    └── [도메인 모델]
@@ -287,7 +287,7 @@ flowchart LR
     BrandGuideline["BrandGuideline"]
     Chapter["GuidelineChapter"]
     Document["GuidelineDocument"]
-    Block["GuidelineBlock"]
+    Section["GuidelineSection"]
     PageAssetRefNode["PageAssetRef"]
   end
 
@@ -305,9 +305,9 @@ flowchart LR
 
   BrandGuideline -.->|"공통 표시 설정"| Document
   Chapter -->|"토픽 묶음"| Document
-  Document -->|"소유"| Block
+  Document -->|"소유"| Section
   Document -->|"적용(참조)"| Rule
-  Block -->|"적용(참조)"| Rule
+  Section -->|"적용(참조)"| Rule
   Rule -->|"실행 계약"| RuleChecker
   CheckScenario -->|"실행 범위"| Rule
   Document -->|"소유"| PageAssetRefNode
@@ -321,20 +321,22 @@ flowchart LR
   classDef childEntity fill:#F3F0FF,stroke:#7950F2,stroke-width:1.5px,color:#1F1F1F;
 
   class BrandGuideline,Document,Rule,RuleChecker,BrandAsset,Template,Plugin aggregate;
-  class Block entity;
+  class Section entity;
   class PageAssetRefNode childEntity;
 ```
 
 BrandGuideline은 가이드라인 전체에 적용되는 표시 설정을 관리합니다.
-GuidelineDocument는 토픽이며 GuidelineChapter를 필수로 참조해 챕터·토픽 구조를 만들고, GuidelineBlock을 임베디드 엔티티로 소유합니다. 섹션(`section` 블록)과 카드 블록(`base`, 그리고 그 사전 정의인 `overview`·`examples`)이 그 블록입니다. 카드 블록은 카드(디스플레이 + 캡션) 목록과 레이아웃을 갖고, 앵커·목차 항목은 섹션만 갖습니다. 섹션이 품던 leaf(이미지·위젯)는 2026-09-07에 카드로 이관됐습니다(마이그레이션 `add_guideline_card_blocks`). 그때 컨트롤러 위젯은 하단 Floating Controller 연결을 잃었고(범위 밖 결정), 컨트롤 전용 layout-grid-controls 4행은 옮길 그림이 없어 사라졌습니다.
+GuidelineDocument는 토픽이며 GuidelineChapter를 필수로 참조해 챕터·토픽 구조를 만들고, 순서가 있는 `sections → containers → cards`를 임베디드로 소유합니다. 섹션 유형은 `section`·`subsection`·`incorrect-usages`이고, 컨테이너가 레이아웃과 카드 목록을 갖습니다.
 GuidelineVersionRef는 발행된 GuidelineDocument revision을 CheckBasis가 참조하기 위해 저장하는 값 객체입니다.
 
-GuidelineDocument는 순서가 있는 GuidelineBlock 목록을 소유합니다. `section`은 앵커를 가진 블록이고, `base`·`overview`·`examples`와 같은 목록에 놓입니다. 블록 안에서는 카드가 디스플레이·선택 캡션·선택 판정 표식(Mark)을 소유합니다. Mark는 개별 사례의 표시이며 검수 Rule이나 검수 결과를 대신하지 않습니다. 저작·표현 계약은 [Guideline 기능 명세](features/guideline.md)가 안내합니다.
-Document와 Block은 적용할 Rule을 관계로 선택합니다. Rule은 공유 가능한 독립 정의이고, 검수 근거(source)는 Rule을 참조하는 문서 단위의 위치가 결정합니다.
+섹션은 앵커와 목차 항목을 제공하고, 카드는 디스플레이·캡션·사용 상태(`status`)·동작을 소유합니다. 사용 상태는 개별 사례의 표시이며 검수 Rule이나 검수 결과를 대신하지 않습니다. 저작·표현 계약은 [Guideline 기능 명세](features/guideline.md)가 안내합니다. CMS와 문서 API에는 `blocks`·`contentModel` 저작 선택이 없으며, 비공개 이력 표식은 구형 버전 복원을 막는 내부 계약입니다.
+
+기존 CheckSession의 동결된 `block`·`base`·`overview`·`examples` 등 evidence 타입은 기록 읽기 계약으로 유지합니다. 이 계약은 현재 문서의 섹션 저작 모델과 독립적입니다.
+Document와 Section은 적용할 Rule을 관계로 선택합니다. Rule은 공유 가능한 독립 정의이고, 검수 근거(source)는 Rule을 참조하는 문서 단위의 위치가 결정합니다.
 PageAssetRef는 페이지 안에서의 표시 순서, 캡션, 예시 역할을 기록합니다.
 
 RuleChecker는 Rule을 실행할 도구 계약입니다. deterministic RuleChecker는 CheckerKey와, heuristic RuleChecker는 ModelRef 및 PromptKey와 결합합니다.
-Rule은 전역 고유 RuleKey, Tier, Options, Messages를 보유하며 자체 draft/publish로 버전 관리합니다. 문서·블록·시나리오가 참조 중인 Rule은 삭제할 수 없고, 검수 실행 당시 값은 CheckSession에 snapshot으로 보관합니다.
+Rule은 전역 고유 RuleKey, Tier, Options, Messages를 보유하며 자체 draft/publish로 버전 관리합니다. 문서·섹션·시나리오가 참조 중인 Rule은 삭제할 수 없고, 검수 실행 당시 값은 CheckSession에 snapshot으로 보관합니다.
 CheckException과 options의 검사기별 상세 UI는 현재 범위에서 제외하고 추후 고도화합니다.
 
 Official Version 전환은 별도 애그리거트를 만들지 않고, 각 원본 애그리거트가 소유한 Version 엔티티의 stage/live/archived 상태를 바꾸는 서비스 흐름으로 둡니다.

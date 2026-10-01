@@ -8,11 +8,11 @@ describe('collectGuidelineCheckSources', () => {
 			id: 12,
 			title: 'Logo usage',
 			rules: [{ id: 1, key: 'logo.page', title: 'Page Rule', checker: 1 }],
-			blocks: [
+			sections: [
 				{
 					id: 'sec',
 					blockName: 'Logo examples',
-					blockType: 'section',
+					type: 'section',
 					anchor: 'clear-space',
 					title: 'Clear space',
 					cards: [{ id: 'c', display: [{ id: 'w', blockType: 'logoDisplayWidget' }] }],
@@ -27,7 +27,7 @@ describe('collectGuidelineCheckSources', () => {
 			['logo.page', 12],
 			['logo.section', 12],
 		])
-		expect(sources.map(({ blockName }) => blockName)).toEqual([null, 'Logo examples'])
+		expect(sources.map(({ blockName }) => blockName)).toEqual([null, 'Clear space'])
 		expect(sources[0]?.evidence).toEqual({
 			type: 'document',
 			blocks: [
@@ -48,14 +48,14 @@ describe('collectGuidelineCheckSources', () => {
 		})
 	})
 
-	it('제목 없는 섹션(히어로)의 Rule은 섹션 위치 없이 수집한다', () => {
+	it('제목 없는 섹션 Rule도 섹션 위치를 보존한다', () => {
 		const page = {
 			id: 12,
 			title: 'Logo usage',
-			blocks: [
+			sections: [
 				{
 					id: 'hero',
-					blockType: 'section',
+					type: 'section',
 					cards: [{ id: 'c', display: [{ id: 'w', blockType: 'ciLockupHeroWidget' }] }],
 					rules: [{ id: 2, key: 'logo.hero', title: 'Hero Rule', checker: 1 }],
 				},
@@ -65,7 +65,7 @@ describe('collectGuidelineCheckSources', () => {
 		const sources = collectGuidelineCheckSources(page)
 
 		expect(sources.map(({ rule, source }) => [rule.key, source.section])).toEqual([
-			['logo.hero', null],
+			['logo.hero', { anchor: '', title: '', order: 0 }],
 		])
 	})
 
@@ -74,7 +74,7 @@ describe('collectGuidelineCheckSources', () => {
 			id: 12,
 			title: 'Logo usage',
 			rules: [41, { id: 1, key: 'logo.page', title: 'Page Rule', checker: 1 }],
-			blocks: [],
+			sections: [],
 		} as unknown as GuidelineDocument
 
 		const sources = collectGuidelineCheckSources(page)
@@ -96,10 +96,10 @@ describe('collectGuidelineCheckSources', () => {
 			rules: [
 				{ id: 3, key: 'typography.misuse', title: '타이포그래피 오용 금지', checker: 1 },
 			],
-			blocks: [
+			sections: [
 				{
 					id: 's',
-					blockType: 'section',
+					type: 'section',
 					title: 'Misuse',
 					cards: [{ id: 'c', display: [{ id: 'i', blockType: 'image', image }] }],
 				},

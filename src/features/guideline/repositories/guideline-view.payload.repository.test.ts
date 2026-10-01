@@ -11,7 +11,7 @@ vi.mock('@payload-config', () => ({ default: {} }))
 vi.mock('payload', () => ({ getPayload: vi.fn() }))
 
 describe('listPublishedGuidelineNavigationTopics', () => {
-	it('신규 목차는 본문의 부모·제목 단계를 보존하고 레거시 목차는 H2로 유지한다', async () => {
+	it('목차는 섹션의 부모·제목 단계를 보존하고 옛 블록은 읽지 않는다', async () => {
 		const find = vi.fn().mockResolvedValue({
 			docs: [
 				{
@@ -54,15 +54,7 @@ describe('listPublishedGuidelineNavigationTopics', () => {
 					parentSectionId: 'main-id',
 				},
 			],
-			[
-				{
-					id: 'legacy',
-					anchor: 'legacy',
-					title: 'Legacy',
-					headingLevel: 2,
-					parentSectionId: null,
-				},
-			],
+			[],
 		])
 	})
 	it('global 관계 문서를 plain metadata DTO로 변환한다', async () => {

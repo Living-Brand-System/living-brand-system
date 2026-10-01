@@ -17,7 +17,6 @@ function sectionWith(cards: CmsCard[], type: CmsSection['type'] = 'section') {
 		id: 1,
 		title: 'Test',
 		slug: 'test',
-		contentModel: 'sections',
 		sections: [
 			{
 				id: 'icons',
