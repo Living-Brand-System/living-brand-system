@@ -27,6 +27,7 @@ export function GraphicOutput({ output }: { output: GraphicExportView }) {
 		<StudioOutputModule
 			kind="graphic"
 			empty={false}
+			printable={config.output.print !== undefined}
 			value={value}
 			onChange={(next) => {
 				if (next.notice) {

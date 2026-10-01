@@ -324,6 +324,8 @@ describe('GraphicGenerator', () => {
 
 		render(createElement(GraphicGenerator, { config }))
 		await waitFor(() => expect(mocks.createPreview).toHaveBeenCalledOnce())
+		// 인쇄 계약이 없으면 Print를 고를 수 없다 — Mode 행 자체를 두지 않는다.
+		expect(screen.queryByRole('radiogroup', { name: '출력 모드' })).not.toBeInTheDocument()
 
 		const width = screen.getByRole('spinbutton', { name: '출력 너비' })
 		fireEvent.change(width, { target: { value: '1280' } })
@@ -451,6 +453,9 @@ describe('GraphicGenerator', () => {
 	it('출력 사이즈 비율을 프리뷰 영역에 맞춰 반영한다', async () => {
 		render(createElement(GraphicGenerator, { config: flutedGlassConfig }))
 		await waitFor(() => expect(mocks.createShaderPreview).toHaveBeenCalledOnce())
+		// 인쇄 계약이 있는 프로파일은 Print/Digital을 고를 수 있다.
+		expect(flutedGlassConfig.output.print).toBeDefined()
+		expect(screen.getByRole('radiogroup', { name: '출력 모드' })).toBeInTheDocument()
 		const observerCount = mocks.resizeObserverCount
 
 		const width = screen.getByRole('spinbutton', { name: '출력 너비' })

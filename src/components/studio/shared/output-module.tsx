@@ -99,6 +99,7 @@ export function StudioOutputModule({
 	children,
 	action,
 	error,
+	printable = true,
 }: {
 	formats?: readonly { value: string; label: string }[]
 	onSave?: () => void
@@ -110,6 +111,8 @@ export function StudioOutputModule({
 	/** 저장 위에 놓는 실행 버튼 — Image의 생성처럼 결과를 만드는 동작(Figma 529:19999). */
 	action?: ReactNode
 	error?: string | null
+	/** 프로파일에 인쇄(print) 계약이 있는가 — 없으면 Mode를 숨기고 Digital로만 다룬다. */
+	printable?: boolean
 	kind: 'graphic' | 'image' | 'template'
 	value: StudioOutput
 	onChange: (next: StudioOutput) => void
@@ -118,8 +121,9 @@ export function StudioOutputModule({
 	hasResult: boolean
 	empty: boolean
 }) {
-	const physical = value.mode === 'print'
-	const preset = matchOutputPreset(value)
+	const mode = printable ? value.mode : 'digital'
+	const physical = mode === 'print'
+	const preset = matchOutputPreset({ ...value, mode })
 	const unit = physical ? 'mm' : 'px'
 	const change = (patch: Partial<StudioOutput>) => onChange({ ...value, notice: '', ...patch })
 	const resize = (patch: Partial<StudioOutput>) => {
@@ -158,21 +162,23 @@ export function StudioOutputModule({
 					<>
 						{kind === 'graphic' && (
 							<>
-								<ControllerRow label="Mode">
-									<ControllerSegmented
-										aria-label="출력 모드"
-										options={MODES}
-										value={value.mode}
-										onChange={(mode) => change({ mode })}
-									/>
-								</ControllerRow>
+								{printable && (
+									<ControllerRow label="Mode">
+										<ControllerSegmented
+											aria-label="출력 모드"
+											options={MODES}
+											value={mode}
+											onChange={(next) => change({ mode: next })}
+										/>
+									</ControllerRow>
+								)}
 								<ControllerRow label="Preset">
 									<ControllerSelect
-										options={[...PRESETS[value.mode], CUSTOM]}
+										options={[...PRESETS[mode], CUSTOM]}
 										value={preset}
 										onChange={(next) => {
 											// Custom은 크기를 그대로 두고 편집을 이어간다 — 이미 언제나 편집 가능하다.
-											const key = PRESETS[value.mode].find(
+											const key = PRESETS[mode].find(
 												(item) => item.value === next,
 											)?.value
 											if (!key) return
@@ -235,7 +241,7 @@ export function StudioOutputModule({
 										children: (
 											<div className="flex min-w-0 flex-1 items-center justify-end gap-1 text-sm">
 												<OutputNumber
-													key={`${value.mode}-${value[id]}-${value.ppi}`}
+													key={`${mode}-${value[id]}-${value.ppi}`}
 													value={dimension(id)}
 													onCommit={(next) =>
 														resize({

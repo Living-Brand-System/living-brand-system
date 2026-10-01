@@ -252,7 +252,7 @@ Image는 생성 수·비율·해상도 3열과 선택/전체 저장, Template은
 Graphic의 정본 치수는 px이고 Preset은 저장하지 않습니다 — 표시는 현재 크기에서 계산합니다(Digital은 px 일치, Print는 mm 일치라 해상도를 바꿔도 A4는 A4). Mode 전환은 px·ppi를 보존합니다.
 프리셋을 고르면 그 치수(Print는 권장 ppi 포함)를 적용할 뿐 입력을 잠그지 않습니다. 크기를 고쳐 어느 프리셋과도 맞지 않으면 Custom이 되고, Custom은 자유롭게 편집합니다.
 Format 전환은 치수를 바꾸지 않습니다. Print의 Resolution은 mm 크기를 유지하며 px를 함께 변경하고,
-출력 한도를 넘으면 ppi·치수를 모두 이전 값으로 유지합니다. 해상도는 바뀔 때만 프로파일의 print 계약에 견줍니다 — 어드민이 형식을 SVG 등으로 좁혀 print 계약이 없는 프로파일에서도 크기는 고칠 수 있습니다. Template의 고정 치수는 비활성 입력 대신 읽기 전용 값으로 표시합니다.
+출력 한도를 넘으면 ppi·치수를 모두 이전 값으로 유지합니다. 해상도는 바뀔 때만 프로파일의 print 계약에 견줍니다 — 어드민이 형식을 SVG 등으로 좁혀 print 계약이 없는 프로파일에서도 크기는 고칠 수 있습니다. print 계약이 없는 프로파일은 Mode 행을 두지 않고 Digital로만 다룹니다. Template의 고정 치수는 비활성 입력 대신 읽기 전용 값으로 표시합니다.
 A4는 210×297mm를 사용하며 Template은 실제 문서 치수를 표시합니다. Figma 예시의 197×210mm는 A4 정본으로 사용하지 않습니다.
 생성 수·비율·해상도·Format은 실제 capability 목록을 사용합니다. 저장 버튼은 실제 내보내기 훅에 연결하며 준비 상태·진행 중·오류를 반영합니다. 출력 설정과 안내 문구도 Reset에 포함됩니다.
 Graphic의 컨트롤 선택은 Fluted Glass·Formation·2D Line·Pattern·Forward Straight의 실제
