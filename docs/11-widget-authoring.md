@@ -66,7 +66,7 @@ START에는 상태, CENTER에는 해당 도판이 지원하는 전환, END에는
 
 `sections/projection.ts`는 섹션 제목·설명·앵커와 저작 캡션·액션 텍스트를 검색·검수용으로 투영합니다. 카드 이미지는 자동 검수 참조 자산이 아니며 `referenceAssets: []`를 유지합니다. 위젯별 이미지 투영으로 이 정책을 바꾸지 않습니다.
 
-동결된 CheckSession의 과거 evidence는 `checks/check-source.ts`·`format-check-evidence.ts`의 읽기 계약으로 보존합니다. 과거 본문·버전의 원시 테이블은 단계적으로 보관하지만 CMS에 등록하지 않습니다. `contentModel`은 숨긴 복원 판별 표식이고 legacy·null·표식 없는 버전은 복원할 수 없습니다. 기존 마이그레이션·drizzle 스냅샷을 삭제하지 않습니다.
+동결된 CheckSession의 과거 evidence는 `checks/check-source.ts`·`format-check-evidence.ts`의 읽기 계약으로 보존합니다. 과거 본문 전용 테이블과 legacy 버전은 별도의 파기 마이그레이션으로 삭제하며 신규 버전·업로드 자산은 보존합니다. `contentModel`은 숨긴 복원 판별 표식이고 legacy·null·표식 없는 버전은 복원할 수 없습니다. 기존 마이그레이션·drizzle 스냅샷을 삭제하지 않습니다.
 
 ## 7. 검증과 플레이그라운드
 

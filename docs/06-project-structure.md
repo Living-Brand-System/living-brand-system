@@ -273,7 +273,7 @@ src/features/guideline/repositories/guideline.payload.repository.ts
 
 스키마와 순수 해석은 표현 컴포넌트를 import하지 않습니다. 디스플레이 추가 순서는 [11](11-widget-authoring.md)을 따릅니다. 문서 단위 Check snapshot은 `checks/`가 소유하고, 과거 동결 evidence 계약은 `checks/check-source.ts`에서 독립적으로 보존합니다.
 
-`contentModel`은 숨긴 버전 복원 판별 표식으로만 유지하며 새로운 저장은 sections로 고정합니다. 구형 본문·버전 테이블은 현재 마이그레이션에서 원시 보관하지만 CMS 스키마에는 등록하지 않습니다. 기존 마이그레이션과 drizzle 스냅샷은 삭제하지 않습니다.
+`contentModel`은 숨긴 버전 복원 판별 표식으로만 유지하며 새로운 저장은 sections로 고정합니다. 구형 본문 전용 테이블과 legacy 버전은 별도의 파기 마이그레이션으로 삭제하며 신규 버전·업로드 자산은 보존합니다. 기존 마이그레이션과 drizzle 스냅샷은 삭제하지 않습니다.
 
 ### 가이드라인 화면과 상태 경계
 

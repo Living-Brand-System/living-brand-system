@@ -517,7 +517,7 @@ Plugin은 collection으로 두지 않습니다 — 2026-08-18에 삭제했습니
 | `graphic-profiles` | GraphicProfile | 등록된 Graphic Runtime Manifest에 적용할 published Controller 제한·Export 정책을 관리 |
 | `templates` | Template | 배경 정책(`backgroundPolicy`)·레이어별 `overrides[nodeId]`·Export 정책을 관리하고 page와 plugin에서 참조 |
 
-가이드라인 본문은 CMS와 문서 API에서 `sections` 단일 계약으로 저작합니다. `blocks`와 `contentModel`은 저작 선택으로 노출하지 않으며 비공개 이력 표식은 구형 버전 복원을 막는 내부 값입니다. 옛 SQL 블록 테이블은 CMS에 등록되지 않은 원시 보관 데이터로 남기며 삭제하지 않습니다. CheckSession의 동결된 옛 evidence 타입을 읽는 계약은 현재 문서 저작 모델과 독립적으로 보존합니다.
+가이드라인 본문은 CMS와 문서 API에서 `sections` 단일 계약으로 저작합니다. `blocks`와 `contentModel`은 저작 선택으로 노출하지 않으며 비공개 이력 표식은 구형 버전 복원을 막는 내부 값입니다. 옛 SQL 블록 테이블·레거시 관계·legacy 버전은 별도의 파기 마이그레이션으로 삭제하며 현재 문서·신규 버전·업로드 자산은 보존합니다. CheckSession의 동결된 옛 evidence 타입을 읽는 계약은 현재 문서 저작 모델과 독립적으로 보존합니다.
 
 ### 런타임 객체
 

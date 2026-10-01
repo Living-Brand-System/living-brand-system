@@ -30,11 +30,11 @@
 
 전역 색·서체·모서리는 `theme.css`, 앱 기본 본문은 `styles.css`, 가이드라인 섹션·배치·도판·캡션은 `src/components/guideline/structure/`가 소유합니다. `sections/render.tsx`와 `display-render.tsx`는 CMS 관계를 해석해 그 표현 API에 전달합니다. 카드가 크기를 정하고 디스플레이가 그 영역을 채웁니다.
 
-### 2.5 제거한 본문의 보관 경계
+### 2.5 제거한 본문의 파기 경계
 
 `blocks`와 구형 카드·위젯 레지스트리, deprecated 렌더 경로는 CMS와 서비스에서 제거했습니다. 구형 본문을 새로 입력하거나 저장할 수 없습니다. `contentModel`은 버전 복원을 판별하는 내부 표식으로만 남습니다. Admin과 읽기 응답에서 숨기며 신규 저장은 `sections`로 고정합니다. `legacy` 표식의 버전은 복원을 거절합니다.
 
-마이그레이션은 현재 문서가 모두 sections인지 먼저 검사하고 DB의 내부 표식 기본값을 제거합니다. 신규 표식은 저장 훅이 명시적으로 채웁니다. 구형 본문·버전 테이블과 비활성 데이터는 이 단계에서 DROP하지 않고 원시 보관합니다. 보관 데이터는 CMS 필드로 등록하지 않으므로 화면·REST·MCP·Agent의 본문으로 접근할 수 없습니다. 기존 마이그레이션과 drizzle 스냅샷은 삭제하지 않습니다.
+접근 제거 마이그레이션 이후, 별도의 파기 마이그레이션이 구형 본문 전용 테이블·enum·관계와 legacy 버전 행을 삭제합니다. 현재 문서와 최신 초안이 모두 sections이고 버전 표식에 null이 없을 때만 실행하며, 목록 밖의 의존성이 있으면 CASCADE하지 않고 실패합니다. 현재 문서·신규 sections 버전·업로드 레코드·스토리지 파일·검수 snapshot은 보존합니다. 삭제한 콘텐츠는 down으로 재구성할 수 없으므로 되돌릴 때는 삭제 전 DB 백업을 복원해야 합니다. 기존 마이그레이션과 drizzle 스냅샷은 삭제하지 않습니다.
 
 과거 CheckSession의 동결된 evidence는 `checks/check-source.ts`의 독립 계약과 `format-check-evidence.ts`로 계속 읽습니다. 이 읽기 호환은 구형 CMS 저작·복원 기능을 되살리지 않습니다. 콘텐츠를 코드로 되쓰는 seed는 만들지 않습니다.
 
