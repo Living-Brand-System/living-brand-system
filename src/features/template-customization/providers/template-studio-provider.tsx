@@ -11,6 +11,7 @@ import {
 	useState,
 } from 'react'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
+import { graphicRendererLabel } from '@/features/graphic-generation/domain/graphic-studio-config'
 import {
 	createGraphicPresetValues,
 	getGraphicStudioRuntimeBindings,
@@ -791,11 +792,15 @@ export function TemplateStudioProvider({
 				: background.state.type === 'image'
 					? 'image'
 					: 'color'
-		const profile =
+		const graphicConfig =
 			mode === 'graphic'
 				? background.graphicConfigs.find(
 						(item) => item.id === background.state.graphicConfigId,
 					)
+				: undefined
+		const profile =
+			mode === 'graphic'
+				? graphicConfig
 				: mode === 'image'
 					? (isBackground ? background.contracts : images.contracts[targetId])?.find(
 							(item) => item.config.id === state?.profileId,
@@ -810,6 +815,7 @@ export function TemplateStudioProvider({
 					: mode === 'image' && state?.imageMode === 'preset'
 						? 'Image Preset'
 						: (profile?.name ?? null),
+			subtitle: graphicConfig ? graphicRendererLabel(graphicConfig.type) : undefined,
 			preview:
 				mode === 'image' && state?.image
 					? { url: state.image.url, alt: profile?.name ?? 'Image' }

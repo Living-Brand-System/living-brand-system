@@ -76,11 +76,18 @@ export function ControlPanel({
 								<ControllerRoot
 									className={
 										tab.list
-											? 'min-h-0 shrink-0 lg:h-auto max-h-[60%]'
-											: 'min-h-0 flex-1 lg:h-auto'
+											? 'relative min-h-0 shrink-0 lg:h-auto max-h-[60%]'
+											: 'relative min-h-0 flex-1 lg:h-auto'
 									}
 								>
-									<div className={CARD_BODY}>{tab.content}</div>
+									{/* 끝까지 내리면 마지막 컨트롤이 흐림 위로 올라오도록 아래 여백을 흐림 높이만큼 둔다. */}
+									<div className={`${CARD_BODY} pb-16`}>{tab.content}</div>
+									{/* Figma 529:19501·529:25146 — 스크롤 본문 아래 64px 흐림. */}
+									<div
+										aria-hidden="true"
+										data-slot="studio-control-fade"
+										className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-b from-transparent to-background to-75%"
+									/>
 								</ControllerRoot>
 							)}
 						</div>

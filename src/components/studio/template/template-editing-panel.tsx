@@ -75,7 +75,7 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 									target?.name ??
 									(image ? 'Image' : graphic ? 'Graphic' : 'Background')
 								}
-								subtitle={graphic ? 'Graphic' : undefined}
+								subtitle={target?.subtitle}
 								image={target?.preview}
 								onReset={editing.reset}
 								disabled={editing.busy}

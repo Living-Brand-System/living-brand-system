@@ -157,6 +157,8 @@ export type TemplateStudioValue = {
 		target: {
 			mode: 'image' | 'graphic' | 'color'
 			name: string | null
+			/** 카드 부제 — 그래픽은 렌더러 이름이고, 이미지·단색에는 없다. */
+			subtitle: string | undefined
 			preview: StudioPreviewImage | undefined
 		} | null
 		busy: boolean

@@ -133,7 +133,7 @@ it('상단의 Swatch/Custom이 같은 색을 공유하고 하단에는 세부 �
 	await user.click(screen.getByRole('button', { name: 'Basic' }))
 	expect(screen.queryByRole('radiogroup', { name: '팔레트' })).not.toBeInTheDocument()
 	const color = within(screen.getByRole('group', { name: 'Color' }))
-	await user.click(color.getByRole('radio', { name: '색 조합 13' }))
+	await user.click(color.getByRole('radio', { name: '색 조합 12' }))
 	expect(update).toHaveBeenLastCalledWith(
 		expect.objectContaining(flutedGlassColors('#003087', '#dfe4f4')),
 	)

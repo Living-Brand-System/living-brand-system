@@ -21,6 +21,7 @@ import {
 	millimetersToPixels,
 	pixelsToMillimeters,
 } from '@/features/studio-export/print-policy'
+import { DEFAULT_GRAPHIC_OUTPUT_SIZE } from '@/features/studio-export/studio-output'
 import { OutputDimensions } from './output-dimensions'
 
 export type StudioOutput = {
@@ -57,7 +58,7 @@ type PresetKey = 'feed' | ArtboardKey
 const CUSTOM = { value: 'custom', label: 'Custom' }
 
 function presetSize(key: PresetKey) {
-	return key === 'feed' ? { width: 1080, height: 1350, ppi: undefined } : presetArtboard(key)
+	return key === 'feed' ? { ...DEFAULT_GRAPHIC_OUTPUT_SIZE, ppi: undefined } : presetArtboard(key)
 }
 
 /** Digital은 px가 같을 때, Print는 물리 크기(mm)가 같을 때 그 프리셋이다 — 해상도를 바꿔도 A4는 A4다. */

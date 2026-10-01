@@ -571,7 +571,7 @@ describe('GraphicGenerator', () => {
 		)
 	})
 
-	it('현재 Controller 값과 화면 크기로 SVG를 다운로드한다', async () => {
+	it('현재 Controller 값과 출력 크기로 SVG를 다운로드한다', async () => {
 		vi.useFakeTimers({ toFake: ['Date'] })
 		vi.setSystemTime(new Date('2026-09-10T03:00:00Z'))
 		const createObjectURL = vi.fn((_blob: Blob) => 'blob:forward-straight')
@@ -593,7 +593,11 @@ describe('GraphicGenerator', () => {
 				expect.objectContaining({ origin: { x: 0.525, y: 0.5 } }),
 			),
 		)
+		// 첫 크기는 화면이 아니라 기본 프리셋(Instagram Feed)이다.
 		const width = screen.getByRole('spinbutton', { name: '출력 너비' })
+		expect(width).toHaveValue(1080)
+		expect(screen.getByRole('spinbutton', { name: '출력 높이' })).toHaveValue(1350)
+		expect(screen.getByRole('combobox', { name: 'Preset' })).toHaveTextContent('Instagram Feed')
 		fireEvent.change(width, { target: { value: '640' } })
 		fireEvent.blur(width)
 		fireEvent.click(screen.getByRole('button', { name: '저장' }))
@@ -608,9 +612,9 @@ describe('GraphicGenerator', () => {
 		})
 		const expected = createForwardStraightScene(
 			{ ...FORWARD_STRAIGHT_DEFAULT_INPUT, origin: { x: 0.525, y: 0.5 } },
-			{ width: 640, height: 600 },
+			{ width: 640, height: 1350 },
 		)
-		expect(svg).toContain('width="640" height="600"')
+		expect(svg).toContain('width="640" height="1350"')
 		expect(svg.split('<line').length - 1).toBe(expected.dashes.length)
 		expect(svg).toContain(`x1="${expected.dashes[0].x1.toFixed(2)}"`)
 		expect(click.mock.instances[0]).toMatchObject({

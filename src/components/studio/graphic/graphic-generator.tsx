@@ -16,6 +16,7 @@ import {
 } from '@/components/studio/shared/workspace-layout'
 import { Typography } from '@/components/ui/typography'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
+import { graphicRendererLabel } from '@/features/graphic-generation/domain/graphic-studio-config'
 import { useGraphicStudio } from '@/features/graphic-generation/hooks/use-graphic-studio'
 import { GraphicStudioProvider } from '@/features/graphic-generation/providers/graphic-studio-provider'
 import type { GraphicRuntime } from '@/features/graphic-generation/runtime/client/graphic-runtime.client'
@@ -78,7 +79,6 @@ function GraphicWorkspace({
 		artifacts: browser?.artifacts ?? null,
 		config,
 		values: controls.values,
-		viewport: browser?.viewport ?? null,
 	})
 	// 캔버스가 mount된 뒤에야 Artifact가 생기므로 상태는 Artifact를 쥔 이 자리가 소유한다.
 	const preview = useProfilePreview({
@@ -97,7 +97,7 @@ function GraphicWorkspace({
 						top={
 							<StudioSelectionCard
 								title={config.name}
-								subtitle="Graphic"
+								subtitle={graphicRendererLabel(config.type)}
 								image={preview.image ?? config.previewImage}
 								onReset={() => onReset(config)}
 								actions={
