@@ -242,12 +242,16 @@ export function ImageStudioProvider({
 	 * 🔑 고르기와 덮기는 별개다. 복원 값이 없어도 캔버스에는 올라간다.
 	 */
 	const selectHistoryStack = useCallback(
-		(items: readonly GeneratedImageHistoryItem[], itemId?: number) => {
+		(
+			items: readonly GeneratedImageHistoryItem[],
+			itemId?: number,
+			options?: { restore?: boolean },
+		) => {
 			const picked = items.find((item) => item.id === itemId) ?? items[0]
 			if (!picked) return
 			setHistoryStack(items)
 			setHistorySelectedId(picked.id)
-			restoreFromHistory(picked)
+			if (options?.restore !== false) restoreFromHistory(picked)
 		},
 		[restoreFromHistory],
 	)

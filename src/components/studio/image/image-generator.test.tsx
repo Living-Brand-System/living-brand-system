@@ -1,4 +1,5 @@
 import {
+	act,
 	cleanup,
 	fireEvent,
 	render as rtlRender,
@@ -594,7 +595,8 @@ describe('이미지 이력 — 본보기 패널과 캔버스 스트립', () => {
 		expect(strip.querySelectorAll('[aria-hidden="true"]')).toHaveLength(1)
 	})
 
-	it('아무것도 안 골랐으면 가장 최근 것이 자동으로 선택된다', async () => {
+	// 자동 선택은 캔버스에만 올린다 — 세션을 덮는 복원은 사용자가 스트립을 눌렀을 때만 한다.
+	it('아무것도 안 골랐으면 가장 최근 것이 캔버스에 선택되고 컨트롤러는 그대로다', async () => {
 		respond({
 			history: [
 				historyItem({ batchKey: 'b1', id: 1, prompt: '최근 것' }),
@@ -603,7 +605,38 @@ describe('이미지 이력 — 본보기 패널과 캔버스 스트립', () => {
 		})
 		render(createElement(ImageGenerator, { config: config(5, '제품컷') }))
 
-		expect(await screen.findByDisplayValue('최근 것')).toBeInTheDocument()
+		const latest = await screen.findByRole('button', { name: '최근 것' })
+		await waitFor(() => expect(latest).toHaveAttribute('aria-current', 'true'))
+		expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue('')
+	})
+
+	// 히스토리가 늦게 와도 그 사이 입력한 프롬프트를 덮지 않는다(2026-10-01 실측 회귀).
+	it('히스토리가 늦게 도착해도 먼저 입력한 프롬프트를 지킨다', async () => {
+		let deliver!: (value: { hasMore: boolean; items: GeneratedImageHistoryItem[] }) => void
+		historyMocks.fetchGeneratedImageHistory.mockImplementation((_page, options) =>
+			options?.bestOnly
+				? Promise.resolve({ hasMore: false, items: [] })
+				: new Promise((resolve) => {
+						deliver = resolve
+					}),
+		)
+		render(createElement(ImageGenerator, { config: config(5, '제품컷') }))
+		fireEvent.change(screen.getByRole('textbox', { name: 'Prompt' }), {
+			target: { value: '내가 쓴 프롬프트' },
+		})
+
+		await act(async () => {
+			deliver({
+				hasMore: false,
+				items: [historyItem({ batchKey: 'b1', id: 1, prompt: '최근 것' })],
+			})
+		})
+
+		expect(await screen.findByRole('button', { name: '최근 것' })).toHaveAttribute(
+			'aria-current',
+			'true',
+		)
+		expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue('내가 쓴 프롬프트')
 	})
 
 	it('스트립에서 고른 장의 값으로 컨트롤러를 덮는다', async () => {

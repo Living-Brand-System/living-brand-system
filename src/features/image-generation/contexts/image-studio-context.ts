@@ -50,9 +50,14 @@ export type ImageStudioValue = {
 		selectedId: number | null
 		/**
 		 * 묶음을 고른다 — `itemId`를 안 주면 **첫 장이 자동으로 선택된다**(사용자 지시).
-		 * 가능하면 컨트롤러도 고른 장의 값으로 덮인다.
+		 * 가능하면 컨트롤러도 고른 장의 값으로 덮인다. `restore: false`면 캔버스에만 올린다 —
+		 * 사용자가 고른 것이 아닌 자동 선택이 편집 중인 세션을 덮지 않게 한다.
 		 */
-		selectStack: (items: readonly GeneratedImageHistoryItem[], itemId?: number) => void
+		selectStack: (
+			items: readonly GeneratedImageHistoryItem[],
+			itemId?: number,
+			options?: { restore?: boolean },
+		) => void
 		/** 묶음 안에서 크게 볼 장만 바꾼다 — 같은 요청에서 나온 장들이라 컨트롤러는 그대로다. */
 		selectItem: (id: number) => void
 	}

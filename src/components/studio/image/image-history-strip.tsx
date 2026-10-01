@@ -38,13 +38,15 @@ export function ImageHistoryStrip() {
 	)
 
 	// 아직 아무것도 안 골랐으면 가장 최근 묶음이 자동으로 선택된다(사용자 지시, 2026-09-21).
+	// 🔴 캔버스에만 올리고 세션은 덮지 않는다(2026-10-01 결정) — 목록이 늦게 오면 그 사이 넣은
+	//    프롬프트·참조 이미지가 조용히 사라졌다. 복원은 사용자가 스트립을 눌렀을 때만 한다.
 	const { selectStack } = history
 	const firstStack = stacks[0]
 	const [autoSelected, setAutoSelected] = useState(false)
 	useEffect(() => {
 		if (autoSelected || !firstStack) return
 		setAutoSelected(true)
-		selectStack(firstStack.items)
+		selectStack(firstStack.items, undefined, { restore: false })
 	}, [autoSelected, firstStack, selectStack])
 
 	if (stacks.length === 0) return null
