@@ -803,7 +803,13 @@ export function TemplateStudioProvider({
 					: undefined
 		return {
 			mode,
-			name: profile?.name ?? null,
+			// Figma 525:8777 — Preset은 방식 이름, Generate는 프로파일 이름, 단색 배경은 Solid Color.
+			name:
+				mode === 'color'
+					? 'Solid Color'
+					: mode === 'image' && state?.imageMode === 'preset'
+						? 'Image Preset'
+						: (profile?.name ?? null),
 			preview:
 				mode === 'image' && state?.image
 					? { url: state.image.url, alt: profile?.name ?? 'Image' }

@@ -20,7 +20,7 @@ const TRANSITION = { duration: 0.25, ease: 'easeOut' } as const
 
 /** 두 화면의 편집 진입·이탈 UI. 값 복원과 요청 무효화는 Provider가 소유한다. */
 export function TemplateEditingPanel({ children }: { children: ReactNode }) {
-	const { editing, config } = useTemplateStudio()
+	const { editing } = useTemplateStudio()
 	const panel = useRef<HTMLElement>(null)
 	const reducedMotion = useReducedMotion()
 	const targetId = editing.targetId
@@ -75,7 +75,7 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 									target?.name ??
 									(image ? 'Image' : graphic ? 'Graphic' : 'Background')
 								}
-								subtitle={config.name}
+								subtitle={graphic ? 'Graphic' : undefined}
 								image={target?.preview}
 								onReset={editing.reset}
 								disabled={editing.busy}

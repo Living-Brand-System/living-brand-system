@@ -656,13 +656,13 @@ function buildBackgroundGroup(
 						{
 							id: BACKGROUND_DIMMER_CONTROL_ID,
 							kind: 'toggle',
-							label: 'Dimmer',
+							label: 'Use',
 							defaultValue: false,
 						},
 						{
 							id: BACKGROUND_DIMMER_OPACITY_CONTROL_ID,
 							kind: 'range',
-							label: 'Dimmer Opacity',
+							label: 'Strength',
 							defaultValue: 0.2,
 							min: 0,
 							// 실용 상한 — 1.0은 배경을 완전한 검정으로 덮어 배경을 고른 의미가 없어진다.

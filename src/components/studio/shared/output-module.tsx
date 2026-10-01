@@ -109,7 +109,13 @@ export function StudioOutputModule({
 			className="flex flex-col gap-4"
 		>
 			<div className="flex flex-col gap-1">
-				<Typography as="h2" size="sm" weight="medium" className="flex h-9 items-center">
+				<Typography
+					as="h2"
+					size="sm"
+					weight="semibold"
+					tone="muted"
+					className="flex h-9 items-center"
+				>
 					Output
 				</Typography>
 				{empty ? (
@@ -291,9 +297,9 @@ export function StudioOutputModule({
 				</Button>
 				{kind === 'image' && (
 					<Button
-						variant="outline"
+						variant="muted"
 						disabled={busy || empty || !canSaveAll}
-						className="h-11 min-w-0 flex-1 rounded-lg"
+						className="h-11 min-w-0 flex-1 rounded-lg text-foreground"
 						onClick={onSaveAll}
 					>
 						전체 저장

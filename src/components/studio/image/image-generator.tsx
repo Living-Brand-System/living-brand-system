@@ -109,7 +109,6 @@ function ImageWorkspace({ onReset }: { onReset: (config: ImageStudioConfig) => v
 						top={
 							<StudioSelectionCard
 								title={config.name}
-								subtitle="Image"
 								image={preview.image ?? config.previewImage}
 								onReset={() => onReset(config)}
 								actions={

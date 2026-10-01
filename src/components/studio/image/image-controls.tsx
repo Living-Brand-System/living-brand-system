@@ -264,7 +264,8 @@ export function ImageGenerate({
 				)}
 				{showAction && (
 					<Button
-						className="mt-0.5 h-11 w-full"
+						variant="muted"
+						className="mt-0.5 h-11 w-full rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
 						disabled={busy || !canRun}
 						onClick={onGenerate}
 					>
