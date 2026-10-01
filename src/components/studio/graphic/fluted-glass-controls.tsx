@@ -81,87 +81,85 @@ export function FlutedGlassControls({
 		.find((control) => control.id === 'source')
 	const hasPreset = values.shape === 'linear' || values.shape === 'vertical'
 	return (
-		<div className="h-full min-h-0 p-4">
-			<ControlPanel
-				fixed={fixed}
-				basicPresets={
-					!empty && hasPreset && preset?.kind === 'select' && preset.options.length ? (
-						<GraphicPresetList
-							definition={preset}
-							binding={bindings[preset.id]}
-							value={values.preset}
-							onChange={(value) => onChange('preset', value)}
-							disabled={!hasPreset}
-						/>
-					) : undefined
-				}
-				basic={
-					<div className="flex flex-col gap-1.5 p-4">
-						{before}
-						{!empty && (
-							<>
-								{colorControl !== undefined ? (
-									colorControl
-								) : (
-									<StudioColorCompound
-										value={color}
-										onChange={onColorChange}
-										showDate={false}
-									/>
-								)}
-								{shape?.kind === 'select' && (
-									<ControllerPreviewChips
-										compound
-										disabled={
-											resolveControllerAvailability(
-												shape.availability,
-												bindings[shape.id]?.availability,
-											) !== 'enabled'
-										}
-										label="Type"
-										options={shape.options}
-										value={String(values.shape)}
-										onChange={(value) => onChange('shape', value)}
-									/>
-								)}
-								<ControllerCompound label="Position" className="gap-0">
-									<div className="px-3 pb-3">
-										<ControllerPad
-											disabled={
-												!source ||
-												resolveControllerAvailability(
-													source.availability,
-													bindings.source?.availability,
-												) !== 'enabled'
-											}
-											contained
-											aria-label="Position"
-											value={toFlutedGlassInput(values).input.source}
-											onChange={(value) => onChange('source', value)}
-											className="h-53"
-										/>
-									</div>
-								</ControllerCompound>
-							</>
-						)}
-					</div>
-				}
-				adjustment={
-					(!empty && detailGroups.length > 0) || after ? (
-						<div className="flex flex-col gap-3 p-4">
-							{!empty && (
-								<ControllerRenderer
-									groups={detailGroups}
-									bindings={bindings}
-									values={values}
-									onChange={onChange}
+		<ControlPanel
+			fixed={fixed}
+			basicPresets={
+				!empty && hasPreset && preset?.kind === 'select' && preset.options.length ? (
+					<GraphicPresetList
+						definition={preset}
+						binding={bindings[preset.id]}
+						value={values.preset}
+						onChange={(value) => onChange('preset', value)}
+						disabled={!hasPreset}
+					/>
+				) : undefined
+			}
+			basic={
+				<div className="flex flex-col gap-1.5 p-4">
+					{before}
+					{!empty && (
+						<>
+							{colorControl !== undefined ? (
+								colorControl
+							) : (
+								<StudioColorCompound
+									value={color}
+									onChange={onColorChange}
+									showDate={false}
 								/>
 							)}
-							{after}
-						</div>
-					) : undefined
-				}
-			/>
-		</div>
+							{shape?.kind === 'select' && (
+								<ControllerPreviewChips
+									compound
+									disabled={
+										resolveControllerAvailability(
+											shape.availability,
+											bindings[shape.id]?.availability,
+										) !== 'enabled'
+									}
+									label="Type"
+									options={shape.options}
+									value={String(values.shape)}
+									onChange={(value) => onChange('shape', value)}
+								/>
+							)}
+							<ControllerCompound label="Position" className="gap-0">
+								<div className="px-3 pb-3">
+									<ControllerPad
+										disabled={
+											!source ||
+											resolveControllerAvailability(
+												source.availability,
+												bindings.source?.availability,
+											) !== 'enabled'
+										}
+										contained
+										aria-label="Position"
+										value={toFlutedGlassInput(values).input.source}
+										onChange={(value) => onChange('source', value)}
+										className="h-53"
+									/>
+								</div>
+							</ControllerCompound>
+						</>
+					)}
+				</div>
+			}
+			adjustment={
+				(!empty && detailGroups.length > 0) || after ? (
+					<div className="flex flex-col gap-3 p-4">
+						{!empty && (
+							<ControllerRenderer
+								groups={detailGroups}
+								bindings={bindings}
+								values={values}
+								onChange={onChange}
+							/>
+						)}
+						{after}
+					</div>
+				) : undefined
+			}
+		/>
 	)
 }

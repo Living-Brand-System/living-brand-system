@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 import { ControllerRoot } from '@/components/shared/controller/layout'
-import { StudioRail } from '@/components/studio/shared/studio-rail'
 
 type WorkspaceLayoutProps = {
 	left: ReactNode
@@ -44,45 +43,6 @@ export function SelectionPanel({ top, settings, bottom }: PanelProps & { setting
 			<ControllerRoot data-slot="studio-layout-output" className="shrink-0 lg:h-auto">
 				{bottom}
 			</ControllerRoot>
-		</aside>
-	)
-}
-
-/** 위 카드는 최대 절반, 아래 카드는 나머지 높이. 각 카드 본문이 따로 스크롤된다. */
-export function EditingPanel({ top, bottom }: PanelProps) {
-	return (
-		<aside
-			aria-label="편집 도구"
-			data-slot="studio-layout-editing"
-			className="flex min-h-0 gap-3 p-4 lg:h-full lg:w-102"
-		>
-			<div className="flex min-h-0 w-80 shrink-0 flex-col gap-4">
-				{top && (
-					<ControllerRoot
-						data-slot="studio-layout-primary"
-						className="shrink-0 lg:h-auto lg:max-h-[50%]"
-					>
-						<div
-							data-slot="studio-layout-primary-scroll"
-							className="scrollbar-none min-h-0 overflow-y-auto"
-						>
-							{top}
-						</div>
-					</ControllerRoot>
-				)}
-				<ControllerRoot
-					data-slot="studio-layout-detail"
-					className="min-h-32 lg:h-auto lg:min-h-0 lg:flex-1"
-				>
-					<div
-						data-slot="studio-layout-detail-scroll"
-						className="scrollbar-none min-h-0 flex-1 overflow-y-auto"
-					>
-						{bottom}
-					</div>
-				</ControllerRoot>
-			</div>
-			<StudioRail />
 		</aside>
 	)
 }

@@ -264,7 +264,7 @@ it.each([
 	expect(rows?.[0]).toHaveTextContent(`출력 너비${width}${unit}`)
 	expect(rows?.[1]).toHaveTextContent(`출력 높이${height}${unit}`)
 	expect(output).toContainElement(screen.getByRole('region', { name: 'Layers' }))
-	const primary = container.querySelector('[data-slot="studio-layout-primary"]')
+	const primary = container.querySelector('[data-slot="studio-control-fixed"]')
 	expect(primary).not.toContainElement(screen.getByRole('region', { name: 'Layers' }))
 	expect(output?.textContent?.indexOf('Layers')).toBeLessThan(
 		output?.textContent?.indexOf('Output') ?? 0,

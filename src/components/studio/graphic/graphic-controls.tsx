@@ -170,21 +170,19 @@ export function GraphicControls({
 		].includes(manifest.id)
 	)
 		return (
-			<div className="h-full min-h-0 p-4">
-				<ControlPanel
-					fixed={fixed}
-					basic={
-						<div className="p-4">
-							<ControllerRenderer
-								groups={groups}
-								values={values}
-								bindings={bindings}
-								onChange={onChange}
-							/>
-						</div>
-					}
-				/>
-			</div>
+			<ControlPanel
+				fixed={fixed}
+				basic={
+					<div className="p-4">
+						<ControllerRenderer
+							groups={groups}
+							values={values}
+							bindings={bindings}
+							onChange={onChange}
+						/>
+					</div>
+				}
+			/>
 		)
 
 	const preset = controls.find((control) => control.id === 'preset')
@@ -223,103 +221,101 @@ export function GraphicControls({
 		.filter((group) => group.controls.length)
 
 	return (
-		<div className="h-full min-h-0 p-4">
-			<ControlPanel
-				fixed={fixed}
-				basicPresets={
-					!empty && preset?.kind === 'select' && preset.options.length ? (
-						<GraphicPresetList
-							definition={preset}
-							binding={bindings[preset.id]}
-							value={values.preset}
-							onChange={(value) => onChange('preset', value)}
-						/>
-					) : undefined
-				}
-				basic={
-					<div className="flex flex-col gap-1.5 p-4">
-						{before}
-						{!empty && (
-							<>
-								{colorControl !== undefined ? (
-									colorControl
-								) : (
-									<StudioColorCompound
-										value={color}
-										onChange={onColorChange}
-										showDate={false}
-									/>
-								)}
-								{position && (
-									<GraphicPosition
-										position={position}
-										disabled={
-											resolveControllerAvailability(
-												position.availability,
-												bindings[position.id]?.availability,
-											) !== 'enabled'
-										}
-										positionValue={values[position.id]}
-										onChange={onChange}
-									/>
-								)}
-								{direction.length > 0 && (
-									<ControllerCompound label="Direction">
-										<div className="flex flex-col gap-1 px-1.5 pb-1.5 [&_[data-slot=controller-row]]:bg-foreground/4">
-											{direction
-												.flatMap((group) => group.controls)
-												.map((control) => (
-													<ControllerControlRenderer
-														key={control.id}
-														definition={control}
-														binding={bindings[control.id]}
-														value={values[control.id]}
-														onChange={(value) =>
-															onChange(control.id, value)
-														}
-													/>
-												))}
-										</div>
-									</ControllerCompound>
-								)}
-								<ControllerRenderer
-									groups={extra}
-									values={values}
-									bindings={bindings}
-									onChange={onChange}
-								/>
-							</>
-						)}
-					</div>
-				}
-				adjustment={
-					(!empty && details.length > 0) || after ? (
-						<div className="flex flex-col gap-3 p-4">
-							{!empty && (
-								<ControllerRenderer
-									groups={details}
-									values={values}
-									onChange={onChange}
-									bindings={{
-										...bindings,
-										...(manifest.id === 'key-visual-pattern' &&
-										values.variableWeight === false
-											? {
-													maxWeight: {
-														...bindings.maxWeight,
-														availability: 'disabled' as const,
-													},
-												}
-											: {}),
-									}}
+		<ControlPanel
+			fixed={fixed}
+			basicPresets={
+				!empty && preset?.kind === 'select' && preset.options.length ? (
+					<GraphicPresetList
+						definition={preset}
+						binding={bindings[preset.id]}
+						value={values.preset}
+						onChange={(value) => onChange('preset', value)}
+					/>
+				) : undefined
+			}
+			basic={
+				<div className="flex flex-col gap-1.5 p-4">
+					{before}
+					{!empty && (
+						<>
+							{colorControl !== undefined ? (
+								colorControl
+							) : (
+								<StudioColorCompound
+									value={color}
+									onChange={onColorChange}
+									showDate={false}
 								/>
 							)}
-							{after}
-						</div>
-					) : undefined
-				}
-			/>
-		</div>
+							{position && (
+								<GraphicPosition
+									position={position}
+									disabled={
+										resolveControllerAvailability(
+											position.availability,
+											bindings[position.id]?.availability,
+										) !== 'enabled'
+									}
+									positionValue={values[position.id]}
+									onChange={onChange}
+								/>
+							)}
+							{direction.length > 0 && (
+								<ControllerCompound label="Direction">
+									<div className="flex flex-col gap-1 px-1.5 pb-1.5 [&_[data-slot=controller-row]]:bg-foreground/4">
+										{direction
+											.flatMap((group) => group.controls)
+											.map((control) => (
+												<ControllerControlRenderer
+													key={control.id}
+													definition={control}
+													binding={bindings[control.id]}
+													value={values[control.id]}
+													onChange={(value) =>
+														onChange(control.id, value)
+													}
+												/>
+											))}
+									</div>
+								</ControllerCompound>
+							)}
+							<ControllerRenderer
+								groups={extra}
+								values={values}
+								bindings={bindings}
+								onChange={onChange}
+							/>
+						</>
+					)}
+				</div>
+			}
+			adjustment={
+				(!empty && details.length > 0) || after ? (
+					<div className="flex flex-col gap-3 p-4">
+						{!empty && (
+							<ControllerRenderer
+								groups={details}
+								values={values}
+								onChange={onChange}
+								bindings={{
+									...bindings,
+									...(manifest.id === 'key-visual-pattern' &&
+									values.variableWeight === false
+										? {
+												maxWeight: {
+													...bindings.maxWeight,
+													availability: 'disabled' as const,
+												},
+											}
+										: {}),
+								}}
+							/>
+						)}
+						{after}
+					</div>
+				) : undefined
+			}
+		/>
 	)
 }
 

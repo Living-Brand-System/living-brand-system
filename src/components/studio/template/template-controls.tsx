@@ -7,7 +7,6 @@ import { ControllerCompound } from '@/components/shared/controller/compound'
 import { ControllerRoot } from '@/components/shared/controller/layout'
 import { ControllerControlRenderer } from '@/components/shared/controller-renderer'
 import { ControlPanel } from '@/components/studio/shared/control-panel'
-import { EditingPanel } from '@/components/studio/shared/workspace-layout'
 import { TemplateBackgroundPanel } from '@/components/studio/sidebar/template-background-panel'
 import { TemplateLayerControls } from '@/components/studio/sidebar/template-sidebar'
 import { ImageSlotMode } from '@/components/studio/template/image-slot-input'
@@ -44,9 +43,7 @@ export function TemplateControls({ grouped = true }: { grouped?: boolean }) {
 	if (selectedKind === 'image')
 		return (
 			<Controller.Browser.Root className="min-h-0 h-full">
-				<div className="h-full min-h-0 p-4">
-					<TemplateImageControls />
-				</div>
+				<TemplateImageControls />
 			</Controller.Browser.Root>
 		)
 	if (selectedKind === 'background' && background.state.type === 'graphic')
@@ -58,59 +55,49 @@ export function TemplateControls({ grouped = true }: { grouped?: boolean }) {
 	if (selectedKind === 'background' && background.state.type === 'image')
 		return (
 			<Controller.Browser.Root className="min-h-0 h-full">
-				<div className="h-full min-h-0 p-4">
-					<TemplateImageControls background />
-				</div>
+				<TemplateImageControls background />
 			</Controller.Browser.Root>
 		)
 	if (selectedKind === 'background') {
 		const slot = partitionTemplateSlots(config.template.slots).background
 		const definition = slot ? findTemplateControl(config, slot.colorControlId) : undefined
 		return (
-			<div className="h-full min-h-0 p-4">
-				<ControlPanel
-					fixed={<TemplateDimmer />}
-					basic={
-						definition ? (
-							<div className="p-4">
-								<Controller.Group
-									title="Background"
-									active={focus.target?.kind === 'canvas'}
-									onActivate={() =>
-										focus.set({
-											sectionId: 'section:background',
-											kind: 'canvas',
-										})
-									}
-								>
-									<ControllerControlRenderer
-										definition={definition}
-										value={background.state.color}
-										onChange={(value) => {
-											if (typeof value === 'string' || value === null)
-												background.setColor(value)
-										}}
-									/>
-								</Controller.Group>
-							</div>
-						) : undefined
-					}
-				/>
-			</div>
+			<ControlPanel
+				fixed={<TemplateDimmer />}
+				basic={
+					definition ? (
+						<div className="p-4">
+							<Controller.Group
+								title="Background"
+								active={focus.target?.kind === 'canvas'}
+								onActivate={() =>
+									focus.set({
+										sectionId: 'section:background',
+										kind: 'canvas',
+									})
+								}
+							>
+								<ControllerControlRenderer
+									definition={definition}
+									value={background.state.color}
+									onChange={(value) => {
+										if (typeof value === 'string' || value === null)
+											background.setColor(value)
+									}}
+								/>
+							</Controller.Group>
+						</div>
+					) : undefined
+				}
+			/>
 		)
 	}
 
 	return (
 		<Controller.Browser.Root className="min-h-0 h-full">
-			<EditingPanel
-				top={
-					selectedKind === 'text' && grouped ? (
-						<div className="p-4">
-							<TemplateColor />
-						</div>
-					) : null
-				}
-				bottom={
+			<ControlPanel
+				fixed={selectedKind === 'text' && grouped ? <TemplateColor /> : null}
+				basic={
 					<div className="px-4 pb-4">
 						<TemplateLayerControls grouped={grouped} separateSettings={grouped} />
 					</div>

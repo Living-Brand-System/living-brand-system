@@ -4,7 +4,10 @@ import { type ReactNode, useId, useState } from 'react'
 import { ControllerRoot } from '@/components/shared/controller/layout'
 import { StudioRail, StudioRailIcon } from './studio-rail'
 
-/** 고정 액션은 스크롤 밖에, 목록과 조정 내용은 각각 남은 높이 안에 둔다. */
+/**
+ * 고정 영역은 탭 스크롤 밖에, 목록과 조정 내용은 각각 남은 높이 안에 둔다.
+ * 고정 영역은 최대 절반 높이까지 자라고 넘치면 자체 스크롤한다.
+ */
 export function ControlPanel({
 	fixed,
 	basic,
@@ -35,15 +38,15 @@ export function ControlPanel({
 		<aside
 			aria-label="편집 도구"
 			data-slot="studio-control-panel"
-			className="flex h-full min-h-0 w-94 gap-3"
+			className="flex h-full min-h-0 w-102 gap-3 p-4"
 		>
 			<div className="flex min-h-0 w-80 flex-col gap-3">
 				{fixed && (
 					<ControllerRoot
 						data-slot="studio-control-fixed"
-						className="shrink-0 p-4 lg:h-auto"
+						className="shrink-0 lg:h-auto lg:max-h-[50%]"
 					>
-						{fixed}
+						<div className="scrollbar-none min-h-0 overflow-y-auto p-4">{fixed}</div>
 					</ControllerRoot>
 				)}
 				{tabs.map((tab) => (
@@ -59,7 +62,9 @@ export function ControlPanel({
 									data-slot="studio-preset-list"
 									className="min-h-0 shrink lg:h-auto"
 								>
-									<div className="min-h-0 overflow-y-auto p-4">{tab.list}</div>
+									<div className="scrollbar-none min-h-0 overflow-y-auto p-4">
+										{tab.list}
+									</div>
 								</ControllerRoot>
 							)}
 							{tab.content && (
@@ -70,7 +75,9 @@ export function ControlPanel({
 											: 'min-h-0 flex-1 lg:h-auto'
 									}
 								>
-									<div className="min-h-0 overflow-y-auto">{tab.content}</div>
+									<div className="scrollbar-none min-h-0 overflow-y-auto">
+										{tab.content}
+									</div>
 								</ControllerRoot>
 							)}
 						</div>

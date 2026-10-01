@@ -9,7 +9,7 @@ import { ControllerControlRenderer } from '@/components/shared/controller-render
 import { ImageCameraControl } from '@/components/studio/image/image-camera-control'
 import { ImageReferenceUpload } from '@/components/studio/image/image-reference-upload'
 import { StudioColorCompound } from '@/components/studio/shared/compound-controls'
-import { EditingPanel } from '@/components/studio/shared/workspace-layout'
+import { ControlPanel } from '@/components/studio/shared/control-panel'
 import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
 import type { ImageStudioValue } from '@/features/image-generation/contexts/image-studio-context'
@@ -38,9 +38,9 @@ export function ImageControls() {
 	const hasColor = Boolean(getImageStudioFeature(config, 'color-adjustment'))
 	const hasCamera = Boolean(getImageStudioFeature(config, 'camera-control'))
 	return (
-		<EditingPanel
-			top={
-				<div className="flex flex-col gap-1.5 p-4">
+		<ControlPanel
+			fixed={
+				<div className="flex flex-col gap-1.5">
 					{hasColor && <ImageColor config={config} controls={controls} color={color} />}
 					{hasCamera && (
 						<ImageCamera
@@ -58,7 +58,7 @@ export function ImageControls() {
 					)}
 				</div>
 			}
-			bottom={
+			basic={
 				<ImageGenerate
 					prompt={prompt}
 					value={controls.values[prompt.id]}
