@@ -780,9 +780,48 @@ export function TemplateStudioProvider({
 	const busy =
 		background.state.generating ||
 		Object.values(images.states).some((state) => state.generating)
+	const target = useMemo<TemplateStudioValue['editing']['target']>(() => {
+		if (!targetId) return null
+		const isBackground = targetId === backgroundSlot?.id
+		const state = isBackground ? background.state : images.states[targetId]
+		const mode = !isBackground
+			? 'image'
+			: background.state.type === 'graphic'
+				? 'graphic'
+				: background.state.type === 'image'
+					? 'image'
+					: 'color'
+		const profile =
+			mode === 'graphic'
+				? background.graphicConfigs.find(
+						(item) => item.id === background.state.graphicConfigId,
+					)
+				: mode === 'image'
+					? (isBackground ? background.contracts : images.contracts[targetId])?.find(
+							(item) => item.config.id === state?.profileId,
+						)?.config
+					: undefined
+		return {
+			mode,
+			name: profile?.name ?? null,
+			preview:
+				mode === 'image' && state?.image
+					? { url: state.image.url, alt: profile?.name ?? 'Image' }
+					: profile?.previewImage,
+		}
+	}, [
+		targetId,
+		backgroundSlot?.id,
+		background.state,
+		background.contracts,
+		background.graphicConfigs,
+		images.states,
+		images.contracts,
+	])
 	const editing = useMemo<TemplateStudioValue['editing']>(
 		() => ({
 			targetId,
+			target,
 			busy,
 			begin,
 			complete: () => {
@@ -808,6 +847,7 @@ export function TemplateStudioProvider({
 		}),
 		[
 			targetId,
+			target,
 			busy,
 			begin,
 			layerSession.select,

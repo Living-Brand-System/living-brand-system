@@ -23,6 +23,7 @@ import type {
 	ControllerControlValue,
 	ControllerRuntimeBindings,
 	ControllerValues,
+	StudioPreviewImage,
 } from '@/modules/studio-controller/controller-definition'
 
 /**
@@ -152,6 +153,12 @@ export type TemplateStudioValue = {
 	config: TemplateStudioConfig
 	editing: {
 		targetId: string | null
+		/** 편집 중인 대상의 표시 정보 — 방식·이름·미리보기는 세션이 파생하고 UI는 읽기만 한다. */
+		target: {
+			mode: 'image' | 'graphic' | 'color'
+			name: string | null
+			preview: StudioPreviewImage | undefined
+		} | null
 		busy: boolean
 		begin: (slotId: string) => void
 		complete: () => void

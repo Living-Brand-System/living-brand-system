@@ -16,7 +16,7 @@ import { useTemplateStudio } from '@/features/template-customization/hooks/use-t
 
 /** 두 화면의 편집 진입·이탈 UI. 값 복원과 요청 무효화는 Provider가 소유한다. */
 export function TemplateEditingPanel({ children }: { children: ReactNode }) {
-	const { editing, config, background, images } = useTemplateStudio()
+	const { editing, config } = useTemplateStudio()
 	const panel = useRef<HTMLElement>(null)
 	const targetId = editing.targetId
 	useEffect(() => {
@@ -38,22 +38,9 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 			previous?.focus()
 		}
 	}, [targetId])
-	const isBackground =
-		config.template.slots.find((slot) => slot.id === targetId)?.kind === 'background'
-	const state = isBackground ? background.state : images.states[targetId ?? '']
-	const graphic = isBackground && background.state.type === 'graphic'
-	const image = !isBackground || background.state.type === 'image'
-	const profile = graphic
-		? background.graphicConfigs.find((item) => item.id === background.state.graphicConfigId)
-		: image
-			? (isBackground ? background.contracts : images.contracts[targetId ?? ''])?.find(
-					(item) => item.config.id === state?.profileId,
-				)?.config
-			: undefined
-	const preview =
-		image && state?.image
-			? { url: state.image.url, alt: profile?.name ?? 'Image' }
-			: profile?.previewImage
+	const target = editing.target
+	const graphic = target?.mode === 'graphic'
+	const image = target?.mode === 'image'
 	return (
 		<div className="relative h-full min-h-0">
 			<div
@@ -73,11 +60,11 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 						<ControllerRoot className="mb-4 aspect-square shrink-0 lg:h-auto">
 							<StudioSelectionCard
 								title={
-									profile?.name ??
+									target?.name ??
 									(image ? 'Image' : graphic ? 'Graphic' : 'Background')
 								}
 								subtitle={config.name}
-								image={preview}
+								image={target?.preview}
 								onReset={editing.reset}
 								disabled={editing.busy}
 								actions={
