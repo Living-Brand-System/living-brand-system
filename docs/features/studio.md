@@ -268,7 +268,7 @@ Type은 원형 4열 선택(Figma `350:3309`), Position은 기존 Pad에 새 표�
 상단은 Preset → Color(Swatch/Custom) → Type → Position 순서입니다. 하단은 Manifest의 right에
 공개된 Rays·Glass·Frame 세부 속성만 기존 Renderer로 그립니다. Preset은 기존 모델과 같이 가로·세로에만
 작용하며 스윕·방사에서는 목록을 렌더하지 않습니다. 기존 그린/네이비 팔레트와 7색 편집 UI는 이 모드에서 사용하지 않습니다.
-색상이 자유롭게 개방된 그래픽은 15개 전경·배경 조합과 Custom 두 색 편집을 공유합니다. 발행 계약이 색상을 제한하면 계약의 팔레트·availability를 우선하며 임의 색 입력을 열지 않습니다.
+색상이 자유롭게 개방된 그래픽은 15개 전경·배경 조합과 Custom 두 색 편집을 공유합니다. 발행 계약이 색상을 제한하면 계약의 팔레트·availability를 우선하며 임의 색 입력을 열지 않습니다. 면·선 색을 따로 고르는 Formation은 면 값마다 런타임이 허용하는 선 값으로 두 색 조합 스와치를 만들고(Figma `529:23010`), 고르면 `planeColor`·`lineColor`를 함께 바꿉니다. Line·Pattern은 `colorway` 조합을 같은 스와치로 표시합니다. 이 셋은 hex 입력 경로가 없어 Custom을 열지 않습니다. 스와치·칩 테두리는 `foreground/15`입니다.
 벡터 그래픽은 선택한 두 색을 그대로 미리보기와 출력 모델에 전달합니다. Formation·Line·Pattern 모델의
 선택적 foregroundColor/backgroundColor가 없으면 기존 컬러 조합을 유지하며, Forward Straight는
 기존 lineColor/backgroundColor를 사용합니다. 스펙트럼 변환은 Fluted Glass에만 적용합니다.

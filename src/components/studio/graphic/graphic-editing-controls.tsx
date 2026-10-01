@@ -78,6 +78,49 @@ export function GraphicEditingControls({
 				)
 			: []
 	const currentSwatch = swatches.find((item) => item.id === values[colorway?.id ?? ''])
+	// Formation은 면·선 색을 따로 고른다 — 면 값마다 런타임이 허용하는 선 값으로 조합 스와치를 만든다
+	// (Figma 529:23010). 계약 밖의 조합은 만들지 않는다.
+	// ponytail: 면·선 쌍을 가진 런타임이 Formation 하나라 id를 직접 쓴다. 늘어나면 정의에 쌍을 선언한다.
+	const pair =
+		config.id === 'key-visual-formation'
+			? { background: 'planeColor', foreground: 'lineColor' }
+			: null
+	const pairBackground = pair && controls.find((control) => control.id === pair.background)
+	const pairSwatches =
+		pair && pairBackground?.kind === 'select'
+			? pairBackground.options.flatMap((plane) => {
+					const line = getGraphicStudioRuntimeGroups(config, {
+						...values,
+						[pair.background]: plane.value,
+					})
+						.flatMap((group) => group.controls)
+						.find((control) => control.id === pair.foreground)
+					const background = plane.colors?.[0]
+					if (line?.kind !== 'select' || !background) return []
+					return line.options.flatMap((option) =>
+						option.colors?.[0]
+							? [
+									{
+										id: `${plane.value}:${option.value}`,
+										label: `${plane.label} · ${option.label}`,
+										background,
+										foreground: option.colors[0],
+									},
+								]
+							: [],
+					)
+				})
+			: []
+	const pairDisabled =
+		pair !== null &&
+		[pair.background, pair.foreground].some((id) => {
+			const control = controls.find((item) => item.id === id)
+			return (
+				!control ||
+				resolveControllerAvailability(control.availability, bindings[id]?.availability) !==
+					'enabled'
+			)
+		})
 	const restrictedColors = controls.filter(
 		(control) =>
 			control.kind === 'color' ||
@@ -113,8 +156,29 @@ export function GraphicEditingControls({
 			fixed={fixed}
 			color={{ date: '', ...palette, foreground, background: back }}
 			colorControl={
-				freeColors ? undefined : !restrictedColors.length ? null : colorway &&
-					swatches.length ? (
+				freeColors ? undefined : !restrictedColors.length ? null : pair &&
+					pairSwatches.length ? (
+					<StudioColorCompound
+						showDate={false}
+						allowCustom={false}
+						swatches={pairSwatches}
+						disabled={pairDisabled}
+						value={{
+							date: '',
+							colorMode: 'swatch',
+							swatch: `${values[pair.background]}:${values[pair.foreground]}`,
+							foreground,
+							background: back,
+						}}
+						onChange={(patch) => {
+							if (!patch.swatch) return
+							const [plane, line] = patch.swatch.split(':')
+							// 면을 먼저 바꾼다 — 선의 허용 범위가 면을 따른다.
+							onChange(pair.background, plane)
+							onChange(pair.foreground, line)
+						}}
+					/>
+				) : colorway && swatches.length ? (
 					<StudioColorCompound
 						showDate={false}
 						allowCustom={false}

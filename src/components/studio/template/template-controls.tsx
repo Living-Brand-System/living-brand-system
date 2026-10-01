@@ -293,7 +293,7 @@ function TemplateColor() {
 							disabled={!editable}
 							onChange={() => text.setColor(hex)}
 							style={{ backgroundColor: hex }}
-							className="aspect-square w-full cursor-pointer appearance-none rounded-full border border-border outline-none checked:ring-2 checked:ring-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed"
+							className="aspect-square w-full cursor-pointer appearance-none rounded-full border border-foreground/15 outline-none checked:ring-2 checked:ring-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed"
 						/>
 					))}
 				</div>

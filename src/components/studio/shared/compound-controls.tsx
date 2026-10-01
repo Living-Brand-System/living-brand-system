@@ -174,7 +174,7 @@ export function StudioColorCompound({
 											background: swatch.background,
 										})
 									}
-									className="absolute inset-0 size-full cursor-pointer appearance-none rounded-full border border-border outline-none checked:ring-2 checked:ring-foreground/40"
+									className="absolute inset-0 size-full cursor-pointer appearance-none rounded-full border border-foreground/15 outline-none checked:ring-2 checked:ring-foreground/40"
 									style={{ backgroundColor: swatch.background }}
 								/>
 								<span
@@ -235,7 +235,7 @@ function ColorWithPalette({
 						checked={value.toLowerCase() === hex}
 						onChange={() => onChange(hex)}
 						style={{ backgroundColor: hex }}
-						className="size-6 shrink-0 cursor-pointer appearance-none rounded-sm border border-border outline-none checked:ring-2 checked:ring-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/50"
+						className="size-6 shrink-0 cursor-pointer appearance-none rounded-sm border border-foreground/15 outline-none checked:ring-2 checked:ring-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/50"
 					/>
 				))}
 			</div>

@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -6,7 +6,10 @@ import {
 	graphicRuntimeManifests,
 	resolveGraphicStudioOutput,
 } from '@/features/graphic-generation/domain/graphic-studio-manifest'
-import { createControllerValues } from '@/modules/studio-controller/controller-definition'
+import {
+	type ControllerControlDefinition,
+	createControllerValues,
+} from '@/modules/studio-controller/controller-definition'
 import { StudioLayoutPlayground } from './layout-playground'
 
 const { mounts, update, destroy } = vi.hoisted(() => ({
@@ -111,6 +114,45 @@ it('벡터 4종을 실제 카탈로그로 교체하며 이전 런타임을 정�
 		anchor: 'bottom',
 	})
 	expect(screen.queryByRole('dialog', { name: '자산 브라우저' })).not.toBeInTheDocument()
+})
+
+it('Formation 색은 허용된 면·선 조합 스와치로 고르고 두 값을 함께 바꾼다', async () => {
+	const { user, controls } = setup()
+	await controls('key-visual-formation')
+	await waitFor(() => expect(mounts['key-visual-formation']).toHaveBeenCalledTimes(1))
+	const swatches = within(screen.getByRole('radiogroup', { name: '색 조합' })).getAllByRole(
+		'radio',
+	)
+	expect(swatches.length).toBeGreaterThan(1)
+	// hex 입력 경로가 없으므로 Custom을 열지 않는다.
+	expect(screen.queryByRole('radio', { name: 'Custom' })).not.toBeInTheDocument()
+	// 면이 같고 선만 다른 조합을 고른다 — 면을 바꾸면 런타임이 선을 보정해 선 갱신을 가린다.
+	const current = swatches.find((swatch) => (swatch as HTMLInputElement).checked)
+	const plane = current?.getAttribute('aria-label')?.split(' · ')[0]
+	const target = swatches.find(
+		(swatch) =>
+			!(swatch as HTMLInputElement).checked &&
+			swatch.getAttribute('aria-label')?.startsWith(`${plane} · `),
+	)
+	if (!target) throw new Error('고를 조합이 없습니다.')
+	const [planeLabel, lineLabel] = (target.getAttribute('aria-label') ?? '').split(' · ')
+	const groups: readonly { controls: readonly ControllerControlDefinition[] }[] =
+		manifestOf('key-visual-formation').controller.groups
+	const definitions = groups.flatMap((group) => group.controls)
+	const optionValue = (id: string, label: string) => {
+		const control = definitions.find((item) => item.id === id)
+		return control?.kind === 'select'
+			? control.options.find((option) => option.label === label)?.value
+			: undefined
+	}
+	await user.click(target)
+	expect(update).toHaveBeenLastCalledWith(
+		expect.objectContaining({
+			planeColor: optionValue('planeColor', planeLabel),
+			lineColor: optionValue('lineColor', lineLabel),
+		}),
+	)
+	expect(target).toBeChecked()
 })
 
 it('Formation 네 방향·세부 값·기본 프리셋과 Reset을 연결한다', async () => {
