@@ -49,7 +49,7 @@ export function StudioSelectionCard({
 						<Button
 							size="sm"
 							variant="outline"
-							className="h-6.5 rounded-xl border-inverted-foreground/25 bg-transparent px-2.5 text-xs text-inverted-foreground hover:bg-inverted-foreground/10 hover:text-inverted-foreground"
+							className="h-6.5 rounded-lg border-inverted-foreground/25 bg-transparent px-2.5 text-xs text-inverted-foreground hover:bg-inverted-foreground/10 hover:text-inverted-foreground"
 							disabled={disabled}
 							onClick={onReset}
 						>
@@ -85,7 +85,7 @@ export function StudioSelectionChange({
 					variant="muted"
 					aria-label={label}
 					disabled={disabled}
-					className="h-6.5 rounded-xl bg-inverted-foreground/25 px-2.5 text-xs text-inverted-foreground hover:bg-inverted-foreground/35"
+					className="h-6.5 rounded-lg bg-inverted-foreground/25 px-2.5 text-xs text-inverted-foreground hover:bg-inverted-foreground/35"
 				>
 					Change
 				</Button>

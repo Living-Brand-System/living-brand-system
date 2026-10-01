@@ -218,20 +218,22 @@ export function TemplateImageControls({
 					<Controller.GroupList>
 						{isBackground && <TemplateDimmer />}
 						{generating && (
-							<Button
-								className="h-11 w-full"
-								disabled={
-									target.state.generating ||
-									!contract ||
-									!acceptsImagePromptExecution(
-										contract.prompt,
-										target.state.prompt,
-									)
-								}
-								onClick={target.onGenerate}
-							>
-								{target.state.generating ? '생성 중…' : '이미지 생성'}
-							</Button>
+							<Controller.Group title="Generate">
+								<Button
+									className="h-11 w-full"
+									disabled={
+										target.state.generating ||
+										!contract ||
+										!acceptsImagePromptExecution(
+											contract.prompt,
+											target.state.prompt,
+										)
+									}
+									onClick={target.onGenerate}
+								>
+									{target.state.generating ? '생성 중…' : '이미지 생성'}
+								</Button>
+							</Controller.Group>
 						)}
 					</Controller.GroupList>
 				) : undefined
@@ -241,16 +243,16 @@ export function TemplateImageControls({
 				generating ? (
 					<ImageDetail target={target} />
 				) : target.state.imageMode === 'generate' && !contract ? (
-					<Typography size="sm" tone="muted" className="p-4">
+					<Typography size="sm" tone="muted">
 						사용 가능한 이미지 생성 프로파일이 없습니다.
 					</Typography>
 				) : undefined
 			}
-			presets={generating && list ? <div className="p-4">{list}</div> : undefined}
+			presets={generating ? list : undefined}
 			adjustment={
 				target.transform ||
 				(contract && resolveTemplateImageColorControls(target.state, contract.config)) ? (
-					<div className="flex flex-col gap-3 p-4">
+					<div className="flex flex-col gap-3">
 						<ImagePrimary target={target} />
 						{target.transform}
 					</div>

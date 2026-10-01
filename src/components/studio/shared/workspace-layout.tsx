@@ -40,7 +40,10 @@ export function SelectionPanel({ top, settings, bottom }: PanelProps & { setting
 				{top}
 			</ControllerRoot>
 			{settings}
-			<ControllerRoot data-slot="studio-layout-output" className="shrink-0 lg:h-auto">
+			<ControllerRoot
+				data-slot="studio-layout-output"
+				className="shrink-0 px-4 pt-1 pb-4 lg:h-auto"
+			>
 				{bottom}
 			</ControllerRoot>
 		</aside>

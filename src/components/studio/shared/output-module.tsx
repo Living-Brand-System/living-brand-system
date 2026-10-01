@@ -284,7 +284,7 @@ export function StudioOutputModule({
 			<div className="flex gap-2">
 				<Button
 					disabled={busy || empty || !hasResult}
-					className="h-11 min-w-0 flex-1 rounded-xl"
+					className="h-11 min-w-0 flex-1 rounded-lg"
 					onClick={onSave}
 				>
 					{kind === 'image' ? '선택 저장' : '저장'}
@@ -293,7 +293,7 @@ export function StudioOutputModule({
 					<Button
 						variant="outline"
 						disabled={busy || empty || !canSaveAll}
-						className="h-11 min-w-0 flex-1 rounded-xl"
+						className="h-11 min-w-0 flex-1 rounded-lg"
 						onClick={onSaveAll}
 					>
 						전체 저장

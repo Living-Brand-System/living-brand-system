@@ -173,14 +173,12 @@ export function GraphicControls({
 			<ControlPanel
 				fixed={fixed}
 				basic={
-					<div className="p-4">
-						<ControllerRenderer
-							groups={groups}
-							values={values}
-							bindings={bindings}
-							onChange={onChange}
-						/>
-					</div>
+					<ControllerRenderer
+						groups={groups}
+						values={values}
+						bindings={bindings}
+						onChange={onChange}
+					/>
 				}
 			/>
 		)
@@ -234,7 +232,7 @@ export function GraphicControls({
 				) : undefined
 			}
 			basic={
-				<div className="flex flex-col gap-1.5 p-4">
+				<div className="flex flex-col gap-1.5">
 					{before}
 					{!empty && (
 						<>
@@ -291,7 +289,7 @@ export function GraphicControls({
 			}
 			adjustment={
 				(!empty && details.length > 0) || after ? (
-					<div className="flex flex-col gap-3 p-4">
+					<div className="flex flex-col gap-3">
 						{!empty && (
 							<ControllerRenderer
 								groups={details}

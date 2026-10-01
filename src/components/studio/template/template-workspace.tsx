@@ -80,22 +80,21 @@ export function TemplateWorkspace({
 									}
 									bottom={
 										<>
-											<div className="flex flex-col gap-3 p-4">
+											<div className="pb-3">
 												<TemplateLayerGroups />
 											</div>
-											<div className="flex flex-col gap-3 border-t border-border px-4 pb-4">
-												<TemplateOutputControls
-													title="Output"
-													exporting={exporting}
-													sizeControl={
-														<OutputDimensions
-															width={dimension(size.width)}
-															height={dimension(size.height)}
-															unit={exporting.sizeMm ? 'mm' : 'px'}
-														/>
-													}
-												/>
-											</div>
+											<hr className="my-1 border-border" />
+											<TemplateOutputControls
+												title="Output"
+												exporting={exporting}
+												sizeControl={
+													<OutputDimensions
+														width={dimension(size.width)}
+														height={dimension(size.height)}
+														unit={exporting.sizeMm ? 'mm' : 'px'}
+													/>
+												}
+											/>
 										</>
 									}
 								/>

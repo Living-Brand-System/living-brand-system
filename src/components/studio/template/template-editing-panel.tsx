@@ -1,5 +1,7 @@
 'use client'
 
+import { domAnimation, LazyMotion, useReducedMotion } from 'motion/react'
+import * as m from 'motion/react-m'
 import { type ReactNode, useEffect, useRef } from 'react'
 import { ControllerRoot } from '@/components/shared/controller/layout'
 import {
@@ -14,10 +16,13 @@ import {
 import { Button } from '@/components/ui/button'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 
+const TRANSITION = { duration: 0.25, ease: 'easeOut' } as const
+
 /** 두 화면의 편집 진입·이탈 UI. 값 복원과 요청 무효화는 Provider가 소유한다. */
 export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 	const { editing, config } = useTemplateStudio()
 	const panel = useRef<HTMLElement>(null)
+	const reducedMotion = useReducedMotion()
 	const targetId = editing.targetId
 	useEffect(() => {
 		if (!targetId) return
@@ -42,22 +47,29 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 	const graphic = target?.mode === 'graphic'
 	const image = target?.mode === 'image'
 	return (
-		<div className="relative h-full min-h-0">
-			<div
-				inert={Boolean(targetId)}
-				className={targetId ? 'h-full -translate-x-3 opacity-25' : 'h-full'}
-			>
-				{children}
-			</div>
-			{targetId && (
-				<section
-					ref={panel}
-					tabIndex={-1}
-					aria-label="선택한 레이어 편집"
-					className="absolute inset-0 flex min-h-0 flex-col gap-3 bg-background p-4 outline-none"
+		<LazyMotion features={domAnimation}>
+			<div className="relative h-full min-h-0">
+				{/* 편집 중에는 기본 패널을 폭의 절반만큼 밀어 뒤에 깐다(Figma 529:28027). */}
+				<m.div
+					inert={Boolean(targetId)}
+					className="h-full"
+					initial={false}
+					animate={targetId ? { x: '-50%', opacity: 0.2 } : { x: 0, opacity: 1 }}
+					transition={reducedMotion ? { duration: 0 } : TRANSITION}
 				>
-					<div className="min-h-0 flex-1 overflow-y-auto">
-						<ControllerRoot className="mb-4 aspect-square shrink-0 lg:h-auto">
+					{children}
+				</m.div>
+				{targetId && (
+					<m.section
+						ref={panel}
+						tabIndex={-1}
+						aria-label="선택한 레이어 편집"
+						className="scrollbar-none absolute inset-0 flex min-h-0 flex-col gap-4 overflow-y-auto p-4 outline-none"
+						initial={reducedMotion ? false : { opacity: 0 }}
+						animate={{ opacity: 1 }}
+						transition={TRANSITION}
+					>
+						<ControllerRoot className="aspect-square shrink-0 lg:h-auto">
 							<StudioSelectionCard
 								title={
 									target?.name ??
@@ -83,22 +95,30 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 								}
 							/>
 						</ControllerRoot>
-						<TemplateSettings />
-					</div>
-					<fieldset className="flex shrink-0 gap-2" aria-label="편집 완료 또는 취소">
-						<Button variant="muted" className="h-11 flex-1" onClick={editing.cancel}>
-							취소
-						</Button>
-						<Button
-							className="h-11 flex-1"
-							disabled={editing.busy}
-							onClick={editing.complete}
-						>
-							완료
-						</Button>
-					</fieldset>
-				</section>
-			)}
-		</div>
+						<TemplateSettings
+							actions={
+								<fieldset className="flex gap-2" aria-label="편집 완료 또는 취소">
+									<Button
+										variant="outline"
+										className="h-11 flex-1 rounded-lg border-border"
+										onClick={editing.cancel}
+									>
+										취소
+									</Button>
+									<Button
+										variant="muted"
+										className="h-11 flex-1 rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
+										disabled={editing.busy}
+										onClick={editing.complete}
+									>
+										완료
+									</Button>
+								</fieldset>
+							}
+						/>
+					</m.section>
+				)}
+			</div>
+		</LazyMotion>
 	)
 }

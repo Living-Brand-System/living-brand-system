@@ -1,7 +1,7 @@
 'use client'
 
 import { ColorPalette, Image, Shapes, TextFont, View, ViewOff } from '@carbon/icons-react'
-import { useId, useState } from 'react'
+import { type ReactNode, useId, useState } from 'react'
 import { Controller } from '@/components/shared/controller'
 import { ControllerCompound } from '@/components/shared/controller/compound'
 import { ControllerRoot } from '@/components/shared/controller/layout'
@@ -66,27 +66,25 @@ export function TemplateControls({ grouped = true }: { grouped?: boolean }) {
 				fixed={<TemplateDimmer />}
 				basic={
 					definition ? (
-						<div className="p-4">
-							<Controller.Group
-								title="Background"
-								active={focus.target?.kind === 'canvas'}
-								onActivate={() =>
-									focus.set({
-										sectionId: 'section:background',
-										kind: 'canvas',
-									})
-								}
-							>
-								<ControllerControlRenderer
-									definition={definition}
-									value={background.state.color}
-									onChange={(value) => {
-										if (typeof value === 'string' || value === null)
-											background.setColor(value)
-									}}
-								/>
-							</Controller.Group>
-						</div>
+						<Controller.Group
+							title="Background"
+							active={focus.target?.kind === 'canvas'}
+							onActivate={() =>
+								focus.set({
+									sectionId: 'section:background',
+									kind: 'canvas',
+								})
+							}
+						>
+							<ControllerControlRenderer
+								definition={definition}
+								value={background.state.color}
+								onChange={(value) => {
+									if (typeof value === 'string' || value === null)
+										background.setColor(value)
+								}}
+							/>
+						</Controller.Group>
 					) : undefined
 				}
 			/>
@@ -97,32 +95,20 @@ export function TemplateControls({ grouped = true }: { grouped?: boolean }) {
 		<Controller.Browser.Root className="min-h-0 h-full">
 			<ControlPanel
 				fixed={selectedKind === 'text' && grouped ? <TemplateColor /> : null}
-				basic={
-					<div className="px-4 pb-4">
-						<TemplateLayerControls grouped={grouped} separateSettings={grouped} />
-					</div>
-				}
+				basic={<TemplateLayerControls grouped={grouped} separateSettings={grouped} />}
 			/>
 		</Controller.Browser.Root>
 	)
 }
 
-/** 선택한 묶음의 방식만 왼쪽에 배치한다. 값과 전환은 기존 슬롯 세션을 사용한다. */
-export function TemplateSettings() {
+/**
+ * 선택한 묶음의 방식과 편집 완료·취소를 한 카드에 배치한다(Figma 525:8777).
+ * 값과 전환은 기존 슬롯 세션을 사용한다.
+ */
+export function TemplateSettings({ actions }: { actions: ReactNode }) {
 	const { config, layers, images } = useTemplateStudio()
 	const selectedKind = config.template.slots.find((slot) => slot.id === layers.selectedId)?.kind
-	if (selectedKind === 'background')
-		return (
-			<ControllerRoot className="shrink-0 p-4 lg:h-auto">
-				<Typography as="h2" size="sm" weight="medium" className="mb-2">
-					Background Setting
-				</Typography>
-				<div className="flex flex-col gap-1">
-					<TemplateBackgroundPanel content="settings" />
-				</div>
-			</ControllerRoot>
-		)
-	if (selectedKind !== 'image') return null
+	const background = selectedKind === 'background'
 	const slots = config.template.slots.filter(
 		(slot) =>
 			slot.kind === 'image' &&
@@ -130,28 +116,32 @@ export function TemplateSettings() {
 			slot.access === 'editable' &&
 			images.states[slot.id],
 	)
-	if (!slots.length) return null
 	return (
-		<ControllerRoot className="shrink-0 p-4 lg:h-auto">
-			<Typography as="h2" size="sm" weight="medium" className="mb-2">
-				Image Setting
+		<ControllerRoot className="shrink-0 px-4 pt-1 pb-4 lg:h-auto">
+			<Typography as="h2" size="sm" weight="medium" className="flex h-9 items-center">
+				{background ? 'Background Setting' : 'Image Setting'}
 			</Typography>
-			<div className="flex flex-col gap-2">
-				{slots.map((slot) => (
-					<fieldset key={slot.id} aria-label={slot.label}>
-						{slots.length > 1 && (
-							<Typography size="xs" tone="muted" className="mb-1">
-								{slot.label}
-							</Typography>
-						)}
-						<ImageSlotMode
-							label="Mode"
-							value={images.states[slot.id].imageMode}
-							onChange={(imageMode) => images.update(slot.id, { imageMode })}
-						/>
-					</fieldset>
-				))}
+			<div className="flex flex-col gap-1 pt-1 pb-3">
+				{background ? (
+					<TemplateBackgroundPanel content="settings" />
+				) : (
+					slots.map((slot) => (
+						<fieldset key={slot.id} aria-label={slot.label}>
+							{slots.length > 1 && (
+								<Typography size="xs" tone="muted" className="mb-1">
+									{slot.label}
+								</Typography>
+							)}
+							<ImageSlotMode
+								label="Mode"
+								value={images.states[slot.id].imageMode}
+								onChange={(imageMode) => images.update(slot.id, { imageMode })}
+							/>
+						</fieldset>
+					))
+				)}
 			</div>
+			{actions}
 		</ControllerRoot>
 	)
 }
@@ -186,13 +176,13 @@ export function TemplateLayerGroups() {
 						key={kind}
 						data-slot="template-layer-group"
 						className={cn(
-							'flex h-9 items-center gap-1 rounded-xl pr-1.5',
+							'flex h-9 items-center gap-1 rounded-lg pr-1.5',
 							selected && 'bg-muted',
 						)}
 					>
 						<Button
 							variant="ghost"
-							className="h-full min-w-0 flex-1 justify-start gap-2 rounded-xl px-3"
+							className="h-full min-w-0 flex-1 justify-start gap-2 rounded-lg px-3"
 							disabled={!slots.length || Boolean(editing.targetId)}
 							aria-pressed={selected}
 							onClick={() => {

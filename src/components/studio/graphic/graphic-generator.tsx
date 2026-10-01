@@ -121,11 +121,7 @@ function GraphicWorkspace({
 								)}
 							</StudioSelectionCard>
 						}
-						bottom={
-							<div className="flex flex-col gap-3 p-4">
-								<GraphicOutput output={output} />
-							</div>
-						}
+						bottom={<GraphicOutput output={output} />}
 					/>
 				</ControllerBrowser.Root>
 			}

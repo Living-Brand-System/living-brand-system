@@ -5,6 +5,13 @@ import { ControllerRoot } from '@/components/shared/controller/layout'
 import { StudioRail, StudioRailIcon } from './studio-rail'
 
 /**
+ * 카드 본문 여백(Figma 529:19501·529:27179). 기본 16px이고, 그룹 제목으로 시작하면 위만 줄인다 —
+ * 제목 행(36px)이 자기 여백을 갖고, GroupList는 시작 4px을 더한다. 둘 다 카드 상단에서 8px이 된다.
+ */
+const CARD_BODY =
+	'scrollbar-none min-h-0 overflow-y-auto p-4 has-[>[data-slot=controller-group-list]:first-child]:pt-1 has-[>[data-slot=controller-group]:first-child]:pt-2 has-[>:first-child>[data-slot=controller-group-list]:first-child]:pt-1'
+
+/**
  * 고정 영역은 탭 스크롤 밖에, 목록과 조정 내용은 각각 남은 높이 안에 둔다.
  * 고정 영역은 최대 절반 높이까지 자라고 넘치면 자체 스크롤한다.
  */
@@ -46,7 +53,7 @@ export function ControlPanel({
 						data-slot="studio-control-fixed"
 						className="shrink-0 lg:h-auto lg:max-h-[50%]"
 					>
-						<div className="scrollbar-none min-h-0 overflow-y-auto p-4">{fixed}</div>
+						<div className={CARD_BODY}>{fixed}</div>
 					</ControllerRoot>
 				)}
 				{tabs.map((tab) => (
@@ -62,9 +69,7 @@ export function ControlPanel({
 									data-slot="studio-preset-list"
 									className="min-h-0 shrink lg:h-auto"
 								>
-									<div className="scrollbar-none min-h-0 overflow-y-auto p-4">
-										{tab.list}
-									</div>
+									<div className={CARD_BODY}>{tab.list}</div>
 								</ControllerRoot>
 							)}
 							{tab.content && (
@@ -75,9 +80,7 @@ export function ControlPanel({
 											: 'min-h-0 flex-1 lg:h-auto'
 									}
 								>
-									<div className="scrollbar-none min-h-0 overflow-y-auto">
-										{tab.content}
-									</div>
+									<div className={CARD_BODY}>{tab.content}</div>
 								</ControllerRoot>
 							)}
 						</div>

@@ -47,91 +47,89 @@ export function ImageSettingPanel({ download }: { download: ImageExportView; tit
 		},
 	]
 	return (
-		<div className="p-4">
-			<StudioOutputModule
-				kind="image"
-				empty={false}
-				value={{
-					mode: 'digital',
-					preset: 'custom',
-					width: 0,
-					height: 0,
-					ppi: download.ppi ?? 300,
-					count: String(generation.batch),
-					ratio: generation.ratio,
-					resolution: generation.resolution,
-					notice: '',
-				}}
-				onChange={() => {}}
-				format={download.format ?? ''}
-				formats={download.formats.map((value) => ({ value, label: value.toUpperCase() }))}
-				onFormatChange={(value) =>
-					download.setFormat(value as (typeof download.formats)[number])
-				}
-				hasResult={download.selected.canExport}
-				canSaveAll={download.all.canExport}
-				busy={download.busy}
-				onSave={download.selected.run}
-				onSaveAll={download.all.run}
-				error={download.error}
-				sizeControl={
-					<ControllerStack
-						items={fields.map(({ definition, icon, value, onChange }) => {
-							const binding = controls.bindings[definition.id]
-							const availability = resolveControllerAvailability(
-								definition.availability,
-								binding?.availability,
-							)
-							const readonly =
-								availability === 'readonly' ||
-								(availability !== 'disabled' && definition.options.length <= 1)
-							return {
-								id: definition.id,
-								label: definition.label,
-								icon,
-								disabled: availability === 'disabled',
-								readonly,
-								children: (
-									<>
-										{readonly ? (
-											<span className="text-sm text-muted-foreground">
-												{value}
-											</span>
-										) : (
-											<Controller.Select
-												options={definition.options}
-												value={value}
-												onChange={onChange}
-											/>
-										)}
-										{binding?.error && <FieldError>{binding.error}</FieldError>}
-									</>
-								),
-							}
-						})}
-					/>
-				}
-			>
-				{(download.format === 'tiff' || download.format === 'pdf') &&
-					download.ppi &&
-					config.output.print && (
-						<PrintControls
-							ppi={download.ppi}
-							options={config.output.print.ppi}
-							onChange={download.setPpi}
-						/>
-					)}
-				{video && download.fps && (
-					<VideoControls
-						fps={download.fps}
-						fpsOptions={video.fps}
-						durationSeconds={download.durationSeconds}
-						maxDurationSeconds={video.maxDurationSeconds}
-						onFpsChange={download.setFps}
-						onDurationChange={download.setDuration}
+		<StudioOutputModule
+			kind="image"
+			empty={false}
+			value={{
+				mode: 'digital',
+				preset: 'custom',
+				width: 0,
+				height: 0,
+				ppi: download.ppi ?? 300,
+				count: String(generation.batch),
+				ratio: generation.ratio,
+				resolution: generation.resolution,
+				notice: '',
+			}}
+			onChange={() => {}}
+			format={download.format ?? ''}
+			formats={download.formats.map((value) => ({ value, label: value.toUpperCase() }))}
+			onFormatChange={(value) =>
+				download.setFormat(value as (typeof download.formats)[number])
+			}
+			hasResult={download.selected.canExport}
+			canSaveAll={download.all.canExport}
+			busy={download.busy}
+			onSave={download.selected.run}
+			onSaveAll={download.all.run}
+			error={download.error}
+			sizeControl={
+				<ControllerStack
+					items={fields.map(({ definition, icon, value, onChange }) => {
+						const binding = controls.bindings[definition.id]
+						const availability = resolveControllerAvailability(
+							definition.availability,
+							binding?.availability,
+						)
+						const readonly =
+							availability === 'readonly' ||
+							(availability !== 'disabled' && definition.options.length <= 1)
+						return {
+							id: definition.id,
+							label: definition.label,
+							icon,
+							disabled: availability === 'disabled',
+							readonly,
+							children: (
+								<>
+									{readonly ? (
+										<span className="text-sm text-muted-foreground">
+											{value}
+										</span>
+									) : (
+										<Controller.Select
+											options={definition.options}
+											value={value}
+											onChange={onChange}
+										/>
+									)}
+									{binding?.error && <FieldError>{binding.error}</FieldError>}
+								</>
+							),
+						}
+					})}
+				/>
+			}
+		>
+			{(download.format === 'tiff' || download.format === 'pdf') &&
+				download.ppi &&
+				config.output.print && (
+					<PrintControls
+						ppi={download.ppi}
+						options={config.output.print.ppi}
+						onChange={download.setPpi}
 					/>
 				)}
-			</StudioOutputModule>
-		</div>
+			{video && download.fps && (
+				<VideoControls
+					fps={download.fps}
+					fpsOptions={video.fps}
+					durationSeconds={download.durationSeconds}
+					maxDurationSeconds={video.maxDurationSeconds}
+					onFpsChange={download.setFps}
+					onDurationChange={download.setDuration}
+				/>
+			)}
+		</StudioOutputModule>
 	)
 }

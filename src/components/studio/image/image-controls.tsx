@@ -251,34 +251,32 @@ export function ImageGenerate({
 	children?: ReactNode
 }) {
 	return (
-		<div className="p-4">
-			<ControllerGroupList>
-				<ControllerGroup title="Generate" collapsible={false}>
-					{children}
-					{prompt && (
-						<ControllerControlRenderer
-							definition={prompt}
-							value={value ?? prompt.defaultValue ?? ''}
-							binding={binding}
-							onChange={onChange}
-						/>
-					)}
-					{showAction && (
-						<Button
-							className="mt-0.5 h-11 w-full"
-							disabled={busy || !canRun}
-							onClick={onGenerate}
-						>
-							{busy ? '생성 중…' : '이미지 생성'}
-						</Button>
-					)}
-					{error && (
-						<Typography role="alert" size="sm" className="text-destructive">
-							{error}
-						</Typography>
-					)}
-				</ControllerGroup>
-			</ControllerGroupList>
-		</div>
+		<ControllerGroupList>
+			<ControllerGroup title="Generate" collapsible={false}>
+				{children}
+				{prompt && (
+					<ControllerControlRenderer
+						definition={prompt}
+						value={value ?? prompt.defaultValue ?? ''}
+						binding={binding}
+						onChange={onChange}
+					/>
+				)}
+				{showAction && (
+					<Button
+						className="mt-0.5 h-11 w-full"
+						disabled={busy || !canRun}
+						onClick={onGenerate}
+					>
+						{busy ? '생성 중…' : '이미지 생성'}
+					</Button>
+				)}
+				{error && (
+					<Typography role="alert" size="sm" className="text-destructive">
+						{error}
+					</Typography>
+				)}
+			</ControllerGroup>
+		</ControllerGroupList>
 	)
 }

@@ -95,7 +95,7 @@ export function FlutedGlassControls({
 				) : undefined
 			}
 			basic={
-				<div className="flex flex-col gap-1.5 p-4">
+				<div className="flex flex-col gap-1.5">
 					{before}
 					{!empty && (
 						<>
@@ -147,7 +147,7 @@ export function FlutedGlassControls({
 			}
 			adjustment={
 				(!empty && detailGroups.length > 0) || after ? (
-					<div className="flex flex-col gap-3 p-4">
+					<div className="flex flex-col gap-3">
 						{!empty && (
 							<ControllerRenderer
 								groups={detailGroups}
