@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { Controller } from '@/components/shared/controller'
 import { browseEmptyMessage } from '@/components/studio/shared/browse-status'
 import { PreviewRefreshSlot } from '@/components/studio/shared/preview-refresh-slot'
@@ -21,8 +22,10 @@ import { useTemplateStudio } from '@/features/template-customization/hooks/use-t
  */
 export function TemplateLeftPanel({
 	preview,
+	output,
 }: {
 	/** 프로파일 미리보기 갱신 — 페이지 선택 카드가 자기 그림을 다시 굽는다. */
+	output?: ReactNode
 	preview: ReturnType<typeof useProfilePreview>
 }) {
 	const { navigation, config } = useTemplateStudio()
@@ -65,6 +68,9 @@ export function TemplateLeftPanel({
 			{/* 🔴 위치를 정하는 것은 이 한 줄뿐이다 — 패널은 자기 자리를 모른다(컨텍스트에서 직접
 			    읽는다). 우측이나 헤더로 옮기려면 이 줄을 그쪽으로 옮기면 된다. */}
 			<TemplateLayerPanel />
+			{output && (
+				<div className="mt-3 flex flex-col gap-3 border-t border-border pt-3">{output}</div>
+			)}
 		</StudioLeftPanel>
 	)
 }

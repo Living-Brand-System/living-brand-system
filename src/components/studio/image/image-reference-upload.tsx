@@ -7,6 +7,7 @@ import { FieldError } from '@/components/ui/field'
 import { IMAGE_REFERENCE_UPLOAD_MIME_TYPES } from '@/features/image-generation/domain/reference-image/contract'
 import { readDroppedImageFile } from '@/features/image-generation/services/read-dropped-image.client'
 import { useFileInput } from '@/hooks/use-file-input'
+import { cn } from '@/lib/utils'
 
 type ImageReferenceUploadProps = {
 	/** 첨부된 이미지의 data URI — 없으면 빈 판만 그린다. */
@@ -16,6 +17,9 @@ type ImageReferenceUploadProps = {
 	disabled: boolean
 	onAttach: (file: File) => void
 	onClear: () => void
+	/** Compound 본문에 들어가는 212px 업로드 영역. */
+	compact?: boolean
+	onPreviewError?: () => void
 }
 
 /**
@@ -38,6 +42,8 @@ export function ImageReferenceUpload({
 	disabled,
 	onAttach,
 	onClear,
+	compact = false,
+	onPreviewError,
 }: ImageReferenceUploadProps) {
 	const fileInput = useFileInput()
 	const attachFirst = (files: FileList) => {
@@ -46,10 +52,13 @@ export function ImageReferenceUpload({
 	}
 
 	return (
-		<div className="flex flex-col gap-1.5 pb-2.5">
+		<div className={cn('flex flex-col gap-1.5', !compact && 'pb-2.5')}>
 			{/* 🔴 `disabled`를 fieldset에 주지 않는다 — 주면 안의 제거 버튼까지 같이 죽는다. */}
 			<fieldset
-				className="relative grid aspect-square w-full min-w-0 place-items-center rounded-lg bg-muted"
+				className={cn(
+					'relative grid w-full min-w-0 place-items-center rounded-lg bg-muted',
+					compact ? 'h-53' : 'aspect-square',
+				)}
 				// 끌어다 놓기·붙여넣기를 받는 자리라 포커스를 받는다 — 이름이 없으면 무엇에
 				// 붙여넣는지 스크린리더가 말할 수 없다. 드롭 대상을 가리키는 role은 ARIA에 없어,
 				// 이 판이 담은 것(미리보기·버튼)을 묶는 fieldset으로 이름을 붙인다.
@@ -74,11 +83,17 @@ export function ImageReferenceUpload({
 					attachFirst(event.clipboardData.files)
 				}}
 			>
-				<div className="grid size-[70%] place-items-center overflow-hidden bg-card">
+				<div
+					className={cn(
+						'grid place-items-center overflow-hidden bg-card',
+						compact ? 'size-[147px]' : 'size-[70%]',
+					)}
+				>
 					{value && (
 						// biome-ignore lint/performance/noImgElement: 첨부 미리보기, 최적화 불필요
 						<img
 							src={value}
+							onError={onPreviewError}
 							alt={name ? `첨부한 참조 이미지: ${name}` : '첨부한 참조 이미지'}
 							className="size-full object-contain"
 						/>
@@ -88,7 +103,10 @@ export function ImageReferenceUpload({
 					type="button"
 					variant="muted"
 					shape="pill"
-					className="absolute"
+					className={cn(
+						'absolute',
+						compact && 'h-8 rounded-xl bg-foreground/15 px-2 text-sm',
+					)}
 					disabled={disabled}
 					onClick={fileInput.open}
 				>
@@ -113,6 +131,8 @@ export function ImageReferenceUpload({
 				<input
 					ref={fileInput.ref}
 					type="file"
+					aria-label="참조 이미지 파일"
+					disabled={disabled}
 					className="sr-only"
 					accept={IMAGE_REFERENCE_UPLOAD_MIME_TYPES.join(',')}
 					onChange={(event) => {

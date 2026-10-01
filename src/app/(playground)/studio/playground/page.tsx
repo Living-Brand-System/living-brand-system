@@ -1,7 +1,22 @@
-import { notFound } from 'next/navigation'
-import { StudioPanelPlayground } from '@/components/studio/playground/studio-panel-playground'
+import { StudioLayoutPlayground } from '@/components/studio/playground/layout-playground'
 
-export default function StudioPlaygroundPage() {
-	if (process.env.NODE_ENV !== 'development') notFound()
-	return <StudioPanelPlayground />
+export const metadata = { title: 'Studio Layout Playground' }
+
+export default async function StudioPlaygroundPage({
+	searchParams,
+}: {
+	searchParams: Promise<{ view?: string; experiment?: string }>
+}) {
+	const params = await searchParams
+	return (
+		<StudioLayoutPlayground
+			initialExample={
+				params.view === 'template' || params.experiment === 'panels'
+					? 'template'
+					: params.view === 'image'
+						? 'image'
+						: 'graphic'
+			}
+		/>
+	)
 }

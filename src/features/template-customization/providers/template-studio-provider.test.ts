@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
+import { resolveGraphicStudioOutput } from '@/features/graphic-generation/domain/graphic-studio-manifest'
+import manifest from '@/features/graphic-generation/graphic-runtimes/key-visual-pattern/definition'
+import { getGraphicStudioRuntimeGroups } from '@/features/graphic-generation/runtime/graphic-studio-runtime'
+import { createControllerValues } from '@/modules/studio-controller/controller-definition'
 import type { TemplateBackgroundState } from '../contexts/template-studio-context'
-import { updateTemplateBackground } from './template-studio-provider'
+import { updateBackgroundGraphic, updateTemplateBackground } from './template-studio-provider'
 
 const STATE: TemplateBackgroundState = {
 	type: 'color',
@@ -33,4 +38,54 @@ describe('updateTemplateBackground', () => {
 		expect(off.dimmer).toBe(false)
 		expect(off.dimmerOpacity).toBe(0.55)
 	})
+})
+
+it('템플릿 그래픽 프리셋은 변경된 기본값을 따르고 읽기 전용 정책은 유지한다', () => {
+	const config: GraphicStudioConfig = {
+		...manifest,
+		output: resolveGraphicStudioOutput(manifest),
+	}
+	const preset = config.controller.groups
+		.flatMap((group) => group.controls)
+		.find((control) => control.id === 'preset')
+	if (preset?.kind !== 'select') throw new Error('프리셋 계약이 없습니다.')
+	const current: TemplateBackgroundState = {
+		...STATE,
+		graphicConfigId: config.id,
+		graphicValues: { ...createControllerValues(config.controller.groups), columnGap: 22 },
+	}
+	const nextPreset = preset.options.find(
+		(option) => option.value !== current.graphicValues.preset,
+	)?.value
+	if (!nextPreset) throw new Error('다른 프리셋이 없습니다.')
+	const next = updateBackgroundGraphic(current, 'preset', nextPreset, [config], {
+		width: 800,
+		height: 600,
+	})
+	const defaults = createControllerValues(
+		getGraphicStudioRuntimeGroups(config, next.graphicValues),
+	)
+	expect(next.graphicValues.preset).toBe(nextPreset)
+	expect(next.graphicValues.columnGap).toBe(defaults.columnGap)
+	expect(next.graphicValues.rowGap).toBe(defaults.rowGap)
+	const locked = {
+		...config,
+		controller: {
+			...config.controller,
+			groups: config.controller.groups.map((group) => ({
+				...group,
+				controls: group.controls.map((control) =>
+					control.id === 'preset'
+						? { ...control, availability: 'readonly' as const }
+						: control,
+				),
+			})),
+		},
+	}
+	expect(
+		updateBackgroundGraphic(current, 'preset', nextPreset, [locked], {
+			width: 800,
+			height: 600,
+		}),
+	).toBe(current)
 })

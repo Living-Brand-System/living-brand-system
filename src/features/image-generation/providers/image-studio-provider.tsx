@@ -18,7 +18,6 @@ import {
 	getImageColorAdjustmentControls,
 	getImageStudioControls,
 	getImageStudioFeature,
-	IMAGE_STUDIO_CONTROL_IDS,
 	type ImageStudioConfig,
 } from '@/features/image-generation/domain/image-studio-config'
 import {
@@ -58,6 +57,7 @@ export function ImageStudioProvider({
 	const [angles, setAngles] = useState({ azimuthDeg: 0, elevationDeg: 0 })
 	// 첨부는 저장하지 않는다 — 이 상태가 사본의 전부이고, 새로고침하면 사라진다.
 	const [attachment, setAttachment] = useState<{ dataUri: string; name: string } | null>(null)
+	const [referenceEnabled, setReferenceEnabled] = useState(true)
 	const [preparing, setPreparing] = useState(false)
 	const conversion = useRef<AbortController | null>(null)
 	useEffect(() => () => conversion.current?.abort(), [])
@@ -90,8 +90,7 @@ export function ImageStudioProvider({
 	const canRun =
 		acceptsImagePromptExecution(definitions.prompt, prompt) &&
 		!promptError &&
-		!preparing &&
-		!attachmentError
+		(!referenceEnabled || (!preparing && !attachmentError))
 
 	const lineColor = colorDefinitions ? values[colorDefinitions.line.id] : undefined
 	const backgroundColor = colorDefinitions?.background
@@ -180,10 +179,11 @@ export function ImageStudioProvider({
 			const next = (browse.data ?? configs).find((item) => item.id === nextProfileId)
 			if (!next) return
 			clearReference()
+			setReferenceEnabled(true)
 			setConfigs((current) =>
 				current.some((item) => item.id === next.id) ? current : [...current, next],
 			)
-			setValues((current) => reconcileProfileValues(next, current))
+			setValues(createControllerValues(next.controller.groups))
 			setProfileId(nextProfileId)
 			// 딥링크와 같은 주소로 맞춘다 — 근거는 Graphic Provider의 같은 자리에 적혀 있다.
 			if (next.image.slug)
@@ -220,6 +220,7 @@ export function ImageStudioProvider({
 			}
 			pendingHistory.current = null
 			clearReference()
+			setReferenceEnabled(true)
 			setAngles({ azimuthDeg: 0, elevationDeg: 0 })
 			setConfigs((current) =>
 				current.some((candidate) => candidate.id === next.id)
@@ -292,7 +293,7 @@ export function ImageStudioProvider({
 				run: () => {
 					if (!canRun) return
 					// 계약이 첨부를 열지 않은 프로파일에서는 들고 있던 첨부도 보내지 않는다.
-					const upload = supportsReference ? attachment : null
+					const upload = supportsReference && referenceEnabled ? attachment : null
 					void generate(
 						{
 							aspectRatio: ratioValue as ImageAspectRatio,
@@ -324,6 +325,8 @@ export function ImageStudioProvider({
 				},
 			},
 			reference: {
+				enabled: supportsReference && referenceEnabled,
+				setEnabled: setReferenceEnabled,
 				value: supportsReference ? (attachment?.dataUri ?? null) : null,
 				name: supportsReference ? (attachment?.name ?? null) : null,
 				error: attachmentError,
@@ -390,6 +393,7 @@ export function ImageStudioProvider({
 			prompt,
 			preparing,
 			ratioValue,
+			referenceEnabled,
 			referenceIndex,
 			requested,
 			resolutionValue,
@@ -426,30 +430,6 @@ function restoreHistoryValues(
 	}
 	if (definitions.resolution.options.some((option) => option.value === item.imageSize)) {
 		next[definitions.resolution.id] = item.imageSize
-	}
-	return next
-}
-
-function reconcileProfileValues(
-	config: ImageStudioConfig,
-	current: ControllerValues,
-): ControllerValues {
-	const next = createControllerValues(config.controller.groups)
-	for (const control of config.controller.groups.flatMap((group) => group.controls)) {
-		if ((control.availability ?? 'enabled') !== 'enabled') continue
-		const currentValue = current[control.id]
-		if (control.id === IMAGE_STUDIO_CONTROL_IDS.prompt && typeof currentValue === 'string') {
-			next[control.id] = currentValue
-			continue
-		}
-		if (
-			control.kind === 'select' &&
-			((typeof currentValue === 'string' &&
-				control.options.some((option) => option.value === currentValue)) ||
-				(currentValue === null && control.defaultValue === null))
-		) {
-			next[control.id] = currentValue
-		}
 	}
 	return next
 }

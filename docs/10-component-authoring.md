@@ -147,6 +147,10 @@ studio·global·home 같은 표면의 화면 컴포넌트도 위 계약을 그�
 
 스튜디오 컨트롤러의 개별 컨트롤은 아래 계약을 따릅니다. 디자인 정본은 Figma HD_LBS_UI의 **Controller API**(node `4:5578`), 구현 원형은 `src/components/shared/controller/`의 **Controller 컴파운드 킷**입니다(Studio와 가이드라인이 함께 쓰므로 `components/shared/`에 있습니다). 패널은 `Root` → `Header`·`Content`·`Footer`, 본문은 `Group` → 개별 컨트롤로 조합합니다. `Group`은 제목과 접힘 상태를 직접 소유합니다. 기존 `Panel`은 `Root`·`Content`·`Footer`를 묶은 호환 래퍼입니다.
 
+`Controller.GroupList`는 세로 그룹 목록의 시작 여백 4px과 그룹 사이 간격 12px을 소유하며 끝 여백은 추가하지 않습니다(Figma `529:24992`). 단일 그룹에도 시작 여백만 적용합니다. `Group`은 높이 36px의 제목과 컨트롤 사이·컨트롤 사이의 간격 6px을 소유하고 배경·구분선·바깥 패딩을 갖지 않습니다. 접으면 제목 아래 간격과 본문이 함께 사라지고 목록 간격은 유지합니다. `attached` 하위 그룹은 부모 본문 간격에 6px을 더해 앞 컨트롤과 12px을 확보합니다. 접기 애니메이션은 포커스 링의 바깥 2px을 자르지 않습니다. 패널 패딩·카드 간격·Compound 내부 간격·오류 문구 간격은 별도 계약이며, 가로 배치용 `Controller.Stack`과 구분합니다.
+
+`Group.active`는 편집 대상과 제목 강조만 연결하며 그룹 배경이나 부모 여백을 바꾸지 않습니다. 패널의 배경·높이·여백은 바깥 레이아웃이, 입력 표면과 포커스 링은 `Row`·`Field`가 소유합니다. 활성화 콜백과 접기 트리거의 구분은 유지합니다. 템플릿의 편집 가능한 텍스트 슬롯은 운영 Studio와 Playground 모두 `Field` 안에 투명한 `Input`·`Textarea`를 놓습니다. 단일 입력을 `Compound`로 감싸거나 입력에 배경을 중복 지정하지 않습니다. readonly는 기존 공통 값 표시 계약을 따릅니다.
+
 Runtime Manifest부터 Effective Config, Provider, Artifact, Export까지 이어지는 전체 데이터 흐름은 [Studio](features/studio.md)를 정본으로 삼습니다. 이 절은 Controller의 표현과 상호작용 계약만 설명합니다.
 
 세 Studio는 Admin 제한 전의 원본 실행 계약을 `StudioRuntimeManifest`로 발행합니다. Runtime Manifest는 생성 가능한 Artifact와 Controller Definition만 알며 파일 형식은 알지 않습니다.
@@ -227,6 +231,8 @@ type ControllerInteraction = 'idle' | 'hover' | 'focused' | 'error'
 공통(`ControlBase`) — 모든 컨트롤이 공유하는 정의 상태:
 
 - Definition의 `label`은 직렬화 가능한 `string`입니다. React primitive의 `label`은 아이콘 노드를 받을 수 있지만 접근 가능한 이름(sr-only 텍스트)을 반드시 동반합니다.
+- `Controller.Compound`는 두 개 이상의 컨트롤을 하나의 기능과 표면으로 결합하는 컴포지션입니다. 가로 등분 배치인 Stack과 구분합니다. `label`·`control`(헤더 조작)·`children`(본문)만 받고 값·모드·On/Off 상태는 소비자가 소유합니다. 하나의 muted 표면과 12px 모서리, 36px 헤더, 4px 본문 간격을 제공합니다. 헤더는 `Segmented compact`의 24px 선택 표시를 사용합니다. Color(모드+색 조합/개별 색), Reference Image(토글+첨부), Camera Control(토글+프리뷰+축 선택)이 첫 예시입니다. Type처럼 헤더 조작이 없는 경우 `control`을 생략합니다. `PreviewChips compound`는 기존 preview 좌표와 라디오 동작을 재사용하는 원형 4열이며 라벨은 접근 가능한 이름으로 유지합니다. Position은 기존 Pad를 합성하고 `rounded-controller-pad`를 소비합니다. Definition에 새 kind를 추가하지 않습니다.
+- `Controller.Stack`은 `items` 1~3개를 한 줄의 같은 너비로 배치합니다. 각 항목은 `id`·텍스트 `label`·`icon`·행 내부 컨트롤(`children`)을 제공합니다. 간격은 4px이며 3열 행의 좌우 패딩은 10px입니다. 1~2개는 기본 텍스트 라벨이고 `labelDisplay="icon"`으로 아이콘을 지정할 수 있습니다. 3개는 항상 아이콘만 표시하되 원래 라벨을 sr-only와 툴팁으로 유지합니다. Row의 라벨 연결·readonly·disabled 계약을 재사용하며, 범위를 벗어난 항목 수는 거부합니다. 값과 이벤트는 소비자가 소유합니다.
 - `readonly` — 값은 유효하며 읽혀야 하는 상태. 정상 대비를 유지하고 컨트롤·chevron 없이 값만 보입니다 — `Controller.Row`의 `readonly`(라벨이 span이 되고 자동 배선이 꺼짐) + 값 텍스트 구성으로 표현합니다. opacity로 흐리지 않습니다.
 - `disabled` — 조정 자체가 불가한 상태(어드민 고정 등). 행 전체 흐림(opacity-50 관례) + 포인터·포커스 차단(안의 킷 컨트롤은 컨텍스트로 함께 비활성). readonly와 절대 혼용하지 않습니다.
 

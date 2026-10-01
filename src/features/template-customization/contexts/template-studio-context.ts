@@ -150,6 +150,14 @@ export type TemplateStudioValue = {
 	sampleImages: LazyResource<readonly SampleImageOption[]>
 	/** 템플릿 편집 계약 — Sidebar와 Canvas는 이 객체와 세션 state만 소비한다. */
 	config: TemplateStudioConfig
+	editing: {
+		targetId: string | null
+		busy: boolean
+		begin: (slotId: string) => void
+		complete: () => void
+		cancel: () => void
+		reset: () => void
+	}
 	text: {
 		values: Record<string, string>
 		setValue: (slotId: string, text: string) => void
@@ -185,7 +193,8 @@ export type TemplateStudioValue = {
 		 *    바뀌어 방금 고른 것이 사라진다(`focus`는 「지금 만지는 자리」이고 이것은 「고른 것」이다).
 		 */
 		selectedKind: TemplateStudioConfigSlot['kind'] | null
-		select: (kind: TemplateStudioConfigSlot['kind'] | null) => void
+		selectedId: string | null
+		select: (kind: string | null) => void
 	}
 	background: {
 		state: TemplateBackgroundState

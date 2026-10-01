@@ -55,6 +55,15 @@ const colorwayIds = Object.keys(KEY_VISUAL_PATTERN_COLORWAYS) as KeyVisualPatter
 const presetIds = KEY_VISUAL_PATTERN_PRESETS.map((preset) => preset.key)
 
 export const keyVisualPatternInputSchema = z.strictObject({
+	// 새 두 색 UI가 명시적으로 전달할 때만 사용한다. 기존 팔레트 입력은 그대로 유지한다.
+	foregroundColor: z
+		.string()
+		.regex(/^#[0-9a-f]{6}$/i)
+		.optional(),
+	backgroundColor: z
+		.string()
+		.regex(/^#[0-9a-f]{6}$/i)
+		.optional(),
 	direction: z.enum(directionIds),
 	viewpoint: z.enum(viewpointIds),
 	colorway: z.enum(colorwayIds),
@@ -95,6 +104,12 @@ export function toKeyVisualPatternInput(values: ControllerValues): KeyVisualPatt
 	const base = KEY_VISUAL_PATTERN_DEFAULT_INPUT
 	const origin = values.origin
 	const parsed = keyVisualPatternInputSchema.parse({
+		...(values.foregroundColor !== undefined
+			? { foregroundColor: values.foregroundColor }
+			: {}),
+		...(values.backgroundColor !== undefined
+			? { backgroundColor: values.backgroundColor }
+			: {}),
 		...base,
 		direction: resolveOption(values.direction, directionIds, base.direction),
 		viewpoint: resolveOption(values.viewpoint, viewpointIds, base.viewpoint),
@@ -251,8 +266,8 @@ export function createKeyVisualPatternScene(
 	return {
 		width: viewport.width,
 		height: viewport.height,
-		backgroundColor: colorway.background,
-		lineColor: colorway.line,
+		backgroundColor: input.backgroundColor ?? colorway.background,
+		lineColor: input.foregroundColor ?? colorway.line,
 		origin,
 		dashes,
 	}

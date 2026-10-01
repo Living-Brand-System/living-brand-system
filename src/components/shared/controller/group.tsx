@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
  * 프롭을 하나씩 늘리지 않는다.
  */
 export type ControllerGroupSectionProps = {
-	/** 이 섹션이 지금 만지는 대상임을 면으로 표시한다. */
+	/** 이 섹션이 지금 만지는 대상임을 제목으로 표시한다. 배경과 여백은 바꾸지 않는다. */
 	active?: boolean
 	/** 🔴 주면 chevron만 접기 트리거가 되고 나머지 클릭은 여기로 온다. */
 	onActivate?: () => void
@@ -48,13 +48,11 @@ type ControllerGroupProps =
 			/** 잠긴 그룹 — 강제로 닫히고 토글할 수 없다. 풀리면 저장된 열림 상태로 복귀한다. */
 			disabled?: boolean
 			/**
-			 * 앞 컨트롤을 소유하는 그룹에 붙는 하위 섹션 — 구분선 없이 여백만 둔다(디자인 SSOT 1:1838).
-			 * 중첩 자체는 신호가 아니다. 나란한 하위 그룹(Graphic의 Rays·Pulse·Glass)은 구분선을 유지한다.
+			 * 앞 컨트롤에 종속된 하위 그룹. 본문 간격 6px에 6px을 더해 12px을 확보한다.
 			 */
 			attached?: boolean
 			/**
-			 * 이 섹션이 지금 만지는 대상임을 면으로 표시한다 — 「어디부터 어디까지가 이 섹션인지」를
-			 * 누르는 것으로 알게 한다(사용자 지정 2026-08-24).
+			 * 이 섹션이 지금 만지는 대상임을 제목으로 표시한다. 배경과 여백은 바꾸지 않는다.
 			 */
 			active?: boolean
 			/**
@@ -91,17 +89,14 @@ export function ControllerGroup(props: ControllerGroupProps) {
 			data-slot="controller-group"
 			data-active={active || undefined}
 			onClick={onActivate}
-			className={cn(
-				'group/controller-group flex shrink-0 flex-col gap-1 pb-3',
-				// 활성 면은 패널 폭 전체로 번진다 — 접히는 갈래와 같은 규칙이다.
-				'data-[active]:-mx-4 data-[active]:bg-primary/5 data-[active]:px-4',
-				className,
-			)}
+			className={cn('group/controller-group flex shrink-0 flex-col gap-1.5', className)}
 			{...sectionProps}
 		>
-			<header className="flex h-9 shrink-0 items-center justify-between gap-2 pt-1">
+			<header className="flex h-9 shrink-0 items-center justify-between gap-2">
 				{/* 제목 스타일은 span이 갖는다 — header에 두면 trailing이 muted 색을 물려받는다. */}
-				<span className="font-semibold text-muted-foreground text-sm">{title}</span>
+				<span className="font-semibold text-muted-foreground text-sm group-data-[active]/controller-group:text-foreground">
+					{title}
+				</span>
 				{trailing}
 			</header>
 			{children}
@@ -146,7 +141,7 @@ function ControllerCollapsibleGroup({
 	return (
 		<Collapsible
 			data-slot="controller-group"
-			// 속성이 있을 때만 붙인다 — Tailwind의 `data-[active]`가 존재 여부로 걸린다.
+			// 활성 표시는 제목에만 적용한다. 표면과 부모 여백은 패널이 소유한다.
 			data-active={active || undefined}
 			open={resolvedOpen}
 			onOpenChange={setOpen}
@@ -154,18 +149,8 @@ function ControllerCollapsibleGroup({
 			// 헤더든 본문이든 이 섹션 안을 누르면 활성화된다. chevron만 stopPropagation으로 빠진다.
 			onClick={onActivate}
 			className={cn(
-				// 그룹 사이 간격은 컨테이너 gap이 아니라 펼쳐졌을 때의 하단 패딩(12px)이 만든다 — 접힌 그룹은 다음 구분선에 바로 붙는다.
-				'group/controller-group flex shrink-0 flex-col border-t border-border pt-1',
-				resolvedOpen && 'pb-3',
-				attached && 'border-t-0 pt-2',
-				/*
-				 * 🔑 활성 면은 패널 폭 **전체로 번진다** — `Controller.Content`의 `px-4`를 음수 마진으로
-				 *    상쇄하고 같은 값을 패딩으로 되돌린다. 안쪽 콘텐츠 폭이 그대로라 리플로가 없고,
-				 *    면이 좌우 끝까지 닿아야 「어디부터 어디까지」가 읽힌다.
-				 * 🔴 색은 `primary`만 쓴다 — hover가 `bg-muted`이므로 `accent`(=`muted`)로 칠하면
-				 *    활성과 hover가 구별되지 않는다(docs/09 §5).
-				 */
-				'data-[active]:-mx-4 data-[active]:bg-primary/5 data-[active]:px-4',
+				'group/controller-group flex shrink-0 flex-col',
+				attached && 'mt-1.5',
 				className,
 			)}
 			{...props}
@@ -189,7 +174,9 @@ function ControllerCollapsibleGroup({
 					</div>
 				) : (
 					<CollapsibleTrigger className="flex h-9 w-full items-center justify-between gap-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-50">
-						<span className="font-semibold text-muted-foreground text-sm">{title}</span>
+						<span className="font-semibold text-muted-foreground text-sm group-data-[active]/controller-group:text-foreground">
+							{title}
+						</span>
 						{chevron}
 					</CollapsibleTrigger>
 				)}
@@ -205,14 +192,10 @@ function ControllerCollapsibleGroup({
 									? { duration: 0 }
 									: { type: 'spring', visualDuration: 0.35, bounce: 0.1 }
 							}
-							style={{ clipPath: 'inset(0 -20px)' }}
+							style={{ clipPath: 'inset(-2px -20px)' }}
 						>
-							{/*
-							 * 위아래 4px은 바깥 gap이 아니라 여기 패딩이다 — 위 clipPath가 이 박스 끝에서
-							 * 세로를 자르므로, 바깥 간격은 첫·마지막 행의 포커스 링(바깥 2px)을 구해 주지
-							 * 못한다. 패딩은 접힘 애니메이션이 재는 height 안쪽이라 접혔을 때 새지 않는다.
-							 */}
-							<CollapsibleContent forceMount className="flex flex-col gap-1 py-1">
+							{/* 제목과의 6px도 접힘 높이에 포함한다. clipPath의 2px 여유가 필드 링을 보호한다. */}
+							<CollapsibleContent forceMount className="flex flex-col gap-1.5 pt-1.5">
 								{children}
 							</CollapsibleContent>
 						</m.div>

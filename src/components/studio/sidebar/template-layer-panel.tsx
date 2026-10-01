@@ -45,7 +45,7 @@ const GROUP_ICON: Partial<Record<TemplateLayerGroup['kind'], typeof TextFont>> =
  *    바뀌어 컨트롤이 통째로 사라진다.
  */
 export function TemplateLayerPanel() {
-	const { config, layers, focus } = useTemplateStudio()
+	const { config, layers, focus, editing } = useTemplateStudio()
 	const groups = listTemplateLayerGroups(config.template.slots)
 	const focusedNodeIds = focus.target?.kind === 'nodes' ? focus.target.nodeIds : []
 
@@ -54,6 +54,7 @@ export function TemplateLayerPanel() {
 	 *    텍스트면 그 입력칸으로 커서까지 보낸다.
 	 */
 	const select = (group: TemplateLayerGroup, memberId?: string) => {
+		if (editing.targetId) return
 		layers.select(group.kind)
 		if (group.kind === 'background') {
 			// 배경은 노드가 아니라 도화지다 — 집을 것이 없고 캔버스 상자가 곧 답이다.

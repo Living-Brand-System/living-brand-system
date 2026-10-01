@@ -52,7 +52,7 @@ const CLICK_SLOP_PX = 4
  *    컨트롤과 판 하이라이트가 한 번에 따라온다. 입구가 둘이 됐을 뿐 상태는 그대로다.
  */
 export function TemplateCanvas() {
-	const { config, canvas, background, focus, layers } = useTemplateStudio()
+	const { config, canvas, background, focus, layers, editing } = useTemplateStudio()
 	const { width, height } = config.template.exportOption.canvas
 	const stageRef = useRef<HTMLDivElement>(null)
 	const [preview, setPreview] = useState({ width, height })
@@ -125,6 +125,7 @@ export function TemplateCanvas() {
 
 	const selectAt = useCallback(
 		(from: Element | null) => {
+			if (editing.targetId) return
 			const found = slotAt(from)
 			if (found) {
 				layers.select(found.kind)
@@ -140,7 +141,7 @@ export function TemplateCanvas() {
 			layers.select('background')
 			focus.set({ sectionId: TEMPLATE_BACKGROUND_SECTION_ID, kind: 'canvas' })
 		},
-		[focus.set, layers.select, slotAt],
+		[focus.set, layers.select, slotAt, editing.targetId],
 	)
 
 	/**

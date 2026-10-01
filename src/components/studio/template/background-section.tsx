@@ -29,6 +29,7 @@ import { visibleControllerGroups } from '@/modules/studio-controller/controller-
 import { SampleImagePicker } from './sample-image-picker'
 
 type BackgroundSectionProps = {
+	content?: 'all' | 'settings' | 'controls'
 	/** 섹션 활성화 배선 — `Controller.Group`이 계약을 갖는다. */
 	section?: ControllerGroupSectionProps
 	groupDefinition: ControllerGroupDefinition
@@ -67,6 +68,7 @@ type BackgroundSectionProps = {
  * 경로가 없는 배경 이미지 feature 색 행만 잠가 스테이징한다.
  */
 export function BackgroundSection({
+	content = 'all',
 	section,
 	groupDefinition,
 	groupPresentation,
@@ -107,17 +109,36 @@ export function BackgroundSection({
 	const invalidPrompt = imageContract
 		? !acceptsImagePromptExecution(imageContract.prompt, value.prompt)
 		: true
+	const settings = (
+		<>
+			<ControllerControlRenderer
+				definition={typeDefinition}
+				value={type}
+				onChange={onTypeChange}
+			/>
+			{type === 'image' && (
+				<Controller.Row label={content === 'all' ? 'Image Type' : 'Image Mode'}>
+					<Controller.Segmented
+						aria-label="배경 이미지 방식"
+						options={[
+							{ value: 'preset', label: 'Preset' },
+							{ value: 'generate', label: 'Generate' },
+						]}
+						value={imageMode}
+						onChange={(next) => onChange({ imageMode: next })}
+					/>
+				</Controller.Row>
+			)}
+		</>
+	)
+	if (content === 'settings') return settings
 	return (
 		<ControllerGroupRenderer
 			definition={groupDefinition}
 			presentation={groupPresentation}
 			section={section}
 		>
-			<ControllerControlRenderer
-				definition={typeDefinition}
-				value={type}
-				onChange={onTypeChange}
-			/>
+			{content === 'all' && settings}
 
 			{type === 'color' && (
 				<ControllerControlRenderer
@@ -129,17 +150,6 @@ export function BackgroundSection({
 
 			{type === 'image' && (
 				<>
-					<Controller.Row label="Image Type">
-						<Controller.Segmented
-							aria-label="배경 이미지 방식"
-							options={[
-								{ value: 'preset', label: 'Preset' },
-								{ value: 'generate', label: 'Generate' },
-							]}
-							value={imageMode}
-							onChange={(next) => onChange({ imageMode: next })}
-						/>
-					</Controller.Row>
 					<Controller.TabPanel tabKey={imageMode}>
 						{imageMode === 'preset' ? (
 							<Controller.AssetCard
@@ -236,6 +246,7 @@ export function BackgroundSection({
 					{/* 선택한 Graphic의 그룹은 Background에 종속된다 — Background를 접으면 함께 닫힌다. */}
 					{graphicConfig && (
 						<ControllerRenderer
+							className="py-1.5"
 							groups={visibleGraphicGroups}
 							presentation={graphicConfig.controllerPresentation}
 							values={value.graphicValues}

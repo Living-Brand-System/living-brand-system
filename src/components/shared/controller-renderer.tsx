@@ -46,29 +46,28 @@ export type ControllerAssetSources = Partial<
 >
 
 type ControllerRendererProps = {
+	className?: string
 	groups: readonly ControllerGroupDefinition[]
 	presentation?: { groups: readonly ControllerGroupPresentation[] }
 	values: ControllerValues
 	bindings?: ControllerRuntimeBindings
 	onChange: (controlId: string, value: ControllerControlValue) => void
 	assetSources?: ControllerAssetSources
-	/** 첫 그룹의 위 구분선을 걷는다. 이 목록 앞에 다른 그룹이 서면 `false`를 준다. */
-	first?: boolean
 }
 
 /** 직렬화된 Definition과 세션 값을 도메인 지식 없이 Controller primitive로 투영한다. */
 export function ControllerRenderer({
+	className,
 	groups,
 	presentation,
 	values,
 	bindings,
 	onChange,
 	assetSources,
-	first = true,
 }: ControllerRendererProps) {
 	return (
-		<>
-			{groups.map((group, index) => {
+		<Controller.GroupList className={className}>
+			{groups.map((group) => {
 				const combination = resolveColorCombinationGroup(group)
 				const content = combination ? (
 					<ColorStripGroup
@@ -96,7 +95,6 @@ export function ControllerRenderer({
 					<ControllerGroupRenderer
 						key={group.id}
 						definition={group}
-						first={first && index === 0}
 						presentation={presentation?.groups.find(
 							({ groupId }) => groupId === group.id,
 						)}
@@ -105,7 +103,7 @@ export function ControllerRenderer({
 					</ControllerGroupRenderer>
 				)
 			})}
-		</>
+		</Controller.GroupList>
 	)
 }
 
@@ -247,18 +245,14 @@ export function ControllerGroupRenderer({
 	definition,
 	presentation,
 	children,
-	first = false,
 	attached = false,
 	section,
 }: {
 	definition: ControllerGroupDefinition
 	presentation?: ControllerGroupPresentation
 	children: ReactNode
-	first?: boolean
 	/**
-	 * 앞 컨트롤을 소유하는 그룹의 하위 섹션으로 그린다 — 구분선을 걷고 여백만 둔다.
-	 * 🔴 접히지 않는 그룹은 애초에 구분선이 없다(`Controller.Group`의 non-collapsible 갈래) —
-	 *    그래서 이 값은 접히는 갈래에만 넘긴다.
+	 * 앞 컨트롤을 소유하는 접이식 하위 그룹에 12px 간격을 확보한다.
 	 */
 	attached?: boolean
 	/** 섹션 활성화 배선 — `Controller.Group`에 그대로 얹힌다(계약은 그쪽이 갖는다). */
@@ -271,17 +265,11 @@ export function ControllerGroupRenderer({
 			defaultOpen={presentation?.defaultOpen ?? true}
 			attached={attached}
 			{...section}
-			className={first ? 'border-t-0' : undefined}
 		>
 			{children}
 		</Controller.Group>
 	) : (
-		<Controller.Group
-			title={definition.title}
-			collapsible={false}
-			{...section}
-			className={first ? 'border-t-0' : undefined}
-		>
+		<Controller.Group title={definition.title} collapsible={false} {...section}>
 			{children}
 		</Controller.Group>
 	)

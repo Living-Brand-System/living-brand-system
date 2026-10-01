@@ -60,6 +60,7 @@ const DEFAULT_ELEVATION: CameraElevation = 'eye-level'
 type CameraAngles = { azimuthDeg: number; elevationDeg: number }
 
 type ImageCameraControlProps = CameraAngles & {
+	contained?: boolean
 	/** 시점을 다시 잡을 대상 — 오빗 프리뷰의 텍스처가 된다. */
 	seedImage: string
 	busy: boolean
@@ -67,7 +68,7 @@ type ImageCameraControlProps = CameraAngles & {
 	azimuths: readonly CameraAzimuth[]
 	elevations: readonly CameraElevation[]
 	onChange: (angles: CameraAngles) => void
-	onRegenerate: () => void
+	onRegenerate?: () => void
 }
 
 /**
@@ -75,6 +76,7 @@ type ImageCameraControlProps = CameraAngles & {
  * 도메인 프리셋을 붙인다. 각도·요청은 세션(ImageStudioProvider)이 소유하고 여기는 표현만 한다.
  */
 export function ImageCameraControl({
+	contained = false,
 	azimuthDeg,
 	elevationDeg,
 	seedImage,
@@ -108,6 +110,7 @@ export function ImageCameraControl({
 		<div className="flex flex-col gap-1.5 pb-2.5">
 			{/* 디자인 SSOT(16:9035): X는 방위각, Y는 높이다. */}
 			<Controller.CameraControl
+				contained={contained}
 				axes={[
 					{
 						label: 'X',
@@ -140,15 +143,17 @@ export function ImageCameraControl({
 					onChange={onChange}
 				/>
 			</Controller.CameraControl>
-			<Button
-				type="button"
-				variant="muted"
-				className="mt-0.5 h-11 w-full font-semibold text-sm"
-				disabled={busy}
-				onClick={onRegenerate}
-			>
-				{busy ? '생성 중…' : '이미지 생성'}
-			</Button>
+			{onRegenerate && (
+				<Button
+					type="button"
+					variant="muted"
+					className="mt-0.5 h-11 w-full font-semibold text-sm"
+					disabled={busy}
+					onClick={onRegenerate}
+				>
+					{busy ? '생성 중…' : '이미지 생성'}
+				</Button>
+			)}
 		</div>
 	)
 }

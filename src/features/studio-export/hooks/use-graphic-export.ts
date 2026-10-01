@@ -125,7 +125,15 @@ export function useGraphicExport({
 	const setFormat = useCallback(
 		(format: StudioOutputFormat) => {
 			if (!config.output.formats.includes(format)) return
-			setDraft(() => createGraphicOutputDraft(config, format, viewport))
+			setDraft((current) =>
+				createGraphicOutputDraft(
+					config,
+					format,
+					current?.width && current.height
+						? { width: current.width, height: current.height }
+						: viewport,
+				),
+			)
 		},
 		[config, setDraft, viewport],
 	)

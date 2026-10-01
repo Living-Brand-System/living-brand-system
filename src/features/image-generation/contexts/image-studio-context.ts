@@ -85,6 +85,8 @@ export type ImageStudioValue = {
 		update: (patch: Partial<ImageColorAdjustment>) => void
 	}
 	reference: {
+		enabled: boolean
+		setEnabled: (enabled: boolean) => void
 		/** 첨부한 참조 이미지의 data URI — 저장하지 않으므로 이 세션 메모리가 유일한 사본이다. */
 		value: string | null
 		name: string | null
