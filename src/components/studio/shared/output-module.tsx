@@ -68,6 +68,7 @@ export function StudioOutputModule({
 	busy = false,
 	sizeControl,
 	children,
+	action,
 	error,
 }: {
 	formats?: readonly { value: string; label: string }[]
@@ -77,6 +78,8 @@ export function StudioOutputModule({
 	busy?: boolean
 	sizeControl?: ReactNode
 	children?: ReactNode
+	/** 저장 위에 놓는 실행 버튼 — Image의 생성처럼 결과를 만드는 동작(Figma 529:19999). */
+	action?: ReactNode
 	error?: string | null
 	kind: 'graphic' | 'image' | 'template'
 	value: StudioOutput
@@ -287,24 +290,27 @@ export function StudioOutputModule({
 					</>
 				)}
 			</div>
-			<div className="flex gap-2">
-				<Button
-					disabled={busy || empty || !hasResult}
-					className="h-11 min-w-0 flex-1 rounded-lg"
-					onClick={onSave}
-				>
-					{kind === 'image' ? '선택 저장' : '저장'}
-				</Button>
-				{kind === 'image' && (
+			<div className="flex flex-col gap-3">
+				{action}
+				<div className="flex gap-2">
 					<Button
-						variant="muted"
-						disabled={busy || empty || !canSaveAll}
-						className="h-11 min-w-0 flex-1 rounded-lg text-foreground"
-						onClick={onSaveAll}
+						disabled={busy || empty || !hasResult}
+						className="h-11 min-w-0 flex-1 rounded-lg"
+						onClick={onSave}
 					>
-						전체 저장
+						{kind === 'image' ? '선택 저장' : '저장'}
 					</Button>
-				)}
+					{kind === 'image' && (
+						<Button
+							variant="muted"
+							disabled={busy || empty || !canSaveAll}
+							className="h-11 min-w-0 flex-1 rounded-lg text-foreground"
+							onClick={onSaveAll}
+						>
+							전체 저장
+						</Button>
+					)}
+				</div>
 			</div>
 			{error && (
 				<Typography role="alert" size="sm" className="text-destructive">

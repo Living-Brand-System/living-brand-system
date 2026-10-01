@@ -354,21 +354,12 @@ function ImageDetail({ target }: { target: ImageTarget }) {
 		<>
 			{(state.imageMode === 'generate' || target.readonly) && (
 				<ImageGenerate
-					showAction={false}
 					prompt={contract?.prompt}
 					value={state.prompt}
 					binding={target.readonly ? { availability: 'readonly' } : undefined}
 					onChange={(value) => {
 						if (typeof value === 'string') target.onPrompt(value)
 					}}
-					busy={state.generating}
-					canRun={
-						!target.readonly &&
-						Boolean(
-							contract && acceptsImagePromptExecution(contract.prompt, state.prompt),
-						)
-					}
-					onGenerate={target.onGenerate}
 					error={state.error}
 				/>
 			)}

@@ -152,6 +152,11 @@ function config(
 	})
 }
 
+/** 색·시점은 레일의 Adjustment 보기에 있다(Figma 529:25129). */
+function openAdjustment() {
+	fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
+}
+
 describe('ImageGenerator', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
@@ -262,6 +267,7 @@ describe('ImageGenerator', () => {
 			}),
 		)
 
+		openAdjustment()
 		expect(screen.getByRole('group', { name: 'Color' })).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('radio', { name: 'Custom' }))
 		expect(screen.getByLabelText('Foreground 색상 선택')).toHaveValue('#000dff')
@@ -320,6 +326,7 @@ describe('ImageGenerator', () => {
 	it('결과를 고르기 전에는 Camera Controls가 잠기고 고른 뒤에 열린다', () => {
 		const view = render(createElement(ImageGenerator, { config: config(5, '제품컷') }))
 
+		openAdjustment()
 		expect(
 			within(screen.getByRole('radiogroup', { name: 'Camera Control 사용' })).getByRole(
 				'radio',
@@ -351,15 +358,15 @@ describe('ImageGenerator', () => {
 		mocks.state = { session: ADJUSTED_SESSION, selected: 1 }
 		render(createElement(ImageGenerator, { config: config(5, '제품컷') }))
 
-		// 메인 생성 버튼과 카메라 재생성 버튼이 같은 이름을 쓴다 — 뒤엣것이 카메라다.
+		// 생성 버튼은 Output에 하나뿐이다 — 시점 변경을 켜면 같은 버튼이 재생성을 실행한다.
+		openAdjustment()
 		fireEvent.click(
 			within(screen.getByRole('radiogroup', { name: 'Camera Control 사용' })).getByRole(
 				'radio',
 				{ name: 'On' },
 			),
 		)
-		const buttons = screen.getAllByRole('button', { name: '이미지 생성' })
-		fireEvent.click(buttons[buttons.length - 1] as HTMLElement)
+		fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
 
 		expect(mocks.generate).toHaveBeenCalledWith(
 			{

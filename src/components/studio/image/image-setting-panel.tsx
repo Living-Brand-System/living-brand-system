@@ -5,6 +5,7 @@ import { Controller } from '@/components/shared/controller'
 import { ControllerStack } from '@/components/shared/controller/stack'
 import { PrintControls, VideoControls } from '@/components/studio/shared/output-controls'
 import { StudioOutputModule } from '@/components/studio/shared/output-module'
+import { Button } from '@/components/ui/button'
 import { FieldError } from '@/components/ui/field'
 import type {
 	ImageAspectRatio,
@@ -22,7 +23,9 @@ import { resolveControllerAvailability } from '@/modules/studio-controller/contr
  *    Setting 블록을 통째로 옮겨 온 것이고, 한때 내보내기만 떼어 왔던 것을 되돌린 상태다.
  */
 export function ImageSettingPanel({ download }: { download: ImageExportView; title?: string }) {
-	const { config, controls, generation } = useImageStudio()
+	const { config, controls, generation, camera } = useImageStudio()
+	// 시점 변경이 켜져 있으면 같은 버튼이 참조 이미지를 다른 각도로 다시 그린다.
+	const canRun = camera.enabled ? Boolean(camera.seedImage) : generation.canRun
 	const { batch, ratio, resolution } = getImageStudioControls(config)
 	const video = download.format === 'mp4' ? config.output.video?.mp4 : undefined
 
@@ -49,6 +52,16 @@ export function ImageSettingPanel({ download }: { download: ImageExportView; tit
 	return (
 		<StudioOutputModule
 			kind="image"
+			action={
+				<Button
+					variant="muted"
+					className="h-11 w-full rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
+					disabled={generation.busy || !canRun}
+					onClick={camera.enabled ? camera.regenerate : generation.run}
+				>
+					{generation.busy ? '생성 중…' : '이미지 생성'}
+				</Button>
+			}
 			empty={false}
 			value={{
 				mode: 'digital',

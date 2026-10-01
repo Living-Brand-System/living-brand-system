@@ -58,6 +58,8 @@ export function ImageStudioProvider({
 	// 첨부는 저장하지 않는다 — 이 상태가 사본의 전부이고, 새로고침하면 사라진다.
 	const [attachment, setAttachment] = useState<{ dataUri: string; name: string } | null>(null)
 	const [referenceEnabled, setReferenceEnabled] = useState(true)
+	// 처음에는 꺼져 있고 결과가 생겨도 저절로 켜지지 않는다. 프로파일이 바뀌면 다시 끈다.
+	const [cameraEnabled, setCameraEnabled] = useState(false)
 	const [preparing, setPreparing] = useState(false)
 	const conversion = useRef<AbortController | null>(null)
 	useEffect(() => () => conversion.current?.abort(), [])
@@ -180,6 +182,7 @@ export function ImageStudioProvider({
 			if (!next) return
 			clearReference()
 			setReferenceEnabled(true)
+			setCameraEnabled(false)
 			setConfigs((current) =>
 				current.some((item) => item.id === next.id) ? current : [...current, next],
 			)
@@ -221,6 +224,7 @@ export function ImageStudioProvider({
 			pendingHistory.current = null
 			clearReference()
 			setReferenceEnabled(true)
+			setCameraEnabled(false)
 			setAngles({ azimuthDeg: 0, elevationDeg: 0 })
 			setConfigs((current) =>
 				current.some((candidate) => candidate.id === next.id)
@@ -326,7 +330,10 @@ export function ImageStudioProvider({
 			},
 			reference: {
 				enabled: supportsReference && referenceEnabled,
-				setEnabled: setReferenceEnabled,
+				setEnabled: (enabled: boolean) => {
+					setReferenceEnabled(enabled)
+					if (enabled) setCameraEnabled(false)
+				},
 				value: supportsReference ? (attachment?.dataUri ?? null) : null,
 				name: supportsReference ? (attachment?.name ?? null) : null,
 				error: attachmentError,
@@ -335,6 +342,11 @@ export function ImageStudioProvider({
 				clear: clearReference,
 			},
 			camera: {
+				enabled: supportsCamera && cameraEnabled,
+				setEnabled: (enabled: boolean) => {
+					setCameraEnabled(enabled)
+					if (enabled) setReferenceEnabled(false)
+				},
 				...angles,
 				setAngles,
 				seedImage: cameraSeed?.src ?? null,
@@ -376,6 +388,7 @@ export function ImageStudioProvider({
 			batchValue,
 			bindings,
 			browse,
+			cameraEnabled,
 			cameraSeed,
 			canRun,
 			clearReference,

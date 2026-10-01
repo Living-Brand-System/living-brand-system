@@ -97,6 +97,9 @@ export type ImageStudioValue = {
 		clear: () => void
 	}
 	camera: {
+		/** 시점 변경 모드. 켜면 참조 이미지가 꺼지고, 참조를 켜면 이쪽이 꺼진다. */
+		enabled: boolean
+		setEnabled: (enabled: boolean) => void
 		azimuthDeg: number
 		elevationDeg: number
 		setAngles: (angles: { azimuthDeg: number; elevationDeg: number }) => void

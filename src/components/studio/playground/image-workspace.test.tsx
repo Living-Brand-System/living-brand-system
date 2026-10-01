@@ -97,6 +97,7 @@ async function setup() {
 
 it('발행 계약으로 생성·색 조정·시점 변경·저장을 연결하고 Reset은 세션을 비운다', async () => {
 	const user = await setup()
+	await user.click(screen.getByRole('button', { name: 'Adjustment' }))
 	const cameraToggle = within(screen.getByRole('radiogroup', { name: 'Camera Control 사용' }))
 	expect(cameraToggle.getByRole('radio', { name: 'Off' })).toHaveAttribute('aria-checked', 'true')
 	expect(cameraToggle.getByRole('radio', { name: 'On' })).toBeDisabled()
@@ -106,6 +107,7 @@ it('발행 계약으로 생성·색 조정·시점 변경·저장을 연결하�
 	expect(screen.queryByText('카메라 시점을 조정할 수 있습니다.')).not.toBeInTheDocument()
 	expect(screen.getByRole('button', { name: '이미지 생성' })).toBeDisabled()
 	expect(screen.queryByRole('combobox', { name: '해상도' })).not.toBeInTheDocument()
+	await user.click(screen.getByRole('button', { name: 'Basic' }))
 	await user.type(screen.getByRole('textbox', { name: 'Prompt' }), '작은 나무 한 그루')
 	await user.click(screen.getByRole('button', { name: '이미지 생성' }))
 	await waitFor(() =>
@@ -120,10 +122,12 @@ it('발행 계약으로 생성·색 조정·시점 변경·저장을 연결하�
 		),
 	)
 	await screen.findByRole('img', { name: '생성 결과 1' })
+	await user.click(screen.getByRole('button', { name: 'Adjustment' }))
 	expect(cameraToggle.getByRole('radio', { name: 'On' })).toBeEnabled()
 	expect(cameraToggle.getByRole('radio', { name: 'Off' })).toHaveAttribute('aria-checked', 'true')
 	expect(screen.queryByText('카메라 미리보기')).not.toBeInTheDocument()
 	await user.click(cameraToggle.getByRole('radio', { name: 'On' }))
+	await user.click(screen.getByRole('button', { name: 'Basic' }))
 	expect(screen.getByRole('textbox', { name: 'Prompt' })).toBeDisabled()
 	expect(
 		within(screen.getByRole('radiogroup', { name: 'Reference Image 사용' })).getByRole(
@@ -132,6 +136,7 @@ it('발행 계약으로 생성·색 조정·시점 변경·저장을 연결하�
 		),
 	).toHaveAttribute('aria-checked', 'true')
 	expect(screen.getAllByRole('button', { name: '이미지 생성' })).toHaveLength(1)
+	await user.click(screen.getByRole('button', { name: 'Adjustment' }))
 	await user.click(screen.getByRole('radio', { name: '색 조합 4' }))
 	await user.click(screen.getByRole('button', { name: '선택 저장' }))
 	await waitFor(() => expect(mocks.export).toHaveBeenCalled())
@@ -148,6 +153,7 @@ it('발행 계약으로 생성·색 조정·시점 변경·저장을 연결하�
 		),
 	)
 	await user.click(screen.getByRole('button', { name: 'Reset' }))
+	await user.click(screen.getByRole('button', { name: 'Adjustment' }))
 	const resetCameraToggle = within(
 		screen.getByRole('radiogroup', { name: 'Camera Control 사용' }),
 	)
@@ -156,6 +162,7 @@ it('발행 계약으로 생성·색 조정·시점 변경·저장을 연결하�
 		'true',
 	)
 	expect(resetCameraToggle.getByRole('radio', { name: 'On' })).toBeDisabled()
+	await user.click(screen.getByRole('button', { name: 'Basic' }))
 	expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue('')
 	expect(screen.queryByRole('img', { name: '생성 결과 1' })).not.toBeInTheDocument()
 	expect(screen.getByRole('button', { name: '선택 저장' })).toBeDisabled()
@@ -192,10 +199,12 @@ it('Reference와 Camera는 상호 배타적으로 실행하고 Off는 첨부를 
 	expect(mocks.generate.mock.calls[1][0].reference).toBeUndefined()
 	await waitFor(() => expect(screen.getByRole('button', { name: '이미지 생성' })).toBeEnabled())
 	const referenceToggle = within(screen.getByRole('radiogroup', { name: 'Reference Image 사용' }))
-	const cameraToggle = within(screen.getByRole('radiogroup', { name: 'Camera Control 사용' }))
 	await user.click(referenceToggle.getByRole('radio', { name: 'On' }))
 	expect(screen.getByRole('img', { name: '첨부한 참조 이미지: seed.png' })).toBeInTheDocument()
+	await user.click(screen.getByRole('button', { name: 'Adjustment' }))
+	const cameraToggle = within(screen.getByRole('radiogroup', { name: 'Camera Control 사용' }))
 	await user.click(cameraToggle.getByRole('radio', { name: 'On' }))
+	await user.click(screen.getByRole('button', { name: 'Basic' }))
 	expect(referenceToggle.getByRole('radio', { name: 'Off' })).toHaveAttribute(
 		'aria-checked',
 		'true',
@@ -205,7 +214,9 @@ it('Reference와 Camera는 상호 배타적으로 실행하고 Off는 첨부를 
 	expect(mocks.generate.mock.calls[2][0].reference).toEqual({ generatedImageId: 91 })
 	await waitFor(() => expect(referenceToggle.getByRole('radio', { name: 'On' })).toBeEnabled())
 	await user.click(referenceToggle.getByRole('radio', { name: 'On' }))
+	await user.click(screen.getByRole('button', { name: 'Adjustment' }))
 	expect(cameraToggle.getByRole('radio', { name: 'Off' })).toHaveAttribute('aria-checked', 'true')
+	await user.click(screen.getByRole('button', { name: 'Basic' }))
 	expect(screen.getByRole('textbox', { name: 'Prompt' })).toBeEnabled()
 	expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue('투명한 유리')
 	expect(screen.getByRole('img', { name: '첨부한 참조 이미지: seed.png' })).toBeInTheDocument()

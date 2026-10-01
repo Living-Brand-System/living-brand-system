@@ -33,53 +33,38 @@ const TOGGLE = [
 
 export function ImageControls() {
 	const { config, controls, generation, camera, reference, color } = useImageStudio()
-	const [cameraEnabled, setCameraEnabled] = useState(false)
 	const { prompt } = getImageStudioControls(config)
 	const hasColor = Boolean(getImageStudioFeature(config, 'color-adjustment'))
 	const hasCamera = Boolean(getImageStudioFeature(config, 'camera-control'))
+	// Figma 529:19999·529:25129 — Basic은 생성 입력, Adjustment는 색과 시점이다. 생성 버튼은 Output에 있다.
 	return (
 		<ControlPanel
-			fixed={
-				<div className="flex flex-col gap-1.5">
-					{hasColor && <ImageColor config={config} controls={controls} color={color} />}
-					{hasCamera && (
-						<ImageCamera
-							enabled={cameraEnabled}
-							onChange={(enabled) => {
-								setCameraEnabled(enabled)
-								if (enabled) reference.setEnabled(false)
-							}}
-						/>
-					)}
-					{!hasColor && !hasCamera && (
-						<Typography size="sm" tone="muted">
-							이 프로파일의 생성 설정은 아래에서 조정합니다.
-						</Typography>
-					)}
-				</div>
-			}
 			basic={
 				<ImageGenerate
 					prompt={prompt}
 					value={controls.values[prompt.id]}
 					binding={
-						cameraEnabled ? { availability: 'disabled' } : controls.bindings[prompt.id]
+						camera.enabled ? { availability: 'disabled' } : controls.bindings[prompt.id]
 					}
 					onChange={(value) => controls.update(prompt.id, value)}
-					busy={generation.busy}
-					canRun={cameraEnabled ? Boolean(camera.seedImage) : generation.canRun}
-					onGenerate={cameraEnabled ? camera.regenerate : generation.run}
 					error={generation.error}
 				>
 					{getImageStudioFeature(config, 'reference-image') && (
-						<ImageReference
-							onChange={(enabled) => {
-								reference.setEnabled(enabled)
-								if (enabled) setCameraEnabled(false)
-							}}
-						/>
+						<ImageReference onChange={reference.setEnabled} />
 					)}
 				</ImageGenerate>
+			}
+			adjustment={
+				hasColor || hasCamera ? (
+					<div className="flex flex-col gap-1.5">
+						{hasColor && (
+							<ImageColor config={config} controls={controls} color={color} />
+						)}
+						{hasCamera && (
+							<ImageCamera enabled={camera.enabled} onChange={camera.setEnabled} />
+						)}
+					</div>
+				) : undefined
 			}
 		/>
 	)
@@ -232,28 +217,19 @@ export function ImageGenerate({
 	value,
 	binding,
 	onChange,
-	busy,
-	canRun,
-	onGenerate,
 	error,
 	children,
-	showAction = true,
 }: {
 	prompt?: Extract<ControllerControlDefinition, { kind: 'text' }>
 	value?: ControllerControlValue
 	binding?: ControllerRuntimeBinding
 	onChange: (value: ControllerControlValue) => void
-	busy: boolean
-	canRun: boolean
-	onGenerate: () => void
 	error: string | null
-	showAction?: boolean
 	children?: ReactNode
 }) {
 	return (
 		<ControllerGroupList>
 			<ControllerGroup title="Generate" collapsible={false}>
-				{children}
 				{prompt && (
 					<ControllerControlRenderer
 						definition={prompt}
@@ -262,16 +238,7 @@ export function ImageGenerate({
 						onChange={onChange}
 					/>
 				)}
-				{showAction && (
-					<Button
-						variant="muted"
-						className="mt-0.5 h-11 w-full rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
-						disabled={busy || !canRun}
-						onClick={onGenerate}
-					>
-						{busy ? '생성 중…' : '이미지 생성'}
-					</Button>
-				)}
+				{children}
 				{error && (
 					<Typography role="alert" size="sm" className="text-destructive">
 						{error}
