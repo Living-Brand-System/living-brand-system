@@ -211,6 +211,12 @@ Studio는 GlobalHeader의 진입점 여섯 개로 노출됩니다. 목록과 순
 
 회원 게이트는 layout이 아니라 여섯 페이지가 각자 첫 줄의 `requireUser()`로 소유합니다 — layout의 검사는 클라이언트 내비게이션에서 재실행되지 않기 때문입니다. layout은 `StudioCapabilitiesProvider`로 `isManager(user)`를 `canManageProfiles`에 심고, 그 값을 읽는 곳은 `useProfilePreview` 하나입니다. 🔴 표시는 강제가 아닙니다 — 실제 차단은 `POST /api/studio/preview`가 합니다([REST](../surfaces/rest.md)).
 
+### 개발용 패널 실험
+
+`/studio/playground`는 개발 모드에서만 열리는 조작 실험입니다. Template·Image·Graphic의 왼쪽 상단 카테고리 선택과 공통 Controller를 비교하고, 템플릿의 이미지·배경을 선택한 뒤 같은 Image·Graphic 컨트롤로 편집할 수 있습니다. 대상별 입력을 유지하며, 적용 버튼을 눌러야 템플릿 결과를 교체합니다.
+
+카탈로그와 이미지 생성은 로컬 샘플을 사용하고 Graphic은 기존 Runtime model로 미리보기를 계산합니다. CMS 저장·생성 API·내보내기는 연결하지 않습니다. 운영 Studio의 Provider와 Effective Config 계약은 이 실험으로 변경하지 않습니다.
+
 ### 소비 계약
 
 | Surface | 소비 계약 | 역할 |
