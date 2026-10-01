@@ -1,44 +1,26 @@
 'use client'
 
-import { type ReactNode, useEffect } from 'react'
+import { useEffect } from 'react'
 import { Controller } from '@/components/shared/controller'
 import {
 	CONTROLLER_TOGGLE_OPTIONS,
 	ControllerControlRenderer,
 	ControllerGroupRenderer,
 } from '@/components/shared/controller-renderer'
-import {
-	PrintControls,
-	ScaleControls,
-	VideoControls,
-} from '@/components/studio/shared/output-controls'
-import { OutputDimensions } from '@/components/studio/shared/output-dimensions'
-import { StudioOutputModule } from '@/components/studio/shared/output-module'
-import {
-	StudioPanel,
-	StudioPanelFixed,
-	StudioPanelScroll,
-} from '@/components/studio/sidebar/studio-panel'
-import { TemplateBackgroundPanel } from '@/components/studio/sidebar/template-background-panel'
-import {
-	rowFocusProps,
-	sectionProps,
-	subsectionProps,
-} from '@/components/studio/sidebar/template-section-focus'
 import { ImageSlotInput } from '@/components/studio/template/image-slot-input'
 import {
 	IMAGE_TRANSFORM_DEFAULT,
 	ImageTransformControl,
 } from '@/components/studio/template/image-transform-control'
+import { TemplateBackgroundPanel } from '@/components/studio/template/template-background-panel'
+import {
+	rowFocusProps,
+	sectionProps,
+	subsectionProps,
+} from '@/components/studio/template/template-section-focus'
 import { TextSlotInput } from '@/components/studio/template/text-slot-input'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import { Typography } from '@/components/ui/typography'
-import {
-	STUDIO_OUTPUT_FORMAT_OPTIONS,
-	type StudioOutputFormat,
-} from '@/features/studio-export/export-contract'
-import type { TemplateExportView } from '@/features/studio-export/hooks/use-template-export'
-import { formatMillimeters } from '@/features/studio-export/print-policy'
 import { usePublishedBrandColorValues } from '@/features/template-core/hooks/use-published-brand-color-values'
 import type { TemplateFocusTarget } from '@/features/template-customization/contexts/template-studio-context'
 import {
@@ -48,40 +30,11 @@ import {
 } from '@/features/template-customization/domain/template-studio-config'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 
-const FORMAT_LABELS = new Map(
-	STUDIO_OUTPUT_FORMAT_OPTIONS.map(({ label, value }) => [value, label]),
-)
-
 /**
  * 노드에서 오지 않는 섹션의 식별자. 🔴 Figma 노드 id는 `82:11` 꼴이라 이 값과 겹치지 않는다.
  * 배경은 노드가 아니라 도화지를 집으므로 `kind: 'canvas'`다.
  */
 const TEXT_SECTION_ID = 'section:text'
-
-/**
- * 템플릿 스튜디오의 사이드바(컨트롤러 패널) — 캔버스를 모른다.
- * 무엇을 그릴지는 편집 계약(config)만 보고 결정하고(원시 nodeConfigs 참조 금지),
- * 세션 값은 컨텍스트의 text/images 그룹으로만 읽고 쓴다.
- */
-export function TemplateSidebar({ exporting }: { exporting: TemplateExportView }) {
-	return (
-		<Controller.Browser.Root>
-			<StudioPanel
-				slot="studio-sidebar"
-				top={
-					<StudioPanelScroll>
-						<TemplateLayerControls />
-					</StudioPanelScroll>
-				}
-				bottom={
-					<StudioPanelFixed className="gap-4">
-						<TemplateOutputControls exporting={exporting} />
-					</StudioPanelFixed>
-				}
-			/>
-		</Controller.Browser.Root>
-	)
-}
 
 export function TemplateLayerControls({
 	grouped = false,
@@ -301,96 +254,6 @@ export function TemplateLayerControls({
 				</Empty>
 			)}
 		</Controller.GroupList>
-	)
-}
-
-export function TemplateOutputControls({
-	exporting,
-	sizeControl,
-}: {
-	exporting: TemplateExportView
-	title?: string
-	sizeControl?: ReactNode
-}) {
-	const { config } = useTemplateStudio()
-	const size = exporting.outputSize ?? config.template.exportOption.canvas
-	const video = exporting.format === 'mp4' ? config.output.video?.mp4 : undefined
-	return (
-		<StudioOutputModule
-			kind="template"
-			empty={false}
-			value={{
-				mode: exporting.sizeMm ? 'print' : 'digital',
-				preset: 'custom',
-				width: size.width,
-				height: size.height,
-				ppi: exporting.ppi,
-				count: '',
-				ratio: '',
-				resolution: '',
-				notice: exporting.vectorWarnings.join(' · '),
-			}}
-			onChange={() => {}}
-			format={exporting.format ?? ''}
-			formats={exporting.formats.map((value) => ({
-				value,
-				label: FORMAT_LABELS.get(value) ?? value,
-			}))}
-			onFormatChange={(value) => exporting.setFormat(value as StudioOutputFormat)}
-			hasResult={exporting.canExport}
-			busy={exporting.busy}
-			onSave={exporting.run}
-			error={exporting.error}
-			sizeControl={
-				sizeControl ?? (
-					<OutputDimensions
-						width={
-							exporting.sizeMm
-								? formatMillimeters(exporting.sizeMm.width)
-								: String(size.width)
-						}
-						height={
-							exporting.sizeMm
-								? formatMillimeters(exporting.sizeMm.height)
-								: String(size.height)
-						}
-						unit={exporting.sizeMm ? 'mm' : 'px'}
-					/>
-				)
-			}
-		>
-			{exporting.scaleApplies && (
-				<ScaleControls
-					scale={exporting.scale}
-					options={exporting.scaleOptions}
-					onChange={exporting.setScale}
-				/>
-			)}{' '}
-			{/* 🔴 svg도 포함한다 — SVG의 물리 크기(mm)도 ppi가 정한다. 빼 두면 SVG에는
-							    행이 안 뜨는데 값은 살아 있어, 직전에 PDF를 만졌는지에 따라 같은 SVG가
-							    53mm 또는 222mm로 나간다. */}
-			{(exporting.format === 'tiff' ||
-				exporting.format === 'pdf' ||
-				exporting.format === 'svg') &&
-				exporting.ppiApplies &&
-				config.output.print && (
-					<PrintControls
-						ppi={exporting.ppi}
-						options={config.output.print.ppi}
-						onChange={exporting.setPpi}
-					/>
-				)}
-			{video && exporting.fps && (
-				<VideoControls
-					fps={exporting.fps}
-					fpsOptions={video.fps}
-					durationSeconds={exporting.durationSeconds}
-					maxDurationSeconds={video.maxDurationSeconds}
-					onFpsChange={exporting.setFps}
-					onDurationChange={exporting.setDuration}
-				/>
-			)}
-		</StudioOutputModule>
 	)
 }
 

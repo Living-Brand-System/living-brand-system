@@ -120,28 +120,3 @@ export function StudioPanelScroll({ children }: { children: ReactNode }) {
 		</div>
 	)
 }
-
-/**
- * 상자 안에서 **높이를 차지한 만큼만** 쓰는 고정 영역 — 스크롤 위에 앉는다.
- * 좌측은 페이지 선택이, 우측은 레이어 목록이 여기 온다.
- *
- * 🔑 여기 오는 것은 **항상 1~2개**다(사용자 지시) — 그래서 스크롤을 주지 않는다.
- * ponytail: 그래도 레이어가 아주 많은 템플릿에서는 이 영역이 스크롤을 밀어낼 수 있다. 지금은
- *   목록이 접히므로(`collapsible`) 그것으로 족하고, 실제로 밀리면 여기에 최대 높이 한 줄이다.
- */
-export function StudioPanelFixed({
-	children,
-	className,
-}: {
-	children: ReactNode
-	className?: string
-}) {
-	return (
-		<div
-			data-slot="studio-panel-fixed"
-			className={cn('flex shrink-0 flex-col gap-1 px-4 pt-4 pb-4', className)}
-		>
-			{children}
-		</div>
-	)
-}

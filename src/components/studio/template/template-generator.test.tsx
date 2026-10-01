@@ -11,8 +11,6 @@ import {
 import userEvent from '@testing-library/user-event'
 import { type ComponentProps, useEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { TemplateLayerPanel } from '@/components/studio/sidebar/template-layer-panel'
-import { TemplateSidebar } from '@/components/studio/sidebar/template-sidebar'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import type {
 	GraphicRuntimeManifest,
@@ -43,6 +41,7 @@ import { TemplateStudioProvider } from '@/features/template-customization/provid
 import type { TemplateRasterArtifactProducer } from '@/features/template-customization/runtime/template-runtime.client'
 import type { GetCreateNavigationOutput } from '@/features/template-customization/services/get-create-navigation.service'
 import { TemplateGenerator as TemplateGeneratorView } from './template-generator'
+import { TemplateWorkspace } from './template-workspace'
 
 const mocks = vi.hoisted(() => ({
 	canExportTemplate: vi.fn(() => true),
@@ -247,17 +246,6 @@ function TemplateOutputProbe() {
 			<button type="button" onClick={exporting.run}>
 				export unsupported svg
 			</button>
-		</>
-	)
-}
-
-function TemplateSidebarTestBridge() {
-	return (
-		<>
-			{/* 🔴 레이어 패널은 **좌측 패널**에 산다 — 컨트롤은 여기서 묶음을 고른 그때만 나오므로,
-			    사이드바만 세운 테스트는 아무 컨트롤도 못 본다. 미리보기 카드는 좌측 소관이라 뺀다. */}
-			<TemplateLayerPanel />
-			<TemplateSidebar exporting={useTestTemplateExport()} />
 		</>
 	)
 }
@@ -2054,7 +2042,7 @@ describe('TemplateGenerator', () => {
 		)
 		const first = render(
 			<TemplateStudioProvider config={config} template={studioTemplate} categoryTitle="카드">
-				<TemplateSidebarTestBridge />
+				<TemplateWorkspace onReset={() => {}} />
 				<ImageRaceProbe />
 			</TemplateStudioProvider>,
 		)
@@ -2063,10 +2051,9 @@ describe('TemplateGenerator', () => {
 
 		fireEvent.click(screen.getByRole('button', { name: 'start slot generation' }))
 		expect(screen.getByTestId('slot-generating')).toHaveTextContent('true')
-		const slot = first.container.querySelector<HTMLElement>('[data-slot="image-slot-input"]')
-		expect(slot).not.toBeNull()
-		if (!slot) return
-		expect(within(slot).getByRole('combobox', { name: 'Type' })).toBeDisabled()
+		const editing = screen.getByRole('region', { name: '선택한 레이어 편집' })
+		expect(within(editing).getByRole('button', { name: '이미지 프로파일 변경' })).toBeDisabled()
+		expect(within(editing).getByRole('button', { name: '완료' })).toBeDisabled()
 		fireEvent.click(screen.getByRole('button', { name: 'select slot profile' }))
 		fireEvent.click(screen.getByRole('button', { name: 'patch slot profile' }))
 		expect(screen.getByTestId('slot-profile')).toHaveTextContent('11')

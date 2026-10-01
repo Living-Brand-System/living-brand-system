@@ -14,10 +14,10 @@ import {
 	WorkspaceCanvas,
 	WorkspaceLayout,
 } from '@/components/studio/shared/workspace-layout'
-import { TemplateOutputControls } from '@/components/studio/sidebar/template-sidebar'
 import { TemplateCanvas } from '@/components/studio/template/template-canvas'
 import { TemplateControls } from '@/components/studio/template/template-controls'
 import { TemplateEditingPanel } from '@/components/studio/template/template-editing-panel'
+import { TemplateOutputControls } from '@/components/studio/template/template-output-controls'
 import { Typography } from '@/components/ui/typography'
 import { useTemplateExport } from '@/features/studio-export/hooks/use-template-export'
 import { formatMillimeters } from '@/features/studio-export/print-policy'

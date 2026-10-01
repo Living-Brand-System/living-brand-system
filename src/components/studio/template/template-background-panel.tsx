@@ -1,7 +1,7 @@
 'use client'
 
-import { sectionProps } from '@/components/studio/sidebar/template-section-focus'
 import { BackgroundSection } from '@/components/studio/template/background-section'
+import { sectionProps } from '@/components/studio/template/template-section-focus'
 import { TEMPLATE_BACKGROUND_SECTION_ID } from '@/features/template-customization/contexts/template-studio-context'
 import {
 	findTemplateControl,
