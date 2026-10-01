@@ -112,6 +112,14 @@ export type TemplateStudioValue = {
 	sampleImages: LazyResource<readonly SampleImageOption[]>
 	/** 템플릿 편집 계약 — Sidebar와 Canvas는 이 객체와 세션 state만 소비한다. */
 	config: TemplateStudioConfig
+	editing: {
+		targetId: string | null
+		busy: boolean
+		begin: (slotId: string) => void
+		complete: () => void
+		cancel: () => void
+		reset: () => void
+	}
 	text: {
 		values: Record<string, string>
 		setValue: (slotId: string, text: string) => void

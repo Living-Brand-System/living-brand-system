@@ -326,17 +326,17 @@ describe('ImageStudioProvider 프로파일 교체 정책', () => {
 		vi.clearAllMocks()
 	})
 
-	it('enabled 프롬프트·유효한 select와 생성 결과를 보존한다', async () => {
+	it('프로파일 교체는 편집값을 초기화하고 기존 생성 결과는 보존한다', async () => {
 		await renderStudio([config(5), config(7)])
 
 		chooseAll()
 
 		expect(screen.getByTestId('state')).toHaveTextContent(
-			'프로파일 7 / 4 / 16:9 / 2K / 드론 / 결과 있음',
+			'프로파일 7 / 1 / 2:3 / 1K / / 결과 있음',
 		)
 	})
 
-	it('새 프로파일이 지원하지 않는 select만 시작값으로 되돌린다', async () => {
+	it('새 프로파일의 select 기본값을 적용한다', async () => {
 		await renderStudio([
 			config(5),
 			config(7, { batch: [1, 2], ratio: ['2:3'], resolution: ['1K'] }),
@@ -345,7 +345,7 @@ describe('ImageStudioProvider 프로파일 교체 정책', () => {
 		chooseAll()
 
 		expect(screen.getByTestId('state')).toHaveTextContent(
-			'프로파일 7 / 1 / 2:3 / 1K / 드론 / 결과 있음',
+			'프로파일 7 / 1 / 2:3 / 1K / / 결과 있음',
 		)
 	})
 
@@ -362,7 +362,7 @@ describe('ImageStudioProvider 프로파일 교체 정책', () => {
 		chooseAll()
 
 		expect(screen.getByTestId('state')).toHaveTextContent(
-			'프로파일 7 / 4 / 2:3 / 2K / 고정 프롬프트 / 결과 있음',
+			'프로파일 7 / 1 / 2:3 / 1K / 고정 프롬프트 / 결과 있음',
 		)
 	})
 
@@ -477,12 +477,14 @@ describe('ImageStudioProvider 프로파일 교체 정책', () => {
 		})
 	})
 
-	it('새 maxLength를 넘는 enabled 프롬프트는 자르지 않고 오류로 생성만 막는다', async () => {
+	it('교체 후 새 maxLength를 넘는 입력은 오류로 생성만 막는다', async () => {
 		await renderStudio([config(5), config(7, { maxPromptLength: 1 })])
 
 		fireEvent.click(screen.getByRole('button', { name: '프롬프트 입력' }))
 		fireEvent.click(screen.getByRole('button', { name: '교체' }))
 
+		expect(screen.getByTestId('state')).not.toHaveTextContent('드론')
+		fireEvent.click(screen.getByRole('button', { name: '프롬프트 입력' }))
 		expect(screen.getByTestId('state')).toHaveTextContent('/ 드론 / 결과 있음')
 		expect(screen.getByTestId('prompt-error')).toHaveTextContent(
 			'프롬프트가 최대 1자를 초과했습니다. / 생성 불가',
@@ -511,6 +513,10 @@ it('첨부 변환 중 생성을 막고 재선택·삭제 후 이전 결과를 �
 	})
 	expect(result.current.reference.preparing).toBe(true)
 	expect(result.current.generation.canRun).toBe(false)
+	act(() => result.current.reference.setEnabled(false))
+	expect(result.current.generation.canRun).toBe(true)
+	act(() => result.current.reference.setEnabled(true))
+	expect(result.current.generation.canRun).toBe(false)
 	act(() => {
 		void result.current.reference.attach(new File(['b'], 'b.png', { type: 'image/png' }))
 	})
@@ -522,5 +528,14 @@ it('첨부 변환 중 생성을 막고 재선택·삭제 후 이전 결과를 �
 	act(() => result.current.reference.clear())
 	await act(async () => pending[0]?.(new Blob(['old'], { type: 'image/webp' })))
 	expect(result.current.reference.value).toBeNull()
+	await act(async () => {
+		result.current.reference.attach(new File(['bad'], 'bad.txt', { type: 'text/plain' }))
+	})
+	expect(result.current.reference.error).not.toBeNull()
+	expect(result.current.generation.canRun).toBe(false)
+	act(() => result.current.reference.setEnabled(false))
+	expect(result.current.generation.canRun).toBe(true)
+	act(() => result.current.reference.setEnabled(true))
+	expect(result.current.generation.canRun).toBe(false)
 	unmount()
 })

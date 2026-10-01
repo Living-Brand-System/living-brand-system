@@ -1,9 +1,19 @@
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import {
+	act,
+	cleanup,
+	fireEvent,
+	renderHook,
+	render as rtlRender,
+	screen,
+	waitFor,
+	within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { type ComponentProps, useEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TemplateLayerPanel } from '@/components/studio/sidebar/template-layer-panel'
 import { TemplateSidebar } from '@/components/studio/sidebar/template-sidebar'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import type {
 	GraphicRuntimeManifest,
 	GraphicStudioConfig,
@@ -145,14 +155,16 @@ function TemplateGenerator({
 	graphicConfigs?: readonly GraphicStudioConfig[]
 }) {
 	return (
-		<TemplateGeneratorView
-			{...props}
-			config={deriveTemplateStudioConfig(
-				props.template,
-				providedImageConfigs,
-				providedGraphicConfigs,
-			)}
-		/>
+		<TooltipProvider>
+			<TemplateGeneratorView
+				{...props}
+				config={deriveTemplateStudioConfig(
+					props.template,
+					providedImageConfigs,
+					providedGraphicConfigs,
+				)}
+			/>
+		</TooltipProvider>
 	)
 }
 
@@ -364,10 +376,27 @@ function ImageRaceProbe() {
  *    배경은 하위가 없어 자기 자신이 잎이다.
  */
 function selectLayer(label: string) {
-	const rows = screen.getAllByRole('button', { name: label })
-	const row = rows.find((candidate) => candidate.dataset.slot === 'layer-row')
-	if (!row) throw new Error(`레이어 행을 찾지 못했습니다: ${label}`)
-	fireEvent.click(row)
+	const group =
+		label === 'Background'
+			? 'Background'
+			: label.startsWith('배경')
+				? 'Image'
+				: ['Title', 'Years', 'Slogan'].includes(label)
+					? 'Text'
+					: label
+	const layers = screen.queryByRole('region', { name: 'Layers' })
+	fireEvent.click(
+		layers
+			? within(layers).getByRole('button', { name: group })
+			: screen.getByRole('button', { name: label }),
+	)
+}
+
+function openImageColors() {
+	const adjustment = screen.queryByRole('button', { name: 'Adjustment' })
+	if (adjustment) fireEvent.click(adjustment)
+	const custom = screen.queryByRole('radio', { name: 'Custom' })
+	if (custom) fireEvent.click(custom)
 }
 
 describe('TemplateGenerator', () => {
@@ -377,11 +406,13 @@ describe('TemplateGenerator', () => {
 		mocks.canExportTemplate.mockReturnValue(true)
 		mocks.mountGraphicPreview.mockResolvedValue({
 			captureFrame: mocks.captureGraphicFrame,
+			artifacts: { raster: { source: { withSurface: () => mocks.captureGraphicFrame() } } },
 			destroy: mocks.destroyGraphicPreview,
 			getViewport: () => ({ width: 400, height: 300 }),
 			resize: mocks.resizeGraphicPreview,
 			update: mocks.updateGraphicPreview,
 		})
+		sampleMocks.fetchSampleImages.mockResolvedValue([])
 		mocks.resizeObserverCallback = undefined
 		mocks.templateArtifact = undefined
 		vi.stubGlobal(
@@ -400,27 +431,153 @@ describe('TemplateGenerator', () => {
 		vi.unstubAllGlobals()
 	})
 
+	it('편집 취소는 이미지·설정을 복원하고 늦은 생성 결과를 무시한다', async () => {
+		const source = {
+			...template,
+			html: '<div data-node-id="photo" data-image-carrier=""></div>',
+			nodeConfigs: { photo: { imageInput: { profileId: 7 } } },
+		}
+		const config = deriveTemplateStudioConfig(source, imageConfigs, effectiveGraphicConfigs)
+		const { result } = renderHook(useTemplateStudio, {
+			wrapper: ({ children }) => (
+				<TemplateStudioProvider config={config} template={source} categoryTitle="카드">
+					{children}
+				</TemplateStudioProvider>
+			),
+		})
+		const sample = {
+			id: 12,
+			name: '기존 이미지',
+			alt: '',
+			url: '/original.png',
+			thumbnailUrl: '/original.png',
+			lineArt: false,
+			group: '',
+		}
+		act(() => {
+			result.current.images.selectSampleImage('photo', sample)
+			result.current.images.update('photo', {
+				prompt: '원래 프롬프트',
+				transform: { x: 10, y: 20, scale: 2, rotate: 0 },
+			})
+		})
+		const original = result.current.images.states.photo
+		let finish!: (value: unknown) => void
+		mocks.requestImageGeneration.mockImplementationOnce(
+			() =>
+				new Promise((resolve) => {
+					finish = resolve
+				}),
+		)
+		act(() => result.current.editing.begin('photo'))
+		act(() => {
+			result.current.layers.select('background')
+			result.current.images.update('photo', { prompt: '새 프롬프트' })
+		})
+		expect(result.current.layers.selectedId).toBe('photo')
+		let pending!: Promise<void>
+		act(() => {
+			pending = result.current.images.generate('photo')
+		})
+		expect(result.current.editing.busy).toBe(true)
+		act(() => result.current.editing.complete())
+		expect(result.current.editing.targetId).toBe('photo')
+		act(() => result.current.editing.cancel())
+		expect(result.current.images.states.photo).toEqual(original)
+		act(() => result.current.editing.begin('photo'))
+		await act(async () => {
+			finish({ generatedImages: [{ id: 99, url: '/late.png' }] })
+			await pending
+		})
+		expect(result.current.images.states.photo).toEqual(original)
+		act(() =>
+			result.current.images.selectSampleImage('photo', {
+				...sample,
+				id: 13,
+				url: '/replacement.png',
+			}),
+		)
+		expect(result.current.images.states.photo.transform).toBeUndefined()
+		act(() => result.current.editing.reset())
+		expect(result.current.images.states.photo.image?.url).toBe('/replacement.png')
+		act(() => result.current.editing.cancel())
+		expect(result.current.images.states.photo).toEqual(original)
+	})
+
+	it('배경 편집은 디밍을 보존하며 교체하고 실패 후 재시도·완료할 수 있다', async () => {
+		const config = deriveTemplateStudioConfig(template, imageConfigs, effectiveGraphicConfigs)
+		const { result } = renderHook(useTemplateStudio, {
+			wrapper: ({ children }) => (
+				<TemplateStudioProvider config={config} template={template} categoryTitle="카드">
+					{children}
+				</TemplateStudioProvider>
+			),
+		})
+		act(() => result.current.editing.begin('background'))
+		act(() => {
+			result.current.background.selectType('image')
+			result.current.background.update({
+				dimmer: true,
+				dimmerOpacity: 0.6,
+				imageMode: 'generate',
+				prompt: '산과 바다',
+			})
+			result.current.background.selectSampleImage({
+				id: 12,
+				name: '원본',
+				alt: '',
+				url: '/original.png',
+				thumbnailUrl: '/original.png',
+				lineArt: false,
+				group: '',
+			})
+		})
+		mocks.requestImageGeneration.mockRejectedValueOnce(new Error('실패'))
+		await act(async () => result.current.background.generate())
+		expect(result.current.background.state).toMatchObject({
+			prompt: '산과 바다',
+			dimmerOpacity: 0.6,
+			image: { url: '/original.png' },
+			generating: false,
+			error: expect.any(String),
+		})
+		mocks.requestImageGeneration.mockResolvedValueOnce({
+			generatedImages: [{ id: 13, url: '/new.png' }],
+		})
+		await act(async () => result.current.background.generate())
+		act(() => result.current.background.update({ imageMode: 'preset' }))
+		expect(result.current.background.state).toMatchObject({
+			prompt: '산과 바다',
+			dimmerOpacity: 0.6,
+			image: { url: '/new.png' },
+			error: null,
+		})
+		act(() => result.current.editing.complete())
+		expect(result.current.editing.targetId).toBeNull()
+		expect(result.current.background.state.image?.url).toBe('/new.png')
+	})
+
 	it('공통 Studio 작업대에서 템플릿을 내보낸다', () => {
 		const { container } = render(<TemplateGenerator categoryTitle="카드" template={template} />)
 
-		expect(container.querySelector('[data-slot="studio-workspace"]')).not.toBeNull()
+		expect(container.querySelector('[data-slot="studio-layout-workspace"]')).not.toBeNull()
 		// 사이드바는 높이만 가두고 overflow는 잠그지 않는다 — 자산 브라우저 패널이 캔버스 위로 나가야 한다.
-		const workspaceSidebar = container.querySelector('[data-slot="studio-workspace-sidebar"]')
-		expect(workspaceSidebar).toHaveClass('lg:max-h-full')
+		const workspaceSidebar = container.querySelector('[data-slot="studio-sidebar"]')
+		expect(workspaceSidebar).toHaveClass('h-full')
 		expect(workspaceSidebar).not.toHaveClass('lg:overflow-hidden')
-		expect(container.querySelector('[data-slot="studio-workspace-canvas"]')).toHaveClass(
-			'lg:max-h-full',
-			'lg:overflow-hidden',
+		expect(container.querySelector('[data-slot="studio-layout-canvas"]')).toHaveClass(
+			'lg:h-full',
+			'lg:min-h-0',
 		)
 		expect(container.querySelector('[data-slot="studio-sidebar"]')).not.toBeNull()
 		// 🔑 페이지 선택은 **왼쪽 패널의 위 블록**이 소유한다 — 오른쪽 헤더가 아니다.
-		const left = container.querySelector('[data-slot="studio-left-panel"]')
+		const left = container.querySelector('[data-slot="studio-layout-selection"]')
 		expect(left).not.toBeNull()
 		expect(
 			within(left as HTMLElement).getByRole('button', { name: '템플릿 변경' }),
 		).toBeInTheDocument()
 
-		fireEvent.click(screen.getByRole('button', { name: '내보내기' }))
+		fireEvent.click(screen.getByRole('button', { name: '저장' }))
 
 		// 포맷 셀렉트 기본값인 PNG 요청이 공통 useExport로 전달된다.
 		expect(mocks.exportTemplate).toHaveBeenCalledWith('png')
@@ -430,7 +587,7 @@ describe('TemplateGenerator', () => {
 		mocks.canExportTemplate.mockReturnValue(false)
 		render(<TemplateGenerator categoryTitle="카드" template={template} />)
 
-		expect(screen.getByRole('button', { name: '내보내기' })).toBeDisabled()
+		expect(screen.getByRole('button', { name: '저장' })).toBeDisabled()
 	})
 
 	it('UI는 Effective Config 포맷을 표시하고 Template adapter가 없는 요청은 실행 직전 차단한다', () => {
@@ -628,7 +785,8 @@ describe('TemplateGenerator', () => {
 			'aria-checked',
 			'true',
 		)
-		expect(await screen.findByRole('button', { name: '샘플 이미지 선택' })).toBeInTheDocument()
+		await waitFor(() => expect(sampleMocks.fetchSampleImages).toHaveBeenCalled())
+		expect(screen.queryByRole('button', { name: '이미지 생성' })).not.toBeInTheDocument()
 	})
 
 	it('저작 config의 imageColorize를 이미지 교체 시 재적용한다', async () => {
@@ -655,7 +813,9 @@ describe('TemplateGenerator', () => {
 
 		// 호출부가 imageColorize를 깔지 않으면 컬러 치환(마스크 오버레이)이 사라진다 — 그 스프레드를 잡는다.
 		await waitFor(() => {
-			expect(container.innerHTML).toContain('mask-image')
+			expect(
+				container.querySelector('[data-slot="studio-layout-canvas"]')?.innerHTML,
+			).toContain('mask-image')
 			expect(container.innerHTML).toContain('rgb(255, 0, 0)')
 		})
 	})
@@ -699,7 +859,9 @@ describe('TemplateGenerator', () => {
 		await waitFor(() =>
 			expect(container.innerHTML).toContain('/api/generated-images/file/plain.png'),
 		)
-		expect(container.innerHTML).not.toContain('mask-image')
+		expect(
+			container.querySelector('[data-slot="studio-layout-canvas"]')?.innerHTML,
+		).not.toContain('mask-image')
 	})
 
 	it('프로파일을 바꾸면 선택된 Image Config의 feature UI로 즉시 교체한다', async () => {
@@ -728,17 +890,23 @@ describe('TemplateGenerator', () => {
 		)
 
 		selectLayer('배경')
-		const slot = container.querySelector<HTMLElement>('[data-slot="image-slot-input"]')
+		const slot = container.querySelector<HTMLElement>('[data-slot="studio-layout-workspace"]')
 		expect(slot).not.toBeNull()
 		if (!slot) return
-		expect(within(slot).getByLabelText('Line Color 색상 선택')).toBeInTheDocument()
+		openImageColors()
+		expect(
+			within(slot).getByLabelText(/^(Line Color|Foreground) 색상 선택$/),
+		).toBeInTheDocument()
 
-		within(slot).getByRole('combobox', { name: 'Type' }).focus()
+		fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 변경' }))
+		if (!screen.queryByRole('combobox', { name: 'Image' }))
+			fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 변경' }))
+		screen.getByRole('combobox', { name: 'Image' }).focus()
 		await user.keyboard('{ArrowDown}')
 		await user.click(screen.getByRole('option', { name: '프로파일 7' }))
 
 		await waitFor(() =>
-			expect(within(slot).queryByLabelText('Line Color 색상 선택')).toBeNull(),
+			expect(within(slot).queryByLabelText(/^(Line Color|Foreground) 색상 선택$/)).toBeNull(),
 		)
 	})
 
@@ -762,9 +930,10 @@ describe('TemplateGenerator', () => {
 		// 만지기 전 — 저작 색 유지.
 		expect(container.innerHTML).not.toContain('rgb(255, 0, 0)')
 
+		fireEvent.click(screen.getByRole('radio', { name: 'Custom' }))
 		fireEvent.change(screen.getByLabelText('Color 색상 선택'), { target: { value: '#ff0000' } })
 
-		const preview = container.querySelector('[data-slot="studio-workspace-canvas"]')
+		const preview = container.querySelector('[data-slot="studio-layout-canvas"]')
 		expect(
 			preview?.querySelectorAll('p[style*="rgb(255, 0, 0)"], p[style*="#ff0000"]').length,
 		).toBe(2)
@@ -784,7 +953,7 @@ describe('TemplateGenerator', () => {
 				/>
 			</TemplateAuthoringHandoffProvider>,
 		)
-		const canvas = () => container.querySelector('[data-slot="studio-workspace-canvas"]')
+		const canvas = () => container.querySelector('[data-slot="studio-layout-canvas"]')
 		expect(canvas()?.textContent).toContain('TITLE')
 
 		fireEvent.click(screen.getByRole('button', { name: 'send patch' }))
@@ -836,7 +1005,7 @@ describe('TemplateGenerator', () => {
 			</TemplateAuthoringHandoffProvider>,
 		)
 		fireEvent.click(screen.getByRole('button', { name: 'send patch' }))
-		const canvas = container.querySelector('[data-slot="studio-workspace-canvas"]')
+		const canvas = container.querySelector('[data-slot="studio-layout-canvas"]')
 		expect(canvas?.textContent).toContain('TITLE')
 		expect(canvas?.textContent).not.toContain('다른 템플릿')
 	})
@@ -868,54 +1037,23 @@ describe('TemplateGenerator', () => {
 				}}
 			/>,
 		)
-		const panel = container.querySelector('[data-slot="studio-left-panel"]') as HTMLElement
+		const panel = container.querySelector(
+			'[data-slot="studio-layout-selection"]',
+		) as HTMLElement
 		const textOf = (selector: string) =>
 			Array.from(panel.querySelectorAll(selector), (element) => element.textContent)
 
-		// 머리글은 묶음 셋 — 개수는 여럿일 때만 붙는다(Text만).
-		expect(textOf('[data-slot="layer-group-header"]')).toEqual(['Text3', 'Image'])
-		// 고를 수 있는 것은 자식과 배경(하위가 없어 자기 자신이 잎)뿐이다.
-		expect(textOf('[data-slot="layer-row"]')).toEqual([
-			'Title',
-			'Years',
-			'Slogan',
-			'배경',
+		expect(textOf('[data-slot="template-layer-group"]')).toEqual([
+			'Text',
+			'Symbol',
+			'Image',
 			'Background',
 		])
+		expect(screen.getByRole('button', { name: 'Symbol' })).toBeDisabled()
 	})
 
-	it('🔴 묶음 머리글에 hover하면 그 자식이 모두 함께 hover된다', () => {
-		const { container } = render(
-			<TemplateGenerator
-				categoryTitle="카드"
-				template={{
-					...template,
-					html: '<p data-node-id="t1">TITLE</p><p data-node-id="t2">YEARS</p>',
-					nodeConfigs: {
-						t1: { input: { label: 'Title' } },
-						t2: { input: { label: 'Years' } },
-					},
-				}}
-			/>,
-		)
-		const panel = container.querySelector('[data-slot="studio-left-panel"]') as HTMLElement
-		const header = panel.querySelector('[data-slot="layer-group-header"]') as HTMLElement
-		const hoveredRows = () =>
-			Array.from(
-				panel.querySelectorAll('[data-slot="layer-row"][data-group-hovered]'),
-				(row) => row.textContent,
-			)
-
-		expect(hoveredRows()).toEqual([])
-		fireEvent.pointerEnter(header)
-		// 🔴 자식 **전부**다 — CSS group-hover를 자식에 얹으면 자식 하나에 hover할 때도 켜진다.
-		expect(hoveredRows()).toEqual(['Title', 'Years'])
-		fireEvent.pointerLeave(header)
-		expect(hoveredRows()).toEqual([])
-	})
-
-	it('레이어를 고르면 그 레이어의 컨트롤만 나온다 — 같은 묶음의 형제도 걸러진다', () => {
-		const { container } = render(
+	it('Image 묶음은 첫 슬롯을 편집하고 다른 묶음 선택을 잠근다', () => {
+		render(
 			<TemplateGenerator
 				categoryTitle="카드"
 				template={{
@@ -930,18 +1068,11 @@ describe('TemplateGenerator', () => {
 				}}
 			/>,
 		)
-		const titles = () =>
-			Array.from(
-				container.querySelectorAll(
-					'[data-slot="studio-sidebar"] [data-slot="controller-group"]',
-				),
-			).map((group) => group.querySelector('span')?.textContent?.trim())
 
-		expect(titles()).toEqual([])
-		selectLayer('배경 B')
-		// 🔑 제목의 번호는 슬롯 전체에서의 자리다 — 걸러진 뒤에도 2번이 2번으로 남는다.
-		expect(titles()).toContain('Image 2')
-		expect(titles()).not.toContain('Image 1')
+		selectLayer('Image')
+		expect(screen.getByRole('region', { name: '선택한 레이어 편집' })).toBeInTheDocument()
+		expect(screen.getByRole('group', { name: '배경 A' })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: 'Text' })).toBeDisabled()
 	})
 
 	/**
@@ -971,8 +1102,8 @@ describe('TemplateGenerator', () => {
 			)
 
 		// 🔴 아무것도 고르지 않았으면 레이어 목록만 있다.
-		expect(titles()).toContain('Layers')
-		expect(titles()).not.toContain('Text')
+		expect(screen.getByRole('region', { name: 'Layers' })).toBeInTheDocument()
+		expect(titles()).toContain('Text')
 
 		// Text 묶음을 고르면 텍스트 슬롯이 **함께** 나온다 — 선택 단위가 묶음이라서다.
 		// 🔴 캔버스가 같은 컨테이너에 있어 판의 글자까지 잡힌다 — 사이드바로 좁혀서 본다.
@@ -992,7 +1123,7 @@ describe('TemplateGenerator', () => {
 
 		// 같은 묶음을 다시 누르면 선택이 풀리고 컨트롤도 사라진다.
 		selectLayer('Title')
-		expect(titles()).not.toContain('Text')
+		expect(titles()).toContain('Text')
 	})
 
 	it('섹션은 노드 개수와 무관하게 눌러서 활성화된다 — Text는 슬롯 여럿, Background는 노드 없음', () => {
@@ -1017,7 +1148,7 @@ describe('TemplateGenerator', () => {
 
 		// 🔴 Text와 Background는 이제 동시에 뜰 수 없다 — 한 번에 한 묶음만 고르므로 차례로 본다.
 		selectLayer('Title')
-		expect(named('Text')).not.toHaveAttribute('data-active')
+		expect(named('Text')).toHaveAttribute('data-active', 'true')
 		// 🔴 전에는 이 둘이 활성화되지 않았다 — 대상이 슬롯 하나로 고정돼 있었다.
 		fireEvent.click(named('Text')?.querySelector('span') as Element)
 		expect(named('Text')).toHaveAttribute('data-active', 'true')
@@ -1070,14 +1201,17 @@ describe('TemplateGenerator', () => {
 
 		selectLayer('배경')
 
-		fireEvent.change(screen.getByLabelText('Line Color 색상 선택'), {
+		openImageColors()
+		fireEvent.change(screen.getByLabelText(/^(Line Color|Foreground) 색상 선택$/), {
 			target: { value: '#00ff00' },
 		})
 		fireEvent.change(screen.getByLabelText('Prompt'), { target: { value: '파스텔 배경' } })
 		fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
 
 		await waitFor(() => {
-			expect(container.innerHTML).toContain('mask-image')
+			expect(
+				container.querySelector('[data-slot="studio-layout-canvas"]')?.innerHTML,
+			).toContain('mask-image')
 			expect(container.innerHTML).toContain('rgb(0, 255, 0)') // 사용자 색이 저작 line을 대체
 		})
 	})
@@ -1114,7 +1248,6 @@ describe('TemplateGenerator', () => {
 		selectLayer('배경')
 
 		await user.click(screen.getByRole('radio', { name: 'Preset' }))
-		await user.click(await screen.findByRole('button', { name: '샘플 이미지 선택' }))
 		await user.click(await screen.findByRole('button', { name: /도면 A/ }))
 
 		await waitFor(() =>
@@ -1122,7 +1255,10 @@ describe('TemplateGenerator', () => {
 		)
 		expect(container.innerHTML.includes('rgb(255, 0, 0)')).toBe(colorized)
 		// 치환이 열린 상태에는 그 색을 바꿀 손잡이도 함께 있어야 한다 — 판정과 UI가 갈리면 손잡이 없는 색이 된다.
-		expect(screen.queryByLabelText('Line Color 색상 선택') !== null).toBe(colorized)
+		openImageColors()
+		expect(screen.queryByLabelText(/^(Line Color|Foreground) 색상 선택$/) !== null).toBe(
+			colorized,
+		)
 	})
 
 	it('자산 브라우저가 분류 태그로 샘플 이미지를 거른다', async () => {
@@ -1171,7 +1307,6 @@ describe('TemplateGenerator', () => {
 		selectLayer('배경')
 
 		await user.click(screen.getByRole('radio', { name: 'Preset' }))
-		await user.click(await screen.findByRole('button', { name: '샘플 이미지 선택' }))
 
 		// 필터를 걸기 전에는 분류가 없는 것까지 전부 보인다.
 		expect(await screen.findByRole('button', { name: /엔진 A/ })).toBeInTheDocument()
@@ -1206,11 +1341,12 @@ describe('TemplateGenerator', () => {
 
 		selectLayer('배경')
 
+		fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
+
 		// 생성 전 — Transform 섹션은 닫힌 채 잠긴다(내용 미노출 + 트리거 비활성).
-		expect(
-			screen.getByRole('button', { name: 'Image Transform 섹션 접고 펴기' }),
-		).toBeDisabled()
+		expect(screen.getByRole('button', { name: 'Image Transform' })).toBeDisabled()
 		expect(screen.queryByRole('slider', { name: '이미지 위치' })).toBeNull()
+		fireEvent.click(screen.getByRole('button', { name: 'Basic' }))
 
 		fireEvent.change(screen.getByLabelText('Prompt'), { target: { value: '파스텔 배경' } })
 		fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
@@ -1218,8 +1354,9 @@ describe('TemplateGenerator', () => {
 			expect(container.innerHTML).toContain('/api/generated-images/file/bg.png'),
 		)
 
+		fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
 		// 생성 후 — 잠금이 풀리며 저장된 열림 상태(defaultOpen)로 펼쳐진다.
-		expect(screen.getByRole('button', { name: 'Image Transform 섹션 접고 펴기' })).toBeEnabled()
+		expect(screen.getByRole('button', { name: 'Image Transform' })).toBeEnabled()
 		const pad = screen.getByRole('slider', { name: '이미지 위치' })
 		fireEvent.keyDown(pad, { key: 'ArrowRight' })
 		// 패드 0.05 × (400/2) = 10px — 어드민과 같은 compose 포맷으로 prepend된다.
@@ -1239,7 +1376,7 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 		const canvasOf = () =>
-			container.querySelector('[data-slot="studio-workspace-canvas"] [data-node-id="1:1"]')
+			container.querySelector('[data-slot="studio-layout-canvas"] [data-node-id="1:1"]')
 
 		selectLayer('Background')
 		// 만지기 전 — 저작 배경 유지.
@@ -1284,7 +1421,7 @@ describe('TemplateGenerator', () => {
 		})
 		await waitFor(() => {
 			const canvas = container.querySelector(
-				'[data-slot="studio-workspace-canvas"] [data-node-id="1:1"]',
+				'[data-slot="studio-layout-canvas"] [data-node-id="1:1"]',
 			) as HTMLElement
 			expect(canvas.style.backgroundImage).toContain('/api/generated-images/file/canvas.png')
 			expect(canvas.style.backgroundSize).toBe('cover')
@@ -1313,7 +1450,9 @@ describe('TemplateGenerator', () => {
 			target: { value: '사용자 입력' },
 		})
 
-		screen.getByRole('combobox', { name: 'Image Profile' }).focus()
+		if (!screen.queryByRole('combobox', { name: 'Image' }))
+			fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 변경' }))
+		screen.getByRole('combobox', { name: 'Image' }).focus()
 		await user.keyboard('{ArrowDown}')
 		await user.click(screen.getByRole('option', { name: '프로파일 7' }))
 
@@ -1339,7 +1478,7 @@ describe('TemplateGenerator', () => {
 		)
 		const canvasOf = () =>
 			container.querySelector(
-				'[data-slot="studio-workspace-canvas"] [data-node-id="1:1"]',
+				'[data-slot="studio-layout-canvas"] [data-node-id="1:1"]',
 			) as HTMLElement
 
 		selectLayer('Background')
@@ -1354,11 +1493,13 @@ describe('TemplateGenerator', () => {
 		expect(canvasOf().style.background).toBe('transparent')
 		expect(container.querySelector('[data-slot="template-graphic-background"]')).not.toBeNull()
 
+		fireEvent.click(screen.getByRole('button', { name: '그래픽 변경' }))
 		screen.getByRole('combobox', { name: 'Graphic Type' }).focus()
 		await user.keyboard('{ArrowDown}')
 		await user.click(screen.getByRole('option', { name: 'Fluted Glass' }))
 		await waitFor(() => expect(mocks.mountGraphicPreview).toHaveBeenCalledTimes(2))
 		expect(mocks.destroyGraphicPreview).toHaveBeenCalledOnce()
+		fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
 		fireEvent.keyDown(screen.getByRole('slider', { name: '광선 강도' }), {
 			key: 'ArrowRight',
 		})
@@ -1393,7 +1534,7 @@ describe('TemplateGenerator', () => {
 		screen.getByRole('combobox', { name: 'Format' }).focus()
 		await user.keyboard('{ArrowDown}')
 		await user.click(screen.getByRole('option', { name: 'PDF' }))
-		fireEvent.click(screen.getByRole('button', { name: '내보내기' }))
+		fireEvent.click(screen.getByRole('button', { name: '저장' }))
 
 		expect(mocks.exportTemplate).toHaveBeenCalledWith('pdf')
 	})
@@ -1412,9 +1553,7 @@ describe('TemplateGenerator', () => {
 		)
 
 		selectLayer('배경')
-		expect(
-			pinned.container.querySelector('[data-slot="image-slot-input"]')?.textContent,
-		).toContain('고정된 이미지 프로파일을 사용할 수 없습니다.')
+		expect(screen.getByText('사용 가능한 이미지 생성 프로파일이 없습니다.')).toBeInTheDocument()
 		pinned.unmount()
 
 		render(
@@ -1430,7 +1569,7 @@ describe('TemplateGenerator', () => {
 		)
 
 		selectLayer('배경')
-		expect(screen.getByText('사용 가능한 이미지 프로파일이 없습니다.')).toBeInTheDocument()
+		expect(screen.getByText('사용 가능한 이미지 생성 프로파일이 없습니다.')).toBeInTheDocument()
 	})
 
 	it('슬롯 박스가 있으면 가장 가까운 지원 비율을 생성 요청에 싣는다', () => {
@@ -1448,7 +1587,7 @@ describe('TemplateGenerator', () => {
 
 		selectLayer('배경')
 
-		expect(screen.getByText('16:9')).toBeInTheDocument()
+		expect(screen.queryByRole('combobox', { name: 'Ratio' })).not.toBeInTheDocument()
 		fireEvent.change(screen.getByLabelText('Prompt'), { target: { value: '파스텔 배경' } })
 		fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
 
@@ -1633,20 +1772,36 @@ describe('TemplateGenerator', () => {
 		)
 
 		selectLayer('배경')
-		const slot = container.querySelector<HTMLElement>('[data-slot="image-slot-input"]')
+		const slot = container.querySelector<HTMLElement>('[data-slot="studio-layout-workspace"]')
 		expect(slot).not.toBeNull()
 		if (!slot) return
 
 		fireEvent.change(within(slot).getByLabelText('Prompt'), {
 			target: { value: '컬러 이미지' },
 		})
+		openImageColors()
+		fireEvent.change(screen.getByLabelText('Foreground 색상 선택'), {
+			target: { value: '#ff0000' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Basic' }))
 		fireEvent.click(within(slot).getByRole('button', { name: '이미지 생성' }))
-		await waitFor(() => expect(container.innerHTML).toContain('mask-image'))
+		await waitFor(() =>
+			expect(
+				container.querySelector('[data-slot="studio-layout-canvas"]')?.innerHTML,
+			).toContain('mask-image'),
+		)
 
-		within(slot).getByRole('combobox', { name: 'Type' }).focus()
+		fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 변경' }))
+		if (!screen.queryByRole('combobox', { name: 'Image' }))
+			fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 변경' }))
+		screen.getByRole('combobox', { name: 'Image' }).focus()
 		await user.keyboard('{ArrowDown}')
 		await user.click(screen.getByRole('option', { name: '프로파일 7' }))
-		await waitFor(() => expect(container.innerHTML).not.toContain('mask-image'))
+		await waitFor(() =>
+			expect(
+				container.querySelector('[data-slot="studio-layout-canvas"]')?.innerHTML,
+			).not.toContain('mask-image'),
+		)
 		expect(container.innerHTML).toContain('/api/generated-images/file/preserved.png')
 	})
 
@@ -1860,4 +2015,8 @@ function createImageConfig(
 			],
 		},
 	}
+}
+
+function render(ui: Parameters<typeof rtlRender>[0]) {
+	return rtlRender(ui, { wrapper: TooltipProvider })
 }

@@ -1,0 +1,399 @@
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { resolveGraphicStudioOutput } from '@/features/graphic-generation/domain/graphic-studio-manifest'
+import manifest from '@/features/graphic-generation/graphic-runtimes/key-visual-pattern/definition'
+import { deriveImageStudioConfig } from '@/features/image-generation/domain/image-studio-config'
+import {
+	deriveTemplateStudioConfig,
+	type PublishedHtmlTemplate,
+} from '@/features/template-customization/domain/template-studio-config'
+import { PlaygroundTemplateWorkspace } from './template-workspace'
+
+const mocks = vi.hoisted(() => ({
+	navigation: vi.fn(),
+	detail: vi.fn(),
+	export: vi.fn(),
+	generate: vi.fn(),
+	graphicUpdate: vi.fn(),
+}))
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
+vi.mock('@/features/image-generation/services/generate-image.client', () => ({
+	requestImageGeneration: mocks.generate,
+}))
+vi.mock('@/features/graphic-generation/runtime/client/graphic-runtime.client', () => ({
+	loadGraphicRuntimeAdapter: async () => ({
+		mount: async () => ({
+			update: mocks.graphicUpdate,
+			resize: vi.fn(),
+			destroy: vi.fn(),
+			artifacts: { raster: { source: { withSurface: vi.fn() } } },
+		}),
+	}),
+}))
+vi.mock('@/features/template-customization/services/get-create-navigation.client', () => ({
+	fetchCreateNavigation: mocks.navigation,
+}))
+vi.mock('@/features/template-customization/services/get-template-studio.client', () => ({
+	fetchTemplateStudio: mocks.detail,
+}))
+vi.mock('@/features/studio-export/hooks/use-export', () => ({
+	useExport: () => ({ canExport: () => true, exporting: null, error: null, run: mocks.export }),
+}))
+
+function studio(id = 1, overrides: Partial<PublishedHtmlTemplate> = {}) {
+	const template: PublishedHtmlTemplate = {
+		kind: 'html',
+		id,
+		name: `포스터 ${id}`,
+		html: '<div><p data-node-id="title" data-figma-type="TEXT">원본 제목</p></div>',
+		nodeConfigs: { title: { input: { label: '제목', maxLength: 20, maxLines: 1 } } },
+		width: 800,
+		height: 600,
+		templateVersion: '2026-09-29T00:00:00.000Z',
+		exportPolicy: { allowedFormats: ['png', 'jpeg'] },
+		...overrides,
+	}
+	return {
+		config: deriveTemplateStudioConfig(template, [], []),
+		template,
+		highlightColor: '#007332',
+	}
+}
+
+beforeEach(() => {
+	vi.clearAllMocks()
+	vi.stubGlobal(
+		'ResizeObserver',
+		class {
+			observe() {}
+			disconnect() {}
+		},
+	)
+	mocks.navigation.mockResolvedValue([
+		{
+			id: 1,
+			title: '포스터',
+			slug: 'posters',
+			templates: [1, 2].map((id) => ({
+				id,
+				name: `포스터 ${id}`,
+				slug: `poster-${id}`,
+				href: `/studio/template/poster-${id}`,
+			})),
+		},
+	])
+	mocks.detail.mockImplementation(async (slug: string) => studio(slug === 'poster-2' ? 2 : 1))
+})
+afterEach(() => {
+	cleanup()
+	vi.unstubAllGlobals()
+})
+
+it('실제 합성 캔버스·출력에 연결하고 Reset은 텍스트·색·출력 설정을 초기화한다', async () => {
+	const { container } = render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
+	const input = await screen.findByRole('textbox', { name: '제목' })
+	expect(input).toHaveAttribute('maxlength', '20')
+	fireEvent.change(input, { target: { value: '바꾼 제목' } })
+	fireEvent.click(screen.getByRole('radio', { name: '텍스트 색상 #007332' }))
+	const preview = container.querySelector('[data-slot="template-preview"]')
+	expect(preview).toHaveTextContent('바꾼 제목')
+	expect(preview?.querySelector('[data-node-id="title"]')).toHaveStyle({ color: '#007332' })
+	fireEvent.click(screen.getByRole('button', { name: '저장' }))
+	await waitFor(() =>
+		expect(mocks.export).toHaveBeenCalledWith(expect.objectContaining({ format: 'png' })),
+	)
+	const format = screen.getByRole('combobox', { name: 'Format' })
+	fireEvent.keyDown(format, { key: 'ArrowDown' })
+	fireEvent.click(await screen.findByRole('option', { name: /^JPEG$/ }))
+	expect(format).toHaveTextContent('JPEG')
+	fireEvent.click(screen.getByRole('button', { name: 'Reset' }))
+	expect(await screen.findByRole('textbox', { name: '제목' })).toHaveValue('원본 제목')
+	expect(screen.getByRole('radio', { name: '텍스트 색상 #007332' })).not.toBeChecked()
+	expect(screen.getByRole('combobox', { name: 'Format' })).toHaveTextContent('PNG')
+})
+
+it('Change는 실제 카탈로그를 읽고 선택한 템플릿을 새 편집 세션으로 연다', async () => {
+	render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
+	fireEvent.change(await screen.findByRole('textbox', { name: '제목' }), {
+		target: { value: '이전 편집' },
+	})
+	fireEvent.click(screen.getByRole('button', { name: '템플릿 변경' }))
+	fireEvent.click(await screen.findByRole('button', { name: '포스터 2' }))
+	await waitFor(() =>
+		expect(mocks.detail).toHaveBeenCalledWith('poster-2', expect.any(AbortSignal)),
+	)
+	expect(await screen.findByRole('textbox', { name: '제목' })).toHaveValue('원본 제목')
+	expect(
+		within(screen.getByRole('complementary', { name: '작업 대상과 출력' })).getByText(
+			'포스터 2',
+		),
+	).toBeInTheDocument()
+})
+
+it('상세 실패를 표시하고 같은 템플릿을 다시 조회할 수 있다', async () => {
+	mocks.detail.mockRejectedValueOnce(new Error('템플릿을 불러오지 못했습니다.'))
+	render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
+	expect(await screen.findByRole('alert')).toHaveTextContent('템플릿을 불러오지 못했습니다.')
+	fireEvent.click(screen.getByRole('button', { name: '다시 시도' }))
+	expect(await screen.findByRole('textbox', { name: '제목' })).toHaveValue('원본 제목')
+})
+
+it('빈 카탈로그에서는 샘플 템플릿이나 상세 요청을 만들지 않는다', async () => {
+	mocks.navigation.mockResolvedValueOnce([])
+	render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
+	expect(await screen.findByText('발행된 템플릿이 없습니다.')).toBeInTheDocument()
+	expect(mocks.detail).not.toHaveBeenCalled()
+})
+
+it('네 가지 묶음만 표시하고 눈 아이콘은 허용된 텍스트들을 함께 숨기고 복원한다', async () => {
+	mocks.detail.mockResolvedValueOnce(
+		studio(1, {
+			html: '<div><p data-node-id="title">제목 원본</p><p data-node-id="subtitle">부제 원본</p><p data-node-id="fixed">고정 문구</p></div>',
+			nodeConfigs: {
+				title: {
+					input: { label: '제목', placeholder: '서포트 설명', maxLines: 1 },
+					creator: { access: 'editable', visibility: { allowToggle: true } },
+				},
+				subtitle: {
+					input: { label: '부제', maxLines: 1 },
+					creator: { access: 'editable', visibility: { allowToggle: true } },
+				},
+				fixed: { input: { label: '고정' }, creator: { access: 'readonly' } },
+			},
+		}),
+	)
+	const { container } = render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
+	await screen.findByRole('textbox', { name: '제목' })
+	const panel = screen.getByRole('region', { name: 'Layers' })
+	expect(panel.querySelectorAll('[data-slot="template-layer-group"]')).toHaveLength(4)
+	expect(within(panel).getByRole('button', { name: /^Text$/ })).toHaveAttribute(
+		'aria-pressed',
+		'true',
+	)
+	expect(within(panel).getByRole('button', { name: /^Image$/ })).toBeDisabled()
+	expect(within(panel).getByRole('button', { name: /^Symbol$/ })).toBeDisabled()
+	expect(within(panel).getByRole('button', { name: 'Background 숨김' })).toBeDisabled()
+	expect(screen.queryByText('서포트 설명')).not.toBeInTheDocument()
+	expect(screen.queryByRole('group', { name: '제목 표시' })).not.toBeInTheDocument()
+	const preview = container.querySelector('[data-slot="template-preview"]')
+	fireEvent.click(within(panel).getByRole('button', { name: 'Text 숨김' }))
+	expect(preview?.querySelector('[data-node-id="title"]')).not.toBeVisible()
+	expect(preview?.querySelector('[data-node-id="subtitle"]')).not.toBeVisible()
+	expect(preview?.querySelector('[data-node-id="fixed"]')).toBeVisible()
+	fireEvent.click(within(panel).getByRole('button', { name: 'Text 표시' }))
+	expect(preview?.querySelector('[data-node-id="title"]')).toBeVisible()
+	expect(preview?.querySelector('[data-node-id="subtitle"]')).toBeVisible()
+	fireEvent.click(within(panel).getByRole('button', { name: /^Background$/ }))
+	expect(screen.queryByRole('textbox', { name: '제목' })).not.toBeInTheDocument()
+	fireEvent.click(screen.getByRole('button', { name: '완료' }))
+	fireEvent.click(within(panel).getByRole('button', { name: /^Text$/ }))
+	expect(screen.getByRole('textbox', { name: '제목' })).toHaveValue('제목 원본')
+	expect(screen.getByRole('textbox', { name: '부제' })).toHaveValue('부제 원본')
+})
+
+it('Image 편집은 현재 슬롯만 열고 완료 또는 취소 전에는 다른 레이어를 잠근다', async () => {
+	mocks.detail.mockResolvedValueOnce(
+		studio(1, {
+			html: '<div><div data-node-id="a" data-figma-type="FRAME" data-name="사진 A" data-image-carrier=""></div><div data-node-id="b" data-figma-type="FRAME" data-name="사진 B" data-image-carrier=""></div></div>',
+			nodeConfigs: { a: { imageInput: {} }, b: { imageInput: {} } },
+		}),
+	)
+	render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
+	const panel = await screen.findByRole('region', { name: 'Layers' })
+	fireEvent.click(within(panel).getByRole('button', { name: /^Image$/ }))
+	const editing = screen.getByRole('region', { name: '선택한 레이어 편집' })
+	expect(within(editing).getAllByRole('radiogroup', { name: '슬롯 이미지 방식' })).toHaveLength(1)
+	expect(within(editing).getByRole('group', { name: '사진 A' })).toBeInTheDocument()
+	expect(within(editing).queryByRole('group', { name: '사진 B' })).not.toBeInTheDocument()
+	expect(within(panel).getByRole('button', { name: /^Background$/ })).toBeDisabled()
+	fireEvent.click(screen.getByRole('button', { name: '취소' }))
+	expect(screen.queryByRole('region', { name: '선택한 레이어 편집' })).not.toBeInTheDocument()
+	expect(within(panel).getByRole('button', { name: /^Background$/ })).toBeEnabled()
+})
+
+it('배경 Type·Image Mode는 왼쪽에서 전환하고 오른쪽에는 편집 도구만 표시한다', async () => {
+	render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
+	await screen.findByRole('textbox', { name: '제목' })
+	const layers = screen.getByRole('region', { name: 'Layers' })
+	fireEvent.click(within(layers).getByRole('button', { name: /^Background$/ }))
+	const selection = screen.getByRole('region', { name: '선택한 레이어 편집' })
+	let editing = screen.getByRole('complementary', { name: '편집 도구' })
+	const type = within(selection).getByRole('combobox', { name: 'Type' })
+	expect(within(editing).queryByRole('combobox', { name: 'Type' })).toBeNull()
+	expect(within(editing).queryByRole('radiogroup', { name: '텍스트 색상' })).toBeNull()
+	fireEvent.keyDown(type, { key: 'ArrowDown' })
+	fireEvent.click(await screen.findByRole('option', { name: /^Image$/ }))
+	editing = screen.getByRole('complementary', { name: '편집 도구' })
+	expect(editing.querySelector('[data-slot="studio-preset-list"]')).toBeNull()
+	fireEvent.click(within(selection).getByRole('radio', { name: 'Generate' }))
+	expect(
+		await within(editing).findByText('사용 가능한 이미지 생성 프로파일이 없습니다.'),
+	).toBeInTheDocument()
+	expect(within(editing).queryByRole('radiogroup', { name: '배경 이미지 방식' })).toBeNull()
+	fireEvent.click(screen.getByRole('button', { name: '완료' }))
+	fireEvent.click(within(layers).getByRole('button', { name: /^Background$/ }))
+	expect(screen.getByRole('radio', { name: 'Generate' })).toBeChecked()
+	fireEvent.click(
+		within(screen.getByRole('region', { name: '선택한 레이어 편집' })).getByRole('button', {
+			name: 'Reset',
+		}),
+	)
+	expect(screen.getByRole('combobox', { name: 'Type' })).toHaveTextContent('Image')
+	fireEvent.click(screen.getByRole('button', { name: '취소' }))
+	expect(screen.queryByRole('region', { name: '선택한 레이어 편집' })).not.toBeInTheDocument()
+})
+
+it.each([
+	{ canvasPpi: undefined, width: '800', height: '600', unit: 'px' },
+	{ canvasPpi: 100, width: '203.2', height: '152.4', unit: 'mm' },
+])('출력 크기 2열 스택은 실제 템플릿의 $unit 치수를 사용한다', async ({
+	canvasPpi,
+	width,
+	height,
+	unit,
+}) => {
+	mocks.detail.mockResolvedValueOnce(studio(1, { canvasPpi }))
+	const { container } = render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
+	await screen.findByRole('textbox', { name: '제목' })
+	const output = container.querySelector('[data-slot="studio-layout-output"]')
+	const rows = output?.querySelectorAll(
+		'[data-slot="controller-stack"] [data-slot="controller-row"]',
+	)
+	expect(rows).toHaveLength(2)
+	expect(rows?.[0]).toHaveTextContent(`출력 너비${width}${unit}`)
+	expect(rows?.[1]).toHaveTextContent(`출력 높이${height}${unit}`)
+	expect(output).toContainElement(screen.getByRole('region', { name: 'Layers' }))
+	const primary = container.querySelector('[data-slot="studio-layout-primary"]')
+	expect(primary).not.toContainElement(screen.getByRole('region', { name: 'Layers' }))
+	expect(output?.textContent?.indexOf('Layers')).toBeLessThan(
+		output?.textContent?.indexOf('Output') ?? 0,
+	)
+})
+
+it('Image 공통 생성 폼은 한 장을 요청하고 결과를 선택한 템플릿 슬롯에 반영한다', async () => {
+	const profile = deriveImageStudioConfig({
+		id: 41,
+		name: '슬롯 프로파일',
+		slug: 'slot',
+		imageModelPreset: 'google-nano-banana-2-lite',
+		features: [{ blockType: 'colorAdjustment', background: true }],
+	})
+	const data = studio(1, {
+		html: '<div><div data-node-id="photo" data-figma-type="FRAME" data-name="사진" data-image-carrier="" style="width:400px;height:300px"></div></div>',
+		nodeConfigs: { photo: { imageInput: {} } },
+	})
+	data.config = deriveTemplateStudioConfig(data.template, [profile], [])
+	mocks.detail.mockResolvedValueOnce(data)
+	mocks.generate.mockResolvedValueOnce({
+		generatedImages: [{ id: 91, url: '/template-image.png' }],
+	})
+	const { container } = render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
+	fireEvent.click(await screen.findByRole('button', { name: /^Image$/ }))
+	const prompt = await screen.findByRole('textbox', { name: 'Prompt' })
+	fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
+	expect(screen.getByRole('radio', { name: 'Swatch' })).toBeInTheDocument()
+	expect(screen.getByRole('radio', { name: 'Custom' })).toBeInTheDocument()
+	fireEvent.click(screen.getByRole('button', { name: 'Basic' }))
+	fireEvent.change(prompt, { target: { value: '템플릿 이미지' } })
+	fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
+	await waitFor(() =>
+		expect(mocks.generate).toHaveBeenCalledWith(
+			expect.objectContaining({ profileId: 41, prompt: '템플릿 이미지', count: 1 }),
+		),
+	)
+	await waitFor(() =>
+		expect(
+			container.querySelector('[data-slot="template-preview"] [data-node-id="photo"]'),
+		).toHaveStyle({ backgroundImage: 'url("/template-image.png")' }),
+	)
+	fireEvent.click(screen.getByRole('button', { name: '완료' }))
+	const layers = screen.getByRole('region', { name: 'Layers' })
+	fireEvent.click(within(layers).getByRole('button', { name: /^Image$/ }))
+	expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue('템플릿 이미지')
+})
+
+it('Graphic 공통 패널의 팔레트와 Position을 템플릿 배경 런타임에 연결한다', async () => {
+	const graphic = { ...manifest, output: resolveGraphicStudioOutput(manifest) }
+	const data = studio(1, { backgroundPolicy: { types: ['graphic'] } })
+	data.config = deriveTemplateStudioConfig(data.template, [], [graphic])
+	mocks.detail.mockResolvedValueOnce(data)
+	const { container } = render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
+	await screen.findByRole('textbox', { name: '제목' })
+	fireEvent.click(screen.getByRole('button', { name: /^Background$/ }))
+	const top = container.querySelector<HTMLElement>('[data-slot="studio-control-panel"]')
+	const detail = top
+	if (!top || !detail) throw new Error('공통 편집 패널이 없습니다.')
+	expect(within(top).getByText('Presets')).toBeInTheDocument()
+	expect(within(top).getByRole('slider', { name: 'Position' })).toBeInTheDocument()
+	fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
+	expect(within(detail).getByRole('slider', { name: '열 간격' })).toBeInTheDocument()
+	fireEvent.click(screen.getByRole('button', { name: 'Basic' }))
+	expect(within(top).queryByRole('radio', { name: 'Custom' })).toBeNull()
+	fireEvent.click(within(top).getByRole('radio', { name: '네이비 · 블루' }))
+	await waitFor(() =>
+		expect(mocks.graphicUpdate).toHaveBeenLastCalledWith(
+			expect.objectContaining({ colorway: 'navyBlue' }),
+		),
+	)
+	fireEvent.keyDown(within(top).getByRole('slider', { name: 'Position' }), { key: 'ArrowRight' })
+	expect(within(top).getByRole('slider', { name: 'Position' })).toHaveAttribute(
+		'aria-valuetext',
+		'가로 5%, 세로 0%',
+	)
+})
+
+it('패널 탐색은 실제 템플릿 세션을 유지하고 왼쪽 종류 선택·레이어·출력을 연결한다', async () => {
+	const profile = deriveImageStudioConfig({
+		id: 41,
+		name: '실제 이미지 프로파일',
+		slug: 'slot',
+		imageModelPreset: 'google-nano-banana-2-lite',
+	})
+	const graphic = { ...manifest, output: resolveGraphicStudioOutput(manifest) }
+	const data = studio(1, { backgroundPolicy: { types: ['color', 'image', 'graphic'] } })
+	data.config = deriveTemplateStudioConfig(data.template, [profile], [graphic])
+	mocks.detail.mockResolvedValueOnce(data)
+	const { container } = render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
+	fireEvent.change(await screen.findByRole('textbox', { name: '제목' }), {
+		target: { value: '실제 편집값 유지' },
+	})
+	const preview = container.querySelector('[data-slot="template-preview"]')
+	const output = container.querySelector('[data-slot="studio-layout-output"]')
+	const format = screen.getByRole('combobox', { name: 'Format' })
+	fireEvent.keyDown(format, { key: 'ArrowDown' })
+	fireEvent.click(await screen.findByRole('option', { name: /^JPEG$/ }))
+	fireEvent.click(screen.getByRole('button', { name: /^Background$/ }))
+	const selectType = async (name: string) => {
+		fireEvent.keyDown(screen.getByRole('combobox', { name: 'Type' }), { key: 'ArrowDown' })
+		fireEvent.click(await screen.findByRole('option', { name }))
+	}
+	await selectType('Graphic')
+	fireEvent.click(screen.getByRole('button', { name: '그래픽 변경' }))
+	expect(screen.getByRole('combobox', { name: 'Graphic Type' })).toHaveTextContent(manifest.name)
+	fireEvent.click(screen.getByRole('radio', { name: '네이비 · 블루' }))
+	await selectType('Image')
+	fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 변경' }))
+	expect(screen.getByRole('combobox', { name: 'Image' })).toHaveTextContent(
+		'실제 이미지 프로파일',
+	)
+	fireEvent.click(screen.getByRole('radio', { name: 'Generate' }))
+	fireEvent.change(screen.getByRole('textbox', { name: 'Prompt' }), {
+		target: { value: '남아 있는 배경 프롬프트' },
+	})
+	await selectType('Graphic')
+	expect(screen.getByRole('radio', { name: '네이비 · 블루' })).toBeChecked()
+	await selectType('Image')
+	expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue('남아 있는 배경 프롬프트')
+	fireEvent.click(screen.getByRole('button', { name: '완료' }))
+
+	expect(container.querySelector('[data-slot="template-preview"]')).toBe(preview)
+	expect(preview).toHaveTextContent('실제 편집값 유지')
+	expect(container.querySelector('[data-slot="studio-layout-output"]')).toBe(output)
+	expect(format).toHaveTextContent('JPEG')
+	fireEvent.click(screen.getByRole('button', { name: '저장' }))
+	await waitFor(() =>
+		expect(mocks.export).toHaveBeenCalledWith(expect.objectContaining({ format: 'jpeg' })),
+	)
+	expect(mocks.detail).toHaveBeenCalledTimes(1)
+})

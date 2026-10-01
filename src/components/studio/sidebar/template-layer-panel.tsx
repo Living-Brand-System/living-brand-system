@@ -43,7 +43,7 @@ const GROUP_ICON: Partial<Record<TemplateLayerGroup['kind'], typeof TextFont>> =
  *    밝아진다.
  */
 export function TemplateLayerPanel() {
-	const { config, layers, focus } = useTemplateStudio()
+	const { config, layers, focus, editing } = useTemplateStudio()
 	const groups = listTemplateLayerGroups(config.template.slots)
 	/**
 	 * hover 중인 묶음. 🔴 CSS `group-hover`로는 안 된다 — 자식에 얹으면 **자식 하나에 hover할 때도**
@@ -52,8 +52,10 @@ export function TemplateLayerPanel() {
 	const [hovered, setHovered] = useState<string | null>(null)
 
 	const select = (slotId: string) => {
+		if (editing.targetId) return
 		const next = layers.selectedId === slotId ? null : slotId
 		layers.select(next)
+		if (next) editing.begin(next)
 		focus.set(next ? focusTargetOf(slotId) : null)
 	}
 

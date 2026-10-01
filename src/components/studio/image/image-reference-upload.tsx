@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { FieldError } from '@/components/ui/field'
 import { IMAGE_REFERENCE_UPLOAD_MIME_TYPES } from '@/features/image-generation/domain/reference-image/contract'
 import { useFileInput } from '@/hooks/use-file-input'
+import { cn } from '@/lib/utils'
 
 type ImageReferenceUploadProps = {
 	/** 첨부된 이미지의 data URI — 없으면 빈 판만 그린다. */
@@ -14,6 +15,9 @@ type ImageReferenceUploadProps = {
 	disabled: boolean
 	onAttach: (file: File) => void
 	onClear: () => void
+	/** Compound 본문에 들어가는 212px 업로드 영역. */
+	compact?: boolean
+	onPreviewError?: () => void
 }
 
 /**
@@ -28,17 +32,30 @@ export function ImageReferenceUpload({
 	disabled,
 	onAttach,
 	onClear,
+	compact = false,
+	onPreviewError,
 }: ImageReferenceUploadProps) {
 	const fileInput = useFileInput()
 
 	return (
-		<div className="flex flex-col gap-1.5 pb-2.5">
-			<div className="relative grid aspect-square w-full place-items-center rounded-lg bg-muted">
-				<div className="grid size-[70%] place-items-center overflow-hidden bg-card">
+		<div className={cn('flex flex-col gap-1.5', !compact && 'pb-2.5')}>
+			<div
+				className={cn(
+					'relative grid w-full place-items-center rounded-lg bg-muted',
+					compact ? 'h-53' : 'aspect-square',
+				)}
+			>
+				<div
+					className={cn(
+						'grid place-items-center overflow-hidden bg-card',
+						compact ? 'size-[147px]' : 'size-[70%]',
+					)}
+				>
 					{value && (
 						// biome-ignore lint/performance/noImgElement: 첨부 미리보기, 최적화 불필요
 						<img
 							src={value}
+							onError={onPreviewError}
 							alt={name ? `첨부한 참조 이미지: ${name}` : '첨부한 참조 이미지'}
 							className="size-full object-contain"
 						/>
@@ -48,7 +65,10 @@ export function ImageReferenceUpload({
 					type="button"
 					variant="muted"
 					shape="pill"
-					className="absolute"
+					className={cn(
+						'absolute',
+						compact && 'h-8 rounded-xl bg-foreground/15 px-2 text-sm',
+					)}
 					disabled={disabled}
 					onClick={fileInput.open}
 				>
@@ -73,6 +93,8 @@ export function ImageReferenceUpload({
 				<input
 					ref={fileInput.ref}
 					type="file"
+					aria-label="참조 이미지 파일"
+					disabled={disabled}
 					className="sr-only"
 					accept={IMAGE_REFERENCE_UPLOAD_MIME_TYPES.join(',')}
 					onChange={(event) => {

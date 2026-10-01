@@ -18,7 +18,11 @@ import { useTemplateStudio } from '@/features/template-customization/hooks/use-t
  *    꽂아도 그대로 돈다 — 위치를 정하는 코드는 꽂는 자리 한 줄뿐이다.
  * 🔑 정책이 배경 컨트롤을 안 내주는 템플릿에서는 아무것도 그리지 않는다(`null`).
  */
-export function TemplateBackgroundPanel() {
+export function TemplateBackgroundPanel({
+	content = 'all',
+}: {
+	content?: 'all' | 'settings' | 'controls'
+}) {
 	const { config, background, focus } = useTemplateStudio()
 	const { background: slot } = partitionTemplateSlots(config.template.slots)
 	const { canvas } = config.template.exportOption
@@ -36,6 +40,7 @@ export function TemplateBackgroundPanel() {
 
 	return (
 		<BackgroundSection
+			content={content}
 			section={sectionFocus(focus)}
 			groupDefinition={group}
 			groupPresentation={config.controllerPresentation?.groups.find(

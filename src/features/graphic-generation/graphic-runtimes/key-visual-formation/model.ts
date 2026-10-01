@@ -32,6 +32,15 @@ const colorIds = KEY_VISUAL_FORMATION_COLOR_LEVELS.map(
 const anchorIds = Object.keys(KEY_VISUAL_FORMATION_ANCHORS) as KeyVisualFormationAnchorId[]
 
 export const keyVisualFormationInputSchema = z.strictObject({
+	// 새 두 색 UI가 명시적으로 전달할 때만 사용한다. 기존 팔레트 입력은 그대로 유지한다.
+	foregroundColor: z
+		.string()
+		.regex(/^#[0-9a-f]{6}$/i)
+		.optional(),
+	backgroundColor: z
+		.string()
+		.regex(/^#[0-9a-f]{6}$/i)
+		.optional(),
 	planeColor: z.enum(colorIds),
 	lineColor: z.enum(colorIds),
 	planeImage: z.string().min(1).nullable(),
@@ -76,6 +85,12 @@ export function toKeyVisualFormationInput(values: ControllerValues): KeyVisualFo
 		choices[choices.length - 1] ?? base.lineColor,
 	)
 	return keyVisualFormationInputSchema.parse({
+		...(values.foregroundColor !== undefined
+			? { foregroundColor: values.foregroundColor }
+			: {}),
+		...(values.backgroundColor !== undefined
+			? { backgroundColor: values.backgroundColor }
+			: {}),
 		planeColor,
 		lineColor,
 		planeImage:
@@ -172,10 +187,10 @@ export function createKeyVisualFormationScene(
 			nearPlane > 0
 				? toBand(vertical, nearEdge, axisLength, crossLength, 0, nearPlane)
 				: null,
-		planeColor: keyVisualFormationColorHex(input.planeColor),
+		planeColor: input.backgroundColor ?? keyVisualFormationColorHex(input.planeColor),
 		planeImage: input.planeImage,
 		dimmerOpacity: input.dimmer ? input.dimmerOpacity : 0,
-		lineColor: keyVisualFormationColorHex(input.lineColor),
+		lineColor: input.foregroundColor ?? keyVisualFormationColorHex(input.lineColor),
 		bands,
 		planeAreas: [nearPlane, axisLength - nearPlane - lineArea],
 	}

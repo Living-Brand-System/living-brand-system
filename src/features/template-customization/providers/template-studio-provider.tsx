@@ -11,7 +11,11 @@ import {
 	useState,
 } from 'react'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
-import { getGraphicStudioRuntimeBindings } from '@/features/graphic-generation/runtime/graphic-studio-runtime'
+import {
+	createGraphicPresetValues,
+	getGraphicStudioRuntimeBindings,
+	getGraphicStudioRuntimeGroups,
+} from '@/features/graphic-generation/runtime/graphic-studio-runtime'
 import {
 	acceptsImagePromptExecution,
 	getImageColorAdjustmentControls,
@@ -67,6 +71,7 @@ import {
 	type ControllerRuntimeBindings,
 	type ControllerValues,
 	createControllerValues,
+	followsChangedDefault,
 } from '@/modules/studio-controller/controller-definition'
 
 const GENERATION_ERROR_MESSAGE = '이미지 생성에 실패했어요. 잠시 후 다시 시도해 주세요.'
@@ -121,7 +126,11 @@ function useTemplateTextSession(
 function useTemplateImageSession(
 	config: TemplateStudioConfig,
 	imageSlots: readonly TemplateImageConfigSlot[],
-): TemplateStudioValue['images'] {
+): TemplateStudioValue['images'] & {
+	restore: (states: Record<string, TemplateImageSlotState>) => void
+	reset: (slotId: string) => void
+} {
+	const requests = useRef(new Map<string, symbol>())
 	const contracts = useMemo(
 		() =>
 			Object.fromEntries(
@@ -137,13 +146,47 @@ function useTemplateImageSession(
 			imageSlots.map((slot) => [slot.id, initialImageState(slot, contracts[slot.id] ?? [])]),
 		),
 	)
+	const restore = useCallback((snapshot: Record<string, TemplateImageSlotState>) => {
+		requests.current.clear()
+		setStates(snapshot)
+	}, [])
+	const reset = useCallback(
+		(slotId: string) => {
+			const slot = imageSlots.find((item) => item.id === slotId)
+			if (!slot) return
+			requests.current.delete(slotId)
+			setStates((current) => ({
+				...current,
+				[slotId]: {
+					...current[slotId],
+					...initialImageState(
+						slot,
+						(contracts[slotId] ?? []).filter(
+							(item) => item.config.id === current[slotId]?.profileId,
+						),
+					),
+					imageMode: current[slotId]?.imageMode ?? 'preset',
+					image: current[slotId]?.image,
+					transform: undefined,
+				},
+			}))
+		},
+		[contracts, imageSlots],
+	)
 	const updateState = useCallback(
 		(slotId: string, patch: Partial<TemplateImageSlotState>) => {
 			setStates((current) => {
 				const slot = imageSlots.find((candidate) => candidate.id === slotId)
 				if (!slot) return current
 				const previous = current[slotId] ?? initialImageState(slot, contracts[slotId] ?? [])
-				return { ...current, [slotId]: { ...previous, ...patch } }
+				return {
+					...current,
+					[slotId]: {
+						...previous,
+						...patch,
+						...(patch.image ? { transform: undefined } : {}),
+					},
+				}
 			})
 		},
 		[contracts, imageSlots],
@@ -198,23 +241,23 @@ function useTemplateImageSession(
 			),
 		[contracts, imageSlots],
 	)
-	const selectSampleImage = useCallback(
-		(slotId: string, option: SampleImageOption) =>
-			// 생성 중이던 요청 결과가 뒤늦게 덮지 않도록 error·generating도 함께 정리한다.
-			setStates((current) => ({
-				...current,
-				[slotId]: {
-					...current[slotId],
-					imageMode: current[slotId]?.imageMode ?? 'preset',
-					prompt: current[slotId]?.prompt ?? '',
-					generating: false,
-					error: null,
-					featureValues: current[slotId]?.featureValues ?? {},
-					image: toAssignedSampleImage(option),
-				},
-			})),
-		[],
-	)
+	const selectSampleImage = useCallback((slotId: string, option: SampleImageOption) => {
+		requests.current.delete(slotId)
+		// 생성 중이던 요청 결과가 뒤늦게 덮지 않도록 error·generating도 함께 정리한다.
+		setStates((current) => ({
+			...current,
+			[slotId]: {
+				...current[slotId],
+				imageMode: current[slotId]?.imageMode ?? 'preset',
+				prompt: current[slotId]?.prompt ?? '',
+				generating: false,
+				error: null,
+				featureValues: current[slotId]?.featureValues ?? {},
+				image: toAssignedSampleImage(option),
+				transform: undefined,
+			},
+		}))
+	}, [])
 	const generate = useCallback(
 		/**
 		 * 🔑 `promptOverride`가 있는 이유: 챗이 얹은 패치를 **같은 tick에** 생성까지 태우려면
@@ -227,10 +270,21 @@ function useTemplateImageSession(
 				(candidate) => candidate.config.id === state?.profileId,
 			)
 			const prompt = promptOverride ?? state?.prompt ?? ''
-			if (!state || state.generating || !contract || !validPrompt(prompt, contract)) return
+			if (
+				!state ||
+				requests.current.has(slotId) ||
+				state.generating ||
+				!contract ||
+				!validPrompt(prompt, contract)
+			)
+				return
+			const request = Symbol()
+			requests.current.set(slotId, request)
 			const requestProfileId = contract.config.id
 			updateState(slotId, { generating: true, error: null })
 			const generated = await requestTemplateImageGeneration(prompt, contract)
+			if (requests.current.get(slotId) !== request) return
+			requests.current.delete(slotId)
 			setStates((current) =>
 				applyImageRequestResult(
 					current,
@@ -256,6 +310,8 @@ function useTemplateImageSession(
 	return useMemo(
 		() => ({
 			states,
+			restore,
+			reset,
 			contracts,
 			update,
 			updateFeature,
@@ -263,7 +319,17 @@ function useTemplateImageSession(
 			selectSampleImage,
 			generate,
 		}),
-		[contracts, generate, selectProfile, selectSampleImage, states, update, updateFeature],
+		[
+			contracts,
+			generate,
+			selectProfile,
+			selectSampleImage,
+			states,
+			update,
+			updateFeature,
+			restore,
+			reset,
+		],
 	)
 }
 
@@ -321,7 +387,11 @@ function useTemplateLayerSession(
 function useTemplateBackgroundSession(
 	config: TemplateStudioConfig,
 	slot: TemplateBackgroundSlot | undefined,
-): TemplateStudioValue['background'] {
+): TemplateStudioValue['background'] & {
+	restore: (state: TemplateBackgroundState) => void
+	reset: () => void
+} {
+	const requestId = useRef<symbol | null>(null)
 	const contracts = useMemo(
 		() =>
 			slot
@@ -336,6 +406,33 @@ function useTemplateBackgroundSession(
 	const [state, setState] = useState<TemplateBackgroundState>(() =>
 		initialBackgroundState(config, slot, contracts),
 	)
+	const restore = useCallback((snapshot: TemplateBackgroundState) => {
+		requestId.current = null
+		setState(snapshot)
+	}, [])
+	const reset = useCallback(() => {
+		requestId.current = null
+		setState((current) => {
+			const initial = initialBackgroundState(
+				config,
+				slot,
+				contracts.filter((item) => item.config.id === current.profileId),
+			)
+			const graphic = config.template.graphicConfigs.find(
+				(item) => item.id === current.graphicConfigId,
+			)
+			return {
+				...initial,
+				type: current.type,
+				image: current.image,
+				imageMode: current.imageMode,
+				graphicConfigId: current.graphicConfigId,
+				graphicValues: graphic
+					? createControllerValues(graphic.controller.groups)
+					: initial.graphicValues,
+			}
+		})
+	}, [config, slot, contracts])
 	const typeDefinition = slot ? findTemplateControl(config, slot.typeControlId) : undefined
 	const colorDefinition = slot ? findTemplateControl(config, slot.colorControlId) : undefined
 	const selectedContract = contracts.find((candidate) => candidate.config.id === state.profileId)
@@ -381,16 +478,15 @@ function useTemplateBackgroundSession(
 			setState((current) => selectBackgroundImageProfile(current, profileId, contracts)),
 		[contracts],
 	)
-	const selectSampleImage = useCallback(
-		(option: SampleImageOption) =>
-			setState((current) => ({
-				...current,
-				generating: false,
-				error: null,
-				image: toAssignedSampleImage(option),
-			})),
-		[],
-	)
+	const selectSampleImage = useCallback((option: SampleImageOption) => {
+		requestId.current = null
+		setState((current) => ({
+			...current,
+			generating: false,
+			error: null,
+			image: toAssignedSampleImage(option),
+		}))
+	}, [])
 	const selectGraphicConfig = useCallback(
 		(configId: string) =>
 			setState((current) =>
@@ -414,9 +510,14 @@ function useTemplateBackgroundSession(
 	const generate = useCallback(async () => {
 		const contract = contracts.find((candidate) => candidate.config.id === state.profileId)
 		const prompt = state.prompt
-		if (state.generating || !contract || !validPrompt(prompt, contract)) return
+		if (requestId.current || state.generating || !contract || !validPrompt(prompt, contract))
+			return
+		const request = Symbol()
+		requestId.current = request
 		setState((current) => ({ ...current, generating: true, error: null }))
 		const generated = await requestTemplateImageGeneration(prompt, contract)
+		if (requestId.current !== request) return
+		requestId.current = null
 		setState((current) => ({
 			...current,
 			generating: false,
@@ -436,6 +537,8 @@ function useTemplateBackgroundSession(
 	return useMemo(
 		() => ({
 			state,
+			restore,
+			reset,
 			contracts,
 			featureBindings,
 			graphicConfigs: config.template.graphicConfigs,
@@ -452,6 +555,8 @@ function useTemplateBackgroundSession(
 		}),
 		[
 			config.template.graphicConfigs,
+			restore,
+			reset,
 			contracts,
 			featureBindings,
 			generate,
@@ -526,8 +631,87 @@ export function TemplateStudioProvider({
 	const text = useTemplateTextSession(config, textSlots, html, previewRef)
 	const images = useTemplateImageSession(config, imageSlots)
 	const vectors = useTemplateVectorSession(vectorSlots)
-	const layers = useTemplateLayerSession(editableSlots, slots)
+	const layerSession = useTemplateLayerSession(editableSlots, slots)
 	const background = useTemplateBackgroundSession(config, backgroundSlot)
+	const [targetId, setTargetId] = useState<string | null>(null)
+	const snapshot = useRef<{
+		id: string
+		images: typeof images.states
+		background: TemplateBackgroundState
+	} | null>(null)
+	const begin = useCallback(
+		(id: string) => {
+			if (
+				snapshot.current ||
+				background.state.generating ||
+				Object.values(images.states).some((state) => state.generating)
+			)
+				return
+			const slot = slots.find((item) => item.id === id)
+			if (
+				!slot ||
+				(slot.kind !== 'background' &&
+					(slot.kind !== 'image' || slot.access !== 'editable'))
+			)
+				return
+			snapshot.current = { id, images: images.states, background: background.state }
+			layerSession.select(id)
+			setTargetId(id)
+		},
+		[slots, images.states, background.state, layerSession.select],
+	)
+	const selectLayer = useCallback(
+		(id: string | null) => {
+			if (!snapshot.current) layerSession.select(id)
+		},
+		[layerSession.select],
+	)
+	const layers = useMemo(
+		() => ({ ...layerSession, select: selectLayer }),
+		[layerSession, selectLayer],
+	)
+	const busy =
+		background.state.generating ||
+		Object.values(images.states).some((state) => state.generating)
+	const editing = useMemo<TemplateStudioValue['editing']>(
+		() => ({
+			targetId,
+			busy,
+			begin,
+			complete: () => {
+				if (busy) return
+				snapshot.current = null
+				layerSession.select(null)
+				setTargetId(null)
+			},
+			cancel: () => {
+				const saved = snapshot.current
+				if (!saved) return
+				images.restore(saved.images)
+				background.restore(saved.background)
+				snapshot.current = null
+				layerSession.select(null)
+				setTargetId(null)
+			},
+			reset: () => {
+				if (!targetId || busy) return
+				if (targetId === backgroundSlot?.id) background.reset()
+				else images.reset(targetId)
+			},
+		}),
+		[
+			targetId,
+			busy,
+			begin,
+			layerSession.select,
+			images.restore,
+			images.reset,
+			background.restore,
+			background.reset,
+			backgroundSlot?.id,
+		],
+	)
+
 	const deferredTextColor = useDeferredValue(text.color)
 	const deferredImageStates = useDeferredValue(images.states)
 	const deferredVectorColors = useDeferredValue(vectors.colors)
@@ -651,6 +835,7 @@ export function TemplateStudioProvider({
 	const value = useMemo<TemplateStudioValue>(
 		() => ({
 			navigation,
+			editing,
 			sampleImages,
 			config,
 			text,
@@ -672,6 +857,7 @@ export function TemplateStudioProvider({
 		}),
 		[
 			artifact,
+			editing,
 			background,
 			supportsBackgroundVideo,
 			composedHtml,
@@ -814,7 +1000,10 @@ function applyImageRequestResult(
 ) {
 	const previous = current[slotId]
 	if (!previous || previous.profileId !== requestProfileId) return current
-	return { ...current, [slotId]: { ...previous, ...patch } }
+	return {
+		...current,
+		[slotId]: { ...previous, ...patch, ...(patch.image ? { transform: undefined } : {}) },
+	}
 }
 
 /** patch의 모든 키를 반영해야 한다 — 키를 빠뜨리면 컨트롤이 눌려도 상태가 안 바뀐다(2026-08-20 디머 실사고). export는 그 회귀 테스트용. */
@@ -885,7 +1074,7 @@ function selectBackgroundGraphicConfig(
 	}
 }
 
-function updateBackgroundGraphic(
+export function updateBackgroundGraphic(
 	current: TemplateBackgroundState,
 	controlId: string,
 	next: ControllerControlValue,
@@ -894,16 +1083,38 @@ function updateBackgroundGraphic(
 ): TemplateBackgroundState {
 	const config = configs.find((candidate) => candidate.id === current.graphicConfigId)
 	if (!config) return current
-	const definition = config.controller.groups
+	const groups = getGraphicStudioRuntimeGroups(config, current.graphicValues)
+	const definition = groups
 		.flatMap((group) => group.controls)
 		.find((control) => control.id === controlId)
 	const binding = getGraphicStudioRuntimeBindings(config, viewport)[controlId]
 	if (!definition || !acceptsControllerDraftValue(definition, next, binding)) {
 		return current
 	}
+	if (controlId === 'preset')
+		return { ...current, graphicValues: createGraphicPresetValues(config, next) }
+	const graphicValues: ControllerValues = { ...current.graphicValues, [controlId]: next }
+	const previous = new Map(
+		groups.flatMap((group) =>
+			group.controls.map((control) => [control.id, control.defaultValue] as const),
+		),
+	)
+	for (const group of getGraphicStudioRuntimeGroups(config, graphicValues)) {
+		for (const control of group.controls) {
+			if (control.id === controlId) continue
+			if (
+				followsChangedDefault(
+					graphicValues[control.id],
+					previous.get(control.id),
+					control.defaultValue,
+				)
+			)
+				graphicValues[control.id] = control.defaultValue
+		}
+	}
 	return {
 		...current,
-		graphicValues: { ...current.graphicValues, [controlId]: next },
+		graphicValues,
 	}
 }
 

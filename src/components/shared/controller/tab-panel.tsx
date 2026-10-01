@@ -25,7 +25,7 @@ export function ControllerTabPanel({ tabKey, className, children }: ControllerTa
 				<m.div
 					key={tabKey}
 					data-slot="controller-tab-panel"
-					className={cn('flex flex-col gap-1', className)}
+					className={cn('flex flex-col gap-1.5', className)}
 					initial={reducedMotion ? false : { opacity: 0, y: 4, scale: 0.97 }}
 					animate={{ opacity: 1, y: 0, scale: 1 }}
 					exit={

@@ -18,6 +18,7 @@ import { SampleImagePicker } from './sample-image-picker'
 type ImageSlotInputProps = {
 	pinned: boolean
 	readonly?: boolean
+	showMode?: boolean
 	contracts: readonly ResolvedTemplateImageConfig[]
 	value: TemplateImageSlotState
 	onFeatureChange: (controlId: string, value: ControllerControlValue) => void
@@ -38,6 +39,7 @@ type ImageSlotInputProps = {
 export function ImageSlotInput({
 	pinned,
 	readonly = false,
+	showMode = true,
 	contracts,
 	value,
 	onFeatureChange,
@@ -61,19 +63,9 @@ export function ImageSlotInput({
 	const mode = readonly ? 'generate' : value.imageMode
 
 	return (
-		<div data-slot="image-slot-input" className="flex flex-col gap-1">
-			{!readonly && (
-				<Controller.Row label="Image Type">
-					<Controller.Segmented
-						aria-label="슬롯 이미지 방식"
-						options={[
-							{ value: 'preset', label: 'Preset' },
-							{ value: 'generate', label: 'Generate' },
-						]}
-						value={value.imageMode}
-						onChange={onImageModeChange}
-					/>
-				</Controller.Row>
+		<div data-slot="image-slot-input" className="flex flex-col gap-1.5">
+			{showMode && !readonly && (
+				<ImageSlotMode value={value.imageMode} onChange={onImageModeChange} />
 			)}
 			<Controller.TabPanel tabKey={mode}>
 				{mode === 'preset' ? (
@@ -212,5 +204,29 @@ export function ImageSlotInput({
 				)}
 			</Controller.TabPanel>
 		</div>
+	)
+}
+
+export function ImageSlotMode({
+	label = 'Image Type',
+	value,
+	onChange,
+}: {
+	label?: string
+	value: 'preset' | 'generate'
+	onChange: (mode: 'preset' | 'generate') => void
+}) {
+	return (
+		<Controller.Row label={label}>
+			<Controller.Segmented
+				aria-label="슬롯 이미지 방식"
+				options={[
+					{ value: 'preset', label: 'Preset' },
+					{ value: 'generate', label: 'Generate' },
+				]}
+				value={value}
+				onChange={onChange}
+			/>
+		</Controller.Row>
 	)
 }

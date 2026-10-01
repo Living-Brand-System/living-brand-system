@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
  * 이미지·그래픽과 달리 교체가 라우팅이다: 템플릿마다 HTML과 슬롯이 달라 편집 세션을 이어받을 수 없어
  * 고른 템플릿의 화면으로 이동한다. 목록은 패널이 열릴 때 온다.
  */
-export function TemplateProfilePicker() {
+export function TemplateProfilePicker({ onSelect }: { onSelect?: (slug: string) => void }) {
 	const router = useRouter()
 	const { config, navigation } = useTemplateStudio()
 	const { load } = navigation.browse
@@ -43,7 +43,11 @@ export function TemplateProfilePicker() {
 										<button
 											type="button"
 											aria-current={current || undefined}
-											onClick={() => router.push(item.href)}
+											onClick={() =>
+												onSelect
+													? onSelect(item.slug)
+													: router.push(item.href)
+											}
 											className={cn(
 												'flex h-64 flex-col overflow-hidden rounded-lg border bg-background/5 text-left outline-none focus-visible:ring-2 focus-visible:ring-background/50',
 												current
