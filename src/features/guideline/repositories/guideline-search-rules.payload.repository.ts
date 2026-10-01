@@ -12,10 +12,7 @@ export async function listGuidelineSearchRules(
 ): Promise<GuidelineSearchRuleSummary[]> {
 	const references = [
 		...(document.rules ?? []),
-		...(document.contentModel === 'sections'
-			? (document.sections ?? [])
-			: (document.blocks ?? [])
-		).flatMap((block) => block.rules ?? []),
+		...(document.sections ?? []).flatMap((section) => section.rules ?? []),
 	]
 	const byId = new Map<number, GuidelineSearchRuleSummary | null>()
 	for (const reference of references) {

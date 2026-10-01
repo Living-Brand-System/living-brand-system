@@ -29,6 +29,21 @@ describe('formatCheckEvidence', () => {
 		).toBe('Minimum size\n\nleaf 2개를 담은 블록')
 	})
 
+	it.each([
+		'base',
+		'overview',
+		'examples',
+	] as const)('동결된 %s 카드 근거의 캡션을 보존한다', (type) => {
+		expect(
+			formatCheckEvidence({
+				type,
+				title: 'Logo',
+				description: 'Keep margins.',
+				captions: ['24 px'],
+			}),
+		).toBe('Logo\n\nKeep margins.\n\n24 px')
+	})
+
 	it('기존 CheckSession의 문자열 evidence를 그대로 유지한다', () => {
 		expect(formatCheckEvidence('legacy evidence')).toBe('legacy evidence')
 	})

@@ -131,8 +131,6 @@ export async function findAgentGuidelineDocument(
 			title: true,
 			slug: true,
 			headerImage: true,
-			blocks: true,
-			contentModel: true,
 			sections: true,
 			rules: true,
 			chapter: true,

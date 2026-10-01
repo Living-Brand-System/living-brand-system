@@ -1,4 +1,4 @@
-import { CiLockupHeroView } from '@/features/guideline/cards/deprecated/displays/dynamics/ci-lockup-hero/view'
+import { CiLockupHeroView } from '@/features/guideline/cards/displays/dynamics/ci-lockup-hero/view'
 import { PALETTES, resolvePalette } from '@/features/guideline/domain/contract/palette'
 import { getGuidelinePalette } from '@/features/guideline/services/get-guideline-colors.service'
 import { GuidelineSection, GuidelineSectionHeading } from './components'

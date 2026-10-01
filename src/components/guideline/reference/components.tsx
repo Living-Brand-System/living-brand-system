@@ -2,7 +2,7 @@ import { cva } from 'class-variance-authority'
 import Image from 'next/image'
 import type { ComponentProps, ReactNode } from 'react'
 import { Typography } from '@/components/ui/typography'
-import type { CardData } from '@/features/guideline/domain/contract/display'
+import type { CardRatio } from '@/features/guideline/cards/displays/ratio'
 import { cn } from '@/lib/utils'
 import styles from './reference.module.css'
 
@@ -85,8 +85,8 @@ export function ReferenceGrid({
 
 type ReferenceCardProps = ComponentProps<'figure'> & {
 	caption?: { title?: string; description?: string }
-	ratio?: CardData['ratio']
-	mark?: CardData['mark']
+	ratio?: CardRatio
+	mark?: 'none' | 'do' | 'ok' | 'dont'
 	captionPlacement?: 'below' | 'overlay'
 }
 const markVariants = cva(styles.mark, {

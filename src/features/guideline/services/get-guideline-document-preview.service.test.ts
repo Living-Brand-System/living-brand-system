@@ -15,7 +15,7 @@ const topic = {
 	slug: 'basics',
 	chapterSlug: 'brand-system',
 	headerImage: null,
-	blocks: [],
+	sections: [],
 	displayOrder: 1,
 }
 
@@ -36,7 +36,7 @@ describe('guideline document preview', () => {
 
 		await expect(getGuidelineTopicPreview(2, { id: 1 } as never)).resolves.toMatchObject({
 			title: 'Draft Basics',
-			blocks: [],
+			sections: [],
 		})
 	})
 

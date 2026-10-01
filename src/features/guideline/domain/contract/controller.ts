@@ -1,7 +1,6 @@
 import type {
 	ControllerControlValue,
 	ControllerGroupDefinition,
-	StudioControllerRestrictions,
 } from '@/modules/studio-controller/controller-definition'
 
 /**
@@ -22,9 +21,3 @@ export type GuidelineControllerManifest = {
 }
 
 export type { ControllerControlValue }
-
-/** 카드가 여는 컨트롤과 해당 인스턴스의 제한. */
-export type CardController = {
-	manifest: GuidelineControllerManifest
-	restrictions?: StudioControllerRestrictions
-}

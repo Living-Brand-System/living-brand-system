@@ -7,7 +7,6 @@ export interface SectionHierarchy {
 	parentSectionId: string | null
 }
 
-export type GuidelineBlocks = GuidelineDocument['blocks']
 export type GuidelineHeaderImage = GuidelineDocument['headerImage']
 
 export interface GuidelineMetadataData {
@@ -34,8 +33,7 @@ export interface GuidelineNavigationTopicData {
 	title: string
 }
 
-export interface GuidelineTopicData extends Pick<GuidelineDocument, 'contentModel' | 'sections'> {
-	blocks: GuidelineBlocks
+export interface GuidelineTopicData extends Pick<GuidelineDocument, 'sections'> {
 	headerImage: GuidelineHeaderImage
 	id: number
 	title: string

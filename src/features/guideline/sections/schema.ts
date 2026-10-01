@@ -1,7 +1,7 @@
 import type { Field } from 'payload'
-import { anchorField, guidelineRulesField } from '../blocks/fields'
 import { CARD_RATIO_OPTIONS } from '../cards/displays/ratio'
 import { ASSET_SOURCES, displayField } from './display-schema'
+import { anchorField, guidelineRulesField } from './fields'
 import { isGuidelineActionHref } from './model'
 
 const sources = ASSET_SOURCES
@@ -229,7 +229,6 @@ export const sectionsField: Field = {
 	label: '섹션',
 	dbName: 'sections',
 	admin: {
-		condition: (data) => data.contentModel === 'sections',
 		description:
 			'섹션과 서브섹션을 같은 목록에서 순서대로 편집합니다. 컨테이너에서 카드 배치를 선택합니다.',
 	},

@@ -35,8 +35,6 @@ export async function listPublishedMcpGuidelineDocuments(
 			slug: true,
 			headerImage: true,
 			rules: true,
-			blocks: true,
-			contentModel: true,
 			sections: true,
 			displayOrder: true,
 			chapter: true,
@@ -49,9 +47,7 @@ export async function listPublishedMcpGuidelineDocuments(
 		slug: document.slug,
 		headerImage: document.headerImage,
 		rules: document.rules,
-		contentModel: document.contentModel,
 		sections: document.sections,
-		blocks: document.blocks,
 		displayOrder: document.displayOrder,
 		chapter: document.chapter,
 	}))

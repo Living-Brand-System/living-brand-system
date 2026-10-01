@@ -82,11 +82,6 @@ export async function listPublishedGuidelineNavigationTopics(): Promise<
 			slug: true,
 			displayOrder: true,
 			chapter: true,
-			// 🔴 섹션 목차는 `section` 블록에서 나온다. blockType별로 골라 담으면 나머지 블록
-			//    테이블(blk·img·위젯 20종)은 조인 자체가 일어나지 않는다
-			//    (`@payloadcms/drizzle` find/traverseFields.js — 목록에 없는 블록은 빈 select로 접힌다).
-			blocks: { section: { anchor: true, title: true } },
-			contentModel: true,
 			sections: { id: true, type: true, anchor: true, title: true },
 		},
 	})
@@ -94,35 +89,19 @@ export async function listPublishedGuidelineNavigationTopics(): Promise<
 	return documents.docs.map((document) => ({
 		chapterId: relationshipId(document.chapter),
 		id: document.id,
-		sections:
-			document.contentModel === 'sections'
-				? withSectionHierarchy(document.sections ?? []).flatMap((section) =>
-						section.anchor
-							? [
-									{
-										id: section.id,
-										anchor: section.anchor,
-										title: section.title ?? '',
-										headingLevel: section.headingLevel,
-										parentSectionId: section.parentSectionId,
-									},
-								]
-							: [],
-					)
-				: (document.blocks ?? []).flatMap((block) =>
-						// 제목 없는 섹션(히어로)은 앵커도 목차 항목도 없다.
-						block.blockType === 'section' && block.anchor && block.title
-							? [
-									{
-										id: block.id || block.anchor,
-										anchor: block.anchor,
-										title: block.title,
-										headingLevel: 2 as const,
-										parentSectionId: null,
-									},
-								]
-							: [],
-					),
+		sections: withSectionHierarchy(document.sections ?? []).flatMap((section) =>
+			section.anchor
+				? [
+						{
+							id: section.id,
+							anchor: section.anchor,
+							title: section.title ?? '',
+							headingLevel: section.headingLevel,
+							parentSectionId: section.parentSectionId,
+						},
+					]
+				: [],
+		),
 		slug: document.slug,
 		title: document.title,
 	}))
@@ -156,8 +135,8 @@ export async function findPublishedTopicBySlug(
 	topicSlug: string,
 ): Promise<GuidelineTopicData | null> {
 	const payload = await getPayload({ config })
-	// depth 1: 섹션(section) 블록이 품은 이미지(application-images)·색상(brand-colors) 관계를
-	// populate해야 렌더된다. 섹션 자신의 면(background)도 같은 depth로 hex까지 채워진다.
+	// sections 선택 조회는 깊이 중첩된 다형 관계를 누락하므로 문서 전체를 읽고 반환 필드를 제한합니다.
+	// depth 1에서 카드의 이미지·색상 관계를 populate합니다.
 	const topics = await payload.find({
 		collection: 'guideline-documents',
 		depth: 1,
@@ -168,21 +147,11 @@ export async function findPublishedTopicBySlug(
 		where: {
 			and: [{ slug: { equals: topicSlug } }, { chapter: { equals: chapterId } }],
 		},
-		select: {
-			title: true,
-			slug: true,
-			headerImage: true,
-			blocks: true,
-			contentModel: true,
-			sections: true,
-		},
 	})
 
 	const topic = topics.docs[0]
 	return topic
 		? {
-				blocks: topic.blocks ?? [],
-				contentModel: topic.contentModel,
 				sections: topic.sections,
 				headerImage: topic.headerImage ?? null,
 				id: topic.id,

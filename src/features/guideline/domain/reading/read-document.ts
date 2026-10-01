@@ -1,5 +1,4 @@
 import type { GuidelineDocument, Rule } from '@/payload-types'
-import { formatBlockForAgent } from '../../blocks/projection'
 import { collectGuidelineCheckSources } from '../../checks/collect-guideline-check-sources'
 import {
 	type CmsCard,
@@ -17,7 +16,7 @@ import { type GuidelineReadAction, toReadVisual, visualInteractions } from './re
 
 export type GuidelineSourceDocument = Pick<
 	GuidelineDocument,
-	'id' | 'title' | 'slug' | 'contentModel' | 'sections' | 'blocks' | 'rules' | 'headerImage'
+	'id' | 'title' | 'slug' | 'sections' | 'rules' | 'headerImage'
 > &
 	Partial<Pick<GuidelineDocument, 'chapter' | 'displayOrder'>>
 
@@ -47,16 +46,6 @@ export function toGuidelineReadDocument(
 			title: rule.title,
 		})),
 	}
-	if (sourceDocument.contentModel !== 'sections')
-		return {
-			...shared,
-			contentModel: 'legacy' as const,
-			// 레거시 blocks의 공개 구조는 유지한다. 기존 평문 해석도 이 경계에서 끝낸다.
-			blocks: (sourceDocument.blocks ?? []).map((block) => ({
-				...block,
-				text: formatBlockForAgent(block),
-			})),
-		}
 	return {
 		...shared,
 		contentModel: 'sections' as const,
@@ -103,10 +92,7 @@ export function toGuidelineReadDocument(
 }
 
 export type GuidelineReadDocument = ReturnType<typeof toGuidelineReadDocument>
-export type GuidelineReadSection = Extract<
-	GuidelineReadDocument,
-	{ contentModel: 'sections' }
->['sections'][number]
+export type GuidelineReadSection = GuidelineReadDocument['sections'][number]
 export type GuidelineReadFigure = GuidelineReadSection['contentGroups'][number]['figures'][number]
 
 function readRules(rules: (number | Rule)[] | null | undefined) {

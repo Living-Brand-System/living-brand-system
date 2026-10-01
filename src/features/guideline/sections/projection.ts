@@ -1,4 +1,4 @@
-import { compact } from '../utils/block-text'
+import { compact } from '../checks/check-source'
 import {
 	type CmsCard,
 	type CmsSection,

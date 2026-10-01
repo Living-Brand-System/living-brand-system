@@ -5,7 +5,7 @@ import type { SectionHierarchy } from '../domain/contract/guideline'
 export type CmsSection = NonNullable<GuidelineDocument['sections']>[number]
 export type CmsContainer = NonNullable<CmsSection['containers']>[number]
 export type CmsCard = NonNullable<CmsContainer['cards']>[number]
-export type CmsBody = Pick<GuidelineDocument, 'contentModel' | 'sections'>
+export type CmsBody = Pick<GuidelineDocument, 'sections'>
 
 /** 그룹이 등록되면 평면 행은 비활성이다. 기존 명세는 제목 없는 한 그룹으로 읽는다. */
 export function captionSpecificationGroups(card: Pick<CmsCard, 'caption' | 'specGroups'>) {
@@ -129,16 +129,13 @@ export function sectionFiles(section: CmsSection) {
 }
 
 export function needsPaletteCatalog(body: CmsBody) {
-	return (
-		body.contentModel === 'sections' &&
-		body.sections?.some((section) =>
-			section.containers?.some((container) =>
-				container.cards?.some(({ display }) =>
-					['palette', 'logo-background', 'layout-grid', 'layout-overlay'].includes(
-						display.type,
-					),
+	return body.sections?.some((section) =>
+		section.containers?.some((container) =>
+			container.cards?.some(({ display }) =>
+				['palette', 'logo-background', 'layout-grid', 'layout-overlay'].includes(
+					display.type,
 				),
 			),
-		)
+		),
 	)
 }
