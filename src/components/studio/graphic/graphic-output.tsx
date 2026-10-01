@@ -33,8 +33,11 @@ export function GraphicOutput({ output }: { output: GraphicExportView }) {
 					setDisplay({ mode: next.mode, notice: next.notice })
 					return
 				}
+				// 해상도는 바뀔 때만 계약에 견준다 — print 계약이 없는 프로파일(예: SVG만 허용)에서
+				// 크기만 고쳐도 거절되던 문제를 막는다.
+				const ppiChanged = next.ppi !== output.ppi
 				if (
-					!acceptsPrintPpi(config.output, next.ppi) ||
+					(ppiChanged && !acceptsPrintPpi(config.output, next.ppi)) ||
 					!output.setSize({ width: next.width, height: next.height })
 				) {
 					setDisplay((current) => ({
@@ -43,7 +46,7 @@ export function GraphicOutput({ output }: { output: GraphicExportView }) {
 					}))
 					return
 				}
-				output.setPpi(next.ppi)
+				if (ppiChanged) output.setPpi(next.ppi)
 				setDisplay({ mode: next.mode, notice: '' })
 			}}
 			format={draft.format}

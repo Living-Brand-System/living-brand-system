@@ -312,6 +312,29 @@ describe('GraphicGenerator', () => {
 		await waitFor(() => expect(screen.getByRole('button', { name: '저장' })).toBeEnabled())
 	})
 
+	// 어드민이 형식을 SVG로만 좁히면 print 계약이 빠진다 — 해상도와 무관한 크기 변경까지 막으면 안 된다.
+	it('인쇄 형식이 없는 프로파일에서도 출력 크기를 고칠 수 있다', async () => {
+		const { print: _print, ...output } = resolveGraphicStudioOutput(
+			forwardStraightRuntimeManifest,
+		)
+		const config = {
+			...forwardStraightRuntimeManifest,
+			output: { ...output, formats: ['svg'] },
+		} satisfies GraphicStudioConfig
+
+		render(createElement(GraphicGenerator, { config }))
+		await waitFor(() => expect(mocks.createPreview).toHaveBeenCalledOnce())
+
+		const width = screen.getByRole('spinbutton', { name: '출력 너비' })
+		fireEvent.change(width, { target: { value: '1280' } })
+		fireEvent.blur(width)
+
+		expect(screen.getByRole('spinbutton', { name: '출력 너비' })).toHaveValue(1280)
+		expect(
+			screen.queryByText('이 프로파일에서 지원하지 않는 크기 또는 해상도입니다.'),
+		).not.toBeInTheDocument()
+	})
+
 	it('Shader Definition을 WebGL preview와 MP4 Export UI에 연결한다', async () => {
 		const { container, unmount } = render(
 			createElement(GraphicGenerator, { config: flutedGlassConfig }),
