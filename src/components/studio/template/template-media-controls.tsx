@@ -1,6 +1,6 @@
 'use client'
 
-import { type ReactNode, useEffect } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import { Controller } from '@/components/shared/controller'
 import { ControllerControlRenderer } from '@/components/shared/controller-renderer'
 import { GraphicEditingControls } from '@/components/studio/graphic/graphic-editing-controls'
@@ -24,6 +24,7 @@ import {
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import type { SampleImageOption } from '@/features/template-customization/services/list-sample-images.client'
 import type {
+	ControllerControlDefinition,
 	ControllerControlValue,
 	ControllerRuntimeBindings,
 } from '@/modules/studio-controller/controller-definition'
@@ -94,6 +95,53 @@ export function TemplateDimmer() {
 					/>
 				)
 			})}
+		</Controller.Group>
+	)
+}
+
+const IMAGE_DIMMER = {
+	id: 'image.dimmer',
+	kind: 'toggle',
+	label: 'Use',
+	defaultValue: false,
+} as const satisfies ControllerControlDefinition
+const IMAGE_DIMMER_OPACITY = {
+	id: 'image.dimmerOpacity',
+	kind: 'range',
+	label: 'Strength',
+	defaultValue: 0.2,
+	min: 0,
+	max: 0.7,
+	step: 0.01,
+	display: { precision: 2 },
+} as const satisfies ControllerControlDefinition
+
+/**
+ * 이미지 슬롯의 Dimming(Figma 529:27139). 배경 Dimming과 같은 모양이다.
+ * ponytail: 슬롯 계약·합성에 디머가 없어 값은 로컬 state에만 둔다 — 캔버스에 반영할 때
+ *   TemplateImageSlotState에 dimmer·dimmerOpacity를 올리고 compose에 연결한다.
+ */
+function ImageSlotDimmer() {
+	const [dimmer, setDimmer] = useState(false)
+	const [opacity, setOpacity] = useState<number>(IMAGE_DIMMER_OPACITY.defaultValue)
+	return (
+		<Controller.Group title="Dimming">
+			<ControllerControlRenderer
+				definition={IMAGE_DIMMER}
+				value={dimmer}
+				onChange={(next) => {
+					if (typeof next === 'boolean') setDimmer(next)
+				}}
+			/>
+			{dimmer && (
+				<ControllerControlRenderer
+					definition={IMAGE_DIMMER_OPACITY}
+					value={opacity}
+					onChange={(next) => {
+						if (typeof next === 'number') setOpacity(next)
+					}}
+				/>
+			)}
 		</Controller.Group>
 	)
 }
@@ -216,11 +264,12 @@ export function TemplateImageControls({
 			fixed={
 				isBackground || generating ? (
 					<Controller.GroupList>
-						{isBackground && <TemplateDimmer />}
+						{isBackground ? <TemplateDimmer /> : generating && <ImageSlotDimmer />}
 						{generating && (
 							<Controller.Group title="Generate">
 								<Button
-									className="h-11 w-full"
+									variant="muted"
+									className="h-11 w-full rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
 									disabled={
 										target.state.generating ||
 										!contract ||
