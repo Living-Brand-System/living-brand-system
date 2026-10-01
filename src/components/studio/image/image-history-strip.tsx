@@ -53,7 +53,12 @@ export function ImageHistoryStrip() {
 		<div
 			data-slot="image-history-strip"
 			data-testid="strip"
-			className="flex shrink-0 items-center gap-2 overflow-x-auto px-2 py-2"
+			className="scrollbar-none flex min-w-0 shrink-0 items-center gap-2 overflow-x-auto px-2 py-2"
+			// 스크롤바를 숨겼으므로 마우스 휠(세로)도 가로로 넘긴다. 트랙패드 가로 입력은 그대로 둔다.
+			onWheel={(event) => {
+				if (Math.abs(event.deltaY) > Math.abs(event.deltaX))
+					event.currentTarget.scrollLeft += event.deltaY
+			}}
 		>
 			{stacks.map((stack, index) => (
 				<Fragment key={stack.key}>
