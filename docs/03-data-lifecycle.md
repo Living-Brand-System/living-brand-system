@@ -95,7 +95,7 @@
 
 옛 모델의 PagePolicy, PageAssetRef, PageExample은 별도 엔티티로 존재하지 않는다. 정책 문구는 섹션 설명과 카드 캡션으로, 에셋 연결은 카드 디스플레이와 다운로드로, 사례의 사용 표시는 카드의 `status`로 저작한다. 이 표시는 검수 결과가 아니다.
 
-CMS와 문서 API는 `sections`만 저작하며 `blocks`와 `contentModel`을 본문 선택 필드로 제공하지 않는다. 비공개 이력 표식은 구형 버전 복원을 막는 내부 계약이다. CMS에 등록되지 않은 옛 SQL 블록 테이블은 원시 보관 데이터로 남기며 삭제하지 않는다. 기존 CheckSession의 동결된 `block`·`base`·`overview`·`examples` 등 evidence 타입은 기록 읽기 계약으로 보존하며 새 문서 저작 모델로 사용하지 않는다.
+CMS와 문서 API는 `sections`만 저작하며 `blocks`와 `contentModel`을 본문 선택 필드로 제공하지 않는다. 비공개 이력 표식은 구형 버전 복원을 막는 내부 계약이다. CMS에 등록되지 않은 옛 SQL 블록 테이블·레거시 관계·legacy 버전은 별도의 파기 마이그레이션으로 삭제한다. 현재 문서·신규 버전·업로드 자산은 보존한다. 기존 CheckSession의 동결된 `block`·`base`·`overview`·`examples` 등 evidence 타입은 기록 읽기 계약으로 보존하며 새 문서 저작 모델로 사용하지 않는다.
 
 ## 4. 브랜드 자원
 
