@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { resolveGraphicStudioOutput } from '@/features/graphic-generation/domain/graphic-studio-manifest'
@@ -219,11 +219,10 @@ it('배경 Type·Image Mode는 왼쪽에서 전환하고 오른쪽에는 편집 
 	fireEvent.click(within(layers).getByRole('button', { name: /^Background$/ }))
 	const selection = screen.getByRole('region', { name: '선택한 레이어 편집' })
 	let editing = screen.getByRole('complementary', { name: '편집 도구' })
-	const type = within(selection).getByRole('combobox', { name: 'Type' })
-	expect(within(editing).queryByRole('combobox', { name: 'Type' })).toBeNull()
+	const mode = within(within(selection).getByRole('radiogroup', { name: 'Mode' }))
+	expect(within(editing).queryByRole('radiogroup', { name: 'Mode' })).toBeNull()
 	expect(within(editing).queryByRole('radiogroup', { name: '텍스트 색상' })).toBeNull()
-	fireEvent.keyDown(type, { key: 'ArrowDown' })
-	fireEvent.click(await screen.findByRole('option', { name: /^Image$/ }))
+	fireEvent.click(mode.getByRole('radio', { name: 'Image' }))
 	editing = screen.getByRole('complementary', { name: '편집 도구' })
 	expect(editing.querySelector('[data-slot="studio-preset-list"]')).toBeNull()
 	fireEvent.click(within(selection).getByRole('radio', { name: 'Generate' }))
@@ -239,7 +238,11 @@ it('배경 Type·Image Mode는 왼쪽에서 전환하고 오른쪽에는 편집 
 			name: 'Reset',
 		}),
 	)
-	expect(screen.getByRole('combobox', { name: 'Type' })).toHaveTextContent('Image')
+	expect(
+		within(screen.getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {
+			name: 'Image',
+		}),
+	).toBeChecked()
 	fireEvent.click(screen.getByRole('button', { name: '취소' }))
 	expect(screen.queryByRole('region', { name: '선택한 레이어 편집' })).not.toBeInTheDocument()
 })
@@ -364,9 +367,13 @@ it('패널 탐색은 실제 템플릿 세션을 유지하고 왼쪽 종류 선�
 	fireEvent.keyDown(format, { key: 'ArrowDown' })
 	fireEvent.click(await screen.findByRole('option', { name: /^JPEG$/ }))
 	fireEvent.click(screen.getByRole('button', { name: /^Background$/ }))
+	// 실제 클릭처럼 포커스를 먼저 옮긴다 — 열린 자산 브라우저는 바깥으로 포커스가 나가면 닫힌다.
 	const selectType = async (name: string) => {
-		fireEvent.keyDown(screen.getByRole('combobox', { name: 'Type' }), { key: 'ArrowDown' })
-		fireEvent.click(await screen.findByRole('option', { name }))
+		const radio = within(screen.getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {
+			name,
+		})
+		act(() => radio.focus())
+		fireEvent.click(radio)
 	}
 	await selectType('Graphic')
 	fireEvent.click(screen.getByRole('button', { name: '그래픽 변경' }))

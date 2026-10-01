@@ -1741,9 +1741,11 @@ describe('TemplateGenerator', () => {
 		)
 
 		selectLayerGroup('background')
-		screen.getByRole('combobox', { name: 'Type' }).focus()
-		await user.keyboard('{ArrowDown}')
-		await user.click(screen.getByRole('option', { name: 'Image' }))
+		await user.click(
+			within(screen.getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {
+				name: 'Image',
+			}),
+		)
 		await user.click(screen.getByRole('radio', { name: 'Generate' }))
 		fireEvent.change(await screen.findByLabelText('Prompt'), { target: { value: '노을 배경' } })
 		fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
@@ -1778,9 +1780,11 @@ describe('TemplateGenerator', () => {
 		)
 
 		selectLayerGroup('background')
-		screen.getByRole('combobox', { name: 'Type' }).focus()
-		await user.keyboard('{ArrowDown}')
-		await user.click(screen.getByRole('option', { name: 'Image' }))
+		await user.click(
+			within(screen.getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {
+				name: 'Image',
+			}),
+		)
 		await user.click(screen.getByRole('radio', { name: 'Generate' }))
 		fireEvent.change(await screen.findByLabelText('Prompt'), {
 			target: { value: '사용자 입력' },
@@ -1818,9 +1822,11 @@ describe('TemplateGenerator', () => {
 			) as HTMLElement
 
 		selectLayerGroup('background')
-		screen.getByRole('combobox', { name: 'Type' }).focus()
-		await user.keyboard('{ArrowDown}')
-		await user.click(screen.getByRole('option', { name: 'Graphic' }))
+		await user.click(
+			within(screen.getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {
+				name: 'Graphic',
+			}),
+		)
 		await waitFor(() => expect(mocks.mountGraphicPreview).toHaveBeenCalledOnce())
 		expect(mocks.mountGraphicPreview).toHaveBeenCalledWith(
 			expect.objectContaining({ values: expect.any(Object), onChange: expect.any(Function) }),
@@ -1846,9 +1852,11 @@ describe('TemplateGenerator', () => {
 		)
 		expect(canvasOf().style.background).toBe('transparent')
 
-		screen.getByRole('combobox', { name: 'Type' }).focus()
-		await user.keyboard('{ArrowDown}')
-		await user.click(screen.getByRole('option', { name: 'Color' }))
+		await user.click(
+			within(screen.getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {
+				name: 'Color',
+			}),
+		)
 		await waitFor(() => expect(mocks.destroyGraphicPreview).toHaveBeenCalledTimes(2))
 		fireEvent.change(screen.getByLabelText('Background Color 색상 선택'), {
 			target: { value: '#ff0000' },
@@ -1856,9 +1864,11 @@ describe('TemplateGenerator', () => {
 		expect(canvasOf().style.backgroundImage).toBe('')
 		expect(canvasOf().style.backgroundColor).toBe('rgb(255, 0, 0)')
 
-		screen.getByRole('combobox', { name: 'Type' }).focus()
-		await user.keyboard('{ArrowDown}')
-		await user.click(screen.getByRole('option', { name: 'Graphic' }))
+		await user.click(
+			within(screen.getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {
+				name: 'Graphic',
+			}),
+		)
 		await waitFor(() => expect(mocks.mountGraphicPreview).toHaveBeenCalledTimes(3))
 		expect(canvasOf().style.background).toBe('transparent')
 	})

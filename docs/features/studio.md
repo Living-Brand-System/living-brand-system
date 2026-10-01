@@ -314,7 +314,7 @@ Template Generator는 실제 발행 카탈로그와 인증된
 `GET /api/studio/template/<templateSlug>`를 사용합니다. 상세 조회는 운영 Studio와 같은
 `getTemplateStudio()`에서 Effective Config를 파생하고 원시 Admin 정책을 전달하지 않습니다.
 왼쪽 기본 화면은 대상 카드 → Layers·Output 순서입니다. 이미지·배경을 선택하면 해당 대상의 편집 패널을 엽니다.
-Image Setting은 현재 이미지의 Preset/Generate를, Background Setting은 Type과 Image Mode를 표시합니다.
+Image Setting은 현재 이미지의 Preset/Generate를, Background Setting은 Mode(Color·Image·Graphic 토글 그룹)와 Image Mode를 표시합니다(Figma `525:8777`).
 방식 전환은 편집값을 유지하며, 편집 중에는 완료·취소 전까지 다른 레이어로 이동할 수 없습니다.
 오른쪽은 선택한 종류의 편집 컨트롤을 표시하고 Type·Mode를 중복 표시하지 않습니다.
 Text를 선택하면 오른쪽 위에 공통 텍스트 Color(Solid/Custom), 아래에 텍스트 입력을 배치합니다.
