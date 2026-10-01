@@ -37,7 +37,6 @@ export function TemplateOutputControls({
 			empty={false}
 			value={{
 				mode: exporting.sizeMm ? 'print' : 'digital',
-				preset: 'custom',
 				width: size.width,
 				height: size.height,
 				ppi: exporting.ppi,

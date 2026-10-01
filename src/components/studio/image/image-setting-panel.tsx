@@ -65,7 +65,6 @@ export function ImageSettingPanel({ download }: { download: ImageExportView; tit
 			empty={false}
 			value={{
 				mode: 'digital',
-				preset: 'custom',
 				width: 0,
 				height: 0,
 				ppi: download.ppi ?? 300,

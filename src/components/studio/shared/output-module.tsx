@@ -7,7 +7,11 @@ import { ControllerRow } from '@/components/shared/controller/row'
 import { ControllerSegmented } from '@/components/shared/controller/segmented'
 import { ControllerSelect } from '@/components/shared/controller/select'
 import { ControllerStack } from '@/components/shared/controller/stack'
-import { presetArtboard } from '@/components/studio/shared/output-controls'
+import {
+	type ArtboardKey,
+	matchArtboard,
+	presetArtboard,
+} from '@/components/studio/shared/output-controls'
 import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
 import {
@@ -21,7 +25,6 @@ import { OutputDimensions } from './output-dimensions'
 
 export type StudioOutput = {
 	mode: 'print' | 'digital'
-	preset: string
 	width: number
 	height: number
 	ppi: number
@@ -35,16 +38,42 @@ const MODES = [
 	{ value: 'print', label: 'Print' },
 	{ value: 'digital', label: 'Digital' },
 ] as const
-const DIGITAL_PRESETS = [
-	{ value: 'feed', label: 'Instagram Feed' },
-	{ value: 'square', label: 'Square' },
-	{ value: 'wide', label: '16:9' },
-]
-const PRINT_PRESETS = [
-	{ value: 'a', label: 'A4' },
-	{ value: 'banner', label: 'Banner' },
-]
+/**
+ * 출력 프리셋. 🔑 선택 상태는 저장하지 않는다 — 크기가 정본이고, 표시는 현재 크기에서 계산한다.
+ * 프리셋을 고르면 크기만 바꾸고, 크기를 고쳐 어느 프리셋과도 맞지 않으면 그대로 Custom이 된다.
+ */
+const PRESETS = {
+	digital: [
+		{ value: 'feed', label: 'Instagram Feed' },
+		{ value: 'square', label: 'Square' },
+		{ value: 'wide', label: '16:9' },
+	],
+	print: [
+		{ value: 'a', label: 'A4' },
+		{ value: 'banner', label: 'Banner' },
+	],
+} as const satisfies Record<StudioOutput['mode'], readonly { value: PresetKey; label: string }[]>
+type PresetKey = 'feed' | ArtboardKey
 const CUSTOM = { value: 'custom', label: 'Custom' }
+
+function presetSize(key: PresetKey) {
+	return key === 'feed' ? { width: 1080, height: 1350, ppi: undefined } : presetArtboard(key)
+}
+
+/** Digital은 px가 같을 때, Print는 물리 크기(mm)가 같을 때 그 프리셋이다 — 해상도를 바꿔도 A4는 A4다. */
+export function matchOutputPreset({ mode, width, height, ppi }: StudioOutput): string {
+	const list: readonly { value: PresetKey }[] = PRESETS[mode]
+	if (mode === 'print') {
+		const key = matchArtboard({ width, height }, ppi)
+		return list.some((preset) => preset.value === key) ? key : CUSTOM.value
+	}
+	return (
+		list.find((preset) => {
+			const size = presetSize(preset.value)
+			return size.width === width && size.height === height
+		})?.value ?? CUSTOM.value
+	)
+}
 const FORMATS = ['PNG', 'JPEG', 'PDF'].map((value) => ({ value, label: value }))
 const IMAGE_FIELDS = [
 	{ id: 'count', label: '생성 수', Icon: Copy, options: ['1', '2', '4'] },
@@ -90,7 +119,7 @@ export function StudioOutputModule({
 	empty: boolean
 }) {
 	const physical = value.mode === 'print'
-	const fixed = value.preset !== 'custom'
+	const preset = matchOutputPreset(value)
 	const unit = physical ? 'mm' : 'px'
 	const change = (patch: Partial<StudioOutput>) => onChange({ ...value, notice: '', ...patch })
 	const resize = (patch: Partial<StudioOutput>) => {
@@ -134,30 +163,21 @@ export function StudioOutputModule({
 										aria-label="출력 모드"
 										options={MODES}
 										value={value.mode}
-										onChange={(mode) => change({ mode, preset: 'custom' })}
+										onChange={(mode) => change({ mode })}
 									/>
 								</ControllerRow>
 								<ControllerRow label="Preset">
 									<ControllerSelect
-										options={[
-											...(physical ? PRINT_PRESETS : DIGITAL_PRESETS),
-											CUSTOM,
-										]}
-										value={value.preset}
-										onChange={(preset) => {
-											if (preset === 'custom') return change({ preset })
-											if (preset === 'feed')
-												return change({ preset, width: 1080, height: 1350 })
-											if (
-												preset !== 'a' &&
-												preset !== 'banner' &&
-												preset !== 'square' &&
-												preset !== 'wide'
-											)
-												return
-											const size = presetArtboard(preset)
+										options={[...PRESETS[value.mode], CUSTOM]}
+										value={preset}
+										onChange={(next) => {
+											// Custom은 크기를 그대로 두고 편집을 이어간다 — 이미 언제나 편집 가능하다.
+											const key = PRESETS[value.mode].find(
+												(item) => item.value === next,
+											)?.value
+											if (!key) return
+											const size = presetSize(key)
 											change({
-												preset,
 												width: size.width,
 												height: size.height,
 												ppi: size.ppi ?? value.ppi,
@@ -212,32 +232,27 @@ export function StudioOutputModule({
 										id,
 										label,
 										icon: <Icon />,
-										readonly: fixed,
 										children: (
 											<div className="flex min-w-0 flex-1 items-center justify-end gap-1 text-sm">
-												{fixed ? (
-													<span>{dimension(id)}</span>
-												) : (
-													<OutputNumber
-														key={`${value.mode}-${value[id]}-${value.ppi}`}
-														value={dimension(id)}
-														onCommit={(next) =>
-															resize({
-																[id]: physical
-																	? millimetersToPixels(
-																			next,
-																			value.ppi,
-																		)
-																	: Math.round(next),
-															})
-														}
-														onInvalid={() =>
-															change({
-																notice: '0보다 큰 숫자를 입력해 주세요.',
-															})
-														}
-													/>
-												)}
+												<OutputNumber
+													key={`${value.mode}-${value[id]}-${value.ppi}`}
+													value={dimension(id)}
+													onCommit={(next) =>
+														resize({
+															[id]: physical
+																? millimetersToPixels(
+																		next,
+																		value.ppi,
+																	)
+																: Math.round(next),
+														})
+													}
+													onInvalid={() =>
+														change({
+															notice: '0보다 큰 숫자를 입력해 주세요.',
+														})
+													}
+												/>
 												<span className="shrink-0 text-muted-foreground">
 													{unit}
 												</span>

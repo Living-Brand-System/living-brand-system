@@ -9,7 +9,6 @@ export function GraphicOutput({ output }: { output: GraphicExportView }) {
 	const { config } = useGraphicStudio()
 	const [display, setDisplay] = useState({
 		mode: 'digital' as StudioOutput['mode'],
-		preset: 'custom',
 		notice: '',
 	})
 	const draft = output.draft
@@ -31,7 +30,7 @@ export function GraphicOutput({ output }: { output: GraphicExportView }) {
 			value={value}
 			onChange={(next) => {
 				if (next.notice) {
-					setDisplay({ mode: next.mode, preset: next.preset, notice: next.notice })
+					setDisplay({ mode: next.mode, notice: next.notice })
 					return
 				}
 				if (
@@ -45,7 +44,7 @@ export function GraphicOutput({ output }: { output: GraphicExportView }) {
 					return
 				}
 				output.setPpi(next.ppi)
-				setDisplay({ mode: next.mode, preset: next.preset, notice: '' })
+				setDisplay({ mode: next.mode, notice: '' })
 			}}
 			format={draft.format}
 			formats={config.output.formats.map((value) => ({ value, label: value.toUpperCase() }))}
