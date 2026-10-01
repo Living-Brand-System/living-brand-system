@@ -902,16 +902,13 @@ function validatePreviewImage(value: unknown) {
 
 /**
  * Payload upload 문서를 표시 계약으로 좁힌다 — 미리보기가 없거나 파일이 아직 없으면 undefined다.
- * 카드가 쓰는 크기는 320×240 thumbnail이므로 있으면 그것을 쓰고, 없으면 원본으로 떨어진다.
+ * 🔴 원본을 쓴다. 320×240 thumbnail은 cover로 잘린 4:3이라 스튜디오 홈이 실제 비율을 못 그린다.
+ * ponytail: 원본이 수 MB인 미리보기가 있다. 무거워지면 비율을 지키는 image size를 추가한다(마이그레이션 동반).
  */
 export function toStudioPreviewImage(value: unknown): StudioPreviewImage | undefined {
 	if (!value || typeof value !== 'object') return undefined
-	const document = value as {
-		url?: unknown
-		alt?: unknown
-		sizes?: { thumbnail?: { url?: unknown } }
-	}
-	const url = document.sizes?.thumbnail?.url ?? document.url
+	const document = value as { url?: unknown; alt?: unknown }
+	const url = document.url
 	if (typeof url !== 'string' || url.length === 0) return undefined
 	return { url, alt: typeof document.alt === 'string' ? document.alt : '' }
 }
