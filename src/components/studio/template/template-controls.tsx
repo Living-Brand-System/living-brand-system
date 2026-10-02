@@ -188,13 +188,16 @@ export function TemplateLayerGroups() {
 						key={kind}
 						data-slot="template-layer-group"
 						className={cn(
-							'flex h-9 items-center gap-1 rounded-lg pr-1.5',
+							'group flex h-9 items-center gap-1 rounded-lg pr-1.5',
+							// 호버·포커스 면은 행 전체가 갖는다 — 표시·숨김 버튼까지 한 덩어리로 읽힌다.
+							slots.length > 0 &&
+								'hover:bg-muted has-[button:focus-visible]:bg-muted dark:hover:bg-muted/50',
 							selected && 'bg-muted',
 						)}
 					>
 						<Button
 							variant="ghost"
-							className="h-full min-w-0 flex-1 justify-start gap-2 rounded-lg px-3"
+							className="h-full min-w-0 flex-1 justify-start gap-2 rounded-lg px-3 group-hover:text-foreground hover:bg-transparent focus-visible:bg-transparent dark:hover:bg-transparent dark:focus-visible:bg-transparent"
 							disabled={!slots.length || Boolean(editing.targetId)}
 							aria-pressed={selected}
 							onClick={() => {
@@ -222,7 +225,7 @@ export function TemplateLayerGroups() {
 								key={action}
 								variant="ghost"
 								size="icon-xs"
-								className="rounded-sm aria-pressed:bg-foreground/10"
+								className="rounded-sm hover:bg-foreground/5 aria-pressed:bg-foreground/10 dark:hover:bg-foreground/5"
 								aria-label={`${label} ${action}`}
 								aria-pressed={
 									editable.length > 0 &&
