@@ -288,7 +288,7 @@ type ControllerInteraction = 'idle' | 'hover' | 'focused' | 'error'
 - **`isEmpty`는 파생 상태입니다.** `value === null`에서 계산하고, 별도 진실로 두지 않습니다. 비어 있으면 원본 값을 사칭하지 않고 `—`로 보입니다(`Controller.ColorRow`의 `isEmpty` 원형).
 - **`error`·`busy`는 정의가 아니라 런타임 상태입니다.** `error`와 런타임 availability는 runtime binding으로 Renderer에 전달하고, `busy`는 소유 컴포넌트가 "생성 중…" 비활성으로 처리합니다. 런타임 binding은 Published `readonly`·`disabled`를 다시 활성화할 수 없습니다.
 - **편집 검증과 실행 검증을 나눕니다.** Provider는 `acceptsControllerDraftValue`로 입력 kind·범위·availability를 검사하되 길이를 초과한 text는 오류 표시를 위해 보존합니다. 외부 I/O 직전에는 `acceptsControllerExecutionValue`로 길이까지 검사하고, `readonly`·`disabled` control에는 발행 기본값만 허용합니다.
-- **Definition 컴포지션은 단일 단계 `groups[] → controls[]`까지만 제공합니다.** 조건 노출·탭 분기·액션은 실제 생산자가 생기기 전까지 `visibleWhen` 류의 DSL로 추측하지 않습니다. **예외는 "브라우저 열기" 하나입니다** — 자산 카드는 값을 고르는 패널 없이는 성립하지 않아 액션이 컨트롤의 일부입니다. 이 액션만 킷이 갖고(`Controller.Browser`가 여는 상태를 소유), 나머지 액션·조건 노출은 계속 보류합니다.
+- **조건 노출·패널 배치는 §3.7 패널 컴포지션 계약이 소유합니다**(2026-10-02, 보류 해제 — 실제 생산자: 템플릿 배경 방식·Dimming·이미지 Image Mode 등). 매니페스트는 무엇이 있는지와 값끼리의 노출 조건만, 패널은 역할 → 자리를 갖습니다. 탭 분기·액션은 계속 Definition 어휘가 아닙니다. **예외는 "브라우저 열기" 하나입니다** — 자산 카드는 값을 고르는 패널 없이는 성립하지 않아 액션이 컨트롤의 일부입니다. 이 액션만 킷이 갖고(`Controller.Browser`가 여는 상태를 소유), 나머지 액션은 셸이 소유합니다.
 - **트리거는 자기 브라우저 안에서만 존재합니다.** 여는 버튼은 `Controller.Browser.Trigger`로 그 브라우저의 컴파운드 안에만 살고, 무엇을 여는지 모르는 범용 `Controller.Trigger`는 만들지 않습니다 — 그런 트리거는 브라우저 밖에서도 타입이 통과해 검증되지 않는 계약이 됩니다. 짝은 구조로 강제됩니다: `Trigger`·`Panel`은 `Browser.Root`의 Dialog 컨텍스트가 없으면 렌더에서 죽습니다.
 - **`Controller.Field`의 `action`은 컴포지션 슬롯입니다.** 라벨 행 오른끝에 버튼 하나(복사 등)를 놓는 ReactNode 자리이며, 직렬화 Definition의 어휘가 아닙니다 — 위의 "액션은 보류" 규칙은 Definition에 그대로 유효합니다. 카운터 자리를 대신 쓰지 않습니다: 카운터는 `n/max` 표시부라 조작 요소가 들어가면 계약이 거짓말이 됩니다. 그 자리에 넣는 표준 버튼은 `Controller.Action`입니다 — Row/Field 면 위에서는 색을 바꾸지 않고 `foreground/5`로 **겹칩니다**(ghost 기본 hover인 `bg-muted`는 면과 같은 색이라 묻힙니다). 같은 겹침 규칙을 `ROW_SELECT_TRIGGER`가 이미 쓰고 있어, 단계를 바꿀 때는 두 상수를 함께 옮깁니다. 원형은 MCP 화면의 명령 복사 버튼(`mcp-key-issuer.tsx`, 디자인 64:1283)입니다.
 - **자산 브라우저의 목록은 패널이 열릴 때 가져옵니다.** 페이지는 시작 계약 하나만 싣고, 교체 후보 전체는 Provider가 `useLazyResource`로 들고 있다가 패널 본문(picker)이 마운트될 때 `*.client.ts`로 한 번 가져옵니다 — radix가 닫힌 패널 콘텐츠를 언마운트하므로 mount가 곧 "열림"입니다. 비었을 때의 세 사연(로딩·실패·후보 없음)은 `browseEmptyMessage`가 `Controller.AssetCard`의 `empty` 자리에 씁니다. 재시도 버튼은 두지 않습니다 — 닫았다 열면 다시 가져옵니다.
@@ -309,6 +309,66 @@ type ControllerInteraction = 'idle' | 'hover' | 'focused' | 'error'
 - **실행 정책은 서비스가 다시 강제합니다.** Route·Agent·MCP는 같은 도메인 서비스를 호출합니다. 서비스는 Published Config를 기준으로 options·최대 길이·readonly와 camera capability를 검증합니다. Sidebar의 비활성 표현만 신뢰 경계로 사용하지 않습니다.
 - **계약이 화면 수명 중 교체되면 어드민 층만 갈아끼웁니다.** 이미지 스튜디오처럼 사용자가 프로파일(계약 원천)을 바꿀 수 있는 화면은, 프로파일이 정의한 것만 새 계약을 따르고 사용자가 만든 것은 남깁니다 — 프롬프트·생성 결과·선택은 유지하고, 계약이 정의한 선택은 새 선택지에 없을 때만 시작값으로 되돌립니다(원형: `use-image-studio`의 `selectProfile`). 비용이 든 산출물을 계약 교체가 조용히 버리지 않습니다. 단 **선택지가 없는 프로파일 고유 값(색 조정처럼 자유 입력)은 언제나 새 계약의 기본값으로 되돌립니다** — 유지할 근거(새 레인지에 그 값이 있다는 사실)가 없고, 앞 프로파일의 색이 남으면 다른 프로파일의 기본값을 사칭합니다.
 - **잠금은 availability와 선택지에서 결정합니다.** Admin이 명시한 `readonly`·`disabled`를 Published Definition으로 유지하고, 유효한 선택지가 하나일 때도 읽기 전용으로 파생합니다. 동일한 의미의 별도 lock boolean은 두지 않습니다.
+
+### 패널 컴포지션 계약 (§3.7)
+
+**무엇이 있나(매니페스트)와 어디에 서나(패널)를 나눕니다.** 각 Generator는 매니페스트와 세션 값만 넘기고, 자리는 패널이, 나타남·사라짐·재렌더는 패널 렌더러가 정합니다. 화면 코드에 조건부 컨트롤 JSX·런타임 id 특례·손으로 정한 패널 렌더 키를 두지 않습니다. 이행 중에는 기존 화면 조립이 남아 있으며(§3.7 이행 순서), 계약 어휘는 `src/modules/studio-controller/controller-composition.ts`가 소유합니다.
+
+| 층 | 소유 | 담는 것 | 모르는 것 |
+| --- | --- | --- | --- |
+| 레지스트리 | `modules/studio-controller`(어휘)·`components/shared/controller`(렌더러) | 컨트롤 종류와 값 계약, **역할 어휘**, **묶음 위젯** 종류 | 어떤 스튜디오·런타임이 쓰는지 |
+| 매니페스트 | 런타임 `definition.ts`, 이미지 manifest, `deriveTemplateStudioConfig` | 컨트롤(id·종류·기본값·제약), 그룹·묶음의 **역할**, 값끼리의 **노출 조건** | 패널·슬롯·순서 |
+| 패널 | 스튜디오 셸(`ControlPanel`·`SelectionPanel`·편집 오버레이) | **역할 → 슬롯 정책**, 슬롯 안 순서, 조건 평가, 펼침·패널 렌더 모션 | 런타임별 컨트롤 id |
+
+Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매니페스트를 **좁히기만** 합니다. 조건·배치는 코드가 선언하며 어드민에서 편집하지 않습니다(스키마 변경 없음).
+
+**역할 어휘** — 위치가 아니라 의미입니다. 같은 역할이 스튜디오마다 다른 자리에 서는 것은 패널 정책의 차이입니다.
+
+| 역할 | 뜻 | 예 |
+| --- | --- | --- |
+| `content` | 창작자가 쓰는 글 | 텍스트 슬롯, 프롬프트 |
+| `source` | 픽셀이 어디서 오나 — 방식·공급자·자산 | 배경 Type, Image Mode, 프로파일·그래픽 종류, 샘플 이미지, 레퍼런스 |
+| `form` | 아트워크의 구조 변형 | fluted Type, pattern 방향·시점 |
+| `preset` | 여러 값을 한 번에 덮는 묶음(목록 모양으로 그린다) | pattern 프리셋, fluted Style |
+| `palette` | 무엇에 어떤 브랜드 색을 쓰나 | 그래픽 색 조합, 이미지 선·배경색, 텍스트·심볼·배경 색 |
+| `placement` | 내용이 어디에 어떻게 놓이나 | origin·source·path·anchor, 이미지 Transform |
+| `view` | 생성 대상을 보는 카메라 시점(이미지 전용) | 카메라 방위·고도 |
+| `overlay` | 바탕 위 가독성 층 | 배경·이미지 슬롯 Dimming |
+| `tuning` | 생성기의 세부 수치(속도·zoom·tilt 포함) | Adjustment의 range |
+| `output` | 결과 사양 | 이미지 장수·비율·해상도 |
+
+`target`(무엇을 편집하나)·`visibility`(레이어 표시·숨김)·`action`(생성·저장·초기화·완료/취소)은 셸 어휘라 매니페스트에 넣지 않습니다. **Output 카드(모드·크기·형식·ppi·배율·영상)는 이 계약 밖입니다** — `StudioOutput`과 출력 정책(`print-policy`)이 규칙을 소유하고, 조건부 행의 펼침은 `ControllerPresence`를 그대로 씁니다.
+
+**묶음 위젯** — 컨트롤 여러 개가 위젯 하나로 섭니다. 매니페스트는 묶음(cluster)으로 멤버를 가리키고 값 계약을 복제하지 않습니다. 레지스트리에 없는 위젯은 렌더러가 개발 중 경고하고 그리지 않습니다.
+
+| 위젯 | 멤버 |
+| --- | --- |
+| `color-pair` | 전경·배경 색(또는 그로 펼쳐지는 여럿) + `mode`(Swatch/Custom) |
+| `colorway` | 2색 선택지 select 1개 |
+| `position` | pad / pad-pair / 사분면 select |
+| `compound` | 같은 역할의 행 몇 개를 한 표면으로(방향 + 시점 등) |
+| `camera` | `gate`(사용) + 방위·고도 |
+| `reference` | `gate`(사용) + 첨부 |
+| `asset-browser` | 자산 선택 1개(샘플 이미지 등) |
+
+켜기/끄기와 모드는 역할이 아니라 **묶음의 면**입니다 — 레퍼런스·카메라·Dimming Use·가변 두께의 On/Off는 `gate`, 색의 Swatch/Custom은 `mode` 멤버로 선언합니다.
+
+**노출 조건 `visibleWhen`** — 값끼리의 관계라 매니페스트가 갖습니다. 그룹·묶음·컨트롤에 붙입니다. 문법은 `{ control, equals }`·`{ control, in }`·`{ control, not }`·`{ all }`·`{ any }` 다섯 가지이고, 수치 비교는 생산자가 생길 때 더합니다.
+
+- 그룹·묶음이 숨으면 멤버도 숨습니다. 조건은 **값**으로 평가하므로 참조한 컨트롤이 숨어 있어도 그 값을 씁니다(그래서 순환이 성립하지 않습니다).
+- **숨김은 표현이고 값은 지우지 않습니다.** 다시 보이면 맞춰 둔 값 그대로입니다. 실행에 쓸지는 도메인이 정합니다.
+- 조건은 같은 매니페스트의 컨트롤 값만 봅니다. 세션에만 있던 화면 상태(이미지 슬롯·배경 Image Mode, 색 Swatch/Custom, 카메라·레퍼런스 On/Off)는 컨트롤로 승격합니다.
+- 미지 id·자기 참조는 `parseStudioControllerConfig`가 거부합니다.
+
+**패널** — `StudioPanelPolicy = Partial<Record<StudioPanelSlot, ControllerRole[]>>`, 슬롯은 `fixed`·`basic`·`presets`·`adjustment`·`settings`(왼쪽 편집 설정)입니다. 순서는 정책의 역할 순서, 같은 역할 안에서는 매니페스트 순서입니다. 슬롯이 비면 카드·레일 탭이 서지 않습니다.
+
+- 조건이 바뀌어 생기거나 빠지면 `ControllerPresence`(높이 펼침, `MOTION.loose`).
+- 슬롯의 **보이는 구조 서명**(보이는 그룹·묶음·컨트롤 id 목록, `controllerStructureSignature`)이 바뀌면 그 슬롯만 패널 렌더(`PANEL_RENDER`, `MOTION.tight`). 손으로 키를 정하지 않습니다 — 배경 방식만 바뀌어도 `overlay` 슬롯은 서명이 같아 그대로입니다.
+- 첫 진입은 움직이지 않습니다.
+
+**결정(2026-10-02)**: 프리셋은 `preset` 역할의 select로 다루고 패널이 목록 모양으로 그립니다(전용 항목 타입 없음). 이미지 장수·비율·해상도는 `output`(지금 자리 유지), fluted zoom·tilt는 `tuning`, 카메라 시점은 `view`. 템플릿 이미지 슬롯 Dimming은 방식과 무관하게 보입니다(배경 Dimming과 같게).
+
+**이행 순서**: ① 어휘·조건 평가기·구조 서명(단위 테스트) → ② 패널 렌더러 + `ControlPanel` 슬롯화(조건 없는 매니페스트로 지금 화면과 같은 결과) → ③ 파일럿 템플릿 배경 → ④ 이미지·그래픽(`graphic-controls`의 id 특례 제거)·템플릿 텍스트·심볼·이미지 슬롯 → ⑤ 화면 조건부 JSX·`controller.left/right`·손 키 제거, `Controller.Reveal`은 계약 밖 화면에만 남김.
 
 ## 4. 스타일 계약 Do/Don't
 
