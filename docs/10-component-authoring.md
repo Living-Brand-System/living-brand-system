@@ -147,10 +147,11 @@ studio·global·home 같은 표면의 화면 컴포넌트도 위 계약을 그�
     | `MOTION.disclosure` | 접기·펴기(그룹 본문 높이, chevron) | spring 0.35 |
     | `MOTION.panel` | 패널 진입·이탈, 탭 내용 교체 | spring 0.15 |
     | `MOTION.overlay` | 겹쳐 뜨는 패널의 열림·닫힘(템플릿 마스터·편집 패널, 16px). 자산 브라우저 CSS와 같은 값 | 150ms CSS `ease` |
+    | `PANEL_RENDER.left` / `.right` | 패널 렌더 모양 — 패널 내용이 새로 그려질 때(레일 탭·레이어·탭 내용 전환, 겹치는 편집 패널). 놓인 쪽에서 들어온다 | 왼쪽 `x -16`·오른쪽 `x +16`, `scale 0.95`, `opacity 0` → 제자리, 시간은 `MOTION.overlay` |
     | `--motion-feedback` | CSS 누름·호버 반응(패드 thumb, 슬라이더 핸들) | 150ms `ease-out` |
     | `--motion-layout` | CSS 배치 변화(미리보기 확대·축소) | 200ms `ease-out` |
 
-  - JS는 `useMotionTransition(preset)`이 모션 감소 시 즉시 전환을 돌려주고, 진입·이탈 자체(`initial`·`exit`)를 끄는 판단은 소유 컴포넌트가 `useReducedMotion()`으로 합니다. CSS는 `duration-(--motion-*) ease-out`에 `motion-reduce:transition-none`을 함께 씁니다. 오버레이(dialog·select·tooltip·자산 브라우저)는 tw-animate CSS 그대로 둡니다.
+  - JS는 `useMotionTransition(preset)`이 모션 감소 시 즉시 전환을 돌려주고, 진입·이탈 자체(`initial`·`exit`)를 끄는 판단은 소유 컴포넌트가 `useReducedMotion()`으로 합니다. CSS는 `duration-(--motion-*) ease-out`에 `motion-reduce:transition-none`을 함께 씁니다. 오버레이(dialog·select·tooltip·자산 브라우저)는 tw-animate CSS 그대로 둡니다. 패널 렌더는 첫 진입에 걸지 않습니다. 같은 자리 내용 교체는 `Controller.TabPanel`, 패널 단위 교체는 `PanelRenderScope`(무엇을 그리는지의 키)·`PanelRenderTarget`(움직일 자리)으로 걸고, 레일 같은 고정 크롬은 대상 밖에 둡니다. 이전 내용은 즉시 내리고 새 내용만 들어옵니다.
 
 ### 컨트롤러 컨트롤 계약 (§3.6)
 

@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { ControllerBrowser } from '@/components/shared/controller/browser'
 import { OutputDimensions } from '@/components/studio/shared/output-dimensions'
+import { PanelRenderScope } from '@/components/studio/shared/panel-render'
 import { PreviewRefreshButton } from '@/components/studio/shared/preview-refresh-button'
 import {
 	StudioSelectionCard,
@@ -31,7 +32,9 @@ export function TemplateWorkspace({
 	onChange?: (slug: string) => void
 	onReset: () => void
 }) {
-	const { config, canvas, execution, layers, navigation } = useTemplateStudio()
+	const { config, canvas, execution, layers, navigation, background } = useTemplateStudio()
+	// 오른쪽 패널은 레이어 종류와 배경 방식으로 갈린다 — 둘 중 하나가 바뀌면 다른 패널이다.
+	const panelKey = `${layers.selectedKind ?? 'none'}:${layers.selectedKind === 'background' ? background.state.type : ''}`
 	const firstLayer =
 		config.template.slots.find((slot) => slot.kind === 'text')?.id ??
 		config.template.slots[0]?.id
@@ -103,7 +106,10 @@ export function TemplateWorkspace({
 					}
 					right={
 						<div data-slot="studio-sidebar" className="h-full min-h-0">
-							<TemplateControls />
+							{/* 레이어(와 배경 방식)가 바뀌면 오른쪽 패널의 내용 열을 공용 패널 렌더로 다시 그린다. */}
+							<PanelRenderScope renderKey={panelKey}>
+								<TemplateControls />
+							</PanelRenderScope>
 						</div>
 					}
 				>
