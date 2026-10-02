@@ -159,6 +159,8 @@ function GraphicPreviewCanvas({
 			container.style.height = `${viewport.height}px`
 			runtimeRef.current?.resize(viewport.width, viewport.height)
 			controls.registerBindings(getGraphicStudioRuntimeBindings(config, viewport))
+			// 판형이 바뀌면 캡처 크기도 따라가야 한다 — mount 때 값만 쥐면 썸네일이 옛 비율로 찍힌다.
+			if (runtimeRef.current) registerArtifacts(runtimeRef.current.artifacts, viewport)
 		}
 
 		const resizeObserver = new ResizeObserver(([entry]) => {
@@ -168,7 +170,7 @@ function GraphicPreviewCanvas({
 		resizePreview(stage.clientWidth, stage.clientHeight)
 		resizeObserver.observe(stage)
 		return () => resizeObserver.disconnect()
-	}, [config, controls.registerBindings, outputHeight, outputWidth])
+	}, [config, controls.registerBindings, outputHeight, outputWidth, registerArtifacts])
 
 	return (
 		// 🔴 h-full이 없으면 figure가 내용 높이만큼만 커지고, 그 내용 높이는 직전에 맞춘 캔버스
