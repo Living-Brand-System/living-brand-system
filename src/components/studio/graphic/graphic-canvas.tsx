@@ -185,7 +185,7 @@ function GraphicPreviewCanvas({
 			>
 				<div
 					ref={containerRef}
-					className="h-full w-full shrink-0 overflow-hidden rounded-xl transition-transform duration-200 ease-out motion-reduce:transition-none lg:[transform:scale(var(--preview-scale))] [&>canvas]:block"
+					className="h-full w-full shrink-0 overflow-hidden rounded-xl transition-transform duration-(--motion-layout) ease-out motion-reduce:transition-none lg:[transform:scale(var(--preview-scale))] [&>canvas]:block"
 					style={{ '--preview-scale': previewSize / 100 } as CSSProperties}
 				/>
 			</div>

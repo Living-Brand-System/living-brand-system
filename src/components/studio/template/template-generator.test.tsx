@@ -801,7 +801,7 @@ describe('TemplateGenerator', () => {
 		)
 	})
 
-	it('이미지 슬롯 Dimming은 슬롯에 합성되고, 컨트롤이 없는 Preset에서는 걸리지 않는다', async () => {
+	it('이미지 슬롯 Dimming은 방식과 무관하게 슬롯에 합성된다 — Preset으로 옮겨도 남는다', async () => {
 		const user = userEvent.setup()
 		const { container } = render(
 			<TemplateGenerator
@@ -826,7 +826,13 @@ describe('TemplateGenerator', () => {
 		await waitFor(() => expect(dimmer()?.style.backgroundColor).toBe('rgba(0, 0, 0, 0.2)'))
 
 		await user.click(screen.getByRole('radio', { name: 'Preset' }))
-		await waitFor(() => expect(dimmer()).toBeNull())
+		// 배경 Dimming처럼 방식이 바뀌어도 그대로다(2026-10-02 결정).
+		expect(screen.getByRole('radio', { name: 'Preset' })).toHaveAttribute(
+			'aria-checked',
+			'true',
+		)
+		expect(dimmer()?.style.backgroundColor).toBe('rgba(0, 0, 0, 0.2)')
+		expect(screen.getByRole('radiogroup', { name: 'Use' })).toBeInTheDocument()
 	})
 
 	it('중첩 편집 동안 트리 밖의 셸 헤더를 잠그고, 취소하면 푼다', async () => {
@@ -915,7 +921,11 @@ describe('TemplateGenerator', () => {
 			'true',
 		)
 		await waitFor(() => expect(sampleMocks.fetchSampleImages).toHaveBeenCalled())
-		expect(screen.queryByRole('button', { name: '이미지 생성' })).not.toBeInTheDocument()
+		// 생성 버튼은 접히는 모션이 끝난 뒤 빠진다(고정 카드의 Dimming은 그대로 남는다).
+		await waitFor(() =>
+			expect(screen.queryByRole('button', { name: '이미지 생성' })).not.toBeInTheDocument(),
+		)
+		expect(screen.getByRole('radiogroup', { name: 'Use' })).toBeInTheDocument()
 	})
 
 	it('저작 config의 imageColorize를 이미지 교체 시 재적용한다', async () => {
@@ -1028,11 +1038,9 @@ describe('TemplateGenerator', () => {
 		).toBeInTheDocument()
 
 		fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 변경' }))
-		if (!screen.queryByRole('combobox', { name: 'Image' }))
+		if (!screen.queryByRole('button', { name: /프로파일 7/ }))
 			fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 변경' }))
-		screen.getByRole('combobox', { name: 'Image' }).focus()
-		await user.keyboard('{ArrowDown}')
-		await user.click(screen.getByRole('option', { name: '프로파일 7' }))
+		await user.click(screen.getByRole('button', { name: /프로파일 7/ }))
 
 		await waitFor(() =>
 			expect(within(slot).queryByLabelText(/^(Line Color|Foreground) 색상 선택$/)).toBeNull(),
@@ -1886,11 +1894,9 @@ describe('TemplateGenerator', () => {
 			target: { value: '사용자 입력' },
 		})
 
-		if (!screen.queryByRole('combobox', { name: 'Image' }))
+		if (!screen.queryByRole('button', { name: /프로파일 7/ }))
 			fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 변경' }))
-		screen.getByRole('combobox', { name: 'Image' }).focus()
-		await user.keyboard('{ArrowDown}')
-		await user.click(screen.getByRole('option', { name: '프로파일 7' }))
+		await user.click(screen.getByRole('button', { name: /프로파일 7/ }))
 
 		expect(screen.getByLabelText('Prompt')).toHaveValue('고정 기본값')
 	})
@@ -1932,9 +1938,7 @@ describe('TemplateGenerator', () => {
 		expect(container.querySelector('[data-slot="template-graphic-background"]')).not.toBeNull()
 
 		fireEvent.click(screen.getByRole('button', { name: '그래픽 변경' }))
-		screen.getByRole('combobox', { name: 'Graphic Type' }).focus()
-		await user.keyboard('{ArrowDown}')
-		await user.click(screen.getByRole('option', { name: 'Fluted Glass' }))
+		await user.click(screen.getByRole('button', { name: /Fluted Glass/ }))
 		await waitFor(() => expect(mocks.mountGraphicPreview).toHaveBeenCalledTimes(2))
 		expect(mocks.destroyGraphicPreview).toHaveBeenCalledOnce()
 		fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
@@ -2233,11 +2237,9 @@ describe('TemplateGenerator', () => {
 		)
 
 		fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 변경' }))
-		if (!screen.queryByRole('combobox', { name: 'Image' }))
+		if (!screen.queryByRole('button', { name: /프로파일 7/ }))
 			fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 변경' }))
-		screen.getByRole('combobox', { name: 'Image' }).focus()
-		await user.keyboard('{ArrowDown}')
-		await user.click(screen.getByRole('option', { name: '프로파일 7' }))
+		await user.click(screen.getByRole('button', { name: /프로파일 7/ }))
 		await waitFor(() =>
 			expect(
 				container.querySelector('[data-slot="studio-layout-canvas"]')?.innerHTML,

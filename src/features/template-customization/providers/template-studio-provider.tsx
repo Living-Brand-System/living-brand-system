@@ -841,7 +841,8 @@ export function TemplateStudioProvider({
 			complete: () => {
 				if (busy) return
 				snapshot.current = null
-				layerSession.select(null)
+				// 편집을 마치면 처음 들어왔을 때의 마스터 레이어(보통 Text)로 돌아간다 — 빈 선택을 두지 않는다.
+				layerSession.select(listTemplateLayerGroups(slots)[0]?.kind ?? null)
 				setTargetId(null)
 			},
 			cancel: () => {
@@ -850,7 +851,8 @@ export function TemplateStudioProvider({
 				images.restore(saved.images)
 				background.restore(saved.background)
 				snapshot.current = null
-				layerSession.select(null)
+				// 편집을 마치면 처음 들어왔을 때의 마스터 레이어(보통 Text)로 돌아간다 — 빈 선택을 두지 않는다.
+				layerSession.select(listTemplateLayerGroups(slots)[0]?.kind ?? null)
 				setTargetId(null)
 			},
 			reset: () => {
@@ -870,6 +872,7 @@ export function TemplateStudioProvider({
 			background.restore,
 			background.reset,
 			backgroundSlot?.id,
+			slots,
 		],
 	)
 

@@ -9,8 +9,8 @@ export default async function CreatePage() {
 
 	return (
 		<StudioHome
-			title="템플릿 제작"
-			description="발행된 템플릿을 선택해 브랜드 산출물을 만듭니다."
+			title="Templates"
+			subtitle="템플릿 생성"
 			groups={navigation.categories.map((category) => ({
 				title: category.title,
 				items: category.templates.map((template) => ({

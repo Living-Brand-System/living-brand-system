@@ -124,6 +124,7 @@ import * as migration_20260930_081548_add_user_figma_token from './20260930_0815
 import * as migration_20260930_101346_remove_guideline_legacy_access from './20260930_101346_remove_guideline_legacy_access';
 import * as migration_20261001_003924_purge_guideline_legacy_data from './20261001_003924_purge_guideline_legacy_data';
 import * as migration_20261002_005206_add_brand_color_pairs from './20261002_005206_add_brand_color_pairs';
+import * as migration_20261002_070438_add_guideline_descriptions from './20261002_070438_add_guideline_descriptions';
 
 export const migrations = [
   {
@@ -754,6 +755,11 @@ export const migrations = [
   {
     up: migration_20261002_005206_add_brand_color_pairs.up,
     down: migration_20261002_005206_add_brand_color_pairs.down,
-    name: '20261002_005206_add_brand_color_pairs'
+    name: '20261002_005206_add_brand_color_pairs',
+  },
+  {
+    up: migration_20261002_070438_add_guideline_descriptions.up,
+    down: migration_20261002_070438_add_guideline_descriptions.down,
+    name: '20261002_070438_add_guideline_descriptions'
   },
 ];

@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import type { ComponentProps, CSSProperties, ReactNode } from 'react'
 import { CARD_RATIO_OPTIONS } from '@/features/guideline/cards/displays/ratio'
 import { cn } from '@/lib/utils'
@@ -21,6 +22,8 @@ export type GuidelineCardData = CardColors & {
 	displayAspectRatio?: number
 	display: ReactNode
 	caption?: GuidelineCaption
+	/** 카드 전체가 이 주소로 가는 링크다(가이드라인 첫 화면의 토픽 카드). 판 안의 액션과 함께 두지 않는다. */
+	href?: string
 }
 
 type GridProps = Omit<ComponentProps<'div'>, 'children'> & {
@@ -53,22 +56,35 @@ export function GuidelineGridContainer({
 				} as CSSProperties
 			}
 		>
-			{cards.map((card) => (
-				<GuidelineCard
-					key={card.id}
-					backgroundColor={card.backgroundColor}
-					foregroundColor={card.foregroundColor}
-					style={
-						{
-							'--display-ratio':
-								card.displayAspectRatio ?? card.ratio.replace(':', ' / '),
-						} as CSSProperties
-					}
-				>
-					{card.display}
-					{card.caption && <GuidelineCardCaption {...card.caption} />}
-				</GuidelineCard>
-			))}
+			{cards.map((card) => {
+				const figure = (
+					<GuidelineCard
+						key={card.id}
+						backgroundColor={card.backgroundColor}
+						foregroundColor={card.foregroundColor}
+						style={
+							{
+								'--display-ratio':
+									card.displayAspectRatio ?? card.ratio.replace(':', ' / '),
+							} as CSSProperties
+						}
+					>
+						{card.display}
+						{card.caption && <GuidelineCardCaption {...card.caption} />}
+					</GuidelineCard>
+				)
+				return card.href ? (
+					<Link
+						key={card.id}
+						href={card.href}
+						className={cn(styles.card, styles.cardLink)}
+					>
+						{figure}
+					</Link>
+				) : (
+					figure
+				)
+			})}
 		</div>
 	)
 }

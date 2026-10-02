@@ -5,7 +5,9 @@ import { AnimatePresence, domAnimation, LazyMotion, useReducedMotion } from 'mot
 import * as m from 'motion/react-m'
 import * as React from 'react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { useMotionTransition } from '@/lib/motion'
 import { cn } from '@/lib/utils'
+import { ControllerPresence } from './presence'
 
 /**
  * 섹션 활성화 배선 한 묶음. 정의 기반 렌더러(`ControllerGroupRenderer`)가 이것을 그대로 얹으므로
@@ -89,7 +91,7 @@ export function ControllerGroup(props: ControllerGroupProps) {
 			data-slot="controller-group"
 			data-active={active || undefined}
 			onClick={onActivate}
-			className={cn('group/controller-group flex shrink-0 flex-col gap-1.5', className)}
+			className={cn('group/controller-group flex shrink-0 flex-col', className)}
 			{...sectionProps}
 		>
 			<header className="flex h-9 shrink-0 items-center justify-between gap-2">
@@ -99,7 +101,8 @@ export function ControllerGroup(props: ControllerGroupProps) {
 				</span>
 				{trailing}
 			</header>
-			{children}
+			{/* 제목과의 6px·행 사이 6px는 각 상자의 위 여백이다 — 새로 생기는 행이 높이로 펼쳐진다. */}
+			<ControllerPresence itemClassName="pt-1.5">{children}</ControllerPresence>
 		</section>
 	)
 }
@@ -119,6 +122,7 @@ function ControllerCollapsibleGroup({
 	// disabled 동안에도 사용자의 열림 의사를 보존한다 — 잠금이 풀리면 원래 상태로 돌아온다.
 	const [open, setOpen] = React.useState(defaultOpen)
 	const reducedMotion = useReducedMotion()
+	const transition = useMotionTransition('loose')
 	const resolvedOpen = disabled ? false : open
 
 	/* 디자인 SSOT(2:2071): 펼침 = ˅, 접힘 = ˄. */
@@ -128,11 +132,7 @@ function ControllerCollapsibleGroup({
 			className="size-4 shrink-0 text-muted-foreground"
 			initial={false}
 			animate={{ rotate: resolvedOpen ? 0 : 180 }}
-			transition={
-				reducedMotion
-					? { duration: 0 }
-					: { type: 'spring', visualDuration: 0.35, bounce: 0.15 }
-			}
+			transition={transition}
 		>
 			<ChevronDown className="size-4" />
 		</m.span>
@@ -187,16 +187,14 @@ function ControllerCollapsibleGroup({
 							initial={reducedMotion ? false : { height: 0, opacity: 0 }}
 							animate={{ height: 'auto', opacity: 1 }}
 							exit={{ height: 0, opacity: 0, pointerEvents: 'none' }}
-							transition={
-								reducedMotion
-									? { duration: 0 }
-									: { type: 'spring', visualDuration: 0.35, bounce: 0.1 }
-							}
+							transition={transition}
 							style={{ clipPath: 'inset(-2px -20px)' }}
 						>
-							{/* 제목과의 6px도 접힘 높이에 포함한다. clipPath의 2px 여유가 필드 링을 보호한다. */}
-							<CollapsibleContent forceMount className="flex flex-col gap-1.5 pt-1.5">
-								{children}
+							{/* 제목과의 6px도 접힘 높이에 포함한다(각 행의 위 여백). clipPath의 2px 여유가 필드 링을 보호한다. */}
+							<CollapsibleContent forceMount className="flex flex-col">
+								<ControllerPresence itemClassName="pt-1.5">
+									{children}
+								</ControllerPresence>
 							</CollapsibleContent>
 						</m.div>
 					)}

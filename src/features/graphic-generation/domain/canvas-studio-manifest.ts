@@ -51,19 +51,13 @@ export function deriveCanvasStudioConfig(
 		...manifest,
 		name: profile.name,
 		output: resolveCanvasStudioOutput(manifest, profile.exportPolicy),
-		controller: {
-			groups,
-			/**
-			 * 🔴 재조립하면서 빠뜨리면 선언이 통째로 사라진다 — `left`를 빠뜨리면 오른쪽 컨트롤이
-			 *    전부 왼쪽 패널로 몰리고, `right`를 빠뜨리면 admin 전용으로 내린 축이 전부 오른쪽에
-			 *    되살아나고, `remountOn`을 빠뜨리면 모양을 바꿔도 캔버스가 옛 프로그램으로 남는다.
-			 *    미선언 런타임의 `undefined`를 그대로 실으면 JSON 직렬화 검사가 프로파일을 거부하므로
-			 *    키 자체를 빼야 한다.
-			 */
-			...(manifest.controller.left ? { left: manifest.controller.left } : {}),
-			...(manifest.controller.right ? { right: manifest.controller.right } : {}),
-			...(manifest.controller.remountOn ? { remountOn: manifest.controller.remountOn } : {}),
-		},
+		/**
+		 * 🔴 제한만 얹고 나머지 선언(`left`·`right`·`remountOn`·`roles`·`clusters`)은 그대로 싣는다 — 하나씩
+		 *    골라 다시 조립하면 새 선언이 생길 때마다 조용히 빠진다(빠진 `roles`·`clusters`는 패널을 계약 없는
+		 *    평면 목록으로 되돌리고, 빠진 `remountOn`은 모양을 바꿔도 캔버스를 옛 프로그램으로 남긴다).
+		 *    전개는 있는 키만 옮기므로 미선언 런타임에 `undefined` 키가 생기지 않는다(JSON 직렬화 검사가 거부한다).
+		 */
+		controller: { ...manifest.controller, groups },
 		controllerPresentation: resolveControllerPresentation(
 			groups,
 			profile.controllerPresentation,

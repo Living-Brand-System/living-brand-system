@@ -114,51 +114,47 @@ describe('graphicStudioRuntime', () => {
 		expect(getGraphicStudioRuntimeBindings(config, { width: 800, height: 0 })).toEqual({})
 	})
 
-	it('선언한 왼쪽 축이 파생된 Config까지 실려 나간다', () => {
+	it('패널 컴포지션 선언이 파생된 Config까지 실려 나간다', () => {
 		const derived = deriveGraphicStudioConfig({
 			id: 13,
-			name: '왼쪽 축',
+			name: '컴포지션',
 			runtime: 'forward-straight',
 		})
 
-		// 재조립하면서 빠뜨리면 오른쪽 컨트롤이 전부 왼쪽 패널로 몰린다.
-		expect(derived.controller.left).toEqual(['lineColor', 'backgroundColor'])
+		// 재조립하면서 빠뜨리면 패널이 계약 없는 평면 목록으로 돌아간다(docs/10 §3.7).
+		expect(derived.controller.roles).toBeDefined()
+		expect(derived.controller.clusters?.map((cluster) => cluster.id)).toEqual([
+			'color',
+			'position',
+		])
 	})
 
-	it('🔴 모든 런타임이 좌·우 축을 선언한다 — 일부만 적용된 채로 머지되지 않게', () => {
-		// 🔴 `right` 미선언은 계약상 「왼쪽이 아닌 전부가 오른쪽」이라, admin으로 내려야 할 축이
-		//    조용히 오른쪽 패널에 되살아난다. left만 검사하면 그것을 못 잡는다.
-		for (const side of ['left', 'right'] as const) {
-			const missing = graphicRuntimeManifests.filter(
-				(manifest) => manifest.controller[side] === undefined,
-			)
-
-			expect({ side, missing: missing.map((manifest) => manifest.id) }).toEqual({
-				side,
-				missing: [],
-			})
-		}
+	it('🔴 모든 Graphic 런타임이 묶음을 선언한다 — 미선언은 전부 Basic으로 몰린다', () => {
+		const missing = graphicRuntimeManifests.filter(
+			(manifest) => !('clusters' in manifest.controller),
+		)
+		expect(missing.map((manifest) => manifest.id)).toEqual([])
 	})
 
-	it('선언한 축은 실제로 그 런타임에 있는 control id다', () => {
+	it('선언한 역할·묶음 멤버는 실제로 그 런타임에 있는 control id다', () => {
 		for (const manifest of graphicRuntimeManifests) {
 			const ids = new Set(
 				manifest.controller.groups.flatMap((group) =>
 					group.controls.map((control) => control.id),
 				),
 			)
-			for (const side of ['left', 'right'] as const) {
-				const unknown = (manifest.controller[side] ?? []).filter((id) => !ids.has(id))
-
-				expect({ runtime: manifest.id, side, unknown }).toEqual({
-					runtime: manifest.id,
-					side,
-					unknown: [],
-				})
-			}
+			const declared = [
+				...Object.keys(manifest.controller.roles),
+				...manifest.controller.clusters.flatMap((cluster) =>
+					Object.values(cluster.members),
+				),
+			]
+			expect({
+				runtime: manifest.id,
+				unknown: declared.filter((id) => !ids.has(id)),
+			}).toEqual({ runtime: manifest.id, unknown: [] })
 		}
 	})
-
 	it('published Graphic Profile은 Restrictions로 Runtime Manifest를 좁히고 미등록 runtime을 거부한다', () => {
 		const profile = {
 			id: 9,

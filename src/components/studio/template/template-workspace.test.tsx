@@ -163,13 +163,104 @@ it('Image 편집은 현재 슬롯만 열고 완료 또는 취소 전에는 다�
 	const panel = await screen.findByRole('region', { name: 'Layers' })
 	fireEvent.click(within(panel).getByRole('button', { name: /^Image$/ }))
 	const editing = screen.getByRole('region', { name: '선택한 레이어 편집' })
-	expect(within(editing).getAllByRole('radiogroup', { name: '슬롯 이미지 방식' })).toHaveLength(1)
+	expect(within(editing).getAllByRole('radiogroup', { name: 'Mode' })).toHaveLength(1)
 	expect(within(editing).getByRole('group', { name: '사진 A' })).toBeInTheDocument()
 	expect(within(editing).queryByRole('group', { name: '사진 B' })).not.toBeInTheDocument()
 	expect(within(panel).getByRole('button', { name: /^Background$/ })).toBeDisabled()
 	fireEvent.click(screen.getByRole('button', { name: '취소' }))
-	expect(screen.queryByRole('region', { name: '선택한 레이어 편집' })).not.toBeInTheDocument()
+	// 편집 패널은 퇴장 모션이 끝난 뒤 사라진다.
+	await waitFor(() =>
+		expect(
+			screen.queryByRole('region', { name: '선택한 레이어 편집' }),
+		).not.toBeInTheDocument(),
+	)
 	expect(within(panel).getByRole('button', { name: /^Background$/ })).toBeEnabled()
+})
+
+it('편집을 마치면 빈 선택 없이 마스터 레이어(Text)로 돌아간다', async () => {
+	renderTemplate(
+		studio(1, {
+			html: '<div><p data-node-id="t" data-figma-type="TEXT" data-name="제목">제목</p><div data-node-id="a" data-figma-type="FRAME" data-name="사진 A" data-image-carrier=""></div></div>',
+			nodeConfigs: { t: { input: { label: '제목' } }, a: { imageInput: {} } },
+		}),
+	)
+	const panel = await screen.findByRole('region', { name: 'Layers' })
+	const text = within(panel).getByRole('button', { name: /^Text$/ })
+	expect(text).toHaveAttribute('aria-pressed', 'true')
+	for (const action of ['취소', '완료']) {
+		fireEvent.click(within(panel).getByRole('button', { name: /^Image$/ }))
+		fireEvent.click(screen.getByRole('button', { name: action }))
+		await waitFor(() =>
+			expect(within(panel).getByRole('button', { name: /^Text$/ })).toHaveAttribute(
+				'aria-pressed',
+				'true',
+			),
+		)
+		expect(screen.queryByText('왼쪽에서 레이어를 선택해 주세요')).toBeNull()
+	}
+})
+
+it('레이어를 바꿔도 오른쪽 패널은 셸의 같은 인스턴스다 — 레일·패널이 다시 마운트되지 않는다', async () => {
+	renderTemplate(
+		studio(1, {
+			html: '<div><p data-node-id="t" data-figma-type="TEXT" data-name="제목">제목</p><div data-node-id="a" data-figma-type="FRAME" data-name="사진 A" data-image-carrier=""></div></div>',
+			nodeConfigs: { t: { input: { label: '제목' } }, a: { imageInput: {} } },
+		}),
+	)
+	const layers = await screen.findByRole('region', { name: 'Layers' })
+	const editing = () => screen.getByRole('complementary', { name: '편집 도구' })
+	const panel = editing()
+	const rail = panel.querySelector('[data-slot="studio-rail"]')
+	// Text → Image → (취소로 Text) → Background — 갈래마다 패널을 따로 그리던 때는 매번 새로 마운트됐다.
+	fireEvent.click(within(layers).getByRole('button', { name: /^Image$/ }))
+	expect(editing()).toBe(panel)
+	fireEvent.click(screen.getByRole('button', { name: '취소' }))
+	fireEvent.click(within(layers).getByRole('button', { name: /^Background$/ }))
+	expect(editing()).toBe(panel)
+	expect(editing().querySelector('[data-slot="studio-rail"]')).toBe(rail)
+	fireEvent.click(screen.getByRole('button', { name: '취소' }))
+})
+
+it('배경은 패널 컴포지션으로 선다 — 방식을 바꿔도 Dimming 카드는 그대로, 조건 행만 펼친다', async () => {
+	renderTemplate()
+	await screen.findByRole('textbox', { name: '제목' })
+	const layers = screen.getByRole('region', { name: 'Layers' })
+	fireEvent.click(within(layers).getByRole('button', { name: /^Background$/ }))
+	const selection = screen.getByRole('region', { name: '선택한 레이어 편집' })
+	const editing = () => screen.getByRole('complementary', { name: '편집 도구' })
+	const fixed = () => editing().querySelector('[data-slot="studio-control-fixed"]')
+	// overlay → 고정 카드. Use를 켜야 Strength가 선다.
+	const dimming = fixed()
+	expect(
+		within(dimming as HTMLElement).getByRole('radiogroup', { name: 'Use' }),
+	).toBeInTheDocument()
+	expect(within(editing()).queryByRole('slider', { name: 'Strength' })).toBeNull()
+	fireEvent.click(
+		within(within(editing()).getByRole('radiogroup', { name: 'Use' })).getByRole('radio', {
+			name: 'On',
+		}),
+	)
+	expect(await within(editing()).findByRole('slider', { name: 'Strength' })).toBeInTheDocument()
+	const panel = editing()
+	const rail = panel.querySelector('[data-slot="studio-rail"]')
+	const card = fixed()
+	// Use를 켜도 카드는 그대로다 — Strength 한 줄만 펼친다(조건부 컨트롤은 구조 서명에 들지 않는다).
+	expect(card).toBe(dimming)
+	// source → 왼쪽 설정 카드. Image일 때만 Image Mode 행이 선다.
+	expect(within(selection).queryByRole('radiogroup', { name: 'Image Mode' })).toBeNull()
+	fireEvent.click(
+		within(within(selection).getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {
+			name: 'Image',
+		}),
+	)
+	expect(within(selection).getByRole('radiogroup', { name: 'Image Mode' })).toBeInTheDocument()
+	// 패널은 셸이 소유하는 하나다(docs/10 §3.7 공통 셸) — 방식을 바꿔도 패널·레일·고정 카드가 같은 DOM이다.
+	// 고정 영역은 구조가 같아(Dimming) 다시 그리지 않는다.
+	expect(editing()).toBe(panel)
+	expect(editing().querySelector('[data-slot="studio-rail"]')).toBe(rail)
+	expect(fixed()).toBe(card)
+	expect(dimming).not.toBeNull()
+	fireEvent.click(screen.getByRole('button', { name: '취소' }))
 })
 
 it('배경 Type·Image Mode는 왼쪽에서 전환하고 오른쪽에는 편집 도구만 표시한다', async () => {
@@ -204,7 +295,12 @@ it('배경 Type·Image Mode는 왼쪽에서 전환하고 오른쪽에는 편집 
 		}),
 	).toBeChecked()
 	fireEvent.click(screen.getByRole('button', { name: '취소' }))
-	expect(screen.queryByRole('region', { name: '선택한 레이어 편집' })).not.toBeInTheDocument()
+	// 편집 패널은 퇴장 모션이 끝난 뒤 사라진다.
+	await waitFor(() =>
+		expect(
+			screen.queryByRole('region', { name: '선택한 레이어 편집' }),
+		).not.toBeInTheDocument(),
+	)
 })
 
 it.each([
@@ -333,13 +429,16 @@ it('패널 탐색은 실제 템플릿 세션을 유지하고 왼쪽 종류 선�
 	}
 	await selectType('Graphic')
 	fireEvent.click(screen.getByRole('button', { name: '그래픽 변경' }))
-	expect(screen.getByRole('combobox', { name: 'Graphic Type' })).toHaveTextContent(manifest.name)
+	// 변경 화면은 독립 스튜디오와 같은 카드 그리드다 — 지금 고른 카드가 aria-current로 선다.
+	expect(
+		document.querySelector('[data-slot="graphic-profile-picker"] [aria-current="true"]'),
+	).toHaveTextContent(manifest.name)
 	fireEvent.click(screen.getByRole('radio', { name: '네이비 · 블루' }))
 	await selectType('Image')
 	fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 변경' }))
-	expect(screen.getByRole('combobox', { name: 'Image' })).toHaveTextContent(
-		'실제 이미지 프로파일',
-	)
+	expect(
+		document.querySelector('[data-slot="image-profile-picker"] [aria-current="true"]'),
+	).toHaveTextContent('실제 이미지 프로파일')
 	fireEvent.click(screen.getByRole('radio', { name: 'Generate' }))
 	fireEvent.change(screen.getByRole('textbox', { name: 'Prompt' }), {
 		target: { value: '남아 있는 배경 프롬프트' },

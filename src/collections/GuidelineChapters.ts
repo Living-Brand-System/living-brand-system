@@ -38,6 +38,12 @@ export const GuidelineChapters: CollectionConfig = {
 			localized: true,
 			admin: { description: '사이드바와 인덱스 카드의 제목으로 표시됩니다.' },
 		},
+		{
+			name: 'description',
+			type: 'textarea',
+			localized: true,
+			admin: { description: '가이드라인 첫 화면에서 챕터 제목 아래에 표시됩니다.' },
+		},
 		// 🔴 slug는 localized가 아니다(2026-09-04) — URL은 언어를 가리지 않는다(GuidelineDocuments 참조).
 		slugField({
 			useAsSlug: 'title',

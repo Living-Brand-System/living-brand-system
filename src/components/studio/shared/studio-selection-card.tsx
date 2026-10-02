@@ -9,7 +9,7 @@ import { Typography } from '@/components/ui/typography'
 import { cn } from '@/lib/utils'
 import type { StudioPreviewImage } from '@/modules/studio-controller/controller-definition'
 
-type StudioSelectionCardProps = {
+export type StudioSelectionCardProps = {
 	title: ReactNode
 	subtitle?: ReactNode
 	image?: StudioPreviewImage

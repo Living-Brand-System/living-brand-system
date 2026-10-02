@@ -1,9 +1,10 @@
 'use client'
 
-import { domAnimation, LazyMotion, useReducedMotion } from 'motion/react'
+import { domAnimation, LazyMotion } from 'motion/react'
 import * as m from 'motion/react-m'
 import * as React from 'react'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { useMotionTransition } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import type { ControllerOption } from '@/modules/studio-controller/controller-definition'
 import { useRowControl } from './row'
@@ -40,7 +41,7 @@ export function ControllerSegmented<T extends string>({
 	const resolvedDisabled = disabled ?? row?.disabled
 	const groupRef = React.useRef<HTMLDivElement>(null)
 	const [pill, setPill] = React.useState<{ left: number; width: number } | null>(null)
-	const reducedMotion = useReducedMotion()
+	const transition = useMotionTransition('indicator')
 
 	// 버튼의 실측 폭을 따라가므로 라벨 길이가 달라도 pill이 정확히 맞는다.
 	React.useLayoutEffect(() => {
@@ -75,11 +76,7 @@ export function ControllerSegmented<T extends string>({
 							)}
 							initial={false}
 							animate={pill}
-							transition={
-								reducedMotion
-									? { duration: 0 }
-									: { type: 'spring', visualDuration: 0.2, bounce: 0.15 }
-							}
+							transition={transition}
 						/>
 					)}
 					{options.map((option) => (
@@ -88,7 +85,7 @@ export function ControllerSegmented<T extends string>({
 							data-pill-value={option.value}
 							value={option.value}
 							size="sm"
-							className="relative z-10 h-full rounded-sm bg-transparent px-2 text-muted-foreground text-sm transition-colors hover:bg-transparent aria-pressed:bg-transparent aria-pressed:text-foreground data-[state=on]:bg-transparent data-[state=on]:text-foreground data-[state=on]:hover:bg-transparent data-[state=on]:hover:text-foreground"
+							className="relative z-10 h-full rounded-sm bg-transparent px-2 text-muted-foreground text-sm transition-colors hover:bg-transparent motion-reduce:transition-none aria-pressed:bg-transparent aria-pressed:text-foreground data-[state=on]:bg-transparent data-[state=on]:text-foreground data-[state=on]:hover:bg-transparent data-[state=on]:hover:text-foreground"
 						>
 							{option.label}
 						</ToggleGroupItem>

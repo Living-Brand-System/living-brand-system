@@ -30,10 +30,13 @@ const chapters: GetGuidelineNavigationOutput['chapters'] = [
 	{
 		id: 1,
 		title: 'Guidelines',
+		description: null,
 		topics: [
 			{
 				id: 2,
 				title: 'LBS Structure',
+				description: null,
+				thumbnail: null,
 				href: '/guideline/guidelines/lbs-structure',
 				sections: [
 					{
@@ -57,6 +60,8 @@ const chapters: GetGuidelineNavigationOutput['chapters'] = [
 			{
 				id: 5,
 				title: 'Identity',
+				description: null,
+				thumbnail: null,
 				href: '/guideline/guidelines/identity',
 				sections: [
 					{

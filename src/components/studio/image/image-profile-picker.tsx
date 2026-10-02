@@ -1,11 +1,10 @@
 'use client'
 
-import { Fragment, useEffect } from 'react'
-import { ControllerBrowser } from '@/components/shared/controller'
+import { useEffect } from 'react'
 import {
-	StudioSelectionCard,
-	StudioSelectionTile,
-} from '@/components/studio/shared/studio-selection-card'
+	type StudioProfileCard,
+	StudioProfileCards,
+} from '@/components/studio/shared/studio-profile-cards'
 import {
 	getImageStudioFeature,
 	type ImageStudioConfig,
@@ -23,22 +22,9 @@ function profileBadges(option: ImageStudioConfig): string[] {
 	]
 }
 
-/** 카드 부제 줄에 배지를 ` · `로 잇는다 — 배지마다 따로 읽히도록 낱낱의 span으로 둔다. */
-function BadgeLine({ badges }: { badges: readonly string[] }) {
-	return badges.map((badge, index) => (
-		<Fragment key={badge}>
-			{index > 0 && ' · '}
-			<span>{badge}</span>
-		</Fragment>
-	))
-}
-
 /**
- * 자산 브라우저 본문의 이미지 프로파일 카드 그리드 — 킷(Controller.Browser)이 크롬을, 이 컴포넌트가 도메인을 갖는다.
- * 컨텍스트의 교체 후보와 현재 계약만 읽고, 카드를 고르면 프로파일을 교체한다.
- * 카드는 홈·편집 화면 좌상단과 같은 `StudioSelectionCard`다.
- * 고른 뒤 닫기는 카드를 감싼 Controller.Browser.Close가 받는다 — 열림 상태는 킷이 소유한다.
- * 디자인 SSOT: Figma HD_LBS_UI node 19:12907.
+ * 자산 브라우저 본문의 이미지 프로파일 카드 그리드(`StudioProfileCards`) — 컨텍스트의 교체 후보와 현재 계약만 읽고,
+ * 카드를 고르면 프로파일을 교체한다.
  */
 export function ImageProfilePicker() {
 	const { config, profiles } = useImageStudio()
@@ -50,25 +36,19 @@ export function ImageProfilePicker() {
 	}, [load])
 
 	return (
-		<div data-slot="image-profile-picker" className="grid shrink-0 grid-cols-3 gap-3 pr-1">
-			{(profiles.browse.data ?? []).map((option) => (
-				<ControllerBrowser.Close key={option.id} asChild>
-					<StudioSelectionTile
-						aria-current={option.id === config.id || undefined}
-						onClick={() => profiles.select(option.id)}
-					>
-						<StudioSelectionCard
-							title={option.name}
-							subtitle={
-								profileBadges(option).length > 0 && (
-									<BadgeLine badges={profileBadges(option)} />
-								)
-							}
-							image={option.previewImage}
-						/>
-					</StudioSelectionTile>
-				</ControllerBrowser.Close>
-			))}
-		</div>
+		<StudioProfileCards
+			slot="image-profile-picker"
+			cards={(profiles.browse.data ?? []).map(imageProfileCard)}
+			currentId={config.id}
+			onSelect={(id) => profiles.select(Number(id))}
+		/>
 	)
 }
+
+/** 템플릿 이미지 슬롯·배경의 프로파일 변경도 같은 카드를 쓴다. */
+export const imageProfileCard = (option: ImageStudioConfig): StudioProfileCard => ({
+	id: option.id,
+	name: option.name,
+	image: option.previewImage,
+	badges: profileBadges(option),
+})

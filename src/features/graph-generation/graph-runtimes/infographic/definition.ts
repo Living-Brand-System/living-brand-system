@@ -36,11 +36,6 @@ export default defineGraphicRuntime({
 	type: 'p5',
 	artifacts: { vector: {}, raster: {} },
 	controller: {
-		// 보이는 것을 정하는 축은 전부 왼쪽, 데이터는 오른쪽이다.
-		// 형태 축은 표현 바로 아래에 선다 — 무엇을 고르든 그 표현을 다듬는 자리다.
-		left: ['chartType', ...INFOGRAPHIC_AXES, 'palette', 'showNameLabels', 'showValueLabels'],
-		// 글자 크기는 데이터 곁에 둔다 — 무엇이 적히는가를 보면서 맞추는 축이다.
-		right: ['data', 'textScale'],
 		groups: [
 			{
 				id: 'chart',

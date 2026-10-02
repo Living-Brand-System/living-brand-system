@@ -1,13 +1,13 @@
 'use client'
 
 import { useEffect } from 'react'
-import { ControllerBrowser } from '@/components/shared/controller'
 import {
-	StudioSelectionCard,
-	StudioSelectionTile,
-} from '@/components/studio/shared/studio-selection-card'
+	type StudioProfileCard,
+	StudioProfileCards,
+} from '@/components/studio/shared/studio-profile-cards'
 import { graphicRendererLabel } from '@/features/graphic-generation/domain/graphic-studio-config'
 import { useGraphicStudio } from '@/features/graphic-generation/hooks/use-graphic-studio'
+import type { StudioPreviewImage } from '@/modules/studio-controller/controller-definition'
 
 /** Controller.Browser 본문에서 현재 Graphic 계약을 같은 편집 세션 안에서 교체한다. */
 export function GraphicProfilePicker() {
@@ -19,21 +19,24 @@ export function GraphicProfilePicker() {
 	}, [load])
 
 	return (
-		<div data-slot="graphic-profile-picker" className="grid shrink-0 grid-cols-3 gap-3 pr-1">
-			{(profiles.browse.data ?? []).map((option) => (
-				<ControllerBrowser.Close key={option.id} asChild>
-					<StudioSelectionTile
-						aria-current={option.id === config.id || undefined}
-						onClick={() => profiles.select(option.id)}
-					>
-						<StudioSelectionCard
-							title={option.name}
-							subtitle={graphicRendererLabel(option.type)}
-							image={option.previewImage}
-						/>
-					</StudioSelectionTile>
-				</ControllerBrowser.Close>
-			))}
-		</div>
+		<StudioProfileCards
+			slot="graphic-profile-picker"
+			cards={(profiles.browse.data ?? []).map(graphicProfileCard)}
+			currentId={config.id}
+			onSelect={(id) => profiles.select(String(id))}
+		/>
 	)
 }
+
+/** 그래픽 카드의 배지는 렌더러 종류다(편집 화면 카드의 부제와 같은 말). 템플릿 배경의 그래픽 변경도 같은 카드를 쓴다. */
+export const graphicProfileCard = (option: {
+	id: string
+	name: string
+	type: Parameters<typeof graphicRendererLabel>[0]
+	previewImage?: StudioPreviewImage
+}): StudioProfileCard => ({
+	id: option.id,
+	name: option.name,
+	image: option.previewImage,
+	badges: [graphicRendererLabel(option.type)],
+})

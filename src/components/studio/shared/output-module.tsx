@@ -3,6 +3,7 @@
 import { ArrowsHorizontal, ArrowsVertical, Copy, Crop, SquareOutline } from '@carbon/icons-react'
 import type { ReactNode } from 'react'
 import { ControllerInput } from '@/components/shared/controller/input'
+import { ControllerPresence } from '@/components/shared/controller/presence'
 import { ControllerRow } from '@/components/shared/controller/row'
 import { ControllerSegmented } from '@/components/shared/controller/segmented'
 import { ControllerSelect } from '@/components/shared/controller/select'
@@ -145,7 +146,7 @@ export function StudioOutputModule({
 			data-slot="studio-output-module"
 			className="flex flex-col gap-4"
 		>
-			<div className="flex flex-col gap-1">
+			<div className="flex flex-col">
 				<Typography
 					as="h2"
 					size="sm"
@@ -155,162 +156,168 @@ export function StudioOutputModule({
 				>
 					Output
 				</Typography>
-				{empty ? (
-					<Typography size="sm" tone="muted" className="py-6">
-						콘텐츠가 없습니다.
-					</Typography>
-				) : (
-					<>
-						{kind === 'graphic' && (
-							<>
-								{printable && (
-									<ControllerRow label="Mode">
-										<ControllerSegmented
-											aria-label="출력 모드"
-											options={MODES}
-											value={mode}
-											onChange={(next) => change({ mode: next })}
+				{/* 제목 아래 행 사이 4px은 각 행의 위 여백이다 — 모드·형식에 따라 생기는 행이 높이로 펼쳐진다. */}
+				<ControllerPresence itemClassName="pt-1">
+					{empty ? (
+						<Typography size="sm" tone="muted" className="py-6">
+							콘텐츠가 없습니다.
+						</Typography>
+					) : (
+						<>
+							{kind === 'graphic' && (
+								<>
+									{printable && (
+										<ControllerRow label="Mode">
+											<ControllerSegmented
+												aria-label="출력 모드"
+												options={MODES}
+												value={mode}
+												onChange={(next) => change({ mode: next })}
+											/>
+										</ControllerRow>
+									)}
+									<ControllerRow label="Preset">
+										<ControllerSelect
+											options={[...PRESETS[mode], CUSTOM]}
+											value={preset}
+											onChange={(next) => {
+												// Custom은 크기를 그대로 두고 편집을 이어간다 — 이미 언제나 편집 가능하다.
+												const key = PRESETS[mode].find(
+													(item) => item.value === next,
+												)?.value
+												if (!key) return
+												const size = presetSize(key)
+												change({
+													width: size.width,
+													height: size.height,
+													ppi: size.ppi ?? value.ppi,
+												})
+											}}
 										/>
 									</ControllerRow>
-								)}
-								<ControllerRow label="Preset">
-									<ControllerSelect
-										options={[...PRESETS[mode], CUSTOM]}
-										value={preset}
-										onChange={(next) => {
-											// Custom은 크기를 그대로 두고 편집을 이어간다 — 이미 언제나 편집 가능하다.
-											const key = PRESETS[mode].find(
-												(item) => item.value === next,
-											)?.value
-											if (!key) return
-											const size = presetSize(key)
-											change({
-												width: size.width,
-												height: size.height,
-												ppi: size.ppi ?? value.ppi,
-											})
-										}}
-									/>
-								</ControllerRow>
-							</>
-						)}
-						{sizeControl ??
-							(kind === 'image' ? (
-								<ControllerStack
-									items={IMAGE_FIELDS.map(({ id, label, Icon, options }) => ({
-										id,
-										label,
-										icon: <Icon />,
-										children: (
-											<ControllerSelect
-												options={options.map((option) => ({
-													value: option,
-													label: option,
-												}))}
-												value={value[id]}
-												onChange={(next) => change({ [id]: next })}
-											/>
-										),
-									}))}
-								/>
-							) : kind === 'template' ? (
-								<OutputDimensions
-									width={dimension('width')}
-									height={dimension('height')}
-									unit={unit}
-								/>
-							) : (
-								<ControllerStack
-									labelDisplay="icon"
-									items={(
-										[
-											{
-												id: 'width',
-												label: '출력 너비',
-												Icon: ArrowsHorizontal,
-											},
-											{
-												id: 'height',
-												label: '출력 높이',
-												Icon: ArrowsVertical,
-											},
-										] as const
-									).map(({ id, label, Icon }) => ({
-										id,
-										label,
-										icon: <Icon />,
-										children: (
-											<div className="flex min-w-0 flex-1 items-center justify-end gap-1 text-sm">
-												<OutputNumber
-													key={`${mode}-${value[id]}-${value.ppi}`}
-													value={dimension(id)}
-													onCommit={(next) =>
-														resize({
-															[id]: physical
-																? millimetersToPixels(
-																		next,
-																		value.ppi,
-																	)
-																: Math.round(next),
-														})
-													}
-													onInvalid={() =>
-														change({
-															notice: '0보다 큰 숫자를 입력해 주세요.',
-														})
-													}
+								</>
+							)}
+							{sizeControl ??
+								(kind === 'image' ? (
+									<ControllerStack
+										items={IMAGE_FIELDS.map(({ id, label, Icon, options }) => ({
+											id,
+											label,
+											icon: <Icon />,
+											children: (
+												<ControllerSelect
+													options={options.map((option) => ({
+														value: option,
+														label: option,
+													}))}
+													value={value[id]}
+													onChange={(next) => change({ [id]: next })}
 												/>
-												<span className="shrink-0 text-muted-foreground">
-													{unit}
-												</span>
-											</div>
-										),
-									}))}
+											),
+										}))}
+									/>
+								) : kind === 'template' ? (
+									<OutputDimensions
+										width={dimension('width')}
+										height={dimension('height')}
+										unit={unit}
+									/>
+								) : (
+									<ControllerStack
+										labelDisplay="icon"
+										items={(
+											[
+												{
+													id: 'width',
+													label: '출력 너비',
+													Icon: ArrowsHorizontal,
+												},
+												{
+													id: 'height',
+													label: '출력 높이',
+													Icon: ArrowsVertical,
+												},
+											] as const
+										).map(({ id, label, Icon }) => ({
+											id,
+											label,
+											icon: <Icon />,
+											children: (
+												<div className="flex min-w-0 flex-1 items-center justify-end gap-1 text-sm">
+													<OutputNumber
+														key={`${mode}-${value[id]}-${value.ppi}`}
+														value={dimension(id)}
+														onCommit={(next) =>
+															resize({
+																[id]: physical
+																	? millimetersToPixels(
+																			next,
+																			value.ppi,
+																		)
+																	: Math.round(next),
+															})
+														}
+														onInvalid={() =>
+															change({
+																notice: '0보다 큰 숫자를 입력해 주세요.',
+															})
+														}
+													/>
+													<span className="shrink-0 text-muted-foreground">
+														{unit}
+													</span>
+												</div>
+											),
+										}))}
+									/>
+								))}
+							<ControllerRow label="Format">
+								<ControllerSelect
+									options={formats}
+									value={format}
+									onChange={onFormatChange}
 								/>
-							))}
-						<ControllerRow label="Format">
-							<ControllerSelect
-								options={formats}
-								value={format}
-								onChange={onFormatChange}
-							/>
-						</ControllerRow>
-						{kind === 'graphic' && physical && (
-							<ControllerRow label="Resolution">
-								<div className="flex min-w-0 items-center gap-1 text-sm">
-									<OutputNumber
-										key={value.ppi}
-										value={String(value.ppi)}
-										onCommit={(ppi) => {
-											if (!isPrintPpi(ppi))
-												return change({
+							</ControllerRow>
+							{kind === 'graphic' && physical && (
+								<ControllerRow label="Resolution">
+									<div className="flex min-w-0 items-center gap-1 text-sm">
+										<OutputNumber
+											key={value.ppi}
+											value={String(value.ppi)}
+											onCommit={(ppi) => {
+												if (!isPrintPpi(ppi))
+													return change({
+														notice: '해상도는 1~1200 ppi로 입력해 주세요.',
+													})
+												resize({
+													ppi,
+													width: millimetersToPixels(
+														pixelsToMillimeters(value.width, value.ppi),
+														ppi,
+													),
+													height: millimetersToPixels(
+														pixelsToMillimeters(
+															value.height,
+															value.ppi,
+														),
+														ppi,
+													),
+												})
+											}}
+											onInvalid={() =>
+												change({
 													notice: '해상도는 1~1200 ppi로 입력해 주세요.',
 												})
-											resize({
-												ppi,
-												width: millimetersToPixels(
-													pixelsToMillimeters(value.width, value.ppi),
-													ppi,
-												),
-												height: millimetersToPixels(
-													pixelsToMillimeters(value.height, value.ppi),
-													ppi,
-												),
-											})
-										}}
-										onInvalid={() =>
-											change({
-												notice: '해상도는 1~1200 ppi로 입력해 주세요.',
-											})
-										}
-									/>
-									<span className="text-muted-foreground">ppi</span>
-								</div>
-							</ControllerRow>
-						)}
-						{children}
-					</>
-				)}
+											}
+										/>
+										<span className="text-muted-foreground">ppi</span>
+									</div>
+								</ControllerRow>
+							)}
+							{children}
+						</>
+					)}
+				</ControllerPresence>
 			</div>
 			<div className="flex flex-col gap-3">
 				{action}

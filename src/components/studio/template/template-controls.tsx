@@ -2,108 +2,28 @@
 
 import { ColorPalette, Image, Shapes, TextFont, View, ViewOff } from '@carbon/icons-react'
 import type { ReactNode } from 'react'
-import { Controller } from '@/components/shared/controller'
 import { ControllerRoot } from '@/components/shared/controller/layout'
-import { ControllerControlRenderer } from '@/components/shared/controller-renderer'
-import { ControlPanel } from '@/components/studio/shared/control-panel'
-import { ImageSlotMode } from '@/components/studio/template/image-slot-input'
-import { TemplateBackgroundPanel } from '@/components/studio/template/template-background-panel'
-import { TemplateColorSwatches } from '@/components/studio/template/template-color-swatches'
-import { TemplateLayerControls } from '@/components/studio/template/template-layer-controls'
+import type { ControlPanelComposition } from '@/components/studio/shared/control-panel'
+import { StudioPanelSlot } from '@/components/studio/shared/studio-panel-slot'
 import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
-import { usePublishedBrandColorValues } from '@/features/template-core/hooks/use-published-brand-color-values'
-import {
-	findTemplateControl,
-	partitionTemplateSlots,
-} from '@/features/template-customization/domain/template-studio-config'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import { cn } from '@/lib/utils'
-import {
-	TemplateDimmer,
-	TemplateGraphicControls,
-	TemplateImageControls,
-} from './template-media-controls'
-
-export function TemplateControls({ grouped = true }: { grouped?: boolean }) {
-	const { config, layers, background, focus } = useTemplateStudio()
-	const selectedKind = config.template.slots.find((slot) => slot.id === layers.selectedId)?.kind
-	if (selectedKind === 'image')
-		return (
-			<Controller.Browser.Root className="min-h-0 h-full">
-				<TemplateImageControls />
-			</Controller.Browser.Root>
-		)
-	if (selectedKind === 'background' && background.state.type === 'graphic')
-		return (
-			<Controller.Browser.Root className="min-h-0 h-full">
-				<TemplateGraphicControls key={background.state.graphicConfigId} />
-			</Controller.Browser.Root>
-		)
-	if (selectedKind === 'background' && background.state.type === 'image')
-		return (
-			<Controller.Browser.Root className="min-h-0 h-full">
-				<TemplateImageControls background />
-			</Controller.Browser.Root>
-		)
-	if (selectedKind === 'background') {
-		const slot = partitionTemplateSlots(config.template.slots).background
-		const definition = slot ? findTemplateControl(config, slot.colorControlId) : undefined
-		return (
-			<ControlPanel
-				fixed={<TemplateDimmer />}
-				basic={
-					definition ? (
-						<Controller.Group
-							title="Background"
-							active={focus.target?.kind === 'canvas'}
-							onActivate={() =>
-								focus.set({
-									sectionId: 'section:background',
-									kind: 'canvas',
-								})
-							}
-						>
-							<ControllerControlRenderer
-								definition={definition}
-								value={background.state.color}
-								onChange={(value) => {
-									if (typeof value === 'string' || value === null)
-										background.setColor(value)
-								}}
-							/>
-						</Controller.Group>
-					) : undefined
-				}
-			/>
-		)
-	}
-
-	return (
-		<Controller.Browser.Root className="min-h-0 h-full">
-			<ControlPanel
-				fixed={selectedKind === 'text' && grouped ? <TemplateColor /> : null}
-				basic={<TemplateLayerControls grouped={grouped} separateSettings={grouped} />}
-			/>
-		</Controller.Browser.Root>
-	)
-}
 
 /**
  * 선택한 묶음의 방식과 편집 완료·취소를 한 카드에 배치한다(Figma 525:8777).
- * 값과 전환은 기존 슬롯 세션을 사용한다.
+ * 방식 행은 패널 모델(`useTemplatePanel`)의 settings 슬롯이다 — 오른쪽 패널과 같은 계산을 쓴다.
  */
-export function TemplateSettings({ actions }: { actions: ReactNode }) {
-	const { config, layers, images } = useTemplateStudio()
-	const selectedKind = config.template.slots.find((slot) => slot.id === layers.selectedId)?.kind
-	const background = selectedKind === 'background'
-	const slots = config.template.slots.filter(
-		(slot) =>
-			slot.kind === 'image' &&
-			slot.id === layers.selectedId &&
-			slot.access === 'editable' &&
-			images.states[slot.id],
-	)
+export function TemplateSettings({
+	settings,
+	actions,
+}: {
+	settings: ControlPanelComposition | null
+	actions: ReactNode
+}) {
+	const { config, layers } = useTemplateStudio()
+	const selected = config.template.slots.find((slot) => slot.id === layers.selectedId)
+	const selectedKind = selected?.kind
 	return (
 		<ControllerRoot className="shrink-0 px-4 pt-1 pb-4 lg:h-auto">
 			<Typography
@@ -113,27 +33,18 @@ export function TemplateSettings({ actions }: { actions: ReactNode }) {
 				tone="muted"
 				className="flex h-9 items-center"
 			>
-				{background ? 'Background Setting' : 'Image Setting'}
+				{selectedKind === 'background' ? 'Background Setting' : 'Image Setting'}
 			</Typography>
 			<div className="flex flex-col gap-1 pt-1 pb-3">
-				{background ? (
-					<TemplateBackgroundPanel content="settings" />
-				) : (
-					slots.map((slot) => (
-						<fieldset key={slot.id} aria-label={slot.label}>
-							{slots.length > 1 && (
-								<Typography size="xs" tone="muted" className="mb-1">
-									{slot.label}
-								</Typography>
-							)}
-							<ImageSlotMode
-								label="Mode"
-								value={images.states[slot.id].imageMode}
-								onChange={(imageMode) => images.update(slot.id, { imageMode })}
-							/>
+				{settings &&
+					(selectedKind === 'image' && selected ? (
+						// 슬롯 방식은 그 슬롯의 묶음이다 — 슬롯 이름으로 묶어 읽힌다.
+						<fieldset aria-label={selected.label}>
+							<SettingsRows composition={settings} />
 						</fieldset>
-					))
-				)}
+					) : (
+						<SettingsRows composition={settings} />
+					))}
 			</div>
 			{actions}
 		</ControllerRoot>
@@ -236,27 +147,11 @@ export function TemplateLayerGroups() {
 	)
 }
 
-function TemplateColor() {
-	const { config, text } = useTemplateStudio()
-	// 색의 정본은 CMS의 brand-colors다 — 심볼과 같은 목록을 보고, 정본 밖 색은 열지 않는다.
-	const { values: brandColorValues } = usePublishedBrandColorValues()
-	const definition = config.template.textColorControlId
-		? findTemplateControl(config, config.template.textColorControlId)
-		: undefined
-	if (definition?.kind !== 'color')
-		return (
-			<Typography size="sm" tone="muted">
-				이 템플릿은 원본 텍스트 색상을 사용합니다.
-			</Typography>
-		)
-	const colors = definition.values ?? brandColorValues
-	return (
-		<TemplateColorSwatches
-			subject="텍스트"
-			colors={colors}
-			value={text.color}
-			onChange={text.setColor}
-			disabled={(definition.availability ?? 'enabled') !== 'enabled' || colors.length === 0}
-		/>
-	)
+/** 방식(source) 행 — 카드가 제목을 가지므로 그룹 제목 없이 행만 쌓는다(docs/10 §3.7). */
+function SettingsRows({
+	composition: { slots, ...render },
+}: {
+	composition: ControlPanelComposition
+}) {
+	return <StudioPanelSlot flat entries={slots.settings} {...render} />
 }

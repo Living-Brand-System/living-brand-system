@@ -131,7 +131,7 @@ HTML 의미와 시각 역할은 분리합니다. `GuidelineHeader`가 h1/h2를 �
 
 캡션 배치는 `below`(기본, 카드 아래)와 `overlay`(판 안쪽 하단) 중 고릅니다. 오버레이는 Figma 136:231의 `text-base` 크기와 여백을 따르며, 제목·설명의 Medium·행간 155%는 공유합니다. 그라데이션은 판 폭을 채우고 텍스트 폭은 제한합니다. `dark` 토큰 스코프로 밝은 글자와 어두운 그라데이션의 대비를 유지하며, 긴 내용은 키보드로 접근할 수 있는 캡션 영역 안에서 스크롤합니다. 제목·설명·2열 스펙 표는 두 배치가 같은 렌더러를 사용합니다. 배치가 없는 기존 콘텐츠는 카드 아래에 표시합니다.
 
-메인 히어로의 제목·버전 표기와 푸터 `LBS`는 화면 비율에 맞춘 lockup을 유지해야 하므로 유일한 viewport 반응형 예외이며 기존 `clamp()` 크기를 사용합니다. 템플릿 캔버스와 `TypeScale`·`TypeSpecimen`이 데이터로 받은 글자 크기도 UI 타이포그래피가 아니므로 예외입니다. 그 밖의 `TypeSpecimen` 같은 대형 표본은 viewport 계산식 대신 `text-9xl` 같은 고정 유틸리티를 사용합니다. 클래스 주입이 불가능한 `.typeset` 내부 생성 HTML은 `typeset.css`에서 같은 고정 단계만 직접 선언합니다.
+첫 화면(메인·가이드라인·스튜디오) 히어로의 `HD │ 제목` 락업(`LandingLockup`)은 CI 높이(32px)와 짝을 이루는 고정 크기(34px)이고, 문서·스튜디오 띠의 표시 제목(`GuidelineDisplayTitle`)은 화면 비율에 맞춘 `clamp()` 크기를 씁니다 — 둘이 viewport 반응형·임의 크기의 예외입니다. 템플릿 캔버스와 `TypeScale`·`TypeSpecimen`이 데이터로 받은 글자 크기도 UI 타이포그래피가 아니므로 예외입니다. 그 밖의 `TypeSpecimen` 같은 대형 표본은 viewport 계산식 대신 `text-9xl` 같은 고정 유틸리티를 사용합니다. 클래스 주입이 불가능한 `.typeset` 내부 생성 HTML은 `typeset.css`에서 같은 고정 단계만 직접 선언합니다.
 
 현재 상태를 정직하게 기술합니다.
 
@@ -150,12 +150,12 @@ HTML 의미와 시각 역할은 분리합니다. `GuidelineHeader`가 h1/h2를 �
 
 ### 신규 문서 (`contentModel=sections`)
 
-CMS와 레퍼런스·플레이그라운드는 동일한 평면 섹션 구조를 사용합니다. Subsection은 직전 Section에 의미상 소속되며 H3로 표시하지만 DOM에는 중첩하지 않습니다. Section과 Incorrect Usages는 H2입니다. 위계나 패널 표현은 내부 간격을 바꾸지 않습니다.
+CMS 섹션은 평면 섹션 구조를 사용합니다. Subsection은 직전 Section에 의미상 소속되며 H3로 표시하지만 DOM에는 중첩하지 않습니다. Section과 Incorrect Usages는 H2입니다. 위계나 패널 표현은 내부 간격을 바꾸지 않습니다.
 
 | 레이어 | 소유 책임 |
 | --- | --- |
 | 문서 | 배경, DisplayHeading·섹션 목록·DisplayFooter 조합 |
-| 섹션 목록 (`CmsGuidelineSections` 또는 레퍼런스의 목록) | 순서만 담당. 추가 패딩·gap 없음 |
+| 섹션 목록 (`CmsGuidelineSections`) | 순서만 담당. 추가 패딩·gap 없음 |
 | `GuidelineSection` | 앵커, 상하·좌우 패딩, 제목–첫 컨테이너 및 컨테이너 사이 간격 |
 | `GuidelineSectionHeading` | 제목·설명·다운로드 내부 정렬과 텍스트 폭 |
 | Grid / Carousel / Sticky | 카드 크기·배치·카드 간격·반응형·넘김·고정 |
@@ -177,7 +177,7 @@ CMS와 레퍼런스·플레이그라운드는 동일한 평면 섹션 구조를 
 
 ### 레거시 문서 (`contentModel=legacy`)
 
-아래 규칙은 `deprecated/`와 기존 blocks 렌더링에만 적용합니다. 신규 Section이나 레퍼런스에 옮겨 적용하지 않습니다.
+아래 규칙은 `deprecated/`와 기존 blocks 렌더링에만 적용합니다. 신규 Section에 옮겨 적용하지 않습니다.
 
 
 | 컴포넌트 | 소유 책임 |
@@ -198,7 +198,7 @@ CMS와 레퍼런스·플레이그라운드는 동일한 평면 섹션 구조를 
 
 CMS `section`·`base`·`overview`·`examples`는 `CardBlock` 어댑터가 같은 `GuidelineSection`으로 연결합니다. `prepareCards`는 저장 데이터를 바꾸지 않고 언어 비교를 독립 카드로 펼칩니다. 컨트롤러와 프리뷰 상태는 화면 구성과 별도이며 푸터에 넣지 않습니다. 하단 캡션은 카드 폭 안에서 제한하고 왼쪽에 붙입니다.
 
-헤딩 계층은 `GuidelineHeader`가 `variant`(`topic` h1 / `section` h2)로 분기해 소유합니다(`guideline-header.tsx`). 토픽 안의 `section`·`base`·`overview`·`examples`는 동급 블록이므로 같은 h2를 사용하며 h3 단계는 없습니다. 인덱스 화면의 h1은 히어로 락업이, 챕터 카드 제목은 `PanelCard`가 그립니다. 랜드마크는 셸이 `main`을(`section-layout.tsx`), 토픽 화면이 `article` 하나를(`pages/guideline-topic.tsx`) 갖고, 블록 프레임과 섹션 안쪽은 랜드마크를 만들지 않습니다.
+헤딩 계층은 `GuidelineHeader`가 `variant`(`topic` h1 / `section` h2)로 분기해 소유합니다(`guideline-header.tsx`). 토픽 안의 `section`·`base`·`overview`·`examples`는 동급 블록이므로 같은 h2를 사용하며 h3 단계는 없습니다. 가이드라인 첫 화면(Figma 458:16373)의 h1은 히어로 락업이, 챕터는 문서와 같은 `GuidelineSection`·`GuidelineSectionHeading`(h2)이, 토픽은 링크 가이드라인 카드(`GuidelineGridContainer`의 `href`)가 그립니다. 스튜디오 첫 화면(`StudioHome`)도 같은 섹션 블록에 프로파일 카드를 담습니다. 랜드마크는 셸이 `main`을(`section-layout.tsx`), 토픽 화면이 `article` 하나를(`pages/guideline-topic.tsx`) 갖고, 블록 프레임과 섹션 안쪽은 랜드마크를 만들지 않습니다.
 
 ### 가이드라인 계층 이름은 Figma 정본과 다릅니다
 
@@ -235,7 +235,7 @@ CMS `section`·`base`·`overview`·`examples`는 `CardBlock` 어댑터가 같은
 | 컴포넌트 | **shadcn/ui** (`base: radix`) | 라이브러리가 아니라 **소스 복사본**입니다. `src/components/ui`를 우리가 소유 |
 | 동작·접근성 | **Radix** | shadcn 아래층. WAI-ARIA APG 패턴 구현체 |
 | variant | `class-variance-authority` | 원형은 `docs/10` §3 |
-| 모션 | `motion/react` | `LazyMotion` + `m` 조합만 |
+| 모션 | `motion/react` | `LazyMotion` + `m` 조합만. 스튜디오·컨트롤러의 값은 `src/lib/motion.ts`(JS)·`theme.css`의 `--motion-*`(CSS)만 쓴다 — `docs/10` §3 |
 | 아이콘 | **`@carbon/icons-react` 단일 소스** | `components.json`의 `iconLibrary`가 다른 값인 이유는 `docs/10` §2 |
 | 본문 서체 | Pretendard (`--font-body`) | `--font-title`은 값 미정 — §6 |
 
