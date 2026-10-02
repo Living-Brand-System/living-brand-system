@@ -15,15 +15,13 @@ type StudioHomeProps = {
 	description: string
 	groups: readonly StudioHomeGroup[]
 	empty: { title: string; description: string }
-	/** 카드 안에 미리보기를 담는 방식 — `StudioHomeCard`의 `fit`. */
-	cardFit: 'contain' | 'cover'
 }
 
 /**
  * 생성 스튜디오(Template·Graphic·Image)의 공통 첫 화면 — 고를 수 있는 것을 카드로 펼친다.
  * 카드는 딥링크(`/studio/<kind>/<slug>`)로 가는 링크일 뿐이고, 편집 세션은 딥링크 화면이 소유한다.
  */
-export function StudioHome({ title, description, groups, empty, cardFit }: StudioHomeProps) {
+export function StudioHome({ title, description, groups, empty }: StudioHomeProps) {
 	const visibleGroups = groups.filter((group) => group.items.length > 0)
 
 	return (
@@ -48,7 +46,7 @@ export function StudioHome({ title, description, groups, empty, cardFit }: Studi
 								{/* 카드 폭은 Figma Large(320px) 근처에서 열 수가 따라간다. */}
 								<div className="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-4">
 									{group.items.map((item) => (
-										<StudioHomeCard key={item.key} item={item} fit={cardFit} />
+										<StudioHomeCard key={item.key} item={item} />
 									))}
 								</div>
 							</section>

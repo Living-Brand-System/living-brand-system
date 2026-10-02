@@ -39,7 +39,7 @@ export function averagePixelColor(data: Uint8ClampedArray): string | null {
 
 const SAMPLE_SIZE = 24
 
-function sampleAverageColor(image: HTMLImageElement): string | null {
+export function sampleAverageColor(image: HTMLImageElement): string | null {
 	const canvas = document.createElement('canvas')
 	canvas.width = SAMPLE_SIZE
 	canvas.height = SAMPLE_SIZE
@@ -56,21 +56,11 @@ function sampleAverageColor(image: HTMLImageElement): string | null {
 
 /**
  * 홈 카드 — Figma `hd_lbs_interface`의 SelectCard Large(node 448:9790)를 옮긴 임시 구현이다.
- * 정사각 판 안에 미리보기를 자르지 않고 담고, 바탕은 미리보기의 평균색으로 칠한다(Figma의 짙은 초록이
- * 초록 포스터 뒤에 깔린 것처럼). 평균색의 밝기로 light/dark 토큰 스코프를 골라 글자가 따라온다(docs/09 §5).
+ * 미리보기는 이미 정사각으로 맞춰 저장된다(`PreviewFrameDialog` — Template은 여백까지 품는다) — 카드는 꽉 채우기만
+ * 한다. 바탕은 미리보기의 평균색으로 칠한다(정사각으로 맞추기 전의 옛 미리보기가 남아 있을 때의 대비용). 평균색의 밝기로 light/dark 토큰 스코프를 골라 글자가 따라온다(docs/09 §5).
  * ponytail: 디자인 UI가 코드로 나오면 그것으로 갈아끼운다.
  */
-export function StudioHomeCard({
-	item,
-	fit,
-}: {
-	item: StudioHomeItem
-	/**
-	 * `contain` — 내보낼 결과물(Template)이라 판 전체가 여백 안에 다 보인다.
-	 * `cover` — 패턴처럼 쓰는 에셋(Graphic·Image)이라 카드를 여백 없이 채운다(Figma node 328:2325).
-	 */
-	fit: 'contain' | 'cover'
-}) {
+export function StudioHomeCard({ item }: { item: StudioHomeItem }) {
 	const [tint, setTint] = useState<string | null>(null)
 
 	return (
@@ -95,10 +85,7 @@ export function StudioHomeCard({
 							setTint(sampleAverageColor(image))
 					}}
 					onLoad={(event) => setTint(sampleAverageColor(event.currentTarget))}
-					className={cn(
-						'-z-10 absolute inset-0 size-full transition-transform group-hover:scale-[1.02]',
-						fit === 'contain' ? 'object-contain p-5 drop-shadow-md' : 'object-cover',
-					)}
+					className="-z-10 absolute inset-0 size-full object-cover transition-transform group-hover:scale-[1.02]"
 				/>
 			)}
 			{/* 위쪽을 바탕색으로 눌러 이미지가 어떻든 이름의 대비가 유지된다(docs/08). */}

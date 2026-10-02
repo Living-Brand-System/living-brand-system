@@ -21,7 +21,6 @@ export default async function CreatePage() {
 					previewImage: template.previewImage,
 				})),
 			}))}
-			cardFit="contain"
 			empty={{
 				title: '발행된 템플릿이 없습니다',
 				description: '템플릿이 발행되면 이 화면에서 바로 편집하고 내보낼 수 있습니다.',
