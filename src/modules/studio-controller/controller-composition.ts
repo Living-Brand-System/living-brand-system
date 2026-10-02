@@ -35,6 +35,8 @@ export const CONTROLLER_WIDGETS = [
 	'reference',
 	'asset-browser',
 	'preset-list',
+	'swatches',
+	'text-field',
 ] as const
 export type ControllerWidget = (typeof CONTROLLER_WIDGETS)[number]
 
@@ -159,6 +161,10 @@ export function arrangeStudioPanel(
 	)
 	const roleOf = (control: ControllerControlDefinition, group: ComposableGroup) =>
 		controller.roles?.[control.id] ?? group.role
+	// 안에 묶음을 품는 그룹은 자기 행이 없어도 선다 — 제목과 섹션이 묶음의 자리다(텍스트 슬롯 목록).
+	const hosts = new Set(
+		clusters.flatMap((cluster) => (cluster.group === undefined ? [] : [cluster.group])),
+	)
 	const groups = controller.groups.flatMap((group) => {
 		if (!visible(group.visibleWhen)) return []
 		const controls = group.controls.filter(
@@ -171,6 +177,7 @@ export function arrangeStudioPanel(
 		const roles = [
 			...new Set(controls.map((control) => roleOf(control, group) as ControllerRole)),
 		]
+		if (!roles.length && group.role && hosts.has(group.id)) roles.push(group.role)
 		return roles.map((role) => ({
 			...group,
 			role,

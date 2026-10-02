@@ -194,6 +194,26 @@ describe('arrangeStudioPanel', () => {
 		])
 	})
 
+	it('묶음을 품은 그룹은 자기 행이 모두 묶음으로 가도 제목째 선다', () => {
+		const clusters: ControllerCluster[] = [
+			{
+				id: 'use',
+				title: 'Use',
+				role: 'overlay',
+				widget: 'compound',
+				members: { gate: 'dimmer' },
+				group: 'dimming',
+			},
+		]
+		const slots = arrangeStudioPanel({ groups, clusters }, policy, values)
+		expect(slots.fixed).toEqual([
+			expect.objectContaining({
+				group: expect.objectContaining({ id: 'dimming', controls: [] }),
+				clusters: [expect.objectContaining({ cluster: clusters[0] })],
+			}),
+		])
+	})
+
 	it('숨겨도 값은 그대로다 — 배치는 값을 건드리지 않는다', () => {
 		const current = { ...values, strength: 0.56 }
 		arrangeStudioPanel({ groups }, policy, current)

@@ -12,17 +12,14 @@ import {
 import { StudioPanelSlot } from '@/components/studio/shared/studio-panel-slot'
 import { ImageSlotMode } from '@/components/studio/template/image-slot-input'
 import { useTemplateBackgroundComposition } from '@/components/studio/template/template-background-composition'
-import { TemplateColorSwatches } from '@/components/studio/template/template-color-swatches'
-import { TemplateLayerControls } from '@/components/studio/template/template-layer-controls'
+import { TemplateLayerPanel } from '@/components/studio/template/template-layer-composition'
 import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
-import { usePublishedBrandColorValues } from '@/features/template-core/hooks/use-published-brand-color-values'
-import { findTemplateControl } from '@/features/template-customization/domain/template-studio-config'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import { cn } from '@/lib/utils'
 import { TemplateGraphicControls, TemplateImageControls } from './template-media-controls'
 
-export function TemplateControls({ grouped = true }: { grouped?: boolean }) {
+export function TemplateControls() {
 	const { config, layers, background } = useTemplateStudio()
 	const backgroundComposition = useTemplateBackgroundComposition()
 	const selectedKind = config.template.slots.find((slot) => slot.id === layers.selectedId)?.kind
@@ -50,10 +47,11 @@ export function TemplateControls({ grouped = true }: { grouped?: boolean }) {
 
 	return (
 		<Controller.Browser.Root className="min-h-0 h-full">
-			<ControlPanel
-				fixed={selectedKind === 'text' && grouped ? <TemplateColor /> : null}
-				basic={<TemplateLayerControls grouped={grouped} separateSettings={grouped} />}
-			/>
+			{selectedKind === 'text' || selectedKind === 'vector' ? (
+				<TemplateLayerPanel key={selectedKind} kind={selectedKind} />
+			) : (
+				<ControlPanel />
+			)}
 		</Controller.Browser.Root>
 	)
 }
@@ -203,31 +201,6 @@ export function TemplateLayerGroups() {
 				)
 			})}
 		</section>
-	)
-}
-
-function TemplateColor() {
-	const { config, text } = useTemplateStudio()
-	// 색의 정본은 CMS의 brand-colors다 — 심볼과 같은 목록을 보고, 정본 밖 색은 열지 않는다.
-	const { values: brandColorValues } = usePublishedBrandColorValues()
-	const definition = config.template.textColorControlId
-		? findTemplateControl(config, config.template.textColorControlId)
-		: undefined
-	if (definition?.kind !== 'color')
-		return (
-			<Typography size="sm" tone="muted">
-				이 템플릿은 원본 텍스트 색상을 사용합니다.
-			</Typography>
-		)
-	const colors = definition.values ?? brandColorValues
-	return (
-		<TemplateColorSwatches
-			subject="텍스트"
-			colors={colors}
-			value={text.color}
-			onChange={text.setColor}
-			disabled={(definition.availability ?? 'enabled') !== 'enabled' || colors.length === 0}
-		/>
 	)
 }
 
