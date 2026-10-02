@@ -244,6 +244,8 @@ it('배경은 패널 컴포지션으로 선다 — 방식을 바꿔도 Dimming �
 	const panel = editing()
 	const rail = panel.querySelector('[data-slot="studio-rail"]')
 	const card = fixed()
+	// Use를 켜도 카드는 그대로다 — Strength 한 줄만 펼친다(조건부 컨트롤은 구조 서명에 들지 않는다).
+	expect(card).toBe(dimming)
 	// source → 왼쪽 설정 카드. Image일 때만 Image Mode 행이 선다.
 	expect(within(selection).queryByRole('radiogroup', { name: 'Image Mode' })).toBeNull()
 	fireEvent.click(

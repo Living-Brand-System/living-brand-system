@@ -4,6 +4,7 @@ import { domAnimation, LazyMotion } from 'motion/react'
 import * as m from 'motion/react-m'
 import { type ReactNode, useId, useState } from 'react'
 import { ControllerRoot } from '@/components/shared/controller/layout'
+import { ControllerPresence } from '@/components/shared/controller/presence'
 import { PANEL_RENDER, useMotionTransition } from '@/lib/motion'
 import {
 	controllerStructureSignature,
@@ -162,15 +163,20 @@ function ControlPanelView({
 								}
 								transition={active === tab.id ? transition : { duration: 0 }}
 							>
-								<div className="flex h-full min-h-0 flex-col gap-3">
-									{tab.list && (
-										<ControllerRoot
-											data-slot="studio-preset-list"
-											className="min-h-0 shrink lg:h-auto"
-										>
-											<div className={CARD_BODY}>{tab.list}</div>
-										</ControllerRoot>
-									)}
+								<div className="flex h-full min-h-0 flex-col">
+									{/* 목록 카드도 조건으로 생기고 빠진다(Fluted Style) — 다른 조건부 행과 같은 높이 펼침이다.
+									    카드 사이 간격은 부모 gap이 아니라 펼치는 상자의 아래 여백이 갖는다(높이 0일 때 남지 않게). */}
+									<ControllerPresence itemClassName="flex min-h-0 shrink flex-col pb-3">
+										{tab.list && (
+											<ControllerRoot
+												key="list"
+												data-slot="studio-preset-list"
+												className="min-h-0 shrink lg:h-auto"
+											>
+												<div className={CARD_BODY}>{tab.list}</div>
+											</ControllerRoot>
+										)}
+									</ControllerPresence>
 									{tab.content && (
 										<ControllerRoot
 											className={
