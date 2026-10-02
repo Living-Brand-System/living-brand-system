@@ -14,6 +14,7 @@ import type {
 	StudioPanelEntry,
 } from '@/modules/studio-controller/controller-composition'
 import type {
+	ControllerControlDefinition,
 	ControllerControlValue,
 	ControllerGroupDefinition,
 	ControllerGroupPresentation,
@@ -23,6 +24,8 @@ import type {
 
 export type ControllerWidgetProps = {
 	cluster: ControllerCluster
+	/** 멤버 이름 → 지금 계약의 컨트롤 정의(`arrangeStudioPanel`이 푼다). */
+	controls: Readonly<Record<string, ControllerControlDefinition>>
 	values: ControllerValues
 	bindings?: ControllerRuntimeBindings
 	onChange: (controlId: string, value: ControllerControlValue) => void
@@ -87,32 +90,54 @@ export function StudioPanelSlot({
 									onChange={(value) => props.onChange(control.id, value)}
 								/>
 							))
-						: [renderWidget(entry.cluster, widgets, props)],
+						: [renderWidget(entry, widgets, props)],
 				)}
 				{children}
 			</Controller.Reveal>
 		)
-	return (
-		<Controller.GroupList>
-			{entries.map((entry) => {
-				if (entry.type === 'group')
-					return (
+	// 연이은 묶음 위젯은 6px 간격으로 쌓고(Figma 345:17104·350:2664 — 표면끼리 붙는 컴파운드), 그룹은 목록의 12px를
+	// 따른다. 그룹만 있으면 목록 하나 그대로라 지금 조립과 같은 DOM이다.
+	const runs = entries.reduce<StudioPanelEntry[][]>((all, entry) => {
+		const last = all.at(-1)
+		if (last && last[0].type === entry.type) last.push(entry)
+		else all.push([entry])
+		return all
+	}, [])
+	const renderRun = (run: StudioPanelEntry[], index: number, extra?: ReactNode) =>
+		run[0]?.type === 'cluster' ? (
+			<Controller.Reveal key={`run:${index}`} gap={1.5}>
+				{run.map((entry) =>
+					entry.type === 'cluster' ? renderWidget(entry, widgets, props) : null,
+				)}
+				{extra}
+			</Controller.Reveal>
+		) : (
+			<Controller.GroupList key={`run:${index}`}>
+				{run.map((entry) =>
+					entry.type === 'group' ? (
 						<ControllerDefinitionGroup
-							key={`group:${entry.group.id}`}
+							key={`group:${entry.group.id}:${entry.group.role}`}
 							group={entry.group}
 							section={groupSection?.(entry.group)}
 							{...props}
 						/>
-					)
-				return renderWidget(entry.cluster, widgets, props)
-			})}
-			{children}
-		</Controller.GroupList>
+					) : null,
+				)}
+				{extra}
+			</Controller.GroupList>
+		)
+	if (runs.length <= 1) return renderRun(runs[0] ?? [], 0, children)
+	return (
+		<div data-slot="studio-panel-slot" className="flex flex-col gap-1.5">
+			{runs.map((run, index) =>
+				renderRun(run, index, index === runs.length - 1 ? children : undefined),
+			)}
+		</div>
 	)
 }
 
 function renderWidget(
-	cluster: ControllerCluster,
+	{ cluster, controls }: Extract<StudioPanelEntry, { type: 'cluster' }>,
 	widgets: ControllerWidgetRegistry | undefined,
 	props: Omit<StudioPanelSlotRenderProps, 'widgets' | 'groupSection'>,
 ) {
@@ -126,6 +151,7 @@ function renderWidget(
 		<Widget
 			key={`cluster:${cluster.id}`}
 			cluster={cluster}
+			controls={controls}
 			values={props.values}
 			bindings={props.bindings}
 			onChange={props.onChange}

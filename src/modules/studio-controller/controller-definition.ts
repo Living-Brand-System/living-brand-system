@@ -83,6 +83,8 @@ export type StudioRuntimeManifest = {
 		remountOn?: readonly string[]
 		/** 컨트롤 여러 개를 위젯 하나로 세우는 묶음(docs/10 §3.7). 가리킨 컨트롤은 그룹 행으로 다시 그려지지 않는다. */
 		clusters?: readonly ControllerCluster[]
+		/** 컨트롤 단위 역할(docs/10 §3.7) — 그룹 역할보다 앞선다. 위치가 아니라 의미다. */
+		roles?: Readonly<Record<string, ControllerRole>>
 	}
 }
 
@@ -391,7 +393,11 @@ export function parseStudioControllerConfig(input: unknown): StudioControllerCon
 	parseStudioArtifactCapabilities(config.artifacts)
 
 	const controller = asRecord(config.controller, 'controller')
-	assertOnlyKeys(controller, ['groups', 'left', 'remountOn', 'right', 'clusters'], 'controller')
+	assertOnlyKeys(
+		controller,
+		['groups', 'left', 'remountOn', 'right', 'clusters', 'roles'],
+		'controller',
+	)
 	if (!Array.isArray(controller.groups)) invalid('controller.groups', '배열이어야 합니다.')
 
 	const groupIds = new Set<string>()
@@ -1264,6 +1270,15 @@ function validateComposition(controller: Record<string, unknown>, controlIds: Re
 				`${groupPath}.controls[${controlIndex}].visibleWhen`,
 				control.id as string,
 			)
+		}
+	}
+	if (controller.roles !== undefined) {
+		const roles = asRecord(controller.roles, 'controller.roles')
+		for (const [id, role] of Object.entries(roles)) {
+			if (!controlIds.has(id))
+				invalid(`controller.roles.${id}`, `알 수 없는 컨트롤입니다: ${id}`)
+			if (!CONTROLLER_ROLES.includes(role as ControllerRole))
+				invalid(`controller.roles.${id}`, '지원하지 않는 역할입니다.')
 		}
 	}
 	if (controller.clusters === undefined) return

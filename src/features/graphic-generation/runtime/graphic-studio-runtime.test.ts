@@ -123,6 +123,12 @@ describe('graphicStudioRuntime', () => {
 
 		// 재조립하면서 빠뜨리면 오른쪽 컨트롤이 전부 왼쪽 패널로 몰린다.
 		expect(derived.controller.left).toEqual(['lineColor', 'backgroundColor'])
+		// 패널 컴포지션 선언도 같다 — 빠지면 패널이 계약 없는 평면 목록으로 돌아간다(docs/10 §3.7).
+		expect(derived.controller.roles).toBeDefined()
+		expect(derived.controller.clusters?.map((cluster) => cluster.id)).toEqual([
+			'color',
+			'position',
+		])
 	})
 
 	it('🔴 모든 런타임이 좌·우 축을 선언한다 — 일부만 적용된 채로 머지되지 않게', () => {

@@ -69,6 +69,24 @@ export default defineGraphicRuntime({
 		left: ['lineColor', 'backgroundColor'],
 		// 오른쪽은 공용 4축 — 정지 그래픽이라 속도가 없다. 선 길이·여백·원근은 admin으로 내렸다.
 		right: ['columnGap', 'rowGap', 'weightNear', 'weightFar', 'origin'],
+		// 패널 컴포지션(docs/10 §3.7) — 무엇을 뜻하나만 선언한다. 자리는 그래픽 패널이 정한다.
+		roles: { columnGap: 'tuning', rowGap: 'tuning', weightNear: 'tuning', weightFar: 'tuning' },
+		clusters: [
+			{
+				id: 'color',
+				title: 'Color',
+				role: 'palette',
+				widget: 'color-pair',
+				members: { foreground: 'lineColor', background: 'backgroundColor' },
+			},
+			{
+				id: 'position',
+				title: 'Position',
+				role: 'placement',
+				widget: 'position',
+				members: { value: 'origin' },
+			},
+		],
 		groups: [
 			{
 				id: 'graphic',

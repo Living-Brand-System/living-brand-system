@@ -86,6 +86,32 @@ export default defineGraphicRuntime({
 			'weightThin',
 			'path',
 		],
+		// 패널 컴포지션(docs/10 §3.7) — 무엇을 뜻하나만 선언한다. 자리는 그래픽 패널이 정한다.
+		roles: {
+			lineCount: 'tuning',
+			lengthStart: 'tuning',
+			lengthEnd: 'tuning',
+			angleStart: 'tuning',
+			angleSpread: 'tuning',
+			weightRatio: 'tuning',
+			weightThin: 'tuning',
+		},
+		clusters: [
+			{
+				id: 'color',
+				title: 'Color',
+				role: 'palette',
+				widget: 'colorway',
+				members: { value: 'colorway' },
+			},
+			{
+				id: 'position',
+				title: 'Position',
+				role: 'placement',
+				widget: 'position',
+				members: { value: 'path' },
+			},
+		],
 		groups: [
 			{
 				id: 'graphic',

@@ -681,6 +681,60 @@ const flutedGlassRuntimeManifest = defineGraphicRuntime({
 		],
 		// 모양은 셰이더 프로그램을 갈아끼운다 — 살아 있는 런타임에 흘려 넣을 수 없다.
 		remountOn: ['shape'],
+		// 패널 컴포지션(docs/10 §3.7) — 무엇을 뜻하나만 선언한다. 자리는 그래픽 패널이 정한다.
+		roles: {
+			rayIntensity: 'tuning',
+			raySpotty: 'tuning',
+			rayMidSize: 'tuning',
+			rayScale: 'tuning',
+			speed: 'tuning',
+			glassSize: 'tuning',
+			glassSpeed: 'tuning',
+			zoom: 'tuning',
+			tilt: 'tuning',
+		},
+		clusters: [
+			// Style 프리셋은 직선형 모양에만 있다.
+			{
+				id: 'preset',
+				title: 'Style',
+				role: 'preset',
+				widget: 'preset-list',
+				members: { value: 'preset' },
+				visibleWhen: { control: 'shape', in: ['linear', 'vertical'] },
+			},
+			// 전경·배경 한 쌍을 고르면 나머지 광선 색은 그래픽이 펼친다(playgroundGraphicColors).
+			{
+				id: 'color',
+				title: 'Color',
+				role: 'palette',
+				widget: 'color-pair',
+				members: {
+					foreground: 'rayColor3',
+					background: 'rayBackgroundColor',
+					palette: 'palette',
+					ray1: 'rayColor1',
+					ray2: 'rayColor2',
+					ray4: 'rayColor4',
+					ray5: 'rayColor5',
+					bloom: 'bloomColor',
+				},
+			},
+			{
+				id: 'type',
+				title: 'Type',
+				role: 'form',
+				widget: 'compound',
+				members: { value: 'shape' },
+			},
+			{
+				id: 'position',
+				title: 'Position',
+				role: 'placement',
+				widget: 'position',
+				members: { value: 'source' },
+			},
+		],
 		groups: [
 			{
 				id: 'shape',

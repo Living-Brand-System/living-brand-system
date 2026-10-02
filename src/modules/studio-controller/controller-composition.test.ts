@@ -147,7 +147,16 @@ describe('arrangeStudioPanel', () => {
 			},
 		]
 		const slots = arrangeStudioPanel({ groups, clusters }, policy, values)
-		expect(slots.fixed).toEqual([{ type: 'cluster', cluster: clusters[0] }])
+		const definition = (id: string) =>
+			groups.flatMap((group) => group.controls).find((control) => control.id === id)
+		// 멤버 이름 → 지금 계약의 정의를 싣는다 — 위젯이 선택지·제약을 다시 찾지 않는다.
+		expect(slots.fixed).toEqual([
+			{
+				type: 'cluster',
+				cluster: clusters[0],
+				controls: { gate: definition('dimmer'), value: definition('strength') },
+			},
+		])
 	})
 
 	it('숨겨도 값은 그대로다 — 배치는 값을 건드리지 않는다', () => {

@@ -34,6 +34,7 @@ export const CONTROLLER_WIDGETS = [
 	'camera',
 	'reference',
 	'asset-browser',
+	'preset-list',
 ] as const
 export type ControllerWidget = (typeof CONTROLLER_WIDGETS)[number]
 
@@ -61,17 +62,34 @@ export type ControllerCluster = {
 	visibleWhen?: ControllerCondition
 }
 
-/** 패널이 소유하는 자리. 왼쪽 `settings`는 편집 오버레이의 설정 카드다. Output 카드는 이 계약 밖이다. */
-export const STUDIO_PANEL_SLOTS = ['settings', 'fixed', 'presets', 'basic', 'adjustment'] as const
+/**
+ * 패널이 소유하는 자리. 왼쪽 `settings`는 편집 오버레이의 설정 카드, `basicPresets`는 Basic 탭 위 목록 카드다.
+ * Output 카드는 이 계약 밖이다.
+ */
+export const STUDIO_PANEL_SLOTS = [
+	'settings',
+	'fixed',
+	'basicPresets',
+	'presets',
+	'basic',
+	'adjustment',
+] as const
 export type StudioPanelSlot = (typeof STUDIO_PANEL_SLOTS)[number]
 
 /** 역할 → 자리. 목록 순서가 슬롯 안 순서이고, 같은 역할 안에서는 매니페스트 순서다. */
 export type StudioPanelPolicy = Partial<Record<StudioPanelSlot, readonly ControllerRole[]>>
 
-/** 슬롯에 서는 한 덩어리 — 그룹(보이는 컨트롤만) 또는 묶음. */
+/**
+ * 슬롯에 서는 한 덩어리 — 그룹(보이는 컨트롤만) 또는 묶음.
+ * 묶음은 멤버 이름 → 지금 계약의 컨트롤 정의를 함께 싣는다(런타임 제한이 좁힌 선택지 그대로). 없는 멤버는 빠진다.
+ */
 export type StudioPanelEntry =
 	| { type: 'group'; group: ControllerGroupDefinition & { role: ControllerRole } }
-	| { type: 'cluster'; cluster: ControllerCluster }
+	| {
+			type: 'cluster'
+			cluster: ControllerCluster
+			controls: Readonly<Record<string, ControllerControlDefinition>>
+	  }
 
 type ComposableGroup = ControllerGroupDefinition & {
 	role?: ControllerRole
@@ -113,6 +131,11 @@ export function arrangeStudioPanel(
 	controller: {
 		groups: readonly ComposableGroup[]
 		clusters?: readonly ControllerCluster[]
+		/**
+		 * 컨트롤 단위 역할 — 그룹 역할보다 앞선다. 한 그룹 안에 창작자용·어드민 전용 컨트롤이 섞인 런타임이 쓴다
+		 * (지금의 `left/right`처럼 id → 의미). 역할이 갈리면 같은 그룹 제목 아래 따로 선다.
+		 */
+		roles?: Readonly<Record<string, ControllerRole>>
 	},
 	policy: StudioPanelPolicy,
 	values: ControllerValues,
@@ -123,14 +146,38 @@ export function arrangeStudioPanel(
 	const clustered = new Set(
 		(controller.clusters ?? []).flatMap((cluster) => Object.values(cluster.members)),
 	)
+	const roleOf = (control: ControllerControlDefinition, group: ComposableGroup) =>
+		controller.roles?.[control.id] ?? group.role
 	const groups = controller.groups.flatMap((group) => {
-		if (!group.role || !visible(group.visibleWhen)) return []
+		if (!visible(group.visibleWhen)) return []
 		const controls = group.controls.filter(
 			(control) =>
-				!clustered.has(control.id) && visible((control as ComposableControl).visibleWhen),
+				!clustered.has(control.id) &&
+				roleOf(control, group) !== undefined &&
+				visible((control as ComposableControl).visibleWhen),
 		)
-		return controls.length ? [{ ...group, role: group.role, controls }] : []
+		// 역할마다 한 덩어리 — 그룹 순서·컨트롤 순서는 그대로다.
+		const roles = [
+			...new Set(controls.map((control) => roleOf(control, group) as ControllerRole)),
+		]
+		return roles.map((role) => ({
+			...group,
+			role,
+			controls: controls.filter((control) => roleOf(control, group) === role),
+		}))
 	})
+	const definitions = new Map(
+		controller.groups.flatMap((group) =>
+			group.controls.map((control) => [control.id, control] as const),
+		),
+	)
+	const memberControls = (cluster: ControllerCluster) =>
+		Object.fromEntries(
+			Object.entries(cluster.members).flatMap(([member, id]) => {
+				const control = definitions.get(id)
+				return control ? [[member, control] as const] : []
+			}),
+		)
 	const slots = Object.fromEntries(
 		STUDIO_PANEL_SLOTS.map((slot) => [slot, [] as StudioPanelEntry[]]),
 	) as Record<StudioPanelSlot, StudioPanelEntry[]>
@@ -140,7 +187,12 @@ export function arrangeStudioPanel(
 			for (const group of groups)
 				if (group.role === role) slots[slot].push({ type: 'group', group })
 			for (const cluster of clusters)
-				if (cluster.role === role) slots[slot].push({ type: 'cluster', cluster })
+				if (cluster.role === role)
+					slots[slot].push({
+						type: 'cluster',
+						cluster,
+						controls: memberControls(cluster),
+					})
 		}
 	}
 	return slots

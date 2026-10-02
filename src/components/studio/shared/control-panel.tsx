@@ -69,21 +69,32 @@ export function ControlPanelCompositionProvider({
  */
 export function ControlPanel(props: ControlPanelProps) {
 	const provided = useContext(ControlPanelCompositionContext)
-	const composition = props.composition ?? provided ?? undefined
+	// 자리마다 먼저 채운 쪽이 그린다 — 화면 자기 컴포지션(그래픽 편집) 다음 공급받은 것(템플릿 배경의 Dimming).
+	const compositions = [props.composition, provided].filter(
+		(item): item is ControlPanelComposition => Boolean(item),
+	)
 	// 컴포지션으로 그리면 영역 키를 스스로 안다 — 위에 범위가 없으면 직접 깔아 켜짐·마지막 키를 갖게 한다.
 	const hasScope = useHasPanelRenderScope()
-	if (composition && !hasScope)
+	if (compositions.length && !hasScope)
 		return (
 			<PanelRenderScope>
-				<ControlPanelView {...props} composition={composition} />
+				<ControlPanelView {...props} compositions={compositions} />
 			</PanelRenderScope>
 		)
-	return <ControlPanelView {...props} composition={composition} />
+	return <ControlPanelView {...props} compositions={compositions} />
 }
 
-function ControlPanelView({ composition, extras, ...explicit }: ControlPanelProps) {
+function ControlPanelView({
+	composition: _own,
+	compositions,
+	extras,
+	...explicit
+}: ControlPanelProps & { compositions: readonly ControlPanelComposition[] }) {
+	const pick = (name: StudioPanelSlot) =>
+		compositions.find((item) => item.slots[name].length) ?? compositions[0]
 	const slot = (name: Exclude<StudioPanelSlot, 'settings'>) => {
 		const extra = extras?.[name]
+		const composition = pick(name)
 		if (!composition) return extra || undefined
 		const { slots, ...render } = composition
 		return slots[name].length || extra ? (
@@ -96,18 +107,21 @@ function ControlPanelView({ composition, extras, ...explicit }: ControlPanelProp
 	const basic = explicit.basic ?? slot('basic')
 	const presets = explicit.presets ?? slot('presets')
 	const adjustment = explicit.adjustment ?? slot('adjustment')
-	const basicPresets = explicit.basicPresets
+	const basicPresets = explicit.basicPresets ?? slot('basicPresets')
 	// 구조 서명 — 보이는 것이 바뀐 영역만 다시 그린다. JSX로 꽂은 영역은 범위의 키를 따른다.
 	const signature = (names: readonly StudioPanelSlot[]) =>
-		composition
-			? names.map((name) => controllerStructureSignature(composition.slots[name])).join('/')
+		compositions.length
+			? names
+					.map((name) => controllerStructureSignature(pick(name)?.slots[name] ?? []))
+					.join('/')
 			: undefined
 	const fixedKey = explicit.fixed === undefined ? signature(['fixed']) : undefined
 	const contentKey =
 		explicit.basic === undefined &&
 		explicit.presets === undefined &&
-		explicit.adjustment === undefined
-			? signature(['basic', 'presets', 'adjustment'])
+		explicit.adjustment === undefined &&
+		explicit.basicPresets === undefined
+			? signature(['basicPresets', 'basic', 'presets', 'adjustment'])
 			: undefined
 	const [selected, setSelected] = useState('basic')
 	const id = useId()

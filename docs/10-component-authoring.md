@@ -328,10 +328,10 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 | --- | --- | --- |
 | `content` | 창작자가 쓰는 글 | 텍스트 슬롯, 프롬프트 |
 | `source` | 픽셀이 어디서 오나 — 방식·공급자·자산 | 배경 Type, Image Mode, 프로파일·그래픽 종류, 샘플 이미지, 레퍼런스 |
-| `form` | 아트워크의 구조 변형 | fluted Type, pattern 방향·시점 |
+| `form` | 아트워크의 구조 변형 | fluted Type |
 | `preset` | 여러 값을 한 번에 덮는 묶음(목록 모양으로 그린다) | pattern 프리셋, fluted Style |
 | `palette` | 무엇에 어떤 브랜드 색을 쓰나 | 그래픽 색 조합, 이미지 선·배경색, 텍스트·심볼·배경 색 |
-| `placement` | 내용이 어디에 어떻게 놓이나 | origin·source·path·anchor, 이미지 Transform |
+| `placement` | 내용이 어디에 어떻게 놓이나 | origin·source·path·anchor, pattern 방향·시점(Figma 345:17104에서 Position 다음), 이미지 Transform |
 | `view` | 생성 대상을 보는 카메라 시점(이미지 전용) | 카메라 방위·고도 |
 | `overlay` | 바탕 위 가독성 층 | 배경·이미지 슬롯 Dimming |
 | `tuning` | 생성기의 세부 수치(속도·zoom·tilt 포함) | Adjustment의 range |
@@ -339,7 +339,7 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 
 `target`(무엇을 편집하나)·`visibility`(레이어 표시·숨김)·`action`(생성·저장·초기화·완료/취소)은 셸 어휘라 매니페스트에 넣지 않습니다. **Output 카드(모드·크기·형식·ppi·배율·영상)는 이 계약 밖입니다** — `StudioOutput`과 출력 정책(`print-policy`)이 규칙을 소유하고, 조건부 행의 펼침은 `ControllerPresence`를 그대로 씁니다.
 
-**묶음 위젯** — 컨트롤 여러 개가 위젯 하나로 섭니다. 매니페스트는 묶음(cluster)으로 멤버를 가리키고 값 계약을 복제하지 않습니다. 레지스트리에 없는 위젯은 렌더러가 개발 중 경고하고 그리지 않습니다.
+**묶음 위젯** — 컨트롤 여러 개가 위젯 하나로 섭니다. 매니페스트는 묶음(cluster)으로 멤버를 가리키고 값 계약을 복제하지 않습니다. `arrangeStudioPanel`이 멤버 이름 → **지금 계약의 컨트롤 정의**(런타임 제한이 좁힌 선택지 그대로)를 함께 실어 위젯에 넘기므로, 위젯은 정의를 다시 찾지 않습니다. 레지스트리에 없는 위젯은 렌더러가 개발 중 경고하고 그리지 않습니다. 위젯은 모듈 수준 컴포넌트여야 합니다 — 렌더마다 만들면 매번 다시 마운트됩니다. 런타임에 따라 달라지는 계산(조합 스와치, 색 펼침)은 화면이 컨텍스트로 넘깁니다(그래픽: `GraphicWidgetConfigProvider`).
 
 | 위젯 | 멤버 |
 | --- | --- |
@@ -350,6 +350,7 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 | `camera` | `gate`(사용) + 방위·고도 |
 | `reference` | `gate`(사용) + 첨부 |
 | `asset-browser` | 자산 선택 1개(샘플 이미지 등) |
+| `preset-list` | 프리셋 select 1개 — 카드 목록으로 그린다 |
 
 켜기/끄기와 모드는 역할이 아니라 **묶음의 면**입니다 — 레퍼런스·카메라·Dimming Use·가변 두께의 On/Off는 `gate`, 색의 Swatch/Custom은 `mode` 멤버로 선언합니다.
 
@@ -360,7 +361,12 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 - 조건은 같은 매니페스트의 컨트롤 값만 봅니다. 세션에만 있던 화면 상태(이미지 슬롯·배경 Image Mode, 색 Swatch/Custom, 카메라·레퍼런스 On/Off)는 컨트롤로 승격합니다.
 - 미지 id·자기 참조는 `parseStudioControllerConfig`가 거부합니다.
 
-**패널** — `StudioPanelPolicy = Partial<Record<StudioPanelSlot, ControllerRole[]>>`, 슬롯은 `fixed`·`basic`·`presets`·`adjustment`·`settings`(왼쪽 편집 설정)입니다. 순서는 정책의 역할 순서, 같은 역할 안에서는 매니페스트 순서입니다. 슬롯이 비면 카드·레일 탭이 서지 않습니다.
+**패널** — `StudioPanelPolicy = Partial<Record<StudioPanelSlot, ControllerRole[]>>`, 슬롯은 `fixed`·`basicPresets`(Basic 탭 위 목록 카드)·`basic`·`presets`·`adjustment`·`settings`(왼쪽 편집 설정)입니다. 순서는 정책의 역할 순서, 같은 역할 안에서는 매니페스트 순서(그룹 다음 묶음)입니다. 슬롯이 비면 카드·레일 탭이 서지 않습니다.
+
+- **역할은 그룹에 주거나, 한 그룹 안에 창작자용·어드민 전용 컨트롤이 섞이면 `controller.roles`(컨트롤 id → 역할)로 줍니다.** 컨트롤 역할이 그룹 역할보다 앞서고, 역할이 갈리면 같은 그룹 제목 아래 따로 섭니다. 역할이 없는 컨트롤은 어느 자리에도 서지 않습니다(어드민 전용).
+- 그래픽 정책: `basicPresets: [preset]`, `basic: [palette, form, placement, source]`, `adjustment: [tuning]`. `roles`·`clusters`를 하나도 선언하지 않은 런타임은 전부 Basic에 섭니다 — 정하지 않은 런타임의 화면이 비면 안 됩니다.
+- 한 패널에 컴포지션이 둘이면(템플릿 배경 위 그래픽 편집) **자리마다 먼저 채운 쪽**이 그립니다 — 화면 자기 것 다음 위에서 공급받은 것(`ControlPanelCompositionProvider`). 배경 Dimming(`fixed`)과 그래픽 Basic이 한 패널에 함께 섭니다.
+- 🔴 프로파일 config를 파생할 때 controller를 키별로 다시 조립하지 않습니다. 제한만 얹고 나머지 선언은 전개로 싣습니다(`deriveCanvasStudioConfig`) — 골라 싣던 시절 `roles`·`clusters`가 조용히 빠져 패널이 평면 목록으로 돌아갔습니다.
 
 - 조건이 바뀌어 생기거나 빠지면 `ControllerPresence`(높이 펼침, `MOTION.loose`).
 - 슬롯의 **보이는 구조 서명**(보이는 그룹·묶음·컨트롤 id 목록, `controllerStructureSignature`)이 바뀌면 그 슬롯만 패널 렌더(`PANEL_RENDER`, `MOTION.tight`). 손으로 키를 정하지 않습니다 — 배경 방식만 바뀌어도 `overlay` 슬롯은 서명이 같아 그대로입니다.
@@ -370,7 +376,7 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 
 **렌더러(2단계)**: 화면은 `arrangeStudioPanel(controller, policy, values)`로 슬롯을 채워 `ControlPanel`의 `composition`(`slots` + 값·바인딩·표시·`onChange`·`widgets`)으로 넘깁니다. 슬롯 하나는 `StudioPanelSlot`이 그리며, 그룹은 `ControllerRenderer`와 같은 `ControllerDefinitionGroup`으로, 묶음은 화면이 넘긴 위젯 레지스트리(`ControllerWidgetRegistry`)로 그립니다. 영역 키는 구조 서명이 정하고(`PanelRenderTarget`의 `renderKey`), 위에 패널 렌더 범위가 없으면 `ControlPanel`이 스스로 범위를 깝니다. 같은 자리의 JSX 입력이 있으면 그쪽이 앞섭니다(이행 기간).
 
-**이행 순서**: ① 어휘·조건 평가기·구조 서명(단위 테스트) → ② 패널 렌더러 + `ControlPanel` 슬롯화(조건 없는 매니페스트로 지금 화면과 같은 결과) → ③ 파일럿 템플릿 배경 → ④ 이미지·그래픽(`graphic-controls`의 id 특례 제거)·템플릿 텍스트·심볼·이미지 슬롯 → ⑤ 화면 조건부 JSX·`controller.left/right`·손 키 제거, `Controller.Reveal`은 계약 밖 화면에만 남김.
+**이행 순서**: ① 어휘·조건 평가기·구조 서명(단위 테스트) → ② 패널 렌더러 + `ControlPanel` 슬롯화(조건 없는 매니페스트로 지금 화면과 같은 결과) → ③ 파일럿 템플릿 배경 → ④ 그래픽(완료 2026-10-02 — 런타임 다섯 개가 역할·묶음을 선언하고 `GRAPHIC_WIDGETS`가 그린다. 남은 id 특례는 Fluted Glass 기준점의 실효값 표시와 Pattern 최대 굵기 비활성 binding 둘이며 `ponytail:` 주석이 상한을 적는다)·이미지·템플릿 텍스트·심볼·이미지 슬롯 → ⑤ 화면 조건부 JSX·`controller.left/right`·손 키 제거, `Controller.Reveal`은 계약 밖 화면에만 남김.
 
 ## 4. 스타일 계약 Do/Don't
 
