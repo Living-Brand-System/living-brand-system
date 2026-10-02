@@ -322,7 +322,7 @@ Image 슬롯과 이미지 배경은 독립 Image의 Color·Generate 표현 컴�
 생성은 기존 Template 세션의 한 장·고정 슬롯 비율 요청과 결과 배정을 사용합니다. 샘플 선택·슬롯 Transform·배경 Dimmer는 유지합니다.
 Template 생성에는 참조 이미지·카메라 요청 경로가 없어 해당 컨트롤을 열지 않으며, 배경 이미지의 색 치환 제한도 유지합니다.
 Layers는 Text·Symbol·Image·Background
-네 줄이며 없는 종류는 비활성화합니다. Text·Symbol은 묶음 컨트롤을, Image·Background는 현재 대상의 편집 패널을 표시합니다. Text·Symbol 색은 같은 Solid 스와치 그리드(`TemplateColorSwatches`)를 쓰고, 색 목록은 CMS의 발행된 `brand-colors`(`usePublishedBrandColorValues`)에서 옵니다. 템플릿 텍스트 컨트롤이 `values`로 범위를 좁혔으면 그 목록을 씁니다. 정본 밖 색이 나가지 않도록 둘 다 Custom 모드를 잠그고, 목록을 못 불러오면 고를 수 없습니다.
+네 줄이며 없는 종류는 비활성화합니다. Text·Symbol은 묶음 컨트롤을, Image·Background는 현재 대상의 편집 패널을 표시합니다. Text·Symbol 색은 같은 Solid 스와치 그리드(`TemplateColorSwatches`)를 쓰고, 색 목록은 CMS의 발행된 `brand-color-groups`에 속한 색(`usePublishedBrandColorValues`, 그룹 생성 순서·그룹 안 순서, 중복은 처음 자리 한 번)입니다. 그룹에 없는 보조색은 팔레트가 아니라 나오지 않습니다. 무채색 정본은 Mono Color 8단입니다. 템플릿 텍스트 컨트롤이 `values`로 범위를 좁혔으면 그 목록을 씁니다. 정본 밖 색이 나가지 않도록 둘 다 Custom 모드를 잠그고, 목록을 못 불러오면 고를 수 없습니다.
 눈 아이콘은 표시 변경이 허용된 슬롯만 함께 표시·숨김 처리하며, 읽기 전용 슬롯과 배경의 기존 정책은 유지합니다.
 첫 진입은 첫 텍스트 레이어를 선택하며
 텍스트 Compound는 라벨·입력만 표시하고 지원 문구와 잘림 안내는 생략합니다. 입력 형식 오류는 유지합니다.
