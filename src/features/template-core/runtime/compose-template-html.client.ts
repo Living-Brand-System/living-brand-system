@@ -236,6 +236,33 @@ function applyCanvasDimmer(doc: Document, root: HTMLElement, opacity: number) {
 	root.insertBefore(dimmer, root.firstChild)
 }
 
+const IMAGE_DIMMER_ATTRIBUTE = 'data-image-dimmer'
+
+/**
+ * 이미지 슬롯 위에 반투명 검정을 한 겹 깐다 — 캔버스 디머와 같은 모양을 슬롯 박스에 가둔 것이다.
+ * 마지막 자식으로 넣어 슬롯 안의 이미지(컬러 치환 오버레이 포함)를 모두 덮는다.
+ * ponytail: 슬롯 자신이 img면 자식을 못 단다 — 래스터 폴백 img 캐리어에는 걸리지 않는다(천장).
+ *   실제로 필요해지면 replaceImageWithDiv로 치환한 뒤 단다.
+ */
+function applyImageDimmer(doc: Document, slot: HTMLElement, opacity: number) {
+	for (const child of Array.from(slot.children)) {
+		if (child.hasAttribute(IMAGE_DIMMER_ATTRIBUTE)) child.remove()
+	}
+	const alpha = Math.min(1, Math.max(0, opacity))
+	if (alpha === 0 || slot instanceof HTMLImageElement) return
+	if (!slot.style.position) slot.style.position = 'relative'
+	const dimmer = doc.createElement('div')
+	dimmer.setAttribute(IMAGE_DIMMER_ATTRIBUTE, '')
+	dimmer.style.position = 'absolute'
+	dimmer.style.left = '0'
+	dimmer.style.top = '0'
+	dimmer.style.width = '100%'
+	dimmer.style.height = '100%'
+	dimmer.style.backgroundColor = `rgba(0, 0, 0, ${alpha})`
+	dimmer.style.pointerEvents = 'none'
+	slot.appendChild(dimmer)
+}
+
 /**
  * base HTML에 nodeId별 앱 설정을 적용해 Create·Chat·Import가 렌더할 HTML을 만든다.
  * 외부 I/O는 없으며 브라우저 DOMParser만 사용한다.
@@ -297,6 +324,8 @@ export function composeTemplateHtml(
 			(config.backgroundImage || config.imageColorize) && el instanceof HTMLElement
 				? findImageCarrier(el)
 				: null
+		// 슬롯 자신이 img 캐리어면 컬러 치환이 div로 바꿔치기한다 — 디머는 바뀐 쪽에 단다.
+		let slot = el
 		if (carrier) {
 			if (config.backgroundImage && carrier instanceof HTMLImageElement) {
 				carrier.src = config.backgroundImage
@@ -328,6 +357,7 @@ export function composeTemplateHtml(
 				config.imageColorize && imageUrl
 					? applyImageColorize(doc, carrier, config.imageColorize, imageUrl)
 					: carrier
+			if (carrier === el) slot = visual
 			const edit = config.imageTransform
 			if (edit && !isIdentityTransform(edit)) {
 				// 재합성 비멱등 — transform이 있는 config는 항상 baseHtml에서 합성해야 한다
@@ -373,6 +403,9 @@ export function composeTemplateHtml(
 				// 명시된 vectorFit만 기록한다 — 무조건 기록하면 base의 object-fit을 덮어쓴다.
 				el.style.objectFit = config.vectorFit
 			}
+		}
+		if (config.imageDimmer !== undefined && slot instanceof HTMLElement) {
+			applyImageDimmer(doc, slot, config.imageDimmer)
 		}
 	}
 

@@ -1,7 +1,16 @@
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import {
+	act,
+	cleanup,
+	fireEvent,
+	render as rtlRender,
+	screen,
+	waitFor,
+	within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createElement } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
 import { resolveGraphicStudioOutput } from '@/features/graphic-generation/domain/graphic-studio-manifest'
 import flutedGlassRuntimeManifest from '@/features/graphic-generation/graphic-runtimes/fluted-glass/definition'
@@ -221,7 +230,9 @@ describe('GraphicGenerator', () => {
 		const user = userEvent.setup()
 		render(createElement(GraphicGenerator, { config: forwardStraightConfig }))
 
-		expect(screen.getByLabelText('선 색상 색상 선택')).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('radio', { name: 'Custom' }))
+		expect(screen.getByLabelText('Foreground 색상 선택')).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
 		expect(screen.getByRole('slider', { name: '열 간격' })).toHaveAttribute(
 			'aria-valuenow',
 			'40',
@@ -248,13 +259,15 @@ describe('GraphicGenerator', () => {
 			(() => {
 				throw new Error(`패널이 없다: ${slot}`)
 			})()
-		const left = panelOf('studio-workspace-left-panel')
-		const right = panelOf('studio-workspace-sidebar')
+		const left = panelOf('studio-control-panel')
+		const right = panelOf('studio-control-panel')
 
 		// 왼쪽 — 이 런타임의 큰 축은 색뿐이다.
-		expect(within(left).getByLabelText('선 색상 색상 선택')).toBeInTheDocument()
-		expect(within(left).getByLabelText('배경 색상 색상 선택')).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('radio', { name: 'Custom' }))
+		expect(within(left).getByLabelText('Foreground 색상 선택')).toBeInTheDocument()
+		expect(within(left).getByLabelText('Background 색상 선택')).toBeInTheDocument()
 
+		fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
 		// 오른쪽 — 공용 4축(밀도·속도·기준점·두께). 정지 그래픽이라 속도는 없다.
 		expect(within(right).getByRole('slider', { name: '열 간격' })).toBeInTheDocument()
 		expect(within(right).getByRole('slider', { name: '기준점 두께' })).toBeInTheDocument()
@@ -276,9 +289,7 @@ describe('GraphicGenerator', () => {
 		} as unknown as GraphicStudioConfig
 
 		const { container } = render(createElement(GraphicGenerator, { config }))
-		const left = container.querySelector<HTMLElement>(
-			'[data-slot="studio-workspace-left-panel"]',
-		)
+		const left = container.querySelector<HTMLElement>('[data-slot="studio-control-panel"]')
 		if (!left) throw new Error('왼쪽 패널이 없다')
 
 		expect(within(left).getByRole('slider', { name: '기준점 두께' })).toBeInTheDocument()
@@ -298,7 +309,32 @@ describe('GraphicGenerator', () => {
 
 		await waitFor(() => expect(mocks.createPreview).toHaveBeenCalledOnce())
 		expect(screen.getByText('PNG')).toBeInTheDocument()
-		await waitFor(() => expect(screen.getByRole('button', { name: '내보내기' })).toBeEnabled())
+		await waitFor(() => expect(screen.getByRole('button', { name: '저장' })).toBeEnabled())
+	})
+
+	// 어드민이 형식을 SVG로만 좁히면 print 계약이 빠진다 — 해상도와 무관한 크기 변경까지 막으면 안 된다.
+	it('인쇄 형식이 없는 프로파일에서도 출력 크기를 고칠 수 있다', async () => {
+		const { print: _print, ...output } = resolveGraphicStudioOutput(
+			forwardStraightRuntimeManifest,
+		)
+		const config = {
+			...forwardStraightRuntimeManifest,
+			output: { ...output, formats: ['svg'] },
+		} satisfies GraphicStudioConfig
+
+		render(createElement(GraphicGenerator, { config }))
+		await waitFor(() => expect(mocks.createPreview).toHaveBeenCalledOnce())
+		// 인쇄 계약이 없으면 Print를 고를 수 없다 — Mode 행 자체를 두지 않는다.
+		expect(screen.queryByRole('radiogroup', { name: '출력 모드' })).not.toBeInTheDocument()
+
+		const width = screen.getByRole('spinbutton', { name: '출력 너비' })
+		fireEvent.change(width, { target: { value: '1280' } })
+		fireEvent.blur(width)
+
+		expect(screen.getByRole('spinbutton', { name: '출력 너비' })).toHaveValue(1280)
+		expect(
+			screen.queryByText('이 프로파일에서 지원하지 않는 크기 또는 해상도입니다.'),
+		).not.toBeInTheDocument()
 	})
 
 	it('Shader Definition을 WebGL preview와 MP4 Export UI에 연결한다', async () => {
@@ -312,16 +348,13 @@ describe('GraphicGenerator', () => {
 			toFlutedGlassInput(mocks.createShaderPreview.mock.lastCall?.[0].input ?? {}).family,
 		).toBe('sweep')
 
-		const left = container.querySelector<HTMLElement>(
-			'[data-slot="studio-workspace-left-panel"]',
-		)
-		const right = container.querySelector<HTMLElement>('[data-slot="studio-workspace-sidebar"]')
+		const left = container.querySelector<HTMLElement>('[data-slot="studio-control-panel"]')
+		const right = container.querySelector<HTMLElement>('[data-slot="studio-control-panel"]')
 		if (!left || !right) throw new Error('좌우 패널이 둘 다 있어야 한다')
 
-		// 왼쪽은 색 조합과 형태뿐이다.
-		expect(within(left).getByText('Shape')).toBeInTheDocument()
-		expect(within(left).getByText('Style')).toBeInTheDocument()
-		expect(within(left).getByRole('button', { name: 'Ray Palette' })).toBeInTheDocument()
+		expect(within(right).getByRole('group', { name: 'Type' })).toBeInTheDocument()
+		expect(within(right).getByRole('slider', { name: 'Position' })).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
 		// 🔑 오른쪽 축은 **종류가 서로 달라야** 읽힌다 — 빛·짜임·결·굴절·틀·기준점.
 		expect(within(right).getByRole('slider', { name: '광선 강도' })).toBeInTheDocument()
 		expect(within(right).getByRole('slider', { name: '광선 연속성' })).toBeInTheDocument()
@@ -331,7 +364,7 @@ describe('GraphicGenerator', () => {
 		expect(within(right).getByRole('slider', { name: '결 흐름' })).toBeInTheDocument()
 		expect(within(right).getByRole('slider', { name: '확대' })).toBeInTheDocument()
 		expect(within(right).getByRole('slider', { name: '기울기' })).toBeInTheDocument()
-		expect(within(right).getByText('Position')).toBeInTheDocument()
+
 		// 🔴 세웠다가 사용자가 「체감 불가」로 내린 축들 — 픽셀차가 있어도 창작자는 알아보지 못했다.
 		//    선언은 남아 있어 manager가 Payload에서 조정한다. 다시 올리지 말 것.
 		for (const axis of [
@@ -353,11 +386,11 @@ describe('GraphicGenerator', () => {
 		expect(screen.queryByRole('button', { name: 'Glass Motion' })).toBeNull()
 		// 남은 컨트롤이 없는 그룹은 그 쪽 패널에서 제목째 사라진다.
 		expect(screen.queryByRole('button', { name: 'Beam' })).toBeNull()
-		expect(screen.getByRole('spinbutton', { name: 'Width' })).toHaveValue(1920)
-		expect(screen.getByRole('spinbutton', { name: 'Height' })).toHaveValue(1080)
+		expect(screen.getByRole('spinbutton', { name: '출력 너비' })).toHaveValue(1920)
+		expect(screen.getByRole('spinbutton', { name: '출력 높이' })).toHaveValue(1080)
 		expect(screen.getByRole('combobox', { name: 'FPS' })).toHaveTextContent('30')
 		expect(screen.getByRole('spinbutton', { name: 'Duration' })).toHaveValue(5)
-		await waitFor(() => expect(screen.getByRole('button', { name: '내보내기' })).toBeEnabled())
+		await waitFor(() => expect(screen.getByRole('button', { name: '저장' })).toBeEnabled())
 
 		// 🔑 `속도`가 마스터 시계다 — 이 하나가 모든 움직임을 함께 늘리고 줄인다.
 		fireEvent.keyDown(screen.getByRole('slider', { name: '속도' }), { key: 'ArrowRight' })
@@ -387,10 +420,10 @@ describe('GraphicGenerator', () => {
 		render(createElement(GraphicGenerator, { config: flutedGlassConfig }))
 		await waitFor(() => expect(mocks.createShaderPreview).toHaveBeenCalledOnce())
 
-		const width = screen.getByRole('spinbutton', { name: 'Width' })
+		const width = screen.getByRole('spinbutton', { name: '출력 너비' })
 		fireEvent.change(width, { target: { value: '1280' } })
 		fireEvent.blur(width)
-		const height = screen.getByRole('spinbutton', { name: 'Height' })
+		const height = screen.getByRole('spinbutton', { name: '출력 높이' })
 		fireEvent.change(height, { target: { value: '720' } })
 		fireEvent.blur(height)
 		const duration = screen.getByRole('spinbutton', { name: 'Duration' })
@@ -399,7 +432,7 @@ describe('GraphicGenerator', () => {
 		const fps = screen.getByRole('combobox', { name: 'FPS' })
 		fps.focus()
 		await user.keyboard('{ArrowDown}{ArrowDown}{Enter}')
-		await user.click(screen.getByRole('button', { name: '내보내기' }))
+		await user.click(screen.getByRole('button', { name: '저장' }))
 
 		await waitFor(() =>
 			expect(mocks.canvasFramesToMp4).toHaveBeenCalledWith(
@@ -420,12 +453,15 @@ describe('GraphicGenerator', () => {
 	it('출력 사이즈 비율을 프리뷰 영역에 맞춰 반영한다', async () => {
 		render(createElement(GraphicGenerator, { config: flutedGlassConfig }))
 		await waitFor(() => expect(mocks.createShaderPreview).toHaveBeenCalledOnce())
+		// 인쇄 계약이 있는 프로파일은 Print/Digital을 고를 수 있다.
+		expect(flutedGlassConfig.output.print).toBeDefined()
+		expect(screen.getByRole('radiogroup', { name: '출력 모드' })).toBeInTheDocument()
 		const observerCount = mocks.resizeObserverCount
 
-		const width = screen.getByRole('spinbutton', { name: 'Width' })
+		const width = screen.getByRole('spinbutton', { name: '출력 너비' })
 		fireEvent.change(width, { target: { value: '800' } })
 		fireEvent.blur(width)
-		const height = screen.getByRole('spinbutton', { name: 'Height' })
+		const height = screen.getByRole('spinbutton', { name: '출력 높이' })
 		fireEvent.change(height, { target: { value: '800' } })
 		fireEvent.blur(height)
 		await waitFor(() => expect(mocks.resizeObserverCount).toBeGreaterThan(observerCount))
@@ -528,14 +564,14 @@ describe('GraphicGenerator', () => {
 		})
 
 		await waitFor(() =>
-			expect(screen.getByRole('slider', { name: '기준점' })).toHaveAttribute(
+			expect(screen.getByRole('slider', { name: 'Position' })).toHaveAttribute(
 				'aria-valuenow',
 				'20',
 			),
 		)
 	})
 
-	it('현재 Controller 값과 화면 크기로 SVG를 다운로드한다', async () => {
+	it('현재 Controller 값과 출력 크기로 SVG를 다운로드한다', async () => {
 		vi.useFakeTimers({ toFake: ['Date'] })
 		vi.setSystemTime(new Date('2026-09-10T03:00:00Z'))
 		const createObjectURL = vi.fn((_blob: Blob) => 'blob:forward-straight')
@@ -551,16 +587,20 @@ describe('GraphicGenerator', () => {
 		)
 
 		await waitFor(() => expect(mocks.createPreview).toHaveBeenCalledOnce())
-		fireEvent.keyDown(screen.getByRole('slider', { name: '기준점' }), { key: 'ArrowRight' })
+		fireEvent.keyDown(screen.getByRole('slider', { name: 'Position' }), { key: 'ArrowRight' })
 		await waitFor(() =>
 			expect(mocks.preview.update).toHaveBeenLastCalledWith(
 				expect.objectContaining({ origin: { x: 0.525, y: 0.5 } }),
 			),
 		)
-		const width = screen.getByRole('spinbutton', { name: 'Width' })
+		// 첫 크기는 화면이 아니라 기본 프리셋(Instagram Feed)이다.
+		const width = screen.getByRole('spinbutton', { name: '출력 너비' })
+		expect(width).toHaveValue(1080)
+		expect(screen.getByRole('spinbutton', { name: '출력 높이' })).toHaveValue(1350)
+		expect(screen.getByRole('combobox', { name: 'Preset' })).toHaveTextContent('Instagram Feed')
 		fireEvent.change(width, { target: { value: '640' } })
 		fireEvent.blur(width)
-		fireEvent.click(screen.getByRole('button', { name: '내보내기' }))
+		fireEvent.click(screen.getByRole('button', { name: '저장' }))
 		await waitFor(() => expect(createObjectURL).toHaveBeenCalledOnce())
 
 		const blob = createObjectURL.mock.calls[0]?.[0] as Blob
@@ -572,9 +612,9 @@ describe('GraphicGenerator', () => {
 		})
 		const expected = createForwardStraightScene(
 			{ ...FORWARD_STRAIGHT_DEFAULT_INPUT, origin: { x: 0.525, y: 0.5 } },
-			{ width: 640, height: 600 },
+			{ width: 640, height: 1350 },
 		)
-		expect(svg).toContain('width="640" height="600"')
+		expect(svg).toContain('width="640" height="1350"')
 		expect(svg.split('<line').length - 1).toBe(expected.dashes.length)
 		expect(svg).toContain(`x1="${expected.dashes[0].x1.toFixed(2)}"`)
 		expect(click.mock.instances[0]).toMatchObject({
@@ -595,12 +635,13 @@ describe('GraphicGenerator', () => {
 		])
 		render(createElement(GraphicGenerator, { config: forwardStraightConfig }))
 		await waitFor(() => expect(mocks.createPreview).toHaveBeenCalledOnce())
+		fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
 		const gap = screen.getByRole('slider', { name: '열 간격' })
 		fireEvent.keyDown(gap, { key: 'ArrowRight' })
 		await waitFor(() => expect(gap).toHaveAttribute('aria-valuenow', '41'))
 
 		const trigger = screen.getByRole('button', { name: '그래픽 변경' })
-		expect(trigger.closest('[data-slot="controller-header"]')).not.toBeNull()
+		expect(trigger.closest('[data-slot="studio-selection-card"]')).not.toBeNull()
 		fireEvent.click(trigger)
 		const panel = screen.getByRole('dialog', { name: 'Graphic Profiles' })
 		const forwardCard = await within(panel).findByRole('button', {
@@ -625,9 +666,14 @@ describe('GraphicGenerator', () => {
 		)
 
 		await waitFor(() => expect(mocks.createPreview).toHaveBeenCalledTimes(2))
+		fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
 		expect(screen.getByRole('slider', { name: '열 간격' })).toHaveAttribute(
 			'aria-valuenow',
 			'40',
 		)
 	})
 })
+
+function render(ui: Parameters<typeof rtlRender>[0]) {
+	return rtlRender(ui, { wrapper: TooltipProvider })
+}

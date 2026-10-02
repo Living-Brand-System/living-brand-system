@@ -25,7 +25,9 @@ function formatSampleImageSize({ width, height }: SampleImageOption) {
 export function SampleImagePicker({
 	selectedId,
 	onSelect,
+	inline = false,
 }: {
+	inline?: boolean
 	selectedId?: number
 	onSelect: (option: SampleImageOption) => void
 }) {
@@ -61,6 +63,7 @@ export function SampleImagePicker({
 		options.length > 0,
 		'고를 수 있는 샘플 이미지가 없습니다.',
 	)
+	if (inline && sampleImages.status === 'ready' && !options.length) return null
 	if (empty) {
 		return (
 			<Typography as="p" size="sm" className="px-1 py-2">
@@ -92,51 +95,47 @@ export function SampleImagePicker({
 					고른 분류에 맞는 샘플 이미지가 없습니다.
 				</Typography>
 			) : (
-				<div className="grid grid-cols-3 gap-3">
+				<div className={inline ? 'grid grid-cols-2 gap-3' : 'grid grid-cols-3 gap-3'}>
 					{visible.map((option) => {
 						const current = option.id === selectedId
 						const size = formatSampleImageSize(option)
 
-						return (
+						const card = (
+							<button
+								key={option.id}
+								type="button"
+								// 브라우저는 현재 선택을 보여야 한다 — 테두리 두께와 aria-current로 함께 알린다.
+								aria-current={current || undefined}
+								onClick={() => onSelect(option)}
+								className={cn(
+									'flex h-48 flex-col overflow-hidden rounded-lg border bg-background/5 text-left outline-none focus-visible:ring-2 focus-visible:ring-background/50',
+									inline && 'border-border bg-muted focus-visible:ring-ring',
+									current
+										? 'border-2 border-background/60'
+										: 'border-background/10 hover:bg-background/10',
+								)}
+							>
+								<ControllerBrowser.Thumbnail
+									image={{ url: option.thumbnailUrl, alt: option.alt }}
+								/>
+								<div className="flex shrink-0 flex-col bg-background/5 px-1.5 py-2">
+									<Typography
+										as="p"
+										size="xs"
+										weight="medium"
+										className="truncate"
+									>
+										{option.name}
+									</Typography>
+									{size && <Typography size="xs">{size}</Typography>}
+								</div>
+							</button>
+						)
+						return inline ? (
+							card
+						) : (
 							<ControllerBrowser.Close key={option.id} asChild>
-								<button
-									type="button"
-									// 브라우저는 현재 선택을 보여야 한다 — 테두리 두께와 aria-current로 함께 알린다.
-									aria-current={current || undefined}
-									onClick={() => onSelect(option)}
-									className={cn(
-										'flex h-48 flex-col overflow-hidden rounded-lg border bg-background/5 text-left outline-none focus-visible:ring-2 focus-visible:ring-background/50',
-										current
-											? 'border-2 border-background/60'
-											: 'border-background/10 hover:bg-background/10',
-									)}
-								>
-									<ControllerBrowser.Thumbnail
-										image={{ url: option.thumbnailUrl, alt: option.alt }}
-									/>
-									<div className="flex shrink-0 flex-col bg-background/5 px-1.5 py-2">
-										<Typography
-											as="p"
-											size="xs"
-											weight="medium"
-											className="truncate"
-										>
-											{option.name}
-										</Typography>
-										{size && (
-											// 🔴 `tone="muted"`를 쓰지 않는다 — 자산 브라우저는 반전
-											//    색면이라 비반전 팔레트의 muted를 얹으면 글자가 배경에
-											//    묻힌다. 낮은 강조는 같은 계열의 투명도로 준다.
-											<Typography
-												as="p"
-												size="xs"
-												className="text-inverted-foreground/70 tabular-nums"
-											>
-												{size}
-											</Typography>
-										)}
-									</div>
-								</button>
+								{card}
 							</ControllerBrowser.Close>
 						)
 					})}

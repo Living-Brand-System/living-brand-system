@@ -50,9 +50,14 @@ export type ImageStudioValue = {
 		selectedId: number | null
 		/**
 		 * 묶음을 고른다 — `itemId`를 안 주면 **첫 장이 자동으로 선택된다**(사용자 지시).
-		 * 가능하면 컨트롤러도 고른 장의 값으로 덮인다.
+		 * 가능하면 컨트롤러도 고른 장의 값으로 덮인다. `restore: false`면 캔버스에만 올린다 —
+		 * 사용자가 고른 것이 아닌 자동 선택이 편집 중인 세션을 덮지 않게 한다.
 		 */
-		selectStack: (items: readonly GeneratedImageHistoryItem[], itemId?: number) => void
+		selectStack: (
+			items: readonly GeneratedImageHistoryItem[],
+			itemId?: number,
+			options?: { restore?: boolean },
+		) => void
 		/** 묶음 안에서 크게 볼 장만 바꾼다 — 같은 요청에서 나온 장들이라 컨트롤러는 그대로다. */
 		selectItem: (id: number) => void
 	}
@@ -85,6 +90,8 @@ export type ImageStudioValue = {
 		update: (patch: Partial<ImageColorAdjustment>) => void
 	}
 	reference: {
+		enabled: boolean
+		setEnabled: (enabled: boolean) => void
 		/** 첨부한 참조 이미지의 data URI — 저장하지 않으므로 이 세션 메모리가 유일한 사본이다. */
 		value: string | null
 		name: string | null
@@ -95,6 +102,9 @@ export type ImageStudioValue = {
 		clear: () => void
 	}
 	camera: {
+		/** 시점 변경 모드. 켜면 참조 이미지가 꺼지고, 참조를 켜면 이쪽이 꺼진다. */
+		enabled: boolean
+		setEnabled: (enabled: boolean) => void
 		azimuthDeg: number
 		elevationDeg: number
 		setAngles: (angles: { azimuthDeg: number; elevationDeg: number }) => void

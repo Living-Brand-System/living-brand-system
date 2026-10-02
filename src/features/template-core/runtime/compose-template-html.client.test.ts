@@ -835,6 +835,56 @@ describe('composeTemplateHtml canvas background', () => {
 	})
 })
 
+describe('composeTemplateHtml image dimmer', () => {
+	const frameHtml =
+		'<div data-node-id="frame-1" data-figma-type="FRAME" style="overflow:hidden">' +
+		'<img data-node-id="img-1" data-image-carrier="" src="/api/application-images/file/ph.png">' +
+		'</div>'
+	const dimmersOf = (html: string) =>
+		new DOMParser().parseFromString(html, 'text/html').querySelectorAll('[data-image-dimmer]')
+
+	it('슬롯 박스의 마지막 자식으로 디머를 깔고, 컬러 치환 결과까지 덮는다', () => {
+		const html = composeTemplateHtml(frameHtml, {
+			'frame-1': {
+				backgroundImage: '/api/generated-images/file/gen.png',
+				imageColorize: { line: '#002c5f' },
+				imageDimmer: 0.4,
+			},
+		})
+		const doc = new DOMParser().parseFromString(html, 'text/html')
+		const frame = doc.querySelector('[data-node-id="frame-1"]') as HTMLElement
+		const dimmer = frame.lastElementChild as HTMLElement
+
+		expect(dimmer.hasAttribute('data-image-dimmer')).toBe(true)
+		expect(dimmer.style.backgroundColor).toBe('rgba(0, 0, 0, 0.4)')
+		expect(dimmer.style.pointerEvents).toBe('none')
+		expect(frame.style.position).toBe('relative')
+		expect(dimmersOf(html)).toHaveLength(1)
+	})
+
+	it('슬롯 자신이 img 캐리어면 컬러 치환이 만든 div에 단다', () => {
+		const html = composeTemplateHtml(frameHtml, {
+			'img-1': { imageColorize: { line: '#002c5f' }, imageDimmer: 0.4 },
+		})
+		const carrier = new DOMParser()
+			.parseFromString(html, 'text/html')
+			.querySelector('[data-node-id="img-1"]') as HTMLElement
+
+		expect(carrier.tagName).toBe('DIV')
+		expect(carrier.lastElementChild?.hasAttribute('data-image-dimmer')).toBe(true)
+	})
+
+	it('재합성해도 디머가 한 겹이고, 0이면 걷어 낸다', () => {
+		const once = composeTemplateHtml(frameHtml, { 'frame-1': { imageDimmer: 0.4 } })
+		expect(
+			dimmersOf(composeTemplateHtml(once, { 'frame-1': { imageDimmer: 0.4 } })),
+		).toHaveLength(1)
+		expect(
+			dimmersOf(composeTemplateHtml(once, { 'frame-1': { imageDimmer: 0 } })),
+		).toHaveLength(0)
+	})
+})
+
 /**
  * 레이어 겹침 순서의 정본은 **Admin의 `childOrder`** 이고, compose가 그것으로 DOM을 재배치한다
  * (사용자 결정, 2026-09-10).

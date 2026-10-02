@@ -17,7 +17,8 @@ export function ImageCanvas() {
 	const showingResults = generation.busy || results.items.length > 0
 
 	return (
-		<div className="flex h-full min-h-0 flex-col">
+		// 🔴 폭을 캔버스에 묶는다 — 없으면 스트립이 콘텐츠 폭만큼 늘어나 캔버스 전체가 함께 스크롤된다.
+		<div className="flex h-full min-h-0 w-full min-w-0 flex-col">
 			<div className="flex min-h-0 flex-1 flex-col">
 				{showingResults ? (
 					<ImageGenerationResults

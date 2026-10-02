@@ -1,7 +1,7 @@
 'use client'
 
-import { sectionProps } from '@/components/studio/sidebar/template-section-focus'
 import { BackgroundSection } from '@/components/studio/template/background-section'
+import { sectionProps } from '@/components/studio/template/template-section-focus'
 import { TEMPLATE_BACKGROUND_SECTION_ID } from '@/features/template-customization/contexts/template-studio-context'
 import {
 	findTemplateControl,
@@ -20,10 +20,11 @@ import { useTemplateStudio } from '@/features/template-customization/hooks/use-t
  *    꽂아도 그대로 돈다 — 위치를 정하는 코드는 꽂는 자리 한 줄뿐이다.
  * 🔑 정책이 배경 컨트롤을 안 내주는 템플릿에서는 아무것도 그리지 않는다(`null`).
  */
-/** 배경의 주소는 노드가 아니라 도화지 자체다 — 캔버스·레이어 패널과 같은 값을 쓴다. */
-const BACKGROUND_TARGET = { sectionId: TEMPLATE_BACKGROUND_SECTION_ID, kind: 'canvas' } as const
-
-export function TemplateBackgroundPanel() {
+export function TemplateBackgroundPanel({
+	content = 'all',
+}: {
+	content?: 'all' | 'settings' | 'controls'
+}) {
 	const { config, background, focus } = useTemplateStudio()
 	const { background: slot } = partitionTemplateSlots(config.template.slots)
 
@@ -40,7 +41,11 @@ export function TemplateBackgroundPanel() {
 
 	return (
 		<BackgroundSection
-			section={sectionProps(focus, BACKGROUND_TARGET)}
+			content={content}
+			section={sectionProps(focus, {
+				sectionId: TEMPLATE_BACKGROUND_SECTION_ID,
+				kind: 'canvas',
+			})}
 			groupDefinition={group}
 			groupPresentation={config.controllerPresentation?.groups.find(
 				({ groupId }) => groupId === group.id,

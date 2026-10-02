@@ -1,6 +1,15 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import {
+	act,
+	cleanup,
+	fireEvent,
+	render as rtlRender,
+	screen,
+	waitFor,
+	within,
+} from '@testing-library/react'
 import { createElement } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import type { GeneratedImageHistoryItem } from '@/features/image-generation/domain/generated-image-history'
 import type { ImageModelPreset } from '@/features/image-generation/domain/image-model'
 import {
@@ -8,6 +17,8 @@ import {
 	IMAGE_STUDIO_GROUP_IDS,
 	type ImageStudioConfig,
 } from '@/features/image-generation/domain/image-studio-config'
+import { ImageStudioProvider } from '@/features/image-generation/providers/image-studio-provider'
+import { ImageBestSamplePanel } from './image-best-sample-panel'
 import { ImageGenerator } from './image-generator'
 
 vi.mock(
@@ -142,6 +153,11 @@ function config(
 	})
 }
 
+/** 색·시점은 레일의 Adjustment 보기에 있다(Figma 529:25129). */
+function openAdjustment() {
+	fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
+}
+
 describe('ImageGenerator', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
@@ -252,9 +268,11 @@ describe('ImageGenerator', () => {
 			}),
 		)
 
-		expect(screen.getByText('Profile Settings')).toBeInTheDocument()
-		expect(screen.getByLabelText('Line Color 색상 선택')).toHaveValue('#000dff')
-		expect(screen.getByLabelText('Background Color 색상 선택')).toBeEnabled()
+		openAdjustment()
+		expect(screen.getByRole('group', { name: 'Color' })).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('radio', { name: 'Custom' }))
+		expect(screen.getByLabelText('Foreground 색상 선택')).toHaveValue('#000dff')
+		expect(screen.getByLabelText('Background 색상 선택')).toBeEnabled()
 	})
 
 	// 배경 색 행은 계약에 배경이 실려 있을 때만 그린다.
@@ -309,13 +327,30 @@ describe('ImageGenerator', () => {
 	it('결과를 고르기 전에는 Camera Controls가 잠기고 고른 뒤에 열린다', () => {
 		const view = render(createElement(ImageGenerator, { config: config(5, '제품컷') }))
 
-		expect(screen.getByRole('button', { name: 'Camera Controls' })).toBeDisabled()
+		openAdjustment()
+		expect(
+			within(screen.getByRole('radiogroup', { name: 'Camera Control 사용' })).getByRole(
+				'radio',
+				{ name: 'On' },
+			),
+		).toBeDisabled()
 		expect(screen.queryByRole('combobox', { name: 'X' })).not.toBeInTheDocument()
 
 		mocks.state = { session: SESSION, selected: 0 }
 		view.rerender(createElement(ImageGenerator, { config: config(5, '제품컷') }))
 
-		expect(screen.getByRole('button', { name: 'Camera Controls' })).toBeEnabled()
+		expect(
+			within(screen.getByRole('radiogroup', { name: 'Camera Control 사용' })).getByRole(
+				'radio',
+				{ name: 'On' },
+			),
+		).toBeEnabled()
+		fireEvent.click(
+			within(screen.getByRole('radiogroup', { name: 'Camera Control 사용' })).getByRole(
+				'radio',
+				{ name: 'On' },
+			),
+		)
 		expect(screen.getByRole('combobox', { name: 'X' })).toBeInTheDocument()
 	})
 
@@ -324,9 +359,15 @@ describe('ImageGenerator', () => {
 		mocks.state = { session: ADJUSTED_SESSION, selected: 1 }
 		render(createElement(ImageGenerator, { config: config(5, '제품컷') }))
 
-		// 메인 생성 버튼과 카메라 재생성 버튼이 같은 이름을 쓴다 — 뒤엣것이 카메라다.
-		const buttons = screen.getAllByRole('button', { name: '이미지 생성' })
-		fireEvent.click(buttons[buttons.length - 1] as HTMLElement)
+		// 생성 버튼은 Output에 하나뿐이다 — 시점 변경을 켜면 같은 버튼이 재생성을 실행한다.
+		openAdjustment()
+		fireEvent.click(
+			within(screen.getByRole('radiogroup', { name: 'Camera Control 사용' })).getByRole(
+				'radio',
+				{ name: 'On' },
+			),
+		)
+		fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
 
 		expect(mocks.generate).toHaveBeenCalledWith(
 			{
@@ -377,7 +418,7 @@ describe('ImageProfilePicker', () => {
 		render(createElement(ImageGenerator, { config: initial ?? null }))
 		const trigger = screen.getByRole('button', { name: '프로파일 변경' })
 		// 프로파일 교체는 좌측 패널이 갖는다 — 「무엇을 캔버스에 올릴지」를 고르는 자리다.
-		expect(trigger.closest('[data-slot="studio-left-panel"]')).not.toBeNull()
+		expect(trigger.closest('[data-slot="studio-layout-selection"]')).not.toBeNull()
 		fireEvent.click(trigger)
 		const panel = screen.getByRole('dialog', { name: 'Image Profiles' })
 		await within(panel).findByRole('button', { name: new RegExp(configs[0]?.name ?? '') })
@@ -515,7 +556,11 @@ describe('이미지 이력 — 본보기 패널과 캔버스 스트립', () => {
 
 	it('본보기는 bestOnly로만 조회한다', async () => {
 		respond({ best: [historyItem({ id: 1, prompt: '본보기' })] })
-		render(createElement(ImageGenerator, { config: config(5, '제품컷') }))
+		render(
+			<ImageStudioProvider config={config(5, '제품컷')}>
+				<ImageBestSamplePanel />
+			</ImageStudioProvider>,
+		)
 
 		await screen.findByRole('button', { name: '본보기' })
 		expect(historyMocks.fetchGeneratedImageHistory).toHaveBeenCalledWith(1, {
@@ -524,7 +569,11 @@ describe('이미지 이력 — 본보기 패널과 캔버스 스트립', () => {
 	})
 
 	it('지정된 본보기가 없으면 그 사실을 적는다', async () => {
-		render(createElement(ImageGenerator, { config: config(5, '제품컷') }))
+		render(
+			<ImageStudioProvider config={config(5, '제품컷')}>
+				<ImageBestSamplePanel />
+			</ImageStudioProvider>,
+		)
 
 		expect(await screen.findByText('아직 지정된 본보기가 없습니다')).toBeInTheDocument()
 	})
@@ -546,7 +595,8 @@ describe('이미지 이력 — 본보기 패널과 캔버스 스트립', () => {
 		expect(strip.querySelectorAll('[aria-hidden="true"]')).toHaveLength(1)
 	})
 
-	it('아무것도 안 골랐으면 가장 최근 것이 자동으로 선택된다', async () => {
+	// 자동 선택은 캔버스에만 올린다 — 세션을 덮는 복원은 사용자가 스트립을 눌렀을 때만 한다.
+	it('아무것도 안 골랐으면 가장 최근 것이 캔버스에 선택되고 컨트롤러는 그대로다', async () => {
 		respond({
 			history: [
 				historyItem({ batchKey: 'b1', id: 1, prompt: '최근 것' }),
@@ -555,7 +605,38 @@ describe('이미지 이력 — 본보기 패널과 캔버스 스트립', () => {
 		})
 		render(createElement(ImageGenerator, { config: config(5, '제품컷') }))
 
-		expect(await screen.findByDisplayValue('최근 것')).toBeInTheDocument()
+		const latest = await screen.findByRole('button', { name: '최근 것' })
+		await waitFor(() => expect(latest).toHaveAttribute('aria-current', 'true'))
+		expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue('')
+	})
+
+	// 히스토리가 늦게 와도 그 사이 입력한 프롬프트를 덮지 않는다(2026-10-01 실측 회귀).
+	it('히스토리가 늦게 도착해도 먼저 입력한 프롬프트를 지킨다', async () => {
+		let deliver!: (value: { hasMore: boolean; items: GeneratedImageHistoryItem[] }) => void
+		historyMocks.fetchGeneratedImageHistory.mockImplementation((_page, options) =>
+			options?.bestOnly
+				? Promise.resolve({ hasMore: false, items: [] })
+				: new Promise((resolve) => {
+						deliver = resolve
+					}),
+		)
+		render(createElement(ImageGenerator, { config: config(5, '제품컷') }))
+		fireEvent.change(screen.getByRole('textbox', { name: 'Prompt' }), {
+			target: { value: '내가 쓴 프롬프트' },
+		})
+
+		await act(async () => {
+			deliver({
+				hasMore: false,
+				items: [historyItem({ batchKey: 'b1', id: 1, prompt: '최근 것' })],
+			})
+		})
+
+		expect(await screen.findByRole('button', { name: '최근 것' })).toHaveAttribute(
+			'aria-current',
+			'true',
+		)
+		expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue('내가 쓴 프롬프트')
 	})
 
 	it('스트립에서 고른 장의 값으로 컨트롤러를 덮는다', async () => {
@@ -595,3 +676,7 @@ describe('이미지 이력 — 본보기 패널과 캔버스 스트립', () => {
 		expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue('')
 	})
 })
+
+function render(ui: Parameters<typeof rtlRender>[0]) {
+	return rtlRender(ui, { wrapper: TooltipProvider })
+}

@@ -6,6 +6,7 @@ import type {
 	ControllerOption,
 	ControllerPreviewCircle,
 } from '@/modules/studio-controller/controller-definition'
+import { ControllerCompound } from './compound'
 import { ControllerField } from './field'
 import { useRowControl } from './row'
 
@@ -16,6 +17,8 @@ type ControllerPreviewChipsProps = {
 	value?: string
 	onChange?: (value: string) => void
 	disabled?: boolean
+	/** Type 컴파운드의 원형 썸네일 4열. */
+	compound?: boolean
 }
 
 /**
@@ -33,10 +36,28 @@ export function ControllerPreviewChips({
 	value,
 	onChange,
 	disabled,
+	compound = false,
 }: ControllerPreviewChipsProps) {
 	// 🔴 라벨이 가리키는 것은 첫 칩이 아니라 묶음이다 — 첫 라디오를 가리키면 라벨 클릭이
 	//    포커스가 아니라 '첫 형태 선택'이 되어 사용자의 선택을 조용히 덮는다.
 	const groupId = useId()
+	if (compound) {
+		return (
+			<ControllerCompound label={label}>
+				<div className="px-3 pt-2 pb-3">
+					<ChipGrid
+						label={label}
+						options={options}
+						value={value}
+						onChange={onChange}
+						groupName={groupId}
+						disabled={disabled}
+						compound
+					/>
+				</div>
+			</ControllerCompound>
+		)
+	}
 	return (
 		<ControllerField label={label} htmlFor={groupId} disabled={disabled}>
 			<PreviewChipGrid label={label} options={options} value={value} onChange={onChange} />
@@ -103,10 +124,12 @@ function ChipGrid({
 	groupName,
 	disabled,
 	id,
+	compound = false,
 }: Pick<ControllerPreviewChipsProps, 'label' | 'options' | 'value' | 'onChange'> & {
 	groupName: string
 	disabled?: boolean
 	id?: string
+	compound?: boolean
 }) {
 	return (
 		<div
@@ -117,15 +140,22 @@ function ChipGrid({
 			role="radiogroup"
 			aria-label={label}
 			// 선택지가 많으면 2열은 스크롤이 된다 — 한 눈에 다 보이는 것이 이 칩의 존재 이유다.
-			className={cn('grid gap-1.5', options.length > 4 ? 'grid-cols-3' : 'grid-cols-2')}
+			className={cn(
+				'grid gap-1.5',
+				compound ? 'grid-cols-4' : options.length > 4 ? 'grid-cols-3' : 'grid-cols-2',
+			)}
 		>
 			{options.map((option) => {
 				const current = option.value === value
 				return (
 					<label
 						key={option.value}
+						title={compound ? option.label : undefined}
 						className={cn(
-							'flex cursor-pointer flex-col items-stretch gap-1 rounded-md border p-1.5 outline-none',
+							'flex cursor-pointer flex-col items-stretch border outline-none',
+							compound
+								? 'aspect-square overflow-hidden rounded-full'
+								: 'gap-1 rounded-md p-1.5',
 							'has-focus-visible:ring-2 has-focus-visible:ring-ring/30',
 							// 선택 링은 `color-chips.tsx`와 같은 것을 쓴다 — 같은 자리의 짝이라 표시도 같아야 한다.
 							current
@@ -142,8 +172,14 @@ function ChipGrid({
 							disabled={disabled || undefined}
 							onChange={() => onChange?.(option.value)}
 						/>
-						<PreviewGlyph shapes={option.preview ?? []} />
-						<span className="truncate text-center text-muted-foreground text-xs">
+						<PreviewGlyph shapes={option.preview ?? []} compound={compound} />
+						<span
+							className={
+								compound
+									? 'sr-only'
+									: 'truncate text-center text-muted-foreground text-xs'
+							}
+						>
 							{option.label}
 						</span>
 					</label>
@@ -162,7 +198,13 @@ function ChipGrid({
  * 🔴 뷰박스가 1×1이므로 굵기를 좌표 단위로 주면 선이 보이지 않는다. `non-scaling-stroke`가
  *    굵기를 화면 px로 읽어 어느 칩 크기에서도 hairline 1px이 된다.
  */
-function PreviewGlyph({ shapes }: { shapes: NonNullable<ControllerOption['preview']> }) {
+function PreviewGlyph({
+	shapes,
+	compound,
+}: {
+	shapes: NonNullable<ControllerOption['preview']>
+	compound?: boolean
+}) {
 	const path = shapes
 		.filter((shape) => shape.length === 4)
 		.map(([x1, y1, x2, y2]) => `M${x1} ${y1}L${x2} ${y2}`)
@@ -172,7 +214,12 @@ function PreviewGlyph({ shapes }: { shapes: NonNullable<ControllerOption['previe
 		<svg
 			aria-hidden="true"
 			viewBox="0 0 1 1"
-			className="aspect-square w-full rounded-sm bg-background text-foreground/70"
+			className={cn(
+				'aspect-square w-full',
+				compound
+					? 'rounded-full text-foreground/10'
+					: 'rounded-sm bg-background text-foreground/70',
+			)}
 		>
 			{path && (
 				<path

@@ -634,7 +634,9 @@ function buildBackgroundGroup(
 			{
 				id: BACKGROUND_TYPE_CONTROL_ID,
 				kind: 'select',
-				label: 'Type',
+				// Figma 525:8777 — 배경 방식은 드롭다운이 아니라 토글 그룹이다.
+				label: 'Mode',
+				variant: 'segmented',
 				defaultValue: options[0].value,
 				options,
 				// 고를 것이 하나면 열어 둘 이유가 없다.
@@ -656,13 +658,13 @@ function buildBackgroundGroup(
 						{
 							id: BACKGROUND_DIMMER_CONTROL_ID,
 							kind: 'toggle',
-							label: 'Dimmer',
+							label: 'Use',
 							defaultValue: false,
 						},
 						{
 							id: BACKGROUND_DIMMER_OPACITY_CONTROL_ID,
 							kind: 'range',
-							label: 'Dimmer Opacity',
+							label: 'Strength',
 							defaultValue: 0.2,
 							min: 0,
 							// 실용 상한 — 1.0은 배경을 완전한 검정으로 덮어 배경을 고른 의미가 없어진다.

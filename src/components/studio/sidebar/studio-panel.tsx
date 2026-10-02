@@ -104,8 +104,7 @@ export function StudioPanel({
  *
  * 🔴 위 경계선은 **상자 폭 전체**를 지른다(사용자 지시, 2026-09-10) — 좌우 패딩은 이 컨테이너가
  *    갖고 테두리는 그 바깥이라, 위의 고정 영역과 이 스크롤 영역이 상자 안에서 완전히 갈린다.
- *    그 아래 컨트롤러끼리는 폭 전체가 아닌 지금 쓰는 구분선(`Controller.Group`의 `border-t`)
- *    n−1개로 나뉜다 — 그래서 첫 그룹의 구분선만 지운다(경계선이 두 줄로 겹친다).
+ *    그룹 목록의 간격은 Controller.GroupList가 소유한다.
  * 🔴 비어 있어도 자리를 지킨다 — 레이어를 고르지 않았을 때 상자가 줄어들면 안 된다.
  */
 export function StudioPanelScroll({ children }: { children: ReactNode }) {
@@ -115,36 +114,7 @@ export function StudioPanelScroll({ children }: { children: ReactNode }) {
 			// 🔴 `overflow-x-hidden`은 안전망이다 — 어떤 컨트롤이 제 폭을 잘못 잡아도 **패널 밖으로
 			//    번지지는 않는다.** 한 컨트롤이 틀린 것과 화면 전체가 깨지는 것은 다른 사태다
 			//    (사용자 지시, 2026-09-29). 넘치는 컨트롤은 자기 안에서 스크롤을 갖는다.
-			className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden border-t border-border px-4 pb-4 first:border-t-0 [&>*:first-child]:border-t-0"
-		>
-			{children}
-		</div>
-	)
-}
-
-/**
- * 상자 안에서 **높이를 차지한 만큼만** 쓰는 고정 영역 — 스크롤 위에 앉는다.
- * 좌측은 페이지 선택이, 우측은 레이어 목록이 여기 온다.
- *
- * 🔑 여기 오는 것은 **항상 1~2개**다(사용자 지시) — 그래서 스크롤을 주지 않는다.
- * ponytail: 그래도 레이어가 아주 많은 템플릿에서는 이 영역이 스크롤을 밀어낼 수 있다. 지금은
- *   목록이 접히므로(`collapsible`) 그것으로 족하고, 실제로 밀리면 여기에 최대 높이 한 줄이다.
- */
-export function StudioPanelFixed({
-	children,
-	className,
-}: {
-	children: ReactNode
-	className?: string
-}) {
-	return (
-		<div
-			data-slot="studio-panel-fixed"
-			// 첫 그룹의 구분선은 지운다 — 상자의 위 테두리와 겹친다.
-			className={cn(
-				'flex shrink-0 flex-col gap-1 px-4 pt-4 pb-4 [&>*:first-child]:border-t-0',
-				className,
-			)}
+			className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden border-t border-border px-4 pb-4 first:border-t-0"
 		>
 			{children}
 		</div>
