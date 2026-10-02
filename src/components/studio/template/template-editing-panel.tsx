@@ -1,6 +1,6 @@
 'use client'
 
-import { domAnimation, LazyMotion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, domAnimation, LazyMotion, useReducedMotion } from 'motion/react'
 import * as m from 'motion/react-m'
 import { type ReactNode, useEffect, useRef } from 'react'
 import { ControllerRoot } from '@/components/shared/controller/layout'
@@ -50,65 +50,76 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 				>
 					{children}
 				</m.div>
-				{targetId && (
-					<m.section
-						ref={panel}
-						tabIndex={-1}
-						aria-label="선택한 레이어 편집"
-						className="scrollbar-none absolute inset-0 flex min-h-0 flex-col gap-4 overflow-y-auto p-4 outline-none"
-						initial={reducedMotion ? false : { opacity: 0 }}
-						animate={{ opacity: 1 }}
-						transition={TRANSITION}
-					>
-						<ControllerRoot className="aspect-square shrink-0 lg:h-auto">
-							<StudioSelectionCard
-								title={
-									target?.name ??
-									(image ? 'Image' : graphic ? 'Graphic' : 'Background')
-								}
-								subtitle={target?.subtitle}
-								image={target?.preview}
-								onReset={editing.reset}
-								disabled={editing.busy}
+				<AnimatePresence initial={false}>
+					{targetId && (
+						<m.section
+							key="editing"
+							ref={panel}
+							tabIndex={-1}
+							aria-label="선택한 레이어 편집"
+							className="scrollbar-none absolute inset-0 flex min-h-0 flex-col gap-4 overflow-y-auto p-4 outline-none"
+							// 마스터 패널이 밀려나는 동안 편집 패널은 왼쪽 바깥에서 제자리로 들어오고, 나갈 때 되돌아간다.
+							// 퇴장 중에는 마지막 화면이 남아 있으므로 클릭을 받지 않는다.
+							initial={reducedMotion ? false : { x: '-100%' }}
+							animate={{ x: 0 }}
+							exit={reducedMotion ? undefined : { x: '-100%', pointerEvents: 'none' }}
+							transition={reducedMotion ? { duration: 0 } : TRANSITION}
+						>
+							<ControllerRoot className="aspect-square shrink-0 lg:h-auto">
+								<StudioSelectionCard
+									title={
+										target?.name ??
+										(image ? 'Image' : graphic ? 'Graphic' : 'Background')
+									}
+									subtitle={target?.subtitle}
+									image={target?.preview}
+									onReset={editing.reset}
+									disabled={editing.busy}
+									actions={
+										(image || graphic) && (
+											<StudioSelectionChange
+												label={
+													graphic ? '그래픽 변경' : '이미지 프로파일 변경'
+												}
+												disabled={editing.busy}
+											>
+												{graphic ? (
+													<TemplateGraphicSelection />
+												) : (
+													<TemplateImageSelection />
+												)}
+											</StudioSelectionChange>
+										)
+									}
+								/>
+							</ControllerRoot>
+							<TemplateSettings
 								actions={
-									(image || graphic) && (
-										<StudioSelectionChange
-											label={graphic ? '그래픽 변경' : '이미지 프로파일 변경'}
-											disabled={editing.busy}
+									<fieldset
+										className="flex gap-2"
+										aria-label="편집 완료 또는 취소"
+									>
+										<Button
+											variant="outline"
+											className="h-11 flex-1 rounded-lg border-border"
+											onClick={editing.cancel}
 										>
-											{graphic ? (
-												<TemplateGraphicSelection />
-											) : (
-												<TemplateImageSelection />
-											)}
-										</StudioSelectionChange>
-									)
+											취소
+										</Button>
+										<Button
+											variant="muted"
+											className="h-11 flex-1 rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
+											disabled={editing.busy}
+											onClick={editing.complete}
+										>
+											완료
+										</Button>
+									</fieldset>
 								}
 							/>
-						</ControllerRoot>
-						<TemplateSettings
-							actions={
-								<fieldset className="flex gap-2" aria-label="편집 완료 또는 취소">
-									<Button
-										variant="outline"
-										className="h-11 flex-1 rounded-lg border-border"
-										onClick={editing.cancel}
-									>
-										취소
-									</Button>
-									<Button
-										variant="muted"
-										className="h-11 flex-1 rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
-										disabled={editing.busy}
-										onClick={editing.complete}
-									>
-										완료
-									</Button>
-								</fieldset>
-							}
-						/>
-					</m.section>
-				)}
+						</m.section>
+					)}
+				</AnimatePresence>
 			</div>
 		</LazyMotion>
 	)

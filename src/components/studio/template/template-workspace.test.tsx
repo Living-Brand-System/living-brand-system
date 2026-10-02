@@ -168,7 +168,12 @@ it('Image 편집은 현재 슬롯만 열고 완료 또는 취소 전에는 다�
 	expect(within(editing).queryByRole('group', { name: '사진 B' })).not.toBeInTheDocument()
 	expect(within(panel).getByRole('button', { name: /^Background$/ })).toBeDisabled()
 	fireEvent.click(screen.getByRole('button', { name: '취소' }))
-	expect(screen.queryByRole('region', { name: '선택한 레이어 편집' })).not.toBeInTheDocument()
+	// 편집 패널은 퇴장 모션이 끝난 뒤 사라진다.
+	await waitFor(() =>
+		expect(
+			screen.queryByRole('region', { name: '선택한 레이어 편집' }),
+		).not.toBeInTheDocument(),
+	)
 	expect(within(panel).getByRole('button', { name: /^Background$/ })).toBeEnabled()
 })
 
@@ -204,7 +209,12 @@ it('배경 Type·Image Mode는 왼쪽에서 전환하고 오른쪽에는 편집 
 		}),
 	).toBeChecked()
 	fireEvent.click(screen.getByRole('button', { name: '취소' }))
-	expect(screen.queryByRole('region', { name: '선택한 레이어 편집' })).not.toBeInTheDocument()
+	// 편집 패널은 퇴장 모션이 끝난 뒤 사라진다.
+	await waitFor(() =>
+		expect(
+			screen.queryByRole('region', { name: '선택한 레이어 편집' }),
+		).not.toBeInTheDocument(),
+	)
 })
 
 it.each([
