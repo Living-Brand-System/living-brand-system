@@ -138,20 +138,19 @@ studio·global·home 같은 표면의 화면 컴포넌트도 위 계약을 그�
 - **상태 소유**: 서버 데이터 fetch와 그 loading/error 3종 세트를 컴포넌트 `useState`로 복제하지 않습니다. HTTP I/O는 소유 기능의 `*.client.ts`가(`docs/06` §10), Context 값 계약은 `src/features/*/contexts`, 화면 세션 상태는 `src/features/*/providers`, 소비 API는 `src/features/*/hooks`의 `use-*` 훅이 소유합니다. 원형은 Studio Context + Provider + `use-*-studio` — Provider와 소비 훅은 서로 import하지 않고 같은 Context 계약에 의존하며, 나머지 컴포넌트는 props 또는 훅으로 값을 받는 표현 계층으로 남습니다. `src/components` 안에 도메인 상태 `createContext`를 만들지 않습니다.
 - **variant 수단 단일화**: 시각 variant(색·모양·상태별 스타일)는 언제나 `cva`입니다. 완전 클래스 룩업 테이블은 §4의 동적 클래스 대책, 즉 **레이아웃 매핑**(`grid-cols` 등 구조 분기)에만 씁니다 — 상태→색 매핑을 `.ts` 룩업 테이블이나 클래스 문자열을 반환하는 헬퍼 함수로 풀면 cva 자리를 우회한 것입니다.
 - **motion**: 애니메이션 라이브러리는 `motion/react` 하나만, `LazyMotion` + `motion/react-m` 조합(`side-nav.tsx` 원형)으로 씁니다. 모션 감소는 그 모션을 소유한 컴포넌트 안에서 `useReducedMotion()`으로 처리하고, `shouldReduceMotion`을 props로 내려보내지 않습니다.
-  - 스튜디오·컨트롤러는 spring·duration 값을 컴포넌트에 직접 쓰지 않고 역할 프리셋을 씁니다(2026-10-02 통합, 쓰임이 가장 많던 값, bounce는 0.15 하나).
+  - 스튜디오·컨트롤러는 spring·duration 값을 컴포넌트에 직접 쓰지 않고 역할 프리셋을 씁니다(2026-10-02 통합). spring은 쓰임이 가장 많던 값(bounce 0.15 하나), 시간형은 tight·loose 두 단계이고 커브는 둘 다 CSS `ease`입니다.
 
     | 프리셋 | 용도 | 값 |
     | --- | --- | --- |
     | `MOTION.indicator` | 선택을 따라 미끄러지는 표시(세그먼트 pill) | spring 0.2 |
     | `MOTION.control` | 컨트롤 자체의 움직임(바 등장, 슬라이더 채움) | spring 0.25 |
-    | `MOTION.disclosure` | 접기·펴기(그룹 본문 높이, chevron) | spring 0.35 |
-    | `MOTION.panel` | 패널 진입·이탈, 탭 내용 교체 | spring 0.15 |
-    | `MOTION.overlay` | 겹쳐 뜨는 패널의 열림·닫힘(템플릿 마스터·편집 패널, 16px). 자산 브라우저 CSS와 같은 값 | 150ms CSS `ease` |
-    | `PANEL_RENDER.left` / `.right` | 패널 렌더 모양 — 패널 내용이 새로 그려질 때(레일 탭·레이어·탭 내용 전환, 겹치는 편집 패널). 놓인 쪽에서 들어온다 | 왼쪽 `x -16`·오른쪽 `x +16`, `scale 0.95`, `opacity 0` → 제자리, 시간은 `MOTION.overlay`. 커지는 기준점은 위 모서리(왼쪽 `top left`, 오른쪽은 레일이 있는 `top right`) |
+    | `MOTION.tight` | 빠르게 붙는 전환 — 패널 렌더, 겹쳐 뜨는 패널의 열림·닫힘. 자산 브라우저 CSS와 같은 값 | 150ms |
+    | `MOTION.loose` | 크기가 자라는 전환 — 그룹 접기·펴기, 컨트롤이 새로 생기거나 빠지며 패널 높이가 바뀌는 것 | 250ms |
+    | `PANEL_RENDER.left` / `.right` | 패널 렌더 모양 — 패널 내용이 새로 그려질 때(레일 탭·레이어·탭 내용 전환, 겹치는 편집 패널). 놓인 쪽에서 들어온다 | 왼쪽 `x -16`·오른쪽 `x +16`, `scale 0.95`, `opacity 0` → 제자리, `MOTION.tight`. 커지는 기준점은 위 모서리(왼쪽 `top left`, 오른쪽은 레일이 있는 `top right`) |
     | `--motion-feedback` | CSS 누름·호버 반응(패드 thumb, 슬라이더 핸들) | 150ms `ease-out` |
     | `--motion-layout` | CSS 배치 변화(미리보기 확대·축소) | 200ms `ease-out` |
 
-  - JS는 `useMotionTransition(preset)`이 모션 감소 시 즉시 전환을 돌려주고, 진입·이탈 자체(`initial`·`exit`)를 끄는 판단은 소유 컴포넌트가 `useReducedMotion()`으로 합니다. CSS는 `duration-(--motion-*) ease-out`에 `motion-reduce:transition-none`을 함께 씁니다. 오버레이(dialog·select·tooltip·자산 브라우저)는 tw-animate CSS 그대로 둡니다. 패널 렌더는 첫 진입에 걸지 않습니다. 같은 자리 내용 교체는 `Controller.TabPanel`, 패널 단위 교체는 `PanelRenderScope`(무엇을 그리는지의 키)·`PanelRenderTarget`(움직일 자리)으로 걸고, 레일 같은 고정 크롬은 대상 밖에 둡니다. 이전 내용은 즉시 내리고 새 내용만 들어옵니다.
+  - JS는 `useMotionTransition(preset)`이 모션 감소 시 즉시 전환을 돌려주고, 진입·이탈 자체(`initial`·`exit`)를 끄는 판단은 소유 컴포넌트가 `useReducedMotion()`으로 합니다. CSS는 `duration-(--motion-*) ease-out`에 `motion-reduce:transition-none`을 함께 씁니다. 오버레이(dialog·select·tooltip·자산 브라우저)는 tw-animate CSS 그대로 둡니다. `Controller.Group`·`Controller.GroupList`의 직계 자식은 `ControllerPresence`가 감싸, 새로 생기면 높이 0에서 펼쳐지고 빠지면 접힙니다(`MOTION.loose`) — 카드 높이도 함께 자랍니다. 부르는 쪽은 `{조건 && <컨트롤 />}`을 그대로 쓰고, 간격은 gap이 아니라 각 상자의 위 여백(그룹 안 6px, 목록 12px)이 갖습니다. 첫 렌더는 움직이지 않습니다. 패널 렌더는 첫 진입에 걸지 않습니다. 같은 자리 내용 교체는 `Controller.TabPanel`, 패널 단위 교체는 `PanelRenderScope`(무엇을 그리는지의 키)·`PanelRenderTarget`(움직일 자리)으로 걸고, 레일 같은 고정 크롬은 대상 밖에 둡니다. 이전 내용은 즉시 내리고 새 내용만 들어옵니다.
 
 ### 컨트롤러 컨트롤 계약 (§3.6)
 

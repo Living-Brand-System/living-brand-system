@@ -410,15 +410,17 @@ describe('BackgroundSection', () => {
 
 		// Generate 탭의 두 색 행은 생성 이미지 colorize 파라미터 — 캔버스 경로가 따로 필요하다.
 		await openGenerateTab(user)
+		// 이전 방식의 행이 접히며 빠지는 동안은 같은 이름이 잠깐 둘이다 — 하나만 남을 때를 본다.
+		await waitFor(() => expect(screen.getByLabelText('Background Color')).toBeDisabled())
 		expect(screen.getByLabelText('Line Color')).toBeDisabled()
-		expect(screen.getByLabelText('Background Color')).toBeDisabled()
 		expect(screen.getByText('#000000')).toBeInTheDocument()
 		expect(screen.getByText('#ffffff')).toBeInTheDocument()
 
 		await selectBackgroundType(user, 'Graphic')
 		expect(screen.getByLabelText('Graphic Type')).toBeEnabled()
 		expect(screen.getByText('Forward Straight')).toBeInTheDocument()
-		expect(screen.queryByLabelText('Line Color')).toBeNull()
+		// 빠진 컨트롤은 접히는 모션이 끝난 뒤 사라진다.
+		await waitFor(() => expect(screen.queryByLabelText('Line Color')).toBeNull())
 		expect(screen.getByRole('slider', { name: '기준점' })).toHaveAttribute(
 			'aria-valuetext',
 			'가로 0%, 세로 0%',

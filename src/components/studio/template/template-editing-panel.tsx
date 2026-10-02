@@ -18,7 +18,7 @@ import { useTemplateStudio } from '@/features/template-customization/hooks/use-t
 import { useShellLock } from '@/hooks/use-shell-lock'
 import { PANEL_RENDER, useMotionTransition } from '@/lib/motion'
 
-// 두 패널은 같은 시간(`MOTION.overlay`)으로 움직인다. 편집 패널은 공용 패널 렌더(`PANEL_RENDER`)로
+// 두 패널은 같은 시간(`MOTION.tight`)으로 움직인다. 편집 패널은 공용 패널 렌더(`PANEL_RENDER`)로
 // 들어오고 나가며, 마스터는 왼쪽 아래 대각선(16px)으로 밀리며 반투명·흐려진다(blur 4px).
 const INACTIVE = { x: -16, y: 16, opacity: 0.5, filter: 'blur(4px)' } as const
 // 🔴 끝나면 filter를 걷는다 — blur(0px)도 필터라서 남겨 두면 안쪽 backdrop-blur·fixed 배치가 깨진다.
@@ -35,7 +35,7 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 	const { editing } = useTemplateStudio()
 	const panel = useRef<HTMLElement>(null)
 	const reducedMotion = useReducedMotion()
-	const transition = useMotionTransition('overlay')
+	const transition = useMotionTransition('tight')
 	const targetId = editing.targetId
 	// 상단 이동도 완료·취소 전까지 잠근다 — 헤더는 셸 잠금을 읽어 스스로 inert가 된다.
 	useShellLock(Boolean(targetId))

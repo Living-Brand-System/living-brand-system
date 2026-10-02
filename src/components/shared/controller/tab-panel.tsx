@@ -28,7 +28,7 @@ export function ControllerTabPanel({
 	children,
 }: ControllerTabPanelProps) {
 	const reducedMotion = useReducedMotion()
-	const transition = useMotionTransition('overlay')
+	const transition = useMotionTransition('tight')
 	const [mounted, setMounted] = useState(false)
 	useEffect(() => setMounted(true), [])
 

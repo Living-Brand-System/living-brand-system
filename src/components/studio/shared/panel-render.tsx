@@ -46,7 +46,7 @@ export function PanelRenderTarget({
 }) {
 	const scope = useContext(PanelRenderContext)
 	const reducedMotion = useReducedMotion()
-	const transition = useMotionTransition('overlay')
+	const transition = useMotionTransition('tight')
 	return (
 		<LazyMotion features={domAnimation}>
 			<m.div

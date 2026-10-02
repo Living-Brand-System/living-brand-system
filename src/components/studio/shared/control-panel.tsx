@@ -45,7 +45,7 @@ export function ControlPanel({
 		},
 	].filter((tab) => tab.content || tab.list)
 	const active = tabs.find((tab) => tab.id === selected)?.id ?? tabs[0]?.id
-	const transition = useMotionTransition('overlay')
+	const transition = useMotionTransition('tight')
 	return (
 		<LazyMotion features={domAnimation}>
 			<aside
