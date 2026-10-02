@@ -14,6 +14,10 @@ import {
 	IMAGE_REFERENCE_UPLOAD_MAX_BYTES,
 	IMAGE_REFERENCE_UPLOAD_MIME_TYPES,
 } from '@/features/image-generation/domain/reference-image/contract'
+import {
+	type BrandColorPairSwatch,
+	usePublishedBrandColorPairs,
+} from '@/features/template-core/hooks/use-published-brand-color-pairs'
 
 const CameraOrbitControl = dynamic(
 	() =>
@@ -56,39 +60,6 @@ const TOGGLE = [
 	{ value: 'on', label: 'On' },
 	{ value: 'off', label: 'Off' },
 ] as const
-const PALETTE = [
-	'#dcf5d2',
-	'#73d75a',
-	'#00af41',
-	'#007332',
-	'#00280a',
-	'#dfe4f4',
-	'#003087',
-	'#000a32',
-] as const
-// Figma 328:6058의 조합 데이터(중복 1개 제외). 실제 Studio에서는 프로파일의 색 선택지를 받는다.
-// ponytail: 브랜드 색이 코드에 있다 — 색 조합 정본을 CMS로 옮길 때 이 목록을 대체한다.
-const SWATCHES = [
-	[1, 0],
-	[1, 2],
-	[1, 3],
-	[1, 4],
-	[0, 4],
-	[0, 1],
-	[0, 2],
-	[0, 3],
-	[3, 4],
-	[3, 1],
-	[3, 2],
-	[6, 5],
-	[5, 6],
-	[6, 7],
-].map(([foreground, background], index) => ({
-	id: `swatch-${index + 1}`,
-	label: `색 조합 ${index + 1}`,
-	foreground: PALETTE[foreground],
-	background: PALETTE[background],
-}))
 const AZIMUTHS = [
 	{ value: 0, label: 'Front' },
 	{ value: 45, label: 'Right ¾' },
@@ -104,14 +75,7 @@ const ELEVATIONS = [
 	{ value: 80, label: 'Top' },
 ]
 
-export function StudioColorCompound({
-	value,
-	onChange,
-	showDate = true,
-	swatches = SWATCHES,
-	allowCustom = true,
-	disabled = false,
-}: {
+type ColorCompoundProps = {
 	value: Pick<StudioCompound, 'date' | 'colorMode' | 'swatch' | 'foreground' | 'background'>
 	onChange: (
 		patch: Partial<
@@ -119,11 +83,37 @@ export function StudioColorCompound({
 		>,
 	) => void
 	showDate?: boolean
-	swatches?: readonly { id: string; label: string; foreground: string; background: string }[]
+	/** 없으면 CMS `brand-color-pairs` 정본을 쓴다. 런타임이 조합을 정하는 그래픽만 직접 넘긴다. */
+	swatches?: readonly BrandColorPairSwatch[]
 	allowCustom?: boolean
 	disabled?: boolean
-}) {
+}
+
+export function StudioColorCompound(props: ColorCompoundProps) {
+	return props.swatches ? (
+		<ColorCompound {...props} swatches={props.swatches} />
+	) : (
+		<BrandColorCompound {...props} />
+	)
+}
+
+function BrandColorCompound(props: ColorCompoundProps) {
+	return <ColorCompound {...props} swatches={usePublishedBrandColorPairs()} />
+}
+
+function ColorCompound({
+	value,
+	onChange,
+	showDate = true,
+	swatches,
+	allowCustom = true,
+	disabled = false,
+}: ColorCompoundProps & { swatches: readonly BrandColorPairSwatch[] }) {
 	const swatchName = useId()
+	// Custom 모드의 빠른 선택 칩은 스와치에 쓰인 색에서 뽑는다 — 따로 적은 팔레트가 정본과 갈리지 않게.
+	const palette = [
+		...new Set(swatches.flatMap((swatch) => [swatch.background, swatch.foreground])),
+	]
 	return (
 		<div className="flex flex-col gap-4">
 			{showDate && (
@@ -192,6 +182,7 @@ export function StudioColorCompound({
 								key={field}
 								label={field === 'foreground' ? 'Foreground' : 'Background'}
 								value={value[field]}
+								palette={palette}
 								onChange={(hex) => onChange({ [field]: hex, swatch: '' })}
 							/>
 						))}
@@ -205,10 +196,12 @@ export function StudioColorCompound({
 function ColorWithPalette({
 	label,
 	value,
+	palette,
 	onChange,
 }: {
 	label: string
 	value: string
+	palette: readonly string[]
 	onChange: (hex: string) => void
 }) {
 	const name = useId()
@@ -225,14 +218,14 @@ function ColorWithPalette({
 				aria-label={`${label} 팔레트`}
 				className="flex justify-between gap-1 border-t border-border px-3 py-1.5"
 			>
-				{PALETTE.map((hex) => (
+				{palette.map((hex) => (
 					<input
 						key={hex}
 						type="radio"
 						name={name}
 						aria-label={hex}
 						title={hex}
-						checked={value.toLowerCase() === hex}
+						checked={value.toLowerCase() === hex.toLowerCase()}
 						onChange={() => onChange(hex)}
 						style={{ backgroundColor: hex }}
 						className="size-6 shrink-0 cursor-pointer appearance-none rounded-sm border border-foreground/15 outline-none checked:ring-2 checked:ring-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/50"
