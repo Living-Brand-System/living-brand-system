@@ -27,6 +27,7 @@ export default async function GenerateGraphicPage() {
 					})),
 				},
 			]}
+			cardFit="cover"
 			empty={{
 				title: '발행된 그래픽 프로파일이 없습니다',
 				description: '프로파일이 발행되면 이 화면에서 바로 만들고 내보낼 수 있습니다.',

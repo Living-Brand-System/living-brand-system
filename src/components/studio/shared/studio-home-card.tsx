@@ -60,7 +60,17 @@ function sampleAverageColor(image: HTMLImageElement): string | null {
  * 초록 포스터 뒤에 깔린 것처럼). 평균색의 밝기로 light/dark 토큰 스코프를 골라 글자가 따라온다(docs/09 §5).
  * ponytail: 디자인 UI가 코드로 나오면 그것으로 갈아끼운다.
  */
-export function StudioHomeCard({ item }: { item: StudioHomeItem }) {
+export function StudioHomeCard({
+	item,
+	fit,
+}: {
+	item: StudioHomeItem
+	/**
+	 * `contain` — 내보낼 결과물(Template)이라 판 전체가 여백 안에 다 보인다.
+	 * `cover` — 패턴처럼 쓰는 에셋(Graphic·Image)이라 카드를 여백 없이 채운다(Figma node 328:2325).
+	 */
+	fit: 'contain' | 'cover'
+}) {
 	const [tint, setTint] = useState<string | null>(null)
 
 	return (
@@ -85,7 +95,10 @@ export function StudioHomeCard({ item }: { item: StudioHomeItem }) {
 							setTint(sampleAverageColor(image))
 					}}
 					onLoad={(event) => setTint(sampleAverageColor(event.currentTarget))}
-					className="-z-10 absolute inset-0 size-full object-contain p-5 drop-shadow-md transition-transform group-hover:scale-[1.02]"
+					className={cn(
+						'-z-10 absolute inset-0 size-full transition-transform group-hover:scale-[1.02]',
+						fit === 'contain' ? 'object-contain p-5 drop-shadow-md' : 'object-cover',
+					)}
 				/>
 			)}
 			{/* 위쪽을 바탕색으로 눌러 이미지가 어떻든 이름의 대비가 유지된다(docs/08). */}
