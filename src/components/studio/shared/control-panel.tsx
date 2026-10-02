@@ -2,7 +2,7 @@
 
 import { domAnimation, LazyMotion } from 'motion/react'
 import * as m from 'motion/react-m'
-import { type ReactNode, useId, useState } from 'react'
+import { createContext, type ReactNode, useContext, useId, useState } from 'react'
 import { ControllerRoot } from '@/components/shared/controller/layout'
 import { PANEL_RENDER, useMotionTransition } from '@/lib/motion'
 import {
@@ -36,6 +36,31 @@ type ControlPanelProps = {
 	adjustment?: ReactNode
 	basicPresets?: ReactNode
 	composition?: ControlPanelComposition
+	/**
+	 * 컴포지션 슬롯 뒤에 같은 목록으로 이어 붙이는 화면 고유 그룹(예: 생성 버튼).
+	 * 같은 자리의 JSX 입력과 달리 계약 슬롯을 대체하지 않는다 — 간격과 펼침이 이어진다.
+	 */
+	extras?: Partial<Record<Exclude<StudioPanelSlot, 'settings'>, ReactNode>>
+}
+
+const ControlPanelCompositionContext = createContext<ControlPanelComposition | null>(null)
+
+/**
+ * 패널 주인(스튜디오 셸)이 안쪽 화면에 컴포지션을 공급한다 — 안쪽 화면(이미지·그래픽 컨트롤)이 몇 겹이든
+ * prop을 뚫지 않고 `ControlPanel`이 읽는다. 배치는 패널이 소유한다는 계약(docs/10 §3.7)의 배선이다.
+ */
+export function ControlPanelCompositionProvider({
+	value,
+	children,
+}: {
+	value: ControlPanelComposition | null
+	children: ReactNode
+}) {
+	return (
+		<ControlPanelCompositionContext.Provider value={value}>
+			{children}
+		</ControlPanelCompositionContext.Provider>
+	)
 }
 
 /**
@@ -43,22 +68,29 @@ type ControlPanelProps = {
  * 고정 영역은 최대 절반 높이까지 자라고 넘치면 자체 스크롤한다.
  */
 export function ControlPanel(props: ControlPanelProps) {
+	const provided = useContext(ControlPanelCompositionContext)
+	const composition = props.composition ?? provided ?? undefined
 	// 컴포지션으로 그리면 영역 키를 스스로 안다 — 위에 범위가 없으면 직접 깔아 켜짐·마지막 키를 갖게 한다.
 	const hasScope = useHasPanelRenderScope()
-	if (props.composition && !hasScope)
+	if (composition && !hasScope)
 		return (
 			<PanelRenderScope>
-				<ControlPanelView {...props} />
+				<ControlPanelView {...props} composition={composition} />
 			</PanelRenderScope>
 		)
-	return <ControlPanelView {...props} />
+	return <ControlPanelView {...props} composition={composition} />
 }
 
-function ControlPanelView({ composition, ...explicit }: ControlPanelProps) {
+function ControlPanelView({ composition, extras, ...explicit }: ControlPanelProps) {
 	const slot = (name: Exclude<StudioPanelSlot, 'settings'>) => {
-		if (!composition) return undefined
+		const extra = extras?.[name]
+		if (!composition) return extra || undefined
 		const { slots, ...render } = composition
-		return slots[name].length ? <Slot entries={slots[name]} {...render} /> : undefined
+		return slots[name].length || extra ? (
+			<Slot entries={slots[name]} {...render}>
+				{extra}
+			</Slot>
+		) : undefined
 	}
 	const fixed = explicit.fixed ?? slot('fixed')
 	const basic = explicit.basic ?? slot('basic')

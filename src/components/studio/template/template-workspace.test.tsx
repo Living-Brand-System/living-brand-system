@@ -200,6 +200,44 @@ it('편집을 마치면 빈 선택 없이 마스터 레이어(Text)로 돌아간
 	}
 })
 
+it('배경은 패널 컴포지션으로 선다 — 방식을 바꿔도 Dimming 카드는 그대로, 조건 행만 펼친다', async () => {
+	renderTemplate()
+	await screen.findByRole('textbox', { name: '제목' })
+	const layers = screen.getByRole('region', { name: 'Layers' })
+	fireEvent.click(within(layers).getByRole('button', { name: /^Background$/ }))
+	const selection = screen.getByRole('region', { name: '선택한 레이어 편집' })
+	const editing = () => screen.getByRole('complementary', { name: '편집 도구' })
+	const fixed = () => editing().querySelector('[data-slot="studio-control-fixed"]')
+	// overlay → 고정 카드. Use를 켜야 Strength가 선다.
+	const dimming = fixed()
+	expect(
+		within(dimming as HTMLElement).getByRole('radiogroup', { name: 'Use' }),
+	).toBeInTheDocument()
+	expect(within(editing()).queryByRole('slider', { name: 'Strength' })).toBeNull()
+	fireEvent.click(
+		within(within(editing()).getByRole('radiogroup', { name: 'Use' })).getByRole('radio', {
+			name: 'On',
+		}),
+	)
+	expect(await within(editing()).findByRole('slider', { name: 'Strength' })).toBeInTheDocument()
+	// source → 왼쪽 설정 카드. Image일 때만 Image Mode 행이 선다.
+	expect(within(selection).queryByRole('radiogroup', { name: 'Image Mode' })).toBeNull()
+	fireEvent.click(
+		within(within(selection).getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {
+			name: 'Image',
+		}),
+	)
+	expect(within(selection).getByRole('radiogroup', { name: 'Image Mode' })).toBeInTheDocument()
+	// 방식마다 화면 분기가 달라 패널은 다시 마운트되지만, 고정 영역의 구조가 같으니 들어오는 모션을
+	// 재생하지 않는다 — 숨김 상태(오른쪽 16px·투명)에서 시작하지 않고 제자리다.
+	const region = fixed()?.parentElement as HTMLElement
+	expect(region).toHaveAttribute('data-slot', 'panel-render')
+	expect(region.style.opacity).not.toBe('0')
+	expect(region.style.transform).not.toContain('translateX(16px)')
+	expect(dimming).not.toBeNull()
+	fireEvent.click(screen.getByRole('button', { name: '취소' }))
+})
+
 it('배경 Type·Image Mode는 왼쪽에서 전환하고 오른쪽에는 편집 도구만 표시한다', async () => {
 	renderTemplate()
 	await screen.findByRole('textbox', { name: '제목' })

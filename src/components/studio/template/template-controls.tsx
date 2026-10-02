@@ -4,29 +4,27 @@ import { ColorPalette, Image, Shapes, TextFont, View, ViewOff } from '@carbon/ic
 import type { ReactNode } from 'react'
 import { Controller } from '@/components/shared/controller'
 import { ControllerRoot } from '@/components/shared/controller/layout'
-import { ControllerControlRenderer } from '@/components/shared/controller-renderer'
-import { ControlPanel } from '@/components/studio/shared/control-panel'
+import {
+	ControlPanel,
+	type ControlPanelComposition,
+	ControlPanelCompositionProvider,
+} from '@/components/studio/shared/control-panel'
+import { StudioPanelSlot } from '@/components/studio/shared/studio-panel-slot'
 import { ImageSlotMode } from '@/components/studio/template/image-slot-input'
-import { TemplateBackgroundPanel } from '@/components/studio/template/template-background-panel'
+import { useTemplateBackgroundComposition } from '@/components/studio/template/template-background-composition'
 import { TemplateColorSwatches } from '@/components/studio/template/template-color-swatches'
 import { TemplateLayerControls } from '@/components/studio/template/template-layer-controls'
 import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
 import { usePublishedBrandColorValues } from '@/features/template-core/hooks/use-published-brand-color-values'
-import {
-	findTemplateControl,
-	partitionTemplateSlots,
-} from '@/features/template-customization/domain/template-studio-config'
+import { findTemplateControl } from '@/features/template-customization/domain/template-studio-config'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import { cn } from '@/lib/utils'
-import {
-	TemplateDimmer,
-	TemplateGraphicControls,
-	TemplateImageControls,
-} from './template-media-controls'
+import { TemplateGraphicControls, TemplateImageControls } from './template-media-controls'
 
 export function TemplateControls({ grouped = true }: { grouped?: boolean }) {
-	const { config, layers, background, focus } = useTemplateStudio()
+	const { config, layers, background } = useTemplateStudio()
+	const backgroundComposition = useTemplateBackgroundComposition()
 	const selectedKind = config.template.slots.find((slot) => slot.id === layers.selectedId)?.kind
 	if (selectedKind === 'image')
 		return (
@@ -34,50 +32,21 @@ export function TemplateControls({ grouped = true }: { grouped?: boolean }) {
 				<TemplateImageControls />
 			</Controller.Browser.Root>
 		)
-	if (selectedKind === 'background' && background.state.type === 'graphic')
+	if (selectedKind === 'background')
 		return (
-			<Controller.Browser.Root className="min-h-0 h-full">
-				<TemplateGraphicControls key={background.state.graphicConfigId} />
-			</Controller.Browser.Root>
+			// 배경의 고정·색 자리는 패널 컴포지션이 채운다(docs/10 §3.7) — 방식별 화면은 자기 몫만 꽂는다.
+			<ControlPanelCompositionProvider value={backgroundComposition}>
+				<Controller.Browser.Root className="min-h-0 h-full">
+					{background.state.type === 'graphic' ? (
+						<TemplateGraphicControls key={background.state.graphicConfigId} />
+					) : background.state.type === 'image' ? (
+						<TemplateImageControls background />
+					) : (
+						<ControlPanel />
+					)}
+				</Controller.Browser.Root>
+			</ControlPanelCompositionProvider>
 		)
-	if (selectedKind === 'background' && background.state.type === 'image')
-		return (
-			<Controller.Browser.Root className="min-h-0 h-full">
-				<TemplateImageControls background />
-			</Controller.Browser.Root>
-		)
-	if (selectedKind === 'background') {
-		const slot = partitionTemplateSlots(config.template.slots).background
-		const definition = slot ? findTemplateControl(config, slot.colorControlId) : undefined
-		return (
-			<ControlPanel
-				fixed={<TemplateDimmer />}
-				basic={
-					definition ? (
-						<Controller.Group
-							title="Background"
-							active={focus.target?.kind === 'canvas'}
-							onActivate={() =>
-								focus.set({
-									sectionId: 'section:background',
-									kind: 'canvas',
-								})
-							}
-						>
-							<ControllerControlRenderer
-								definition={definition}
-								value={background.state.color}
-								onChange={(value) => {
-									if (typeof value === 'string' || value === null)
-										background.setColor(value)
-								}}
-							/>
-						</Controller.Group>
-					) : undefined
-				}
-			/>
-		)
-	}
 
 	return (
 		<Controller.Browser.Root className="min-h-0 h-full">
@@ -95,6 +64,7 @@ export function TemplateControls({ grouped = true }: { grouped?: boolean }) {
  */
 export function TemplateSettings({ actions }: { actions: ReactNode }) {
 	const { config, layers, images } = useTemplateStudio()
+	const backgroundComposition = useTemplateBackgroundComposition()
 	const selectedKind = config.template.slots.find((slot) => slot.id === layers.selectedId)?.kind
 	const background = selectedKind === 'background'
 	const slots = config.template.slots.filter(
@@ -116,24 +86,24 @@ export function TemplateSettings({ actions }: { actions: ReactNode }) {
 				{background ? 'Background Setting' : 'Image Setting'}
 			</Typography>
 			<div className="flex flex-col gap-1 pt-1 pb-3">
-				{background ? (
-					<TemplateBackgroundPanel content="settings" />
-				) : (
-					slots.map((slot) => (
-						<fieldset key={slot.id} aria-label={slot.label}>
-							{slots.length > 1 && (
-								<Typography size="xs" tone="muted" className="mb-1">
-									{slot.label}
-								</Typography>
-							)}
-							<ImageSlotMode
-								label="Mode"
-								value={images.states[slot.id].imageMode}
-								onChange={(imageMode) => images.update(slot.id, { imageMode })}
-							/>
-						</fieldset>
-					))
-				)}
+				{background
+					? backgroundComposition && (
+							<BackgroundSettings composition={backgroundComposition} />
+						)
+					: slots.map((slot) => (
+							<fieldset key={slot.id} aria-label={slot.label}>
+								{slots.length > 1 && (
+									<Typography size="xs" tone="muted" className="mb-1">
+										{slot.label}
+									</Typography>
+								)}
+								<ImageSlotMode
+									label="Mode"
+									value={images.states[slot.id].imageMode}
+									onChange={(imageMode) => images.update(slot.id, { imageMode })}
+								/>
+							</fieldset>
+						))}
 			</div>
 			{actions}
 		</ControllerRoot>
@@ -259,4 +229,13 @@ function TemplateColor() {
 			disabled={(definition.availability ?? 'enabled') !== 'enabled' || colors.length === 0}
 		/>
 	)
+}
+
+/** 배경 방식(source) 행 — 카드가 제목을 가지므로 그룹 제목 없이 행만 쌓는다(docs/10 §3.7). */
+function BackgroundSettings({
+	composition: { slots, ...render },
+}: {
+	composition: ControlPanelComposition
+}) {
+	return <StudioPanelSlot flat entries={slots.settings} {...render} />
 }

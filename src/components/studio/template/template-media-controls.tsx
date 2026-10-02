@@ -17,7 +17,6 @@ import { acceptsImagePromptExecution } from '@/features/image-generation/domain/
 import type { TemplateImageSlotState } from '@/features/template-customization/contexts/template-studio-context'
 import { resolveTemplateImageColorControls } from '@/features/template-customization/domain/image-colorize'
 import {
-	findTemplateControl,
 	partitionTemplateSlots,
 	type ResolvedTemplateImageConfig,
 } from '@/features/template-customization/domain/template-studio-config'
@@ -35,14 +34,14 @@ export function TemplateGraphicControls() {
 	const config = background.graphicConfigs.find(
 		(item) => item.id === background.state.graphicConfigId,
 	)
-	if (!config) return <ControlPanel fixed={<TemplateDimmer />} />
+	// 배경 Dimming은 패널 컴포지션이 고정 자리에 세운다(docs/10 §3.7).
+	if (!config) return <ControlPanel />
 	return (
 		<GraphicEditingControls
 			config={config}
 			storedValues={background.state.graphicValues}
 			bindings={background.graphicBindings}
 			onChange={background.updateGraphic}
-			fixed={<TemplateDimmer />}
 		/>
 	)
 }
@@ -62,40 +61,6 @@ export function TemplateGraphicSelection() {
 				disabled={background.graphicConfigs.length === 0}
 			/>
 		</Controller.Row>
-	)
-}
-
-export function TemplateDimmer() {
-	const { config, background } = useTemplateStudio()
-	const { background: slot } = partitionTemplateSlots(config.template.slots)
-	if (!slot) return null
-	return (
-		<Controller.Group title="Dimming">
-			{[
-				slot.dimmerControlId,
-				...(background.state.dimmer ? [slot.dimmerOpacityControlId] : []),
-			].map((id) => {
-				const definition = findTemplateControl(config, id)
-				if (!definition) return null
-				return (
-					<ControllerControlRenderer
-						key={id}
-						definition={definition}
-						value={
-							id === slot.dimmerControlId
-								? background.state.dimmer
-								: background.state.dimmerOpacity
-						}
-						onChange={(next) => {
-							if (id === slot.dimmerControlId && typeof next === 'boolean')
-								background.update({ dimmer: next })
-							if (id === slot.dimmerOpacityControlId && typeof next === 'number')
-								background.update({ dimmerOpacity: next })
-						}}
-					/>
-				)
-			})}
-		</Controller.Group>
 	)
 }
 
@@ -252,6 +217,22 @@ export function TemplateImageControls({
 	const generating =
 		target.state.imageMode === 'generate' && !target.readonly && Boolean(contract)
 	const sample = target.state.image?.kind === 'sample' ? target.state.image : undefined
+	const generate = generating && (
+		<Controller.Group title="Generate">
+			<Button
+				variant="muted"
+				className="h-11 w-full rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
+				disabled={
+					target.state.generating ||
+					!contract ||
+					!acceptsImagePromptExecution(contract.prompt, target.state.prompt)
+				}
+				onClick={target.onGenerate}
+			>
+				{target.state.generating ? '생성 중…' : '이미지 생성'}
+			</Button>
+		</Controller.Group>
+	)
 	const list =
 		!target.readonly && sampleImages.data?.length ? (
 			<SampleImagePicker
@@ -262,36 +243,18 @@ export function TemplateImageControls({
 		) : undefined
 	return (
 		<ControlPanel
+			// 배경의 Dimming은 패널 컴포지션이 고정 자리에 세운다 — 여기서는 생성 버튼만 그 뒤에 잇는다.
+			// 이미지 슬롯은 아직 이 화면이 고정 카드를 직접 꽂는다(이행 4단계).
 			fixed={
-				isBackground || generating ? (
+				isBackground ? undefined : !target.readonly || generate ? (
 					<Controller.GroupList>
-						{isBackground ? (
-							<TemplateDimmer />
-						) : (
-							generating && <ImageSlotDimmer target={target} />
-						)}
-						{generating && (
-							<Controller.Group title="Generate">
-								<Button
-									variant="muted"
-									className="h-11 w-full rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
-									disabled={
-										target.state.generating ||
-										!contract ||
-										!acceptsImagePromptExecution(
-											contract.prompt,
-											target.state.prompt,
-										)
-									}
-									onClick={target.onGenerate}
-								>
-									{target.state.generating ? '생성 중…' : '이미지 생성'}
-								</Button>
-							</Controller.Group>
-						)}
+						{/* 슬롯 Dimming은 방식과 무관하게 선다 — 배경 Dimming과 같다(2026-10-02 결정). */}
+						{!target.readonly && <ImageSlotDimmer target={target} />}
+						{generate}
 					</Controller.GroupList>
 				) : undefined
 			}
+			extras={isBackground ? { fixed: generate } : undefined}
 			basicPresets={!generating ? list : undefined}
 			basic={
 				generating ? (

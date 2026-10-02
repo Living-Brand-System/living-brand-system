@@ -2,8 +2,10 @@
 
 import type { ReactNode } from 'react'
 import { Controller } from '@/components/shared/controller'
+import type { ControllerGroupSectionProps } from '@/components/shared/controller/group'
 import {
 	type ControllerAssetSources,
+	ControllerControlRenderer,
 	ControllerDefinitionGroup,
 } from '@/components/shared/controller-renderer'
 import type {
@@ -13,6 +15,7 @@ import type {
 } from '@/modules/studio-controller/controller-composition'
 import type {
 	ControllerControlValue,
+	ControllerGroupDefinition,
 	ControllerGroupPresentation,
 	ControllerRuntimeBindings,
 	ControllerValues,
@@ -35,6 +38,8 @@ export type ControllerWidgetRegistry = Partial<
 
 export type StudioPanelSlotRenderProps = {
 	values: ControllerValues
+	/** 그룹마다 붙일 섹션 활성화 배선(캔버스 포커스 등). 화면이 정한다 — 계약은 모른다. */
+	groupSection?: (group: ControllerGroupDefinition) => ControllerGroupSectionProps | undefined
 	bindings?: ControllerRuntimeBindings
 	presentation?: { groups: readonly ControllerGroupPresentation[] }
 	onChange: (controlId: string, value: ControllerControlValue) => void
@@ -49,8 +54,44 @@ export type StudioPanelSlotRenderProps = {
 export function StudioPanelSlot({
 	entries,
 	widgets,
+	groupSection,
+	flat = false,
+	children,
 	...props
-}: StudioPanelSlotRenderProps & { entries: readonly StudioPanelEntry[] }) {
+}: StudioPanelSlotRenderProps & {
+	entries: readonly StudioPanelEntry[]
+	/**
+	 * 그룹 제목 없이 행만 쌓는다 — 제목을 카드가 이미 가진 자리(왼쪽 편집 설정 카드)에 쓴다.
+	 * 행 사이 4px, 생기고 빠지는 행은 같은 펼침이다.
+	 */
+	flat?: boolean
+	/** 계약 슬롯 뒤에 같은 목록으로 이어 붙이는 화면 고유 그룹(예: 생성 버튼) — 간격·펼침이 같다. */
+	children?: ReactNode
+}) {
+	if (flat)
+		return (
+			<Controller.Reveal gap={1}>
+				{entries.flatMap((entry) =>
+					entry.type === 'group'
+						? entry.group.controls.map((control) => (
+								<ControllerControlRenderer
+									key={control.id}
+									definition={control}
+									value={
+										control.id in props.values
+											? props.values[control.id]
+											: control.defaultValue
+									}
+									binding={props.bindings?.[control.id]}
+									assetSources={props.assetSources}
+									onChange={(value) => props.onChange(control.id, value)}
+								/>
+							))
+						: [renderWidget(entry.cluster, widgets, props)],
+				)}
+				{children}
+			</Controller.Reveal>
+		)
 	return (
 		<Controller.GroupList>
 			{entries.map((entry) => {
@@ -59,27 +100,35 @@ export function StudioPanelSlot({
 						<ControllerDefinitionGroup
 							key={`group:${entry.group.id}`}
 							group={entry.group}
+							section={groupSection?.(entry.group)}
 							{...props}
 						/>
 					)
-				const Widget = widgets?.[entry.cluster.widget]
-				if (!Widget) {
-					if (process.env.NODE_ENV !== 'production')
-						console.warn(
-							`등록되지 않은 묶음 위젯입니다: ${entry.cluster.widget} (${entry.cluster.id})`,
-						)
-					return null
-				}
-				return (
-					<Widget
-						key={`cluster:${entry.cluster.id}`}
-						cluster={entry.cluster}
-						values={props.values}
-						bindings={props.bindings}
-						onChange={props.onChange}
-					/>
-				)
+				return renderWidget(entry.cluster, widgets, props)
 			})}
+			{children}
 		</Controller.GroupList>
+	)
+}
+
+function renderWidget(
+	cluster: ControllerCluster,
+	widgets: ControllerWidgetRegistry | undefined,
+	props: Omit<StudioPanelSlotRenderProps, 'widgets' | 'groupSection'>,
+) {
+	const Widget = widgets?.[cluster.widget]
+	if (!Widget) {
+		if (process.env.NODE_ENV !== 'production')
+			console.warn(`등록되지 않은 묶음 위젯입니다: ${cluster.widget} (${cluster.id})`)
+		return null
+	}
+	return (
+		<Widget
+			key={`cluster:${cluster.id}`}
+			cluster={cluster}
+			values={props.values}
+			bindings={props.bindings}
+			onChange={props.onChange}
+		/>
 	)
 }

@@ -71,6 +71,8 @@ export type ControllerDefinitionGroupProps = Omit<
 	'className' | 'groups'
 > & {
 	group: ControllerGroupDefinition
+	/** 섹션 활성화 배선(캔버스 포커스 등) — 화면이 그룹마다 붙인다. */
+	section?: ControllerGroupSectionProps
 }
 
 /**
@@ -84,6 +86,7 @@ export function ControllerDefinitionGroup({
 	bindings,
 	onChange,
 	assetSources,
+	section,
 }: ControllerDefinitionGroupProps) {
 	const combination = resolveColorCombinationGroup(group)
 	const content = combination ? (
@@ -111,6 +114,7 @@ export function ControllerDefinitionGroup({
 		<ControllerGroupRenderer
 			definition={group}
 			presentation={presentation?.groups.find(({ groupId }) => groupId === group.id)}
+			section={section}
 		>
 			{content}
 		</ControllerGroupRenderer>
