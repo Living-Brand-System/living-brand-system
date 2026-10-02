@@ -13,6 +13,7 @@ import {
 	ImageTransformControl,
 } from '@/components/studio/template/image-transform-control'
 import { TemplateBackgroundPanel } from '@/components/studio/template/template-background-panel'
+import { TemplateColorSwatches } from '@/components/studio/template/template-color-swatches'
 import {
 	rowFocusProps,
 	sectionProps,
@@ -221,13 +222,13 @@ export function TemplateLayerControls({
 							allowToggle={!grouped && slot.visibility.allowToggle}
 							onChange={(visible) => layers.setVisible(slot.id, visible)}
 						/>
-						<Controller.ColorRow
-							label="Color"
-							value={color ?? '#000000'}
-							isEmpty={!color}
-							values={brandColorValues}
-							disabled={slot.access === 'readonly' || brandColorValues.length === 0}
+						{/* 심볼은 브랜드 색만 허용한다 — 텍스트의 고정 팔레트처럼 Custom을 열지 않는다. */}
+						<TemplateColorSwatches
+							subject={slot.label}
+							colors={brandColorValues}
+							value={color}
 							onChange={(next) => vectors.setColor(slot.id, next)}
+							disabled={slot.access === 'readonly' || brandColorValues.length === 0}
 						/>
 					</Controller.Group>
 				)

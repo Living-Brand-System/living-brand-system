@@ -1,14 +1,14 @@
 'use client'
 
 import { ColorPalette, Image, Shapes, TextFont, View, ViewOff } from '@carbon/icons-react'
-import { type ReactNode, useId, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Controller } from '@/components/shared/controller'
-import { ControllerCompound } from '@/components/shared/controller/compound'
 import { ControllerRoot } from '@/components/shared/controller/layout'
 import { ControllerControlRenderer } from '@/components/shared/controller-renderer'
 import { ControlPanel } from '@/components/studio/shared/control-panel'
 import { ImageSlotMode } from '@/components/studio/template/image-slot-input'
 import { TemplateBackgroundPanel } from '@/components/studio/template/template-background-panel'
+import { TemplateColorSwatches } from '@/components/studio/template/template-color-swatches'
 import { TemplateLayerControls } from '@/components/studio/template/template-layer-controls'
 import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
@@ -250,8 +250,6 @@ export function TemplateLayerGroups() {
 
 function TemplateColor() {
 	const { config, text } = useTemplateStudio()
-	const [mode, setMode] = useState('solid')
-	const name = useId()
 	const definition = config.template.textColorControlId
 		? findTemplateControl(config, config.template.textColorControlId)
 		: undefined
@@ -261,47 +259,15 @@ function TemplateColor() {
 				이 템플릿은 원본 텍스트 색상을 사용합니다.
 			</Typography>
 		)
-	const colors = definition.values ?? SOLID_COLORS
-	const editable = (definition.availability ?? 'enabled') === 'enabled'
 	return (
-		<ControllerCompound
-			label="Color"
-			control={
-				<Controller.Segmented
-					compact
-					aria-label="텍스트 색상 모드"
-					options={[
-						{ value: 'solid', label: 'Solid' },
-						{ value: 'custom', label: 'Custom' },
-					]}
-					value={mode}
-					onChange={setMode}
-					disabled={!editable || Boolean(definition.values)}
-				/>
-			}
-		>
-			{mode === 'solid' ? (
-				<div
-					role="radiogroup"
-					aria-label="텍스트 색상"
-					className="grid grid-cols-5 gap-1.5 px-3 pt-2 pb-3"
-				>
-					{colors.map((hex) => (
-						<input
-							key={hex}
-							type="radio"
-							name={name}
-							aria-label={`텍스트 색상 ${hex}`}
-							checked={text.color?.toLowerCase() === hex}
-							disabled={!editable}
-							onChange={() => text.setColor(hex)}
-							style={{ backgroundColor: hex }}
-							className="aspect-square w-full cursor-pointer appearance-none rounded-full border border-foreground/15 outline-none checked:ring-2 checked:ring-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed"
-						/>
-					))}
-				</div>
-			) : (
-				<div className="p-1.5 [&_[data-slot=controller-row]]:bg-foreground/4">
+		<TemplateColorSwatches
+			subject="텍스트"
+			colors={definition.values ?? SOLID_COLORS}
+			value={text.color}
+			onChange={text.setColor}
+			disabled={(definition.availability ?? 'enabled') !== 'enabled'}
+			custom={
+				definition.values ? undefined : (
 					<ControllerControlRenderer
 						definition={definition}
 						value={text.color}
@@ -309,8 +275,8 @@ function TemplateColor() {
 							if (typeof next === 'string' || next === null) text.setColor(next)
 						}}
 					/>
-				</div>
-			)}
-		</ControllerCompound>
+				)
+			}
+		/>
 	)
 }

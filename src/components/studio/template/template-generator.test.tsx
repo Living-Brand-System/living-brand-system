@@ -80,6 +80,11 @@ const sampleMocks = vi.hoisted(() => ({
 }))
 vi.mock('@/features/template-customization/services/list-sample-images.client', () => sampleMocks)
 
+vi.mock('@/features/template-core/services/template-editor-options.client', async (original) => ({
+	...(await original<object>()),
+	requestPublishedBrandColors: async () => [{ hex: '#002c5f' }, { hex: '#ffffff' }],
+}))
+
 vi.mock('next/navigation', () => ({
 	useRouter: () => ({ push: mocks.push }),
 }))
@@ -850,6 +855,41 @@ describe('TemplateGenerator', () => {
 
 		await user.click(screen.getByRole('button', { name: '취소' }))
 		expect(header()).not.toHaveAttribute('inert')
+	})
+
+	it('심볼 색은 브랜드 색 스와치로 고르고, Custom은 열지 않는다', async () => {
+		const user = userEvent.setup()
+		const { container } = render(
+			<TemplateGenerator
+				categoryTitle="카드"
+				template={{
+					...template,
+					html: '<div data-node-id="1:1" data-figma-type="FRAME"><img data-node-id="3:1" data-figma-type="VECTOR" data-name="Logo" src="/logo.svg"></div>',
+					nodeConfigs: {
+						'3:1': {
+							creator: {
+								access: 'editable',
+								visibility: { defaultVisible: true, allowToggle: true },
+							},
+							vectorColor: '#112233',
+						},
+					},
+				}}
+			/>,
+		)
+
+		selectLayerGroup('vector')
+		const swatch = await screen.findByRole('radio', { name: /색상 #002c5f$/ })
+		expect(screen.getByRole('radio', { name: 'Custom' })).toBeDisabled()
+
+		await user.click(swatch)
+
+		expect(swatch).toBeChecked()
+		await waitFor(() =>
+			expect(
+				container.querySelector<HTMLElement>('[data-node-id="3:1"]')?.style.backgroundColor,
+			).toBe('rgb(0, 44, 95)'),
+		)
 	})
 
 	// 슬롯의 첫 화면은 Generate다 — Preset으로 옮기는 패치가 세션 상태에 닿지 않으면 세그먼트가 움직이지 않는다.
