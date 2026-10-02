@@ -795,6 +795,34 @@ describe('TemplateGenerator', () => {
 		)
 	})
 
+	it('이미지 슬롯 Dimming은 슬롯에 합성되고, 컨트롤이 없는 Preset에서는 걸리지 않는다', async () => {
+		const user = userEvent.setup()
+		const { container } = render(
+			<TemplateGenerator
+				categoryTitle="카드"
+				template={{
+					...template,
+					html: '<div data-node-id="1:1" data-figma-type="FRAME" data-name="배경" data-image-carrier=""></div>',
+					nodeConfigs: { '1:1': { imageInput: { profileId: 7 } } },
+				}}
+			/>,
+		)
+		const dimmer = () => container.querySelector<HTMLElement>('[data-image-dimmer]')
+
+		selectLayerGroup('image')
+		expect(dimmer()).toBeNull()
+
+		await user.click(
+			within(screen.getByRole('radiogroup', { name: 'Use' })).getByRole('radio', {
+				name: 'On',
+			}),
+		)
+		await waitFor(() => expect(dimmer()?.style.backgroundColor).toBe('rgba(0, 0, 0, 0.2)'))
+
+		await user.click(screen.getByRole('radio', { name: 'Preset' }))
+		await waitFor(() => expect(dimmer()).toBeNull())
+	})
+
 	// 슬롯의 첫 화면은 Generate다 — Preset으로 옮기는 패치가 세션 상태에 닿지 않으면 세그먼트가 움직이지 않는다.
 	it('이미지 슬롯의 Image Type을 Preset으로 옮기면 샘플 이미지 카드가 나온다', async () => {
 		const user = userEvent.setup()

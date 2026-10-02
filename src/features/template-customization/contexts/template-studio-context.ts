@@ -56,10 +56,13 @@ export type TemplateImageSlotState = {
 	/** 배정된 이미지 — 없으면 슬롯은 저작 이미지 그대로다(transform도 잠긴다). */
 	image?: TemplateAssignedImage
 	transform?: ImageTransformValue
+	/** 슬롯 위 디머 — 배경 디머와 같은 모양이다. 이전 초안에는 없어서 선택 필드로 둔다. */
+	dimmer?: boolean
+	dimmerOpacity?: number
 }
 
 export type TemplateImageSlotPatch = Partial<
-	Pick<TemplateImageSlotState, 'imageMode' | 'prompt' | 'transform'>
+	Pick<TemplateImageSlotState, 'imageMode' | 'prompt' | 'transform' | 'dimmer' | 'dimmerOpacity'>
 >
 
 /** 캔버스 배경 하나의 입력·요청·결과 상태. */

@@ -1,6 +1,6 @@
 'use client'
 
-import { type ReactNode, useEffect, useState } from 'react'
+import { type ReactNode, useEffect } from 'react'
 import { Controller } from '@/components/shared/controller'
 import { ControllerControlRenderer } from '@/components/shared/controller-renderer'
 import { GraphicEditingControls } from '@/components/studio/graphic/graphic-editing-controls'
@@ -116,21 +116,19 @@ const IMAGE_DIMMER_OPACITY = {
 	display: { precision: 2 },
 } as const satisfies ControllerControlDefinition
 
-/**
- * 이미지 슬롯의 Dimming(Figma 529:27139). 배경 Dimming과 같은 모양이다.
- * ponytail: 슬롯 계약·합성에 디머가 없어 값은 로컬 state에만 둔다 — 캔버스에 반영할 때
- *   TemplateImageSlotState에 dimmer·dimmerOpacity를 올리고 compose에 연결한다.
- */
-function ImageSlotDimmer() {
-	const [dimmer, setDimmer] = useState(false)
-	const [opacity, setOpacity] = useState<number>(IMAGE_DIMMER_OPACITY.defaultValue)
+/** 이미지 슬롯의 Dimming(Figma 529:27139). 배경 Dimming과 같은 모양이고, 값은 슬롯 세션이 소유한다. */
+function ImageSlotDimmer({ target }: { target: ImageTarget }) {
+	const dimmer = target.state.dimmer ?? IMAGE_DIMMER.defaultValue
+	const opacity = target.state.dimmerOpacity ?? IMAGE_DIMMER_OPACITY.defaultValue
 	return (
 		<Controller.Group title="Dimming">
 			<ControllerControlRenderer
 				definition={IMAGE_DIMMER}
 				value={dimmer}
 				onChange={(next) => {
-					if (typeof next === 'boolean') setDimmer(next)
+					// 화면에 보이는 기본 강도를 함께 싣는다 — 합성은 기본값을 모른다.
+					if (typeof next === 'boolean')
+						target.onDimmer({ dimmer: next, dimmerOpacity: opacity })
 				}}
 			/>
 			{dimmer && (
@@ -138,7 +136,7 @@ function ImageSlotDimmer() {
 					definition={IMAGE_DIMMER_OPACITY}
 					value={opacity}
 					onChange={(next) => {
-						if (typeof next === 'number') setOpacity(next)
+						if (typeof next === 'number') target.onDimmer({ dimmerOpacity: next })
 					}}
 				/>
 			)}
@@ -156,6 +154,7 @@ type ImageTarget = {
 	bindings: ControllerRuntimeBindings
 	onProfile: (id: number) => void
 	onPrompt: (value: string) => void
+	onDimmer: (patch: { dimmer?: boolean; dimmerOpacity?: number }) => void
 	onFeature: (id: string, value: ControllerControlValue) => void
 	onSample: (option: SampleImageOption) => void
 	onGenerate: () => void
@@ -184,6 +183,7 @@ export function TemplateImageControls({
 					bindings: background.featureBindings,
 					onProfile: background.selectImageProfile,
 					onPrompt: (prompt) => background.update({ prompt }),
+					onDimmer: background.update,
 					onFeature: background.updateFeature,
 					onSample: background.selectSampleImage,
 					onGenerate: background.generate,
@@ -218,6 +218,7 @@ export function TemplateImageControls({
 						bindings,
 						onProfile: (id: number) => images.selectProfile(slot.id, id),
 						onPrompt: (prompt: string) => images.update(slot.id, { prompt }),
+						onDimmer: (patch) => images.update(slot.id, patch),
 						onFeature: (id: string, next: ControllerControlValue) =>
 							images.updateFeature(slot.id, id, next),
 						onSample: (option: SampleImageOption) =>
@@ -264,7 +265,11 @@ export function TemplateImageControls({
 			fixed={
 				isBackground || generating ? (
 					<Controller.GroupList>
-						{isBackground ? <TemplateDimmer /> : generating && <ImageSlotDimmer />}
+						{isBackground ? (
+							<TemplateDimmer />
+						) : (
+							generating && <ImageSlotDimmer target={target} />
+						)}
 						{generating && (
 							<Controller.Group title="Generate">
 								<Button

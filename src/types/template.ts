@@ -75,6 +75,8 @@ export interface TemplateNodeConfig {
 	 * background 생략 = 배경 투명(선만 칠해지고 캔버스가 비침).
 	 */
 	imageColorize?: { line: string; background?: string }
+	/** Creator 세션이 compose에만 싣는 이미지 슬롯 디머 불투명도(0~1, 저장 안 됨). 슬롯 박스 위에 검정을 한 겹 깐다. */
+	imageDimmer?: number
 	input?: TemplateSlotSpec
 	/**
 	 * 존재 자체가 스튜디오 개방 선언 — 유저가 이 프레임의 이미지를 생성해 채울 수 있다.

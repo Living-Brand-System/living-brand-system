@@ -176,8 +176,11 @@ export function composeTemplateStudioHtml({
 			{
 				profileId?: number
 				featureValues: ControllerValues
+				imageMode: 'preset' | 'generate'
 				image?: TemplateAssignedImage
 				transform?: ImageTransformValue
+				dimmer?: boolean
+				dimmerOpacity?: number
 			}
 		>
 	>
@@ -228,8 +231,12 @@ export function composeTemplateStudioHtml({
 								: {}),
 						}
 					: undefined
+			// 디머 컨트롤은 Generate 화면에만 있다 — 보이지 않는 컨트롤이 판을 누르고 있지 않게 같은 조건으로 건다.
+			const dimmer =
+				state.imageMode === 'generate' && state.dimmer ? (state.dimmerOpacity ?? 0) : 0
 			const override = {
 				...(colorize ? { imageColorize: colorize } : {}),
+				...(dimmer > 0 ? { imageDimmer: dimmer } : {}),
 				...(state.image && state.transform
 					? {
 							imageTransform: toImageEditTransform(

@@ -190,6 +190,8 @@ function useTemplateImageSession(
 					imageMode: current[slotId]?.imageMode ?? 'preset',
 					image: current[slotId]?.image,
 					transform: undefined,
+					dimmer: undefined,
+					dimmerOpacity: undefined,
 				},
 			}))
 		},
@@ -1160,6 +1162,8 @@ function updateTemplateImageSlot(
 			...(patch.imageMode === undefined ? {} : { imageMode: patch.imageMode }),
 			...(prompt === undefined ? {} : { prompt }),
 			...(patch.transform === undefined ? {} : { transform: patch.transform }),
+			...(patch.dimmer === undefined ? {} : { dimmer: patch.dimmer }),
+			...(patch.dimmerOpacity === undefined ? {} : { dimmerOpacity: patch.dimmerOpacity }),
 		},
 	}
 }
