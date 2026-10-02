@@ -1,5 +1,11 @@
 import type { TemplateVectorAssetCollection } from '@/features/template-core/domain/template-asset-policy'
-import type { ApplicationImage, BrandColor, BrandColorPair, BrandLogo } from '@/payload-types'
+import type {
+	ApplicationImage,
+	BrandColor,
+	BrandColorGroup,
+	BrandColorPair,
+	BrandLogo,
+} from '@/payload-types'
 
 export type TemplateVectorAsset = (BrandLogo | ApplicationImage) & {
 	collection: TemplateVectorAssetCollection
@@ -18,9 +24,26 @@ async function requestPublishedDocs<T>(
 	return Array.isArray(body.docs) ? body.docs : []
 }
 
-/** Admin 템플릿 편집기의 브랜드 컬러 선택지를 읽는다. Payload REST I/O는 이 client service가 소유한다. */
-export function requestPublishedBrandColors(signal: AbortSignal): Promise<BrandColor[]> {
-	return requestPublishedDocs<BrandColor>('brand-colors', signal)
+/**
+ * 브랜드 컬러 선택지를 읽는다(Admin 템플릿 편집기·스튜디오 공용). Payload REST I/O는 이 client service가 소유한다.
+ * 🔴 색 전체가 아니라 **발행된 컬러 그룹에 속한 색**만 돌려준다 — 그룹에 없는 보조색(예: 서체 표본 전경)은
+ *    팔레트가 아니다. 순서는 그룹 생성 순서 → 그룹 안 순서이고, 여러 그룹에 든 색은 처음 나온 자리에 한 번만 둔다.
+ */
+export async function requestPublishedBrandColors(signal: AbortSignal): Promise<BrandColor[]> {
+	const groups = await requestPublishedDocs<BrandColorGroup>(
+		'brand-color-groups',
+		signal,
+		'depth=1&limit=100&where[_status][equals]=published&sort=createdAt',
+	)
+	const seen = new Set<number>()
+	return groups.flatMap((group) =>
+		(group.colors ?? []).flatMap((color) => {
+			if (typeof color === 'number' || color._status !== 'published' || seen.has(color.id))
+				return []
+			seen.add(color.id)
+			return [color]
+		}),
+	)
 }
 
 /**

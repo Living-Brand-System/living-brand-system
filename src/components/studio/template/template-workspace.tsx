@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { ControllerBrowser } from '@/components/shared/controller/browser'
 import { OutputDimensions } from '@/components/studio/shared/output-dimensions'
+import { PanelRenderScope } from '@/components/studio/shared/panel-render'
 import { PreviewRefreshButton } from '@/components/studio/shared/preview-refresh-button'
 import {
 	StudioSelectionCard,
@@ -103,7 +104,11 @@ export function TemplateWorkspace({
 					}
 					right={
 						<div data-slot="studio-sidebar" className="h-full min-h-0">
-							<TemplateControls />
+							{/* 패널 렌더 범위는 패널보다 위에 둔다 — 레이어마다 패널이 다시 마운트돼도 켜짐·기록이 남는다.
+							    무엇이 바뀌었는지는 패널이 구조 서명으로 안다(docs/10 §3.7). */}
+							<PanelRenderScope>
+								<TemplateControls />
+							</PanelRenderScope>
 						</div>
 					}
 				>

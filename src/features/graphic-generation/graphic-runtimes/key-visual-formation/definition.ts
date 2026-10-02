@@ -103,9 +103,31 @@ export default defineGraphicRuntime({
 	type: 'p5',
 	artifacts: { vector: {}, raster: {} },
 	controller: {
-		// 면·선의 색과 재료는 창작자가 늘 만지는 큰 축이다 — 왼쪽 패널.
-		left: ['planeColor', 'lineColor', 'planeImage', 'anchor'],
-		right: ['lineRatio', 'planeRatio', 'steps', 'decay'],
+		// 패널 컴포지션(docs/10 §3.7) — 무엇을 뜻하나만 선언한다. 자리는 그래픽 패널이 정한다.
+		roles: {
+			planeImage: 'source',
+			lineRatio: 'tuning',
+			planeRatio: 'tuning',
+			steps: 'tuning',
+			decay: 'tuning',
+		},
+		clusters: [
+			// 면·선 색을 한 조합으로 고른다 — 선의 허용 범위가 면을 따른다(런타임 제한).
+			{
+				id: 'color',
+				title: 'Color',
+				role: 'palette',
+				widget: 'color-pair',
+				members: { background: 'planeColor', foreground: 'lineColor' },
+			},
+			{
+				id: 'position',
+				title: 'Position',
+				role: 'placement',
+				widget: 'position',
+				members: { value: 'anchor' },
+			},
+		],
 		groups: [
 			{
 				id: 'plane',

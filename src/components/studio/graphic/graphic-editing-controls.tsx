@@ -1,44 +1,50 @@
 'use client'
 
-import { type ReactNode, useState } from 'react'
-import { ControllerCompound } from '@/components/shared/controller/compound'
-import { ControllerControlRenderer } from '@/components/shared/controller-renderer'
-import { GraphicControls } from '@/components/studio/graphic/graphic-controls'
-import { StudioColorCompound } from '@/components/studio/shared/compound-controls'
+import {
+	GRAPHIC_WIDGETS,
+	GraphicWidgetConfigProvider,
+} from '@/components/studio/graphic/graphic-widgets'
+import { ControlPanel } from '@/components/studio/shared/control-panel'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
-import { playgroundGraphicColors } from '@/features/graphic-generation/domain/playground-graphics'
+import { toFlutedGlassInput } from '@/features/graphic-generation/graphic-runtimes/fluted-glass/model'
 import { getGraphicStudioRuntimeGroups } from '@/features/graphic-generation/runtime/graphic-studio-runtime'
+import {
+	arrangeStudioPanel,
+	type StudioPanelPolicy,
+} from '@/modules/studio-controller/controller-composition'
 import type { ControllerValues } from '@/modules/studio-controller/controller-definition'
 import {
 	type ControllerControlValue,
 	type ControllerRuntimeBindings,
 	controllerValuesEqual,
 	createControllerValues,
-	resolveControllerAvailability,
-	visibleControllerGroups,
 } from '@/modules/studio-controller/controller-definition'
-/** 배경 그래픽도 독립 Graphic과 같은 상·하단 컨트롤을 쓴다. 상태는 Template이 소유한다. */
+
+/**
+ * 그래픽 패널의 배치 정책 — 역할을 자리에 놓는다(docs/10 §3.7). 매니페스트는 이것을 모른다.
+ * Basic은 색 → 형태 → 놓임 → 재료 순(Figma 345:17104·529:23010), 세부 축은 Adjustment.
+ */
+export const GRAPHIC_PANEL_POLICY: StudioPanelPolicy = {
+	basicPresets: ['preset'],
+	basic: ['palette', 'form', 'placement', 'source'],
+	adjustment: ['tuning'],
+}
+
+/** 컴포지션을 선언하지 않은 런타임은 전부 Basic에 선다 — 정하지 않은 런타임의 화면이 비면 안 된다. */
+const UNDECLARED_PANEL_POLICY: StudioPanelPolicy = { basic: ['content'] }
+
+/** 배경 그래픽도 독립 Graphic과 같은 컨트롤을 쓴다. 상태는 Template이 소유한다. */
 export function GraphicEditingControls({
 	config,
 	storedValues,
 	bindings,
 	onChange,
-	fixed,
 }: {
 	config: GraphicStudioConfig
 	storedValues: ControllerValues
 	bindings: ControllerRuntimeBindings
 	onChange: (id: string, value: ControllerControlValue) => void
-	fixed?: ReactNode
 }) {
-	const [palette, setPalette] = useState<{
-		colorMode: 'swatch' | 'custom'
-		swatch: string
-		foreground?: string
-	}>({
-		colorMode: 'swatch',
-		swatch: '',
-	})
 	const defaults = createControllerValues(config.controller.groups)
 	const hasPreset = 'preset' in defaults
 	const values = hasPreset
@@ -51,196 +57,58 @@ export function GraphicEditingControls({
 					? 'default'
 					: 'custom',
 			}
-	const controls = visibleControllerGroups(
-		getGraphicStudioRuntimeGroups(config, values),
-		config.controller.left,
-		config.controller.right,
-	).flatMap((group) => group.controls)
-	const colors = controls.filter((control) => control.kind === 'color')
-	const colorway = controls.find(
-		(control) =>
-			control.kind === 'select' &&
-			control.options.some((option) => option.colors?.length === 2),
-	)
-	const swatches =
-		colorway?.kind === 'select'
-			? colorway.options.flatMap((option) =>
-					option.colors?.length === 2
-						? [
-								{
-									id: option.value,
-									label: option.label,
-									foreground: option.colors[1],
-									background: option.colors[0],
-								},
-							]
-						: [],
-				)
-			: []
-	const currentSwatch = swatches.find((item) => item.id === values[colorway?.id ?? ''])
-	// Formation은 면·선 색을 따로 고른다 — 면 값마다 런타임이 허용하는 선 값으로 조합 스와치를 만든다
-	// (Figma 529:23010). 계약 밖의 조합은 만들지 않는다.
-	// ponytail: 면·선 쌍을 가진 런타임이 Formation 하나라 id를 직접 쓴다. 늘어나면 정의에 쌍을 선언한다.
-	const pair =
-		config.id === 'key-visual-formation'
-			? { background: 'planeColor', foreground: 'lineColor' }
-			: null
-	const pairBackground = pair && controls.find((control) => control.id === pair.background)
-	const pairSwatches =
-		pair && pairBackground?.kind === 'select'
-			? pairBackground.options.flatMap((plane) => {
-					const line = getGraphicStudioRuntimeGroups(config, {
-						...values,
-						[pair.background]: plane.value,
-					})
-						.flatMap((group) => group.controls)
-						.find((control) => control.id === pair.foreground)
-					const background = plane.colors?.[0]
-					if (line?.kind !== 'select' || !background) return []
-					return line.options.flatMap((option) =>
-						option.colors?.[0]
-							? [
-									{
-										id: `${plane.value}:${option.value}`,
-										label: `${plane.label} · ${option.label}`,
-										background,
-										foreground: option.colors[0],
-									},
-								]
-							: [],
-					)
-				})
-			: []
-	const pairDisabled =
-		pair !== null &&
-		[pair.background, pair.foreground].some((id) => {
-			const control = controls.find((item) => item.id === id)
-			return (
-				!control ||
-				resolveControllerAvailability(control.availability, bindings[id]?.availability) !==
-					'enabled'
-			)
-		})
-	const restrictedColors = controls.filter(
-		(control) =>
-			control.kind === 'color' ||
-			(control.kind === 'select' && control.options.some((option) => option.colors?.length)),
-	)
-	const freeColors =
-		colors.length > 0 &&
-		colors.every(
-			(control) =>
-				!control.values &&
-				resolveControllerAvailability(
-					control.availability,
-					bindings[control.id]?.availability,
-				) === 'enabled',
-		)
-	const foregroundId =
+	// ponytail: Fluted Glass의 기준점은 만지기 전까지 모양이 정한 값이 실효값이라 판이 그 값을 보여 준다.
+	//    실효값을 따로 갖는 런타임이 늘면 플러그인에 표시값 투영을 선언한다.
+	const shown =
 		config.id === 'fluted-glass'
-			? 'rayColor3'
-			: config.id === 'forward-straight'
-				? 'lineColor'
-				: 'foregroundColor'
-	const backgroundId = config.id === 'fluted-glass' ? 'rayBackgroundColor' : 'backgroundColor'
-	const foreground =
-		(config.id === 'fluted-glass' ? palette.foreground : undefined) ??
-		String(values[foregroundId] ?? '#000000')
-	const back = String(values[backgroundId] ?? '#ffffff')
-	return (
-		<GraphicControls
-			manifest={config}
-			values={values}
-			bindings={bindings}
-			empty={false}
-			fixed={fixed}
-			color={{ date: '', ...palette, foreground, background: back }}
-			colorControl={
-				freeColors ? undefined : !restrictedColors.length ? null : pair &&
-					pairSwatches.length ? (
-					<StudioColorCompound
-						showDate={false}
-						allowCustom={false}
-						swatches={pairSwatches}
-						disabled={pairDisabled}
-						value={{
-							date: '',
-							colorMode: 'swatch',
-							swatch: `${values[pair.background]}:${values[pair.foreground]}`,
-							foreground,
-							background: back,
-						}}
-						onChange={(patch) => {
-							if (!patch.swatch) return
-							const [plane, line] = patch.swatch.split(':')
-							// 면을 먼저 바꾼다 — 선의 허용 범위가 면을 따른다.
-							onChange(pair.background, plane)
-							onChange(pair.foreground, line)
-						}}
-					/>
-				) : colorway && swatches.length ? (
-					<StudioColorCompound
-						showDate={false}
-						allowCustom={false}
-						swatches={swatches}
-						disabled={
-							resolveControllerAvailability(
-								colorway.availability,
-								bindings[colorway.id]?.availability,
-							) !== 'enabled'
-						}
-						value={{
-							date: '',
-							colorMode: 'swatch',
-							swatch: currentSwatch?.id ?? '',
-							foreground: currentSwatch?.foreground ?? foreground,
-							background: currentSwatch?.background ?? back,
-						}}
-						onChange={(patch) => {
-							if (patch.swatch !== undefined) onChange(colorway.id, patch.swatch)
-						}}
-					/>
-				) : (
-					<ControllerCompound label="Color">
-						<div className="flex flex-col gap-1 p-1.5">
-							{restrictedColors.map((control) => (
-								<ControllerControlRenderer
-									key={control.id}
-									definition={control}
-									value={values[control.id]}
-									binding={bindings[control.id]}
-									onChange={(next) => onChange(control.id, next)}
-								/>
-							))}
-						</div>
-					</ControllerCompound>
-				)
-			}
-			onColorChange={(patch) => {
-				setPalette((current) => ({
-					colorMode: patch.colorMode ?? current.colorMode,
-					swatch: patch.swatch ?? current.swatch,
-					foreground: patch.foreground ?? current.foreground,
-				}))
-				if (patch.foreground === undefined && patch.background === undefined) return
-				for (const [id, next] of Object.entries(
-					playgroundGraphicColors(
-						config.id as Parameters<typeof playgroundGraphicColors>[0],
-						patch.foreground ?? foreground,
-						patch.background ?? back,
-					),
-				))
-					onChange(id, next)
-			}}
-			onChange={(id, next) => {
-				if (!hasPreset && id === 'preset') {
-					if (next === 'default')
-						for (const [controlId, value] of Object.entries(defaults))
-							onChange(controlId, value)
-					return
+			? { ...values, source: toFlutedGlassInput(values).input.source }
+			: values
+	// ponytail: 굵기 변화를 끄면 최대 굵기는 쓰이지 않는다 — 패턴 하나라 id를 직접 쓴다. 실행 제한(잠금)이 아니라
+	//    화면 binding인 이유는 잠긴 값은 기본값과 같아야 내보내기가 열리기 때문이다.
+	const panelBindings =
+		config.id === 'key-visual-pattern' && values.variableWeight === false
+			? {
+					...bindings,
+					maxWeight: { ...bindings.maxWeight, availability: 'disabled' as const },
 				}
-				onChange(id, next)
-			}}
-		/>
+			: bindings
+	const groups = getGraphicStudioRuntimeGroups(config, values)
+	const { roles, clusters } = config.controller
+	const declared = roles !== undefined || clusters !== undefined
+	return (
+		<GraphicWidgetConfigProvider value={config}>
+			<ControlPanel
+				composition={{
+					slots: declared
+						? arrangeStudioPanel(
+								{ groups, clusters, roles },
+								GRAPHIC_PANEL_POLICY,
+								shown,
+							)
+						: arrangeStudioPanel(
+								{
+									groups: groups.map((group) => ({
+										...group,
+										role: 'content' as const,
+									})),
+								},
+								UNDECLARED_PANEL_POLICY,
+								shown,
+							),
+					values: shown,
+					bindings: panelBindings,
+					widgets: GRAPHIC_WIDGETS,
+					onChange: (id, next) => {
+						if (!hasPreset && id === 'preset') {
+							if (next === 'default')
+								for (const [controlId, value] of Object.entries(defaults))
+									onChange(controlId, value)
+							return
+						}
+						onChange(id, next)
+					},
+				}}
+			/>
+		</GraphicWidgetConfigProvider>
 	)
 }

@@ -74,17 +74,31 @@ export default defineGraphicRuntime({
 	type: 'p5',
 	artifacts: { vector: {}, raster: {} },
 	controller: {
-		left: ['colorway'],
-		// 정지 그래픽이라 속도가 없다. 경로 두 끝점이 위치 축을 대신한다.
-		right: [
-			'lineCount',
-			'lengthStart',
-			'lengthEnd',
-			'angleStart',
-			'angleSpread',
-			'weightRatio',
-			'weightThin',
-			'path',
+		// 패널 컴포지션(docs/10 §3.7) — 무엇을 뜻하나만 선언한다. 자리는 그래픽 패널이 정한다.
+		roles: {
+			lineCount: 'tuning',
+			lengthStart: 'tuning',
+			lengthEnd: 'tuning',
+			angleStart: 'tuning',
+			angleSpread: 'tuning',
+			weightRatio: 'tuning',
+			weightThin: 'tuning',
+		},
+		clusters: [
+			{
+				id: 'color',
+				title: 'Color',
+				role: 'palette',
+				widget: 'colorway',
+				members: { value: 'colorway' },
+			},
+			{
+				id: 'position',
+				title: 'Position',
+				role: 'placement',
+				widget: 'position',
+				members: { value: 'path' },
+			},
 		],
 		groups: [
 			{

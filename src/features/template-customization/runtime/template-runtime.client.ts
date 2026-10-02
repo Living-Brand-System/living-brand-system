@@ -231,9 +231,8 @@ export function composeTemplateStudioHtml({
 								: {}),
 						}
 					: undefined
-			// 디머 컨트롤은 Generate 화면에만 있다 — 보이지 않는 컨트롤이 판을 누르고 있지 않게 같은 조건으로 건다.
-			const dimmer =
-				state.imageMode === 'generate' && state.dimmer ? (state.dimmerOpacity ?? 0) : 0
+			// 슬롯 Dimming은 방식과 무관하다 — 배경 Dimming처럼 켜져 있으면 늘 건다(2026-10-02 결정).
+			const dimmer = state.dimmer ? (state.dimmerOpacity ?? 0) : 0
 			const override = {
 				...(colorize ? { imageColorize: colorize } : {}),
 				...(dimmer > 0 ? { imageDimmer: dimmer } : {}),

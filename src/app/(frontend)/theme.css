@@ -184,6 +184,10 @@
 :root,
 .light {
 	--radius: 0.75rem;
+	/* 스튜디오·컨트롤러 CSS 전환 시간 — JS 짝은 `src/lib/motion.ts`의 MOTION. 커브는 `ease-out`이다.
+	   feedback: 누름·호버처럼 손에 바로 붙는 반응, layout: 미리보기 크기처럼 화면 배치가 바뀌는 것. */
+	--motion-feedback: 150ms;
+	--motion-layout: 200ms;
 	/* StudioRail Idle 아이콘 — Figma Neutral/400. */
 	--studio-rail-idle-foreground: oklch(0.708 0 0);
 	/* 앱 셸 데스크톱 헤더 높이 — GlobalHeader가 이 값을 소비한다. */

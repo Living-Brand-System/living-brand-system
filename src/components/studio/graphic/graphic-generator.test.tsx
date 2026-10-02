@@ -282,7 +282,7 @@ describe('GraphicGenerator', () => {
 
 	it('선언이 없는 런타임은 전부 왼쪽이다 — 정하지 않은 런타임의 화면이 비면 안 된다', () => {
 		const { controller, ...rest } = forwardStraightConfig
-		const { left: _left, ...controllerWithoutLeft } = controller
+		const { roles: _roles, clusters: _clusters, ...controllerWithoutLeft } = controller
 		const config = {
 			...rest,
 			controller: controllerWithoutLeft,

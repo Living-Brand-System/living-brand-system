@@ -9,13 +9,55 @@ describe('usePublishedBrandColorValues', () => {
 			vi.fn(() =>
 				Promise.resolve({
 					ok: true,
-					json: () => Promise.resolve({ docs: [{ hex: '00af41' }, { hex: '#003087' }] }),
+					json: () =>
+						Promise.resolve({
+							docs: [
+								{
+									colors: [
+										{ id: 1, hex: '00af41', _status: 'published' },
+										{ id: 2, hex: '#003087', _status: 'published' },
+									],
+								},
+							],
+						}),
 				}),
 			),
 		)
 		const { result } = renderHook(() => usePublishedBrandColorValues())
 
 		await waitFor(() => expect(result.current.values).toEqual(['#00af41', '#003087']))
+	})
+
+	it('그룹에 속한 발행 색만, 처음 나온 자리에 한 번씩 넣는다', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(() =>
+				Promise.resolve({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							docs: [
+								{
+									colors: [
+										{ id: 1, hex: '#00af41', _status: 'published' },
+										{ id: 2, hex: '#ffffff', _status: 'published' },
+									],
+								},
+								{
+									colors: [
+										{ id: 2, hex: '#ffffff', _status: 'published' },
+										{ id: 3, hex: '#123456', _status: 'draft' },
+										9,
+									],
+								},
+							],
+						}),
+				}),
+			),
+		)
+		const { result } = renderHook(() => usePublishedBrandColorValues())
+
+		await waitFor(() => expect(result.current.values).toEqual(['#00af41', '#ffffff']))
 	})
 
 	/**

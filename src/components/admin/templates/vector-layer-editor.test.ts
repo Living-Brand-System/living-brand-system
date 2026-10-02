@@ -6,9 +6,19 @@ import { VectorLayerEditor } from './vector-layer-editor'
 const responses = {
 	'brand-logos': [{ id: 7, name: 'Wordmark', alt: 'Wordmark', url: '/logo.svg' }],
 	'application-images': [],
-	'brand-colors': [
-		{ id: 3, name: 'Primary', hex: '#112233' },
-		{ id: 4, name: 'Unsafe', hex: 'url(https://example.com/pixel)' },
+	// 색 선택지는 발행된 컬러 그룹을 거쳐 온다.
+	'brand-color-groups': [
+		{
+			colors: [
+				{ id: 3, name: 'Primary', hex: '#112233', _status: 'published' },
+				{
+					id: 4,
+					name: 'Unsafe',
+					hex: 'url(https://example.com/pixel)',
+					_status: 'published',
+				},
+			],
+		},
 	],
 }
 

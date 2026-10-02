@@ -235,7 +235,7 @@ CMS `section`·`base`·`overview`·`examples`는 `CardBlock` 어댑터가 같은
 | 컴포넌트 | **shadcn/ui** (`base: radix`) | 라이브러리가 아니라 **소스 복사본**입니다. `src/components/ui`를 우리가 소유 |
 | 동작·접근성 | **Radix** | shadcn 아래층. WAI-ARIA APG 패턴 구현체 |
 | variant | `class-variance-authority` | 원형은 `docs/10` §3 |
-| 모션 | `motion/react` | `LazyMotion` + `m` 조합만 |
+| 모션 | `motion/react` | `LazyMotion` + `m` 조합만. 스튜디오·컨트롤러의 값은 `src/lib/motion.ts`(JS)·`theme.css`의 `--motion-*`(CSS)만 쓴다 — `docs/10` §3 |
 | 아이콘 | **`@carbon/icons-react` 단일 소스** | `components.json`의 `iconLibrary`가 다른 값인 이유는 `docs/10` §2 |
 | 본문 서체 | Pretendard (`--font-body`) | `--font-title`은 값 미정 — §6 |
 

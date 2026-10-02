@@ -246,7 +246,7 @@ export function TemplateCanvas() {
 			    클릭 상자가 맡는다(주입 HTML과 그래픽 배경만 가둔다). */}
 			<div
 				data-slot="template-preview"
-				className="relative m-auto shrink-0 shadow-lg transition-transform duration-200 ease-out motion-reduce:transition-none lg:[transform:scale(var(--preview-scale))]"
+				className="relative m-auto shrink-0 shadow-lg transition-transform duration-(--motion-layout) ease-out motion-reduce:transition-none lg:[transform:scale(var(--preview-scale))]"
 				style={
 					{
 						...preview,
