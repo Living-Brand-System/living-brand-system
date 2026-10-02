@@ -3,6 +3,7 @@
 import { AnimatePresence, domAnimation, LazyMotion, useReducedMotion } from 'motion/react'
 import * as m from 'motion/react-m'
 import type * as React from 'react'
+import { useMotionTransition } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 
 type ControllerTabPanelProps = {
@@ -18,6 +19,7 @@ type ControllerTabPanelProps = {
  */
 export function ControllerTabPanel({ tabKey, className, children }: ControllerTabPanelProps) {
 	const reducedMotion = useReducedMotion()
+	const transition = useMotionTransition('panel')
 
 	return (
 		<LazyMotion features={domAnimation}>
@@ -33,7 +35,7 @@ export function ControllerTabPanel({ tabKey, className, children }: ControllerTa
 							? undefined
 							: { opacity: 0, y: 4, scale: 0.97, pointerEvents: 'none' }
 					}
-					transition={{ duration: 0.15, ease: 'easeOut' }}
+					transition={transition}
 				>
 					{children}
 				</m.div>

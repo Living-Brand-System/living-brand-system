@@ -5,6 +5,7 @@ import { AnimatePresence, domAnimation, LazyMotion, useReducedMotion } from 'mot
 import * as m from 'motion/react-m'
 import * as React from 'react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { useMotionTransition } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 
 /**
@@ -119,6 +120,7 @@ function ControllerCollapsibleGroup({
 	// disabled 동안에도 사용자의 열림 의사를 보존한다 — 잠금이 풀리면 원래 상태로 돌아온다.
 	const [open, setOpen] = React.useState(defaultOpen)
 	const reducedMotion = useReducedMotion()
+	const transition = useMotionTransition('disclosure')
 	const resolvedOpen = disabled ? false : open
 
 	/* 디자인 SSOT(2:2071): 펼침 = ˅, 접힘 = ˄. */
@@ -128,11 +130,7 @@ function ControllerCollapsibleGroup({
 			className="size-4 shrink-0 text-muted-foreground"
 			initial={false}
 			animate={{ rotate: resolvedOpen ? 0 : 180 }}
-			transition={
-				reducedMotion
-					? { duration: 0 }
-					: { type: 'spring', visualDuration: 0.35, bounce: 0.15 }
-			}
+			transition={transition}
 		>
 			<ChevronDown className="size-4" />
 		</m.span>
@@ -187,11 +185,7 @@ function ControllerCollapsibleGroup({
 							initial={reducedMotion ? false : { height: 0, opacity: 0 }}
 							animate={{ height: 'auto', opacity: 1 }}
 							exit={{ height: 0, opacity: 0, pointerEvents: 'none' }}
-							transition={
-								reducedMotion
-									? { duration: 0 }
-									: { type: 'spring', visualDuration: 0.35, bounce: 0.1 }
-							}
+							transition={transition}
 							style={{ clipPath: 'inset(-2px -20px)' }}
 						>
 							{/* 제목과의 6px도 접힘 높이에 포함한다. clipPath의 2px 여유가 필드 링을 보호한다. */}

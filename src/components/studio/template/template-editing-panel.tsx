@@ -16,10 +16,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import { useShellLock } from '@/hooks/use-shell-lock'
+import { useMotionTransition } from '@/lib/motion'
 
-// 마스터·편집 패널이 같은 스프링을 쓴다 — 함께 출발해 함께 멈춘다.
-// visualDuration은 눈에 보이는 도착 시간이고, 남는 bounce는 그 뒤에 잦아든다.
-const TRANSITION = { type: 'spring', visualDuration: 0.15, bounce: 0.1 } as const
 // 비활성 패널(밀려난 마스터, 들어오기 전·나간 뒤의 편집 패널)은 절반 자리에서 반투명하다.
 const INACTIVE = { x: '-50%', opacity: 0.5 } as const
 const ACTIVE = { x: 0, opacity: 1 } as const
@@ -29,6 +27,8 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 	const { editing } = useTemplateStudio()
 	const panel = useRef<HTMLElement>(null)
 	const reducedMotion = useReducedMotion()
+	// 마스터·편집 패널이 같은 프리셋을 쓴다 — 함께 출발해 함께 멈춘다.
+	const transition = useMotionTransition('panel')
 	const targetId = editing.targetId
 	// 상단 이동도 완료·취소 전까지 잠근다 — 헤더는 셸 잠금을 읽어 스스로 inert가 된다.
 	useShellLock(Boolean(targetId))
@@ -51,7 +51,7 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 					className="h-full"
 					initial={false}
 					animate={targetId ? INACTIVE : ACTIVE}
-					transition={reducedMotion ? { duration: 0 } : TRANSITION}
+					transition={transition}
 				>
 					{children}
 				</m.div>
@@ -73,7 +73,7 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 									? undefined
 									: { ...INACTIVE, opacity: 0, pointerEvents: 'none' }
 							}
-							transition={reducedMotion ? { duration: 0 } : TRANSITION}
+							transition={transition}
 						>
 							<ControllerRoot className="aspect-square shrink-0 lg:h-auto">
 								<StudioSelectionCard
