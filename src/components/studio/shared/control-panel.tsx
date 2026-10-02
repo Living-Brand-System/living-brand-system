@@ -5,7 +5,13 @@ import * as m from 'motion/react-m'
 import { type ReactNode, useId, useState } from 'react'
 import { ControllerRoot } from '@/components/shared/controller/layout'
 import { PANEL_RENDER, useMotionTransition } from '@/lib/motion'
-import { PanelRenderTarget } from './panel-render'
+import {
+	controllerStructureSignature,
+	type StudioPanelEntry,
+	type StudioPanelSlot,
+} from '@/modules/studio-controller/controller-composition'
+import { PanelRenderScope, PanelRenderTarget, useHasPanelRenderScope } from './panel-render'
+import { StudioPanelSlot as Slot, type StudioPanelSlotRenderProps } from './studio-panel-slot'
 import { StudioRail, StudioRailIcon } from './studio-rail'
 
 /**
@@ -16,22 +22,61 @@ const CARD_BODY =
 	'scrollbar-none min-h-0 overflow-y-auto p-4 has-[>[data-slot=controller-group-list]:first-child]:pt-1 has-[>[data-slot=controller-group]:first-child]:pt-2 has-[>:first-child>[data-slot=controller-group-list]:first-child]:pt-1'
 
 /**
- * 고정 영역은 탭 스크롤 밖에, 목록과 조정 내용은 각각 남은 높이 안에 둔다.
- * 고정 영역은 최대 절반 높이까지 자라고 넘치면 자체 스크롤한다.
+ * 패널 컴포지션 입력(docs/10 §3.7) — 화면이 `arrangeStudioPanel`로 역할을 슬롯에 놓은 결과와 그릴 값.
+ * 슬롯은 같은 자리의 JSX 입력이 없을 때만 쓴다(이행 기간 동안 두 길이 함께 돈다).
  */
-export function ControlPanel({
-	fixed,
-	basic,
-	presets,
-	adjustment,
-	basicPresets,
-}: {
+export type ControlPanelComposition = StudioPanelSlotRenderProps & {
+	slots: Readonly<Record<StudioPanelSlot, readonly StudioPanelEntry[]>>
+}
+
+type ControlPanelProps = {
 	fixed?: ReactNode
 	basic?: ReactNode
 	presets?: ReactNode
 	adjustment?: ReactNode
 	basicPresets?: ReactNode
-}) {
+	composition?: ControlPanelComposition
+}
+
+/**
+ * 고정 영역은 탭 스크롤 밖에, 목록과 조정 내용은 각각 남은 높이 안에 둔다.
+ * 고정 영역은 최대 절반 높이까지 자라고 넘치면 자체 스크롤한다.
+ */
+export function ControlPanel(props: ControlPanelProps) {
+	// 컴포지션으로 그리면 영역 키를 스스로 안다 — 위에 범위가 없으면 직접 깔아 켜짐·마지막 키를 갖게 한다.
+	const hasScope = useHasPanelRenderScope()
+	if (props.composition && !hasScope)
+		return (
+			<PanelRenderScope>
+				<ControlPanelView {...props} />
+			</PanelRenderScope>
+		)
+	return <ControlPanelView {...props} />
+}
+
+function ControlPanelView({ composition, ...explicit }: ControlPanelProps) {
+	const slot = (name: Exclude<StudioPanelSlot, 'settings'>) => {
+		if (!composition) return undefined
+		const { slots, ...render } = composition
+		return slots[name].length ? <Slot entries={slots[name]} {...render} /> : undefined
+	}
+	const fixed = explicit.fixed ?? slot('fixed')
+	const basic = explicit.basic ?? slot('basic')
+	const presets = explicit.presets ?? slot('presets')
+	const adjustment = explicit.adjustment ?? slot('adjustment')
+	const basicPresets = explicit.basicPresets
+	// 구조 서명 — 보이는 것이 바뀐 영역만 다시 그린다. JSX로 꽂은 영역은 범위의 키를 따른다.
+	const signature = (names: readonly StudioPanelSlot[]) =>
+		composition
+			? names.map((name) => controllerStructureSignature(composition.slots[name])).join('/')
+			: undefined
+	const fixedKey = explicit.fixed === undefined ? signature(['fixed']) : undefined
+	const contentKey =
+		explicit.basic === undefined &&
+		explicit.presets === undefined &&
+		explicit.adjustment === undefined
+			? signature(['basic', 'presets', 'adjustment'])
+			: undefined
 	const [selected, setSelected] = useState('basic')
 	const id = useId()
 	const tabs = [
@@ -60,6 +105,7 @@ export function ControlPanel({
 						<PanelRenderTarget
 							side="right"
 							region="fixed"
+							renderKey={fixedKey}
 							className="flex min-h-0 shrink-0 flex-col lg:max-h-[50%]"
 						>
 							<ControllerRoot data-slot="studio-control-fixed" className="lg:h-auto">
@@ -70,6 +116,7 @@ export function ControlPanel({
 					<PanelRenderTarget
 						side="right"
 						region="content"
+						renderKey={contentKey}
 						className="flex min-h-0 flex-1 flex-col"
 					>
 						{tabs.map((tab) => (

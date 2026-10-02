@@ -56,54 +56,64 @@ type ControllerRendererProps = {
 }
 
 /** 직렬화된 Definition과 세션 값을 도메인 지식 없이 Controller primitive로 투영한다. */
-export function ControllerRenderer({
-	className,
-	groups,
+export function ControllerRenderer({ className, groups, ...props }: ControllerRendererProps) {
+	return (
+		<Controller.GroupList className={className}>
+			{groups.map((group) => (
+				<ControllerDefinitionGroup key={group.id} group={group} {...props} />
+			))}
+		</Controller.GroupList>
+	)
+}
+
+export type ControllerDefinitionGroupProps = Omit<
+	ControllerRendererProps,
+	'className' | 'groups'
+> & {
+	group: ControllerGroupDefinition
+}
+
+/**
+ * 그룹 하나를 제목과 컨트롤로 그린다 — `ControllerRenderer`와 패널 슬롯 렌더러가 같은 결과를 내도록
+ * 이 한 곳을 함께 쓴다(docs/10 §3.7).
+ */
+export function ControllerDefinitionGroup({
+	group,
 	presentation,
 	values,
 	bindings,
 	onChange,
 	assetSources,
-}: ControllerRendererProps) {
+}: ControllerDefinitionGroupProps) {
+	const combination = resolveColorCombinationGroup(group)
+	const content = combination ? (
+		<ColorStripGroup
+			palette={combination.palette}
+			colors={combination.colors}
+			title={group.title}
+			values={values}
+			bindings={bindings}
+			onChange={onChange}
+		/>
+	) : (
+		group.controls.map((control) => (
+			<ControllerControlRenderer
+				key={control.id}
+				definition={control}
+				value={control.id in values ? values[control.id] : control.defaultValue}
+				binding={bindings?.[control.id]}
+				assetSources={assetSources}
+				onChange={(value) => onChange(control.id, value)}
+			/>
+		))
+	)
 	return (
-		<Controller.GroupList className={className}>
-			{groups.map((group) => {
-				const combination = resolveColorCombinationGroup(group)
-				const content = combination ? (
-					<ColorStripGroup
-						palette={combination.palette}
-						colors={combination.colors}
-						title={group.title}
-						values={values}
-						bindings={bindings}
-						onChange={onChange}
-					/>
-				) : (
-					group.controls.map((control) => (
-						<ControllerControlRenderer
-							key={control.id}
-							definition={control}
-							value={control.id in values ? values[control.id] : control.defaultValue}
-							binding={bindings?.[control.id]}
-							assetSources={assetSources}
-							onChange={(value) => onChange(control.id, value)}
-						/>
-					))
-				)
-
-				return (
-					<ControllerGroupRenderer
-						key={group.id}
-						definition={group}
-						presentation={presentation?.groups.find(
-							({ groupId }) => groupId === group.id,
-						)}
-					>
-						{content}
-					</ControllerGroupRenderer>
-				)
-			})}
-		</Controller.GroupList>
+		<ControllerGroupRenderer
+			definition={group}
+			presentation={presentation?.groups.find(({ groupId }) => groupId === group.id)}
+		>
+			{content}
+		</ControllerGroupRenderer>
 	)
 }
 

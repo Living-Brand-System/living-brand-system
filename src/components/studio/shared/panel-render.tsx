@@ -17,7 +17,7 @@ import { PANEL_RENDER, type PanelSide, useMotionTransition } from '@/lib/motion'
 export type PanelRenderRegion = 'fixed' | 'content'
 
 type PanelRenderScopeValue = {
-	keys: Readonly<Record<PanelRenderRegion, string>>
+	keys: Readonly<Partial<Record<PanelRenderRegion, string>>>
 	armed: boolean
 	/** 영역마다 마지막으로 그린 키 — 안쪽 패널이 통째로 다시 마운트돼도 같은 내용이면 움직이지 않는다. */
 	rendered: RefObject<Partial<Record<PanelRenderRegion, string>>>
@@ -33,10 +33,11 @@ const PanelRenderContext = createContext<PanelRenderScopeValue | null>(null)
  *    (배경 방식만 바꿨는데 Dimming 카드가 움직였던 원인).
  */
 export function PanelRenderScope({
-	keys,
+	keys = {},
 	children,
 }: {
-	keys: Readonly<Record<PanelRenderRegion, string>>
+	/** 영역 키. 영역이 스스로 키를 아는 경우(패널 컴포지션)는 비워 두고 범위만 깐다. */
+	keys?: Readonly<Partial<Record<PanelRenderRegion, string>>>
 	children: ReactNode
 }) {
 	const [armed, setArmed] = useState(false)
@@ -53,6 +54,11 @@ type PanelRenderTargetProps = {
 	/** 패널이 놓인 쪽 — 그쪽에서 들어온다. */
 	side: PanelSide
 	region: PanelRenderRegion
+	/**
+	 * 이 영역이 무엇을 그리는지 직접 알 때의 키(패널 컴포지션의 구조 서명). 범위의 키보다 앞선다.
+	 * 범위는 그래도 「켜졌나」와 「마지막에 그린 키」를 제공한다.
+	 */
+	renderKey?: string
 	className?: string
 	children: ReactNode
 }
@@ -63,19 +69,20 @@ type PanelRenderTargetProps = {
  */
 export function PanelRenderTarget(props: PanelRenderTargetProps) {
 	const scope = useContext(PanelRenderContext)
-	return <PanelRenderItem key={scope?.keys[props.region]} scope={scope} {...props} />
+	const renderKey = props.renderKey ?? scope?.keys[props.region]
+	return <PanelRenderItem key={renderKey} scope={scope} {...props} renderKey={renderKey} />
 }
 
 function PanelRenderItem({
 	scope,
 	side,
 	region,
+	renderKey,
 	className,
 	children,
 }: PanelRenderTargetProps & { scope: PanelRenderScopeValue | null }) {
 	const reducedMotion = useReducedMotion()
 	const transition = useMotionTransition('tight')
-	const renderKey = scope?.keys[region]
 	// 마운트 순간 한 번만 판단한다 — 같은 키가 다시 마운트된 것이면 이미 보이던 내용이다.
 	const [enter] = useState(
 		() =>
@@ -108,4 +115,9 @@ function PanelRenderItem({
 			</m.div>
 		</LazyMotion>
 	)
+}
+
+/** 위에 범위가 이미 깔려 있나 — 패널이 스스로 범위를 깔지 정할 때 쓴다(두 겹으로 깔면 안쪽이 켜짐을 잃는다). */
+export function useHasPanelRenderScope() {
+	return useContext(PanelRenderContext) !== null
 }

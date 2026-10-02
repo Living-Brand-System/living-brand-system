@@ -368,6 +368,8 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 
 **결정(2026-10-02)**: 프리셋은 `preset` 역할의 select로 다루고 패널이 목록 모양으로 그립니다(전용 항목 타입 없음). 이미지 장수·비율·해상도는 `output`(지금 자리 유지), fluted zoom·tilt는 `tuning`, 카메라 시점은 `view`. 템플릿 이미지 슬롯 Dimming은 방식과 무관하게 보입니다(배경 Dimming과 같게).
 
+**렌더러(2단계)**: 화면은 `arrangeStudioPanel(controller, policy, values)`로 슬롯을 채워 `ControlPanel`의 `composition`(`slots` + 값·바인딩·표시·`onChange`·`widgets`)으로 넘깁니다. 슬롯 하나는 `StudioPanelSlot`이 그리며, 그룹은 `ControllerRenderer`와 같은 `ControllerDefinitionGroup`으로, 묶음은 화면이 넘긴 위젯 레지스트리(`ControllerWidgetRegistry`)로 그립니다. 영역 키는 구조 서명이 정하고(`PanelRenderTarget`의 `renderKey`), 위에 패널 렌더 범위가 없으면 `ControlPanel`이 스스로 범위를 깝니다. 같은 자리의 JSX 입력이 있으면 그쪽이 앞섭니다(이행 기간).
+
 **이행 순서**: ① 어휘·조건 평가기·구조 서명(단위 테스트) → ② 패널 렌더러 + `ControlPanel` 슬롯화(조건 없는 매니페스트로 지금 화면과 같은 결과) → ③ 파일럿 템플릿 배경 → ④ 이미지·그래픽(`graphic-controls`의 id 특례 제거)·템플릿 텍스트·심볼·이미지 슬롯 → ⑤ 화면 조건부 JSX·`controller.left/right`·손 키 제거, `Controller.Reveal`은 계약 밖 화면에만 남김.
 
 ## 4. 스타일 계약 Do/Don't
