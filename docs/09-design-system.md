@@ -150,12 +150,12 @@ HTML 의미와 시각 역할은 분리합니다. `GuidelineHeader`가 h1/h2를 �
 
 ### 신규 문서 (`contentModel=sections`)
 
-CMS와 레퍼런스·플레이그라운드는 동일한 평면 섹션 구조를 사용합니다. Subsection은 직전 Section에 의미상 소속되며 H3로 표시하지만 DOM에는 중첩하지 않습니다. Section과 Incorrect Usages는 H2입니다. 위계나 패널 표현은 내부 간격을 바꾸지 않습니다.
+CMS 섹션은 평면 섹션 구조를 사용합니다. Subsection은 직전 Section에 의미상 소속되며 H3로 표시하지만 DOM에는 중첩하지 않습니다. Section과 Incorrect Usages는 H2입니다. 위계나 패널 표현은 내부 간격을 바꾸지 않습니다.
 
 | 레이어 | 소유 책임 |
 | --- | --- |
 | 문서 | 배경, DisplayHeading·섹션 목록·DisplayFooter 조합 |
-| 섹션 목록 (`CmsGuidelineSections` 또는 레퍼런스의 목록) | 순서만 담당. 추가 패딩·gap 없음 |
+| 섹션 목록 (`CmsGuidelineSections`) | 순서만 담당. 추가 패딩·gap 없음 |
 | `GuidelineSection` | 앵커, 상하·좌우 패딩, 제목–첫 컨테이너 및 컨테이너 사이 간격 |
 | `GuidelineSectionHeading` | 제목·설명·다운로드 내부 정렬과 텍스트 폭 |
 | Grid / Carousel / Sticky | 카드 크기·배치·카드 간격·반응형·넘김·고정 |
@@ -177,7 +177,7 @@ CMS와 레퍼런스·플레이그라운드는 동일한 평면 섹션 구조를 
 
 ### 레거시 문서 (`contentModel=legacy`)
 
-아래 규칙은 `deprecated/`와 기존 blocks 렌더링에만 적용합니다. 신규 Section이나 레퍼런스에 옮겨 적용하지 않습니다.
+아래 규칙은 `deprecated/`와 기존 blocks 렌더링에만 적용합니다. 신규 Section에 옮겨 적용하지 않습니다.
 
 
 | 컴포넌트 | 소유 책임 |

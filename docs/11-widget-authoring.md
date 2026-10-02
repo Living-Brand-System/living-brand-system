@@ -8,7 +8,7 @@
 2. 저장해야 하는 입력만 `src/features/guideline/sections/display-schema.ts`에 추가합니다. `display.type` 옵션과 해당 타입에서 보이는 필드·필수값 검증을 함께 정의합니다.
 3. `src/components/guideline/structure/`의 표현 컴포넌트에 해석된 props를 전달하도록 `sections/display-render.tsx`를 연결합니다.
 4. `domain/reading/read-visual.ts`에서 활성 입력·지원 조작·실행 동작을 읽기 모델로 해석합니다. 검색·검수에 필요한 저작 텍스트는 `sections/projection.ts`에서 처리합니다.
-5. 실제 사용되는 표현 API로 플레이그라운드 예시를 추가하고 좁은 폭·키보드·초기화·필수 관계 누락을 확인합니다.
+5. 실제 사용되는 표현 API의 컴포넌트 테스트를 추가하거나 확장하고, CMS로 렌더한 실제 가이드라인 페이지에서 좁은 폭·키보드·초기화·필수 관계 누락을 확인합니다.
 6. 스키마가 바뀌면 타입 생성과 마이그레이션을 [AGENTS.md](../AGENTS.md)의 절차로 검증합니다. 콘텐츠 seed는 만들지 않습니다.
 
 별도 디스플레이 등록 생성기나 저장·렌더 레지스트리는 추가하지 않습니다. 타입이 필요한 곳에는 현재 생성된 `GuidelineDocument`에서 유도한 `CmsCard['display']`를 사용합니다. 제거한 구형 Widget 생성 타입을 재사용하지 않습니다.
@@ -68,8 +68,8 @@ START에는 상태, CENTER에는 해당 도판이 지원하는 전환, END에는
 
 동결된 CheckSession의 과거 evidence는 `checks/check-source.ts`·`format-check-evidence.ts`의 읽기 계약으로 보존합니다. 과거 본문 전용 테이블과 legacy 버전은 별도의 파기 마이그레이션으로 삭제하며 신규 버전·업로드 자산은 보존합니다. `contentModel`은 숨긴 복원 판별 표식이고 legacy·null·표식 없는 버전은 복원할 수 없습니다. 기존 마이그레이션·drizzle 스냅샷을 삭제하지 않습니다.
 
-## 7. 검증과 플레이그라운드
+## 7. 검증
 
-`/guideline/playground`는 `/guideline/mockup`으로 이동합니다. 개발용 mockup은 `app/(playground)/guideline/mockup/page.tsx`에서 `structure/*-playground.tsx`의 공통 표현 API 예시를 조합하며 CMS에 데이터를 쓰지 않습니다. 서비스 연결은 `sections/render.tsx`·`display-render.tsx`에서 검증합니다.
+개발용 mockup 라우트는 없습니다. 공통 표현 API는 컴포넌트 테스트로, 서비스 연결은 `sections/render.tsx`·`display-render.tsx`가 CMS로 렌더한 실제 가이드라인 페이지에서 검증합니다.
 
 카드 비율·Grid/Carousel/Sticky·좁은 화면·긴 캡션·키보드·초기화·누락 관계를 필요한 범위에서 검사합니다. `tests/int/guideline-sections-storage.int.spec.ts`는 명시한 일회용 로컬 DB에서 저장·버전·복원·권한을 검사합니다. Node.js 22로 테스트·타입검사·빌드를 실행합니다.
