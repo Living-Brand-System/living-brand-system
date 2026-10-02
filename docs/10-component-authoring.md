@@ -352,6 +352,8 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 | `asset-browser` | 자산 선택 1개(샘플 이미지 등) |
 | `preset-list` | 프리셋 select 1개 — 카드 목록으로 그린다 |
 
+**그룹 소속 `cluster.group`** — 묶음이 그 그룹 **안**, 그룹 컨트롤 뒤에 섭니다(Figma 529:19999 — Generate 안의 Reference Image). 자리가 아니라 소속이라 그룹이 어느 슬롯에 서든 따라가고, 그룹이 보이지 않으면 자기 역할대로 섭니다. 구조 서명에도 실립니다. 미지 그룹은 `parseStudioControllerConfig`가 거부합니다.
+
 켜기/끄기와 모드는 역할이 아니라 **묶음의 면**입니다 — 레퍼런스·카메라·Dimming Use·가변 두께의 On/Off는 `gate`, 색의 Swatch/Custom은 `mode` 멤버로 선언합니다.
 
 **노출 조건 `visibleWhen`** — 값끼리의 관계라 매니페스트가 갖습니다. 그룹·묶음·컨트롤에 붙입니다. 문법은 `{ control, equals }`·`{ control, in }`·`{ control, not }`·`{ all }`·`{ any }` 다섯 가지이고, 수치 비교는 생산자가 생길 때 더합니다.
@@ -364,6 +366,7 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 **패널** — `StudioPanelPolicy = Partial<Record<StudioPanelSlot, ControllerRole[]>>`, 슬롯은 `fixed`·`basicPresets`(Basic 탭 위 목록 카드)·`basic`·`presets`·`adjustment`·`settings`(왼쪽 편집 설정)입니다. 순서는 정책의 역할 순서, 같은 역할 안에서는 매니페스트 순서(그룹 다음 묶음)입니다. 슬롯이 비면 카드·레일 탭이 서지 않습니다.
 
 - **역할은 그룹에 주거나, 한 그룹 안에 창작자용·어드민 전용 컨트롤이 섞이면 `controller.roles`(컨트롤 id → 역할)로 줍니다.** 컨트롤 역할이 그룹 역할보다 앞서고, 역할이 갈리면 같은 그룹 제목 아래 따로 섭니다. 역할이 없는 컨트롤은 어느 자리에도 서지 않습니다(어드민 전용).
+- 이미지 정책: `basic: [content, source]`, `adjustment: [palette, view]`. 매니페스트는 `deriveImageStudioComposition`이 발행 config의 정의를 그대로 써서 만들고, 레퍼런스·카메라 사용은 `gate` 컨트롤로 승격합니다(값은 이미지 세션이 갖고, 첨부·시드 이미지·각도 본문은 위젯이 세션에서 읽습니다). 생성 오류는 계약 밖이라 `extras.basic`으로 잇습니다.
 - 그래픽 정책: `basicPresets: [preset]`, `basic: [palette, form, placement, source]`, `adjustment: [tuning]`. `roles`·`clusters`를 하나도 선언하지 않은 런타임은 전부 Basic에 섭니다 — 정하지 않은 런타임의 화면이 비면 안 됩니다.
 - 한 패널에 컴포지션이 둘이면(템플릿 배경 위 그래픽 편집) **자리마다 먼저 채운 쪽**이 그립니다 — 화면 자기 것 다음 위에서 공급받은 것(`ControlPanelCompositionProvider`). 배경 Dimming(`fixed`)과 그래픽 Basic이 한 패널에 함께 섭니다.
 - 🔴 프로파일 config를 파생할 때 controller를 키별로 다시 조립하지 않습니다. 제한만 얹고 나머지 선언은 전개로 싣습니다(`deriveCanvasStudioConfig`) — 골라 싣던 시절 `roles`·`clusters`가 조용히 빠져 패널이 평면 목록으로 돌아갔습니다.
@@ -376,7 +379,7 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 
 **렌더러(2단계)**: 화면은 `arrangeStudioPanel(controller, policy, values)`로 슬롯을 채워 `ControlPanel`의 `composition`(`slots` + 값·바인딩·표시·`onChange`·`widgets`)으로 넘깁니다. 슬롯 하나는 `StudioPanelSlot`이 그리며, 그룹은 `ControllerRenderer`와 같은 `ControllerDefinitionGroup`으로, 묶음은 화면이 넘긴 위젯 레지스트리(`ControllerWidgetRegistry`)로 그립니다. 영역 키는 구조 서명이 정하고(`PanelRenderTarget`의 `renderKey`), 위에 패널 렌더 범위가 없으면 `ControlPanel`이 스스로 범위를 깝니다. 같은 자리의 JSX 입력이 있으면 그쪽이 앞섭니다(이행 기간).
 
-**이행 순서**: ① 어휘·조건 평가기·구조 서명(단위 테스트) → ② 패널 렌더러 + `ControlPanel` 슬롯화(조건 없는 매니페스트로 지금 화면과 같은 결과) → ③ 파일럿 템플릿 배경 → ④ 그래픽(완료 2026-10-02 — 런타임 다섯 개가 역할·묶음을 선언하고 `GRAPHIC_WIDGETS`가 그린다. 남은 id 특례는 Fluted Glass 기준점의 실효값 표시와 Pattern 최대 굵기 비활성 binding 둘이며 `ponytail:` 주석이 상한을 적는다)·이미지·템플릿 텍스트·심볼·이미지 슬롯 → ⑤ 화면 조건부 JSX·`controller.left/right`·손 키 제거, `Controller.Reveal`은 계약 밖 화면에만 남김.
+**이행 순서**: ① 어휘·조건 평가기·구조 서명(단위 테스트) → ② 패널 렌더러 + `ControlPanel` 슬롯화(조건 없는 매니페스트로 지금 화면과 같은 결과) → ③ 파일럿 템플릿 배경 → ④ 그래픽(완료 2026-10-02 — 런타임 다섯 개가 역할·묶음을 선언하고 `GRAPHIC_WIDGETS`가 그린다. 남은 id 특례는 Fluted Glass 기준점의 실효값 표시와 Pattern 최대 굵기 비활성 binding 둘이며 `ponytail:` 주석이 상한을 적는다)·이미지(완료 2026-10-02 — `cluster.group` 도입)·템플릿 텍스트·심볼·이미지 슬롯 → ⑤ 화면 조건부 JSX·`controller.left/right`·손 키 제거, `Controller.Reveal`은 계약 밖 화면에만 남김.
 
 ## 4. 스타일 계약 Do/Don't
 

@@ -159,6 +159,41 @@ describe('arrangeStudioPanel', () => {
 		])
 	})
 
+	it('그룹 소속 묶음은 그 그룹 안에 서고, 그룹이 숨으면 자기 역할대로 선다', () => {
+		const clusters: ControllerCluster[] = [
+			{
+				id: 'dimming-pair',
+				title: 'Dimming',
+				role: 'overlay',
+				widget: 'compound',
+				members: { gate: 'dimmer' },
+				group: 'color',
+			},
+		]
+		const color = arrangeStudioPanel({ groups, clusters }, policy, {
+			...values,
+			type: 'color',
+		})
+		// 묶음이 디머를 가져가고 Strength는 숨어 Dimming 그룹엔 남는 행이 없다.
+		expect(color.fixed).toEqual([])
+		expect(color.basic).toEqual([
+			expect.objectContaining({
+				group: expect.objectContaining({ id: 'color' }),
+				clusters: [expect.objectContaining({ cluster: clusters[0] })],
+			}),
+		])
+		// 서명에도 실린다 — 그룹 안 묶음이 생기고 빠지면 그 슬롯이 다시 그려진다.
+		expect(controllerStructureSignature(color.basic)).toBe(
+			'color(color)[dimming-pair<compound>]',
+		)
+
+		const image = arrangeStudioPanel({ groups, clusters }, policy, { ...values, type: 'image' })
+		expect(image.basic).toEqual([])
+		expect(image.fixed).toEqual([
+			expect.objectContaining({ type: 'cluster', cluster: clusters[0] }),
+		])
+	})
+
 	it('숨겨도 값은 그대로다 — 배치는 값을 건드리지 않는다', () => {
 		const current = { ...values, strength: 0.56 }
 		arrangeStudioPanel({ groups }, policy, current)
@@ -271,6 +306,22 @@ describe('parseStudioControllerConfig 컴포지션 검증', () => {
 				],
 			},
 			/지원하지 않는 위젯/,
+		],
+		[
+			'모르는 그룹 소속',
+			{
+				clusters: [
+					{
+						id: 'a',
+						title: 'A',
+						role: 'overlay',
+						widget: 'compound',
+						members: { gate: 'dimmer' },
+						group: 'nowhere',
+					},
+				],
+			},
+			/알 수 없는 그룹/,
 		],
 	])('%s는 거부한다', (_name, controller, message) => {
 		expect(() => parseStudioControllerConfig(config(controller))).toThrow(message)

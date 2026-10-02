@@ -1,6 +1,6 @@
 'use client'
 
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useMemo, useState } from 'react'
 import { ControllerCompound } from '@/components/shared/controller/compound'
 import { ControllerGroup } from '@/components/shared/controller/group'
 import { ControllerGroupList } from '@/components/shared/controller/group-list'
@@ -10,19 +10,32 @@ import { ImageCameraControl } from '@/components/studio/image/image-camera-contr
 import { ImageReferenceUpload } from '@/components/studio/image/image-reference-upload'
 import { StudioColorCompound } from '@/components/studio/shared/compound-controls'
 import { ControlPanel } from '@/components/studio/shared/control-panel'
+import type {
+	ControllerWidgetProps,
+	ControllerWidgetRegistry,
+} from '@/components/studio/shared/studio-panel-slot'
 import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
 import type { ImageStudioValue } from '@/features/image-generation/contexts/image-studio-context'
+import {
+	deriveImageStudioComposition,
+	IMAGE_COMPOSITION_GATE_IDS,
+} from '@/features/image-generation/domain/image-studio-composition'
 import {
 	getImageColorAdjustmentControls,
 	getImageStudioControls,
 	getImageStudioFeature,
 } from '@/features/image-generation/domain/image-studio-config'
 import { useImageStudio } from '@/features/image-generation/hooks/use-image-studio'
+import {
+	arrangeStudioPanel,
+	type StudioPanelPolicy,
+} from '@/modules/studio-controller/controller-composition'
 import type {
 	ControllerControlDefinition,
 	ControllerControlValue,
 	ControllerRuntimeBinding,
+	ControllerValues,
 } from '@/modules/studio-controller/controller-definition'
 import { resolveControllerAvailability } from '@/modules/studio-controller/controller-definition'
 
@@ -31,43 +44,83 @@ const TOGGLE = [
 	{ value: 'off', label: 'Off' },
 ] as const
 
+/**
+ * 이미지 패널의 배치 정책 — 역할을 자리에 놓는다(docs/10 §3.7). Figma 529:19999·529:25129 — Basic은 생성 입력,
+ * Adjustment는 색과 시점이다. 생성 버튼과 장수·비율·해상도는 Output 카드에 있다(계약 밖).
+ */
+export const IMAGE_PANEL_POLICY: StudioPanelPolicy = {
+	basic: ['content', 'source'],
+	adjustment: ['palette', 'view'],
+}
+
+// 생성 그룹은 접지 않는다 — 프롬프트가 이 화면의 주 입력이다.
+const IMAGE_PANEL_PRESENTATION = {
+	groups: [{ groupId: 'generate', collapsible: false, defaultOpen: true }],
+}
+
 export function ImageControls() {
-	const { config, controls, generation, camera, reference, color } = useImageStudio()
+	const { config, controls, generation, camera, reference } = useImageStudio()
+	const manifest = useMemo(() => deriveImageStudioComposition(config), [config])
+	const values: ControllerValues = {
+		...controls.values,
+		[IMAGE_COMPOSITION_GATE_IDS.reference]: reference.enabled,
+		[IMAGE_COMPOSITION_GATE_IDS.camera]: camera.enabled,
+	}
 	const { prompt } = getImageStudioControls(config)
-	const hasColor = Boolean(getImageStudioFeature(config, 'color-adjustment'))
-	const hasCamera = Boolean(getImageStudioFeature(config, 'camera-control'))
-	// Figma 529:19999·529:25129 — Basic은 생성 입력, Adjustment는 색과 시점이다. 생성 버튼은 Output에 있다.
 	return (
 		<ControlPanel
-			basic={
-				<ImageGenerate
-					prompt={prompt}
-					value={controls.values[prompt.id]}
-					binding={
-						camera.enabled ? { availability: 'disabled' } : controls.bindings[prompt.id]
-					}
-					onChange={(value) => controls.update(prompt.id, value)}
-					error={generation.error}
-				>
-					{getImageStudioFeature(config, 'reference-image') && (
-						<ImageReference onChange={reference.setEnabled} />
-					)}
-				</ImageGenerate>
-			}
-			adjustment={
-				hasColor || hasCamera ? (
-					<div className="flex flex-col gap-1.5">
-						{hasColor && (
-							<ImageColor config={config} controls={controls} color={color} />
-						)}
-						{hasCamera && (
-							<ImageCamera enabled={camera.enabled} onChange={camera.setEnabled} />
-						)}
-					</div>
-				) : undefined
+			composition={{
+				slots: arrangeStudioPanel(manifest, IMAGE_PANEL_POLICY, values),
+				values,
+				// 카메라 시점 변경은 시드 이미지를 돌려 그린다 — 그동안 프롬프트는 쓰이지 않는다.
+				bindings: camera.enabled
+					? { ...controls.bindings, [prompt.id]: { availability: 'disabled' } }
+					: controls.bindings,
+				presentation: IMAGE_PANEL_PRESENTATION,
+				widgets: IMAGE_WIDGETS,
+				onChange: (id, next) => {
+					if (id === IMAGE_COMPOSITION_GATE_IDS.reference)
+						reference.setEnabled(next === true)
+					else if (id === IMAGE_COMPOSITION_GATE_IDS.camera)
+						camera.setEnabled(next === true)
+					else controls.update(id, next)
+				},
+			}}
+			extras={
+				generation.error
+					? {
+							basic: (
+								<Typography role="alert" size="sm" className="text-destructive">
+									{generation.error}
+								</Typography>
+							),
+						}
+					: undefined
 			}
 		/>
 	)
+}
+
+function ImageColorWidget() {
+	const { config, controls, color } = useImageStudio()
+	return <ImageColor config={config} controls={controls} color={color} />
+}
+
+function ImageReferenceWidget({ cluster, values, onChange }: ControllerWidgetProps) {
+	const gate = cluster.members.gate
+	return <ImageReference enabled={values[gate] === true} onChange={(on) => onChange(gate, on)} />
+}
+
+function ImageCameraWidget({ cluster, values, onChange }: ControllerWidgetProps) {
+	const gate = cluster.members.gate
+	return <ImageCamera enabled={values[gate] === true} onChange={(on) => onChange(gate, on)} />
+}
+
+/** 이미지 묶음 위젯 — 본문(첨부·시드 이미지·각도)은 이미지 세션이 갖고, 사용 여부만 계약 값으로 오간다. */
+const IMAGE_WIDGETS: ControllerWidgetRegistry = {
+	'color-pair': ImageColorWidget,
+	reference: ImageReferenceWidget,
+	camera: ImageCameraWidget,
 }
 
 export function ImageColor({
@@ -128,9 +181,14 @@ export function ImageColor({
 	)
 }
 
-function ImageReference({ onChange }: { onChange: (enabled: boolean) => void }) {
+function ImageReference({
+	enabled,
+	onChange,
+}: {
+	enabled: boolean
+	onChange: (enabled: boolean) => void
+}) {
 	const { reference, generation } = useImageStudio()
-	const enabled = reference.enabled
 	return (
 		<ControllerCompound
 			label="Reference Image"

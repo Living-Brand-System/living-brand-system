@@ -60,6 +60,11 @@ export type ControllerCluster = {
 	widget: ControllerWidget
 	members: Readonly<Record<string, string>>
 	visibleWhen?: ControllerCondition
+	/**
+	 * 묶음이 그 그룹 **안**, 그룹 컨트롤 뒤에 선다(Figma 529:19999 — Generate 안의 Reference Image).
+	 * 자리가 아니라 소속이다 — 그룹이 어느 슬롯에 서든 따라간다. 그룹이 보이지 않으면 자기 역할대로 선다.
+	 */
+	group?: string
 }
 
 /**
@@ -83,13 +88,19 @@ export type StudioPanelPolicy = Partial<Record<StudioPanelSlot, readonly Control
  * 슬롯에 서는 한 덩어리 — 그룹(보이는 컨트롤만) 또는 묶음.
  * 묶음은 멤버 이름 → 지금 계약의 컨트롤 정의를 함께 싣는다(런타임 제한이 좁힌 선택지 그대로). 없는 멤버는 빠진다.
  */
+export type StudioPanelClusterEntry = {
+	type: 'cluster'
+	cluster: ControllerCluster
+	controls: Readonly<Record<string, ControllerControlDefinition>>
+}
 export type StudioPanelEntry =
-	| { type: 'group'; group: ControllerGroupDefinition & { role: ControllerRole } }
 	| {
-			type: 'cluster'
-			cluster: ControllerCluster
-			controls: Readonly<Record<string, ControllerControlDefinition>>
+			type: 'group'
+			group: ControllerGroupDefinition & { role: ControllerRole }
+			/** 그룹 안에 서는 묶음(`cluster.group`). */
+			clusters?: readonly StudioPanelClusterEntry[]
 	  }
+	| StudioPanelClusterEntry
 
 type ComposableGroup = ControllerGroupDefinition & {
 	role?: ControllerRole
@@ -178,6 +189,19 @@ export function arrangeStudioPanel(
 				return control ? [[member, control] as const] : []
 			}),
 		)
+	const clusterEntry = (cluster: ControllerCluster): StudioPanelClusterEntry => ({
+		type: 'cluster',
+		cluster,
+		controls: memberControls(cluster),
+	})
+	// 그룹 소속 묶음은 그 그룹의 첫 덩어리에 붙는다. 그룹이 보이지 않으면 자기 역할대로 선다.
+	const nested = new Map<(typeof groups)[number], StudioPanelClusterEntry[]>()
+	const free = clusters.filter((cluster) => {
+		const host = groups.find((group) => group.id === cluster.group)
+		if (!host) return true
+		nested.set(host, [...(nested.get(host) ?? []), clusterEntry(cluster)])
+		return false
+	})
 	const slots = Object.fromEntries(
 		STUDIO_PANEL_SLOTS.map((slot) => [slot, [] as StudioPanelEntry[]]),
 	) as Record<StudioPanelSlot, StudioPanelEntry[]>
@@ -185,14 +209,14 @@ export function arrangeStudioPanel(
 		for (const role of policy[slot] ?? []) {
 			// 같은 역할 안에서는 매니페스트 순서 — 그룹이 먼저, 그다음 묶음(둘 다 선언 순서).
 			for (const group of groups)
-				if (group.role === role) slots[slot].push({ type: 'group', group })
-			for (const cluster of clusters)
-				if (cluster.role === role)
+				if (group.role === role)
 					slots[slot].push({
-						type: 'cluster',
-						cluster,
-						controls: memberControls(cluster),
+						type: 'group',
+						group,
+						...(nested.has(group) ? { clusters: nested.get(group) } : {}),
 					})
+			for (const cluster of free)
+				if (cluster.role === role) slots[slot].push(clusterEntry(cluster))
 		}
 	}
 	return slots
@@ -206,7 +230,9 @@ export function controllerStructureSignature(entries: readonly StudioPanelEntry[
 	return entries
 		.map((entry) =>
 			entry.type === 'group'
-				? `${entry.group.id}(${entry.group.controls.map((control) => control.id).join(',')})`
+				? `${entry.group.id}(${entry.group.controls.map((control) => control.id).join(',')})${
+						entry.clusters ? `[${controllerStructureSignature(entry.clusters)}]` : ''
+					}`
 				: `${entry.cluster.id}<${entry.cluster.widget}>`,
 		)
 		.join('|')

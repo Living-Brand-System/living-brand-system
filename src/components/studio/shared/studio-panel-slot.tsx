@@ -11,6 +11,7 @@ import {
 import type {
 	ControllerCluster,
 	ControllerWidget,
+	StudioPanelClusterEntry,
 	StudioPanelEntry,
 } from '@/modules/studio-controller/controller-composition'
 import type {
@@ -76,20 +77,25 @@ export function StudioPanelSlot({
 			<Controller.Reveal gap={1}>
 				{entries.flatMap((entry) =>
 					entry.type === 'group'
-						? entry.group.controls.map((control) => (
-								<ControllerControlRenderer
-									key={control.id}
-									definition={control}
-									value={
-										control.id in props.values
-											? props.values[control.id]
-											: control.defaultValue
-									}
-									binding={props.bindings?.[control.id]}
-									assetSources={props.assetSources}
-									onChange={(value) => props.onChange(control.id, value)}
-								/>
-							))
+						? [
+								...entry.group.controls.map((control) => (
+									<ControllerControlRenderer
+										key={control.id}
+										definition={control}
+										value={
+											control.id in props.values
+												? props.values[control.id]
+												: control.defaultValue
+										}
+										binding={props.bindings?.[control.id]}
+										assetSources={props.assetSources}
+										onChange={(value) => props.onChange(control.id, value)}
+									/>
+								)),
+								...(entry.clusters ?? []).map((cluster) =>
+									renderWidget(cluster, widgets, props),
+								),
+							]
 						: [renderWidget(entry, widgets, props)],
 				)}
 				{children}
@@ -120,7 +126,11 @@ export function StudioPanelSlot({
 							group={entry.group}
 							section={groupSection?.(entry.group)}
 							{...props}
-						/>
+						>
+							{entry.clusters?.map((cluster) =>
+								renderWidget(cluster, widgets, props),
+							)}
+						</ControllerDefinitionGroup>
 					) : null,
 				)}
 				{extra}
@@ -137,7 +147,7 @@ export function StudioPanelSlot({
 }
 
 function renderWidget(
-	{ cluster, controls }: Extract<StudioPanelEntry, { type: 'cluster' }>,
+	{ cluster, controls }: StudioPanelClusterEntry,
 	widgets: ControllerWidgetRegistry | undefined,
 	props: Omit<StudioPanelSlotRenderProps, 'widgets' | 'groupSection'>,
 ) {

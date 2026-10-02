@@ -1256,6 +1256,7 @@ function assertJsonValue(value: unknown, path: string, ancestors = new Set<objec
  */
 function validateComposition(controller: Record<string, unknown>, controlIds: ReadonlySet<string>) {
 	const groups = controller.groups as readonly Record<string, unknown>[]
+	const groupIds = new Set(groups.map((group) => group.id))
 	for (const [groupIndex, group] of groups.entries()) {
 		const groupPath = `controller.groups[${groupIndex}]`
 		if (group.visibleWhen !== undefined)
@@ -1288,7 +1289,11 @@ function validateComposition(controller: Record<string, unknown>, controlIds: Re
 	for (const [index, value] of controller.clusters.entries()) {
 		const path = `controller.clusters[${index}]`
 		const cluster = asRecord(value, path)
-		assertOnlyKeys(cluster, ['id', 'title', 'role', 'widget', 'members', 'visibleWhen'], path)
+		assertOnlyKeys(
+			cluster,
+			['id', 'title', 'role', 'widget', 'members', 'visibleWhen', 'group'],
+			path,
+		)
 		assertNonEmptyString(cluster.id, `${path}.id`)
 		if (clusterIds.has(cluster.id)) invalid(`${path}.id`, `중복되었습니다: ${cluster.id}`)
 		clusterIds.add(cluster.id)
@@ -1310,6 +1315,8 @@ function validateComposition(controller: Record<string, unknown>, controlIds: Re
 		}
 		if (cluster.visibleWhen !== undefined)
 			validateCondition(cluster.visibleWhen, controlIds, `${path}.visibleWhen`)
+		if (cluster.group !== undefined && !groupIds.has(cluster.group as string))
+			invalid(`${path}.group`, `알 수 없는 그룹입니다: ${String(cluster.group)}`)
 	}
 }
 

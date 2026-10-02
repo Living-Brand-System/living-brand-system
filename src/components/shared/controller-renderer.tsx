@@ -73,6 +73,8 @@ export type ControllerDefinitionGroupProps = Omit<
 	group: ControllerGroupDefinition
 	/** 섹션 활성화 배선(캔버스 포커스 등) — 화면이 그룹마다 붙인다. */
 	section?: ControllerGroupSectionProps
+	/** 그룹 컨트롤 뒤에 같은 그룹 안으로 잇는 것(패널 슬롯의 그룹 소속 묶음). */
+	children?: ReactNode
 }
 
 /**
@@ -87,6 +89,7 @@ export function ControllerDefinitionGroup({
 	onChange,
 	assetSources,
 	section,
+	children,
 }: ControllerDefinitionGroupProps) {
 	const combination = resolveColorCombinationGroup(group)
 	const content = combination ? (
@@ -117,6 +120,7 @@ export function ControllerDefinitionGroup({
 			section={section}
 		>
 			{content}
+			{children}
 		</ControllerGroupRenderer>
 	)
 }
