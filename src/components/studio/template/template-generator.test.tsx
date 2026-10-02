@@ -40,6 +40,7 @@ import {
 import { TemplateStudioProvider } from '@/features/template-customization/providers/template-studio-provider'
 import type { TemplateRasterArtifactProducer } from '@/features/template-customization/runtime/template-runtime.client'
 import type { GetCreateNavigationOutput } from '@/features/template-customization/services/get-create-navigation.service'
+import { useShellLocked } from '@/hooks/use-shell-lock'
 import { TemplateGenerator as TemplateGeneratorView } from './template-generator'
 import { TemplateWorkspace } from './template-workspace'
 
@@ -821,6 +822,34 @@ describe('TemplateGenerator', () => {
 
 		await user.click(screen.getByRole('radio', { name: 'Preset' }))
 		await waitFor(() => expect(dimmer()).toBeNull())
+	})
+
+	it('중첩 편집 동안 트리 밖의 셸 헤더를 잠그고, 취소하면 푼다', async () => {
+		const user = userEvent.setup()
+		function ShellHeader() {
+			return <nav aria-label="셸" inert={useShellLocked()} />
+		}
+		render(
+			<>
+				<ShellHeader />
+				<TemplateGenerator
+					categoryTitle="카드"
+					template={{
+						...template,
+						html: '<div data-node-id="1:1" data-figma-type="FRAME" data-name="배경" data-image-carrier=""></div>',
+						nodeConfigs: { '1:1': { imageInput: { profileId: 7 } } },
+					}}
+				/>
+			</>,
+		)
+		const header = () => screen.getByRole('navigation', { name: '셸' })
+		expect(header()).not.toHaveAttribute('inert')
+
+		selectLayerGroup('image')
+		expect(header()).toHaveAttribute('inert')
+
+		await user.click(screen.getByRole('button', { name: '취소' }))
+		expect(header()).not.toHaveAttribute('inert')
 	})
 
 	// 슬롯의 첫 화면은 Generate다 — Preset으로 옮기는 패치가 세션 상태에 닿지 않으면 세그먼트가 움직이지 않는다.

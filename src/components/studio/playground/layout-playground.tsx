@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { Typography } from '@/components/ui/typography'
+import { useShellLocked } from '@/hooks/use-shell-lock'
 import { PlaygroundGraphicWorkspace } from './graphic-workspace'
 import { PlaygroundImageWorkspace } from './image-workspace'
 import { PlaygroundTemplateWorkspace } from './template-workspace'
@@ -19,6 +20,7 @@ export function StudioLayoutPlayground({
 	const [example, setExample] = useState<Example>(initialExample)
 	const [boundaries, setBoundaries] = useState(false)
 	const selected = EXAMPLES[example]
+	const shellLocked = useShellLocked()
 	return (
 		<main
 			data-slot="studio-layout-playground"
@@ -27,6 +29,7 @@ export function StudioLayoutPlayground({
 		>
 			<header
 				data-slot="studio-layout-header"
+				inert={shellLocked}
 				className="flex min-h-15 flex-wrap items-center gap-4 border-b border-border px-4 py-2"
 			>
 				<div className="mr-auto">

@@ -15,6 +15,7 @@ import {
 } from '@/components/studio/template/template-media-controls'
 import { Button } from '@/components/ui/button'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
+import { useShellLock } from '@/hooks/use-shell-lock'
 
 const TRANSITION = { duration: 0.25, ease: 'easeOut' } as const
 
@@ -24,24 +25,14 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 	const panel = useRef<HTMLElement>(null)
 	const reducedMotion = useReducedMotion()
 	const targetId = editing.targetId
+	// 상단 이동도 완료·취소 전까지 잠근다 — 헤더는 셸 잠금을 읽어 스스로 inert가 된다.
+	useShellLock(Boolean(targetId))
 	useEffect(() => {
 		if (!targetId) return
 		const previous =
 			document.activeElement instanceof HTMLElement ? document.activeElement : null
-		const headers = Array.from(
-			document.querySelectorAll<HTMLElement>(
-				'[data-slot="navigation-header"], [data-slot="studio-layout-header"]',
-			),
-		)
-		const states = headers.map((header) => header.inert)
-		for (const header of headers) header.inert = true
 		panel.current?.focus()
-		return () => {
-			headers.forEach((header, index) => {
-				header.inert = states[index]
-			})
-			previous?.focus()
-		}
+		return () => previous?.focus()
 	}, [targetId])
 	const target = editing.target
 	const graphic = target?.mode === 'graphic'
