@@ -1039,7 +1039,7 @@ describe('TemplateGenerator', () => {
 		)
 	})
 
-	it('일괄 텍스트 색을 만졌을 때만 모든 텍스트 슬롯에 합성한다', () => {
+	it('일괄 텍스트 색은 브랜드 색에서 고르고, 만졌을 때만 모든 텍스트 슬롯에 합성한다', async () => {
 		const { container } = render(
 			<TemplateGenerator
 				categoryTitle="카드"
@@ -1057,15 +1057,14 @@ describe('TemplateGenerator', () => {
 		selectLayerGroup('text')
 
 		// 만지기 전 — 저작 색 유지.
-		expect(container.innerHTML).not.toContain('rgb(255, 0, 0)')
+		expect(container.innerHTML).not.toContain('rgb(0, 44, 95)')
 
-		fireEvent.click(screen.getByRole('radio', { name: 'Custom' }))
-		fireEvent.change(screen.getByLabelText('Color 색상 선택'), { target: { value: '#ff0000' } })
+		// 정본 밖 색을 열지 않는다 — Custom은 잠겨 있다.
+		expect(screen.getByRole('radio', { name: 'Custom' })).toBeDisabled()
+		fireEvent.click(await screen.findByRole('radio', { name: '텍스트 색상 #002c5f' }))
 
 		const preview = container.querySelector('[data-slot="studio-layout-canvas"]')
-		expect(
-			preview?.querySelectorAll('p[style*="rgb(255, 0, 0)"], p[style*="#ff0000"]').length,
-		).toBe(2)
+		expect(preview?.querySelectorAll('p[style*="rgb(0, 44, 95)"]').length).toBe(2)
 	})
 
 	it('챗이 보낸 편집안이 캔버스까지 반영된다 — 두 트리를 잇는 유일한 통로다', () => {

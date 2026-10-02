@@ -12,6 +12,7 @@ import { TemplateColorSwatches } from '@/components/studio/template/template-col
 import { TemplateLayerControls } from '@/components/studio/template/template-layer-controls'
 import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
+import { usePublishedBrandColorValues } from '@/features/template-core/hooks/use-published-brand-color-values'
 import {
 	findTemplateControl,
 	partitionTemplateSlots,
@@ -23,19 +24,6 @@ import {
 	TemplateGraphicControls,
 	TemplateImageControls,
 } from './template-media-controls'
-
-// Figma 350:9318의 Solid 팔레트. 중복된 Deep Green은 한 선택지로 합친다.
-const SOLID_COLORS = [
-	'#dcf5d2',
-	'#00af41',
-	'#007332',
-	'#00280a',
-	'#ffffff',
-	'#0a0a0a',
-	'#dfe4f4',
-	'#003087',
-	'#000a32',
-]
 
 export function TemplateControls({ grouped = true }: { grouped?: boolean }) {
 	const { config, layers, background, focus } = useTemplateStudio()
@@ -250,6 +238,8 @@ export function TemplateLayerGroups() {
 
 function TemplateColor() {
 	const { config, text } = useTemplateStudio()
+	// 색의 정본은 CMS의 brand-colors다 — 심볼과 같은 목록을 보고, 정본 밖 색은 열지 않는다.
+	const { values: brandColorValues } = usePublishedBrandColorValues()
 	const definition = config.template.textColorControlId
 		? findTemplateControl(config, config.template.textColorControlId)
 		: undefined
@@ -259,24 +249,14 @@ function TemplateColor() {
 				이 템플릿은 원본 텍스트 색상을 사용합니다.
 			</Typography>
 		)
+	const colors = definition.values ?? brandColorValues
 	return (
 		<TemplateColorSwatches
 			subject="텍스트"
-			colors={definition.values ?? SOLID_COLORS}
+			colors={colors}
 			value={text.color}
 			onChange={text.setColor}
-			disabled={(definition.availability ?? 'enabled') !== 'enabled'}
-			custom={
-				definition.values ? undefined : (
-					<ControllerControlRenderer
-						definition={definition}
-						value={text.color}
-						onChange={(next) => {
-							if (typeof next === 'string' || next === null) text.setColor(next)
-						}}
-					/>
-				)
-			}
+			disabled={(definition.availability ?? 'enabled') !== 'enabled' || colors.length === 0}
 		/>
 	)
 }

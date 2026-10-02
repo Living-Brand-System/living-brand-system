@@ -1,12 +1,12 @@
 'use client'
 
-import { type ReactNode, useId, useState } from 'react'
+import { useId } from 'react'
 import { Controller } from '@/components/shared/controller'
 import { ControllerCompound } from '@/components/shared/controller/compound'
 
 /**
- * 텍스트·심볼 색이 함께 쓰는 Solid 스와치 그리드(Figma 350:9318).
- * `custom`이 없으면 고정 팔레트만 허용하는 계약이라 모드 전환을 잠근다.
+ * 텍스트·심볼 색이 함께 쓰는 Solid 스와치 그리드(Figma 350:9318). 색은 호출부가 CMS 정본에서 넘긴다.
+ * ponytail: 정본 밖 색을 막으려고 Custom은 잠근 채 그린다 — 자유 입력이 필요해지면 여기에 모드를 연다.
  */
 export function TemplateColorSwatches({
 	subject,
@@ -14,7 +14,6 @@ export function TemplateColorSwatches({
 	value,
 	onChange,
 	disabled = false,
-	custom,
 }: {
 	/** 접근성 이름에 쓰는 대상 이름 — 예: `텍스트`, `Symbol`. */
 	subject: string
@@ -22,9 +21,7 @@ export function TemplateColorSwatches({
 	value: string | null | undefined
 	onChange: (hex: string) => void
 	disabled?: boolean
-	custom?: ReactNode
 }) {
-	const [mode, setMode] = useState('solid')
 	const name = useId()
 	return (
 		<ControllerCompound
@@ -37,35 +34,31 @@ export function TemplateColorSwatches({
 						{ value: 'solid', label: 'Solid' },
 						{ value: 'custom', label: 'Custom' },
 					]}
-					value={mode}
-					onChange={setMode}
-					disabled={disabled || !custom}
+					value="solid"
+					onChange={() => {}}
+					disabled
 				/>
 			}
 		>
-			{mode === 'solid' || !custom ? (
-				<div
-					role="radiogroup"
-					aria-label={`${subject} 색상`}
-					className="grid grid-cols-5 gap-1.5 px-3 pt-2 pb-3"
-				>
-					{colors.map((hex) => (
-						<input
-							key={hex}
-							type="radio"
-							name={name}
-							aria-label={`${subject} 색상 ${hex}`}
-							checked={value?.toLowerCase() === hex.toLowerCase()}
-							disabled={disabled}
-							onChange={() => onChange(hex)}
-							style={{ backgroundColor: hex }}
-							className="aspect-square w-full cursor-pointer appearance-none rounded-full border border-foreground/15 outline-none checked:ring-2 checked:ring-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed"
-						/>
-					))}
-				</div>
-			) : (
-				<div className="p-1.5 [&_[data-slot=controller-row]]:bg-foreground/4">{custom}</div>
-			)}
+			<div
+				role="radiogroup"
+				aria-label={`${subject} 색상`}
+				className="grid grid-cols-5 gap-1.5 px-3 pt-2 pb-3"
+			>
+				{colors.map((hex) => (
+					<input
+						key={hex}
+						type="radio"
+						name={name}
+						aria-label={`${subject} 색상 ${hex}`}
+						checked={value?.toLowerCase() === hex.toLowerCase()}
+						disabled={disabled}
+						onChange={() => onChange(hex)}
+						style={{ backgroundColor: hex }}
+						className="aspect-square w-full cursor-pointer appearance-none rounded-full border border-foreground/15 outline-none checked:ring-2 checked:ring-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed"
+					/>
+				))}
+			</div>
 		</ControllerCompound>
 	)
 }

@@ -18,6 +18,10 @@ const mocks = vi.hoisted(() => ({
 	graphicUpdate: vi.fn(),
 }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
+vi.mock('@/features/template-core/services/template-editor-options.client', async (original) => ({
+	...(await original<object>()),
+	requestPublishedBrandColors: async () => [{ hex: '#007332' }, { hex: '#ffffff' }],
+}))
 vi.mock('@/features/image-generation/services/generate-image.client', () => ({
 	requestImageGeneration: mocks.generate,
 }))
@@ -95,7 +99,7 @@ it('실제 합성 캔버스·출력에 연결하고 Reset은 텍스트·색·출
 	const input = await screen.findByRole('textbox', { name: '제목' })
 	expect(input).toHaveAttribute('maxlength', '20')
 	fireEvent.change(input, { target: { value: '바꾼 제목' } })
-	fireEvent.click(screen.getByRole('radio', { name: '텍스트 색상 #007332' }))
+	fireEvent.click(await screen.findByRole('radio', { name: '텍스트 색상 #007332' }))
 	const preview = container.querySelector('[data-slot="template-preview"]')
 	expect(preview).toHaveTextContent('바꾼 제목')
 	expect(preview?.querySelector('[data-node-id="title"]')).toHaveStyle({ color: '#007332' })
