@@ -1,6 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
-import { ControllerRenderer } from '@/components/shared/controller-renderer'
 import {
 	arrangeStudioPanel,
 	type ControllerCluster,
@@ -14,29 +13,6 @@ import {
 import { ControlPanel } from './control-panel'
 
 afterEach(cleanup)
-it('빈 프리셋 보기는 숨기고 고정 액션과 탭별 입력 상태를 유지한다', () => {
-	const { container, rerender } = render(
-		<ControlPanel
-			fixed={<button type="button">생성</button>}
-			basic={<input aria-label="Prompt" defaultValue="" />}
-			adjustment={<p>조정</p>}
-		/>,
-	)
-	expect(screen.queryByRole('button', { name: 'Presets' })).toBeNull()
-	expect(container.querySelector('[data-slot="studio-preset-list"]')).toBeNull()
-	fireEvent.change(screen.getByRole('textbox'), { target: { value: '보존할 입력' } })
-	fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
-	expect(screen.getByRole('button', { name: '생성' })).toBeVisible()
-	expect(screen.queryByRole('textbox')).toBeNull()
-	fireEvent.click(screen.getByRole('button', { name: 'Basic' }))
-	expect(screen.getByRole('textbox')).toHaveValue('보존할 입력')
-	rerender(<ControlPanel basic={<p>기본만</p>} />)
-	expect(screen.queryByRole('button', { name: 'Adjustment' })).toBeNull()
-	expect(screen.getByText('기본만')).toBeVisible()
-	rerender(<ControlPanel />)
-	expect(screen.getByRole('button', { name: 'Basic' })).toBeDisabled()
-})
-
 // ── 패널 컴포지션(docs/10 §3.7) ────────────────────────────────────────────────
 
 const groups: readonly ControllerGroupDefinition[] = [
@@ -84,8 +60,6 @@ const groups: readonly ControllerGroupDefinition[] = [
 	},
 ]
 const policy: StudioPanelPolicy = { fixed: ['overlay'], basic: ['form'], adjustment: ['tuning'] }
-// useId가 렌더마다 다른 id를 준다 — 구조만 비교한다.
-const normalize = (html: string) => html.replace(/_r_[0-9a-z]+_/g, 'ID')
 
 function ComposedPanel({ values }: { values: ControllerValues }) {
 	return (
@@ -99,41 +73,31 @@ function ComposedPanel({ values }: { values: ControllerValues }) {
 	)
 }
 
-it('조건 없는 매니페스트를 컴포지션으로 그리면 지금 JSX 조립과 같은 결과다', () => {
+it('빈 프리셋 보기는 숨기고, 탭을 옮겨도 고정 영역과 탭 본문을 지킨다', () => {
 	const values = createControllerValues(groups)
-	const byGroup = (id: string) => [
-		groups.find((group) => group.id === id) as ControllerGroupDefinition,
-	]
-	const { container: explicit } = render(
+	const { container, rerender } = render(<ComposedPanel values={values} />)
+	expect(screen.queryByRole('button', { name: 'Presets' })).toBeNull()
+	expect(container.querySelector('[data-slot="studio-preset-list"]')).toBeNull()
+	const basic = screen.getByRole('radiogroup', { name: 'Kind' })
+	fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
+	expect(screen.getByRole('radiogroup', { name: 'Use' })).toBeVisible()
+	expect(screen.queryByRole('radiogroup', { name: 'Kind' })).toBeNull()
+	fireEvent.click(screen.getByRole('button', { name: 'Basic' }))
+	// 탭은 숨길 뿐 다시 그리지 않는다 — 같은 DOM이다.
+	expect(screen.getByRole('radiogroup', { name: 'Kind' })).toBe(basic)
+
+	rerender(
 		<ControlPanel
-			fixed={
-				<ControllerRenderer
-					groups={byGroup('dimming')}
-					values={values}
-					onChange={() => {}}
-				/>
-			}
-			basic={
-				<ControllerRenderer groups={byGroup('shape')} values={values} onChange={() => {}} />
-			}
-			adjustment={
-				<ControllerRenderer
-					groups={[
-						{
-							...byGroup('detail')[0],
-							controls: byGroup('detail')[0].controls.slice(0, 1),
-						},
-					]}
-					values={values}
-					onChange={() => {}}
-				/>
-			}
+			composition={{
+				slots: arrangeStudioPanel({ groups }, { basic: ['form'] }, values),
+				values,
+				onChange: () => {},
+			}}
 		/>,
 	)
-	const explicitHtml = normalize(explicit.innerHTML)
-	cleanup()
-	const { container: composed } = render(<ComposedPanel values={values} />)
-	expect(normalize(composed.innerHTML)).toBe(explicitHtml)
+	expect(screen.queryByRole('button', { name: 'Adjustment' })).toBeNull()
+	rerender(<ControlPanel />)
+	expect(screen.getByRole('button', { name: 'Basic' })).toBeDisabled()
 })
 
 it('조건이 바뀌면 컨트롤이 접히며 빠지고, 내용 영역만 다시 그려 고정 영역은 그대로다', async () => {

@@ -47,30 +47,6 @@ export type StudioRuntimeManifest = {
 	controller: {
 		groups: readonly ControllerGroupDefinition[]
 		/**
-		 * 왼쪽 패널에 세울 컨트롤 id — 창작자가 **실제로 다루기를 기대하는** 큰 축이다.
-		 * 색 조합과 전반적인 형태가 여기 온다.
-		 *
-		 * 나머지는 사라지지 않고 **오른쪽 패널**로 간다 — 세기·속도처럼 세밀하고 잡다한 값들이고,
-		 * 창작자가 다룰 수는 있으나 다루리라 기대하지는 않는다.
-		 *
-		 * 🔴 **비워 두면 전부 왼쪽이다.** 아직 정하지 않은 런타임은 선언하지 않는다 —
-		 *    빈 배열을 넣으면 왼쪽 패널이 통째로 빈다.
-		 *
-		 * 지금은 코드가 정하지만 나중에 프로파일(manager)로 옮겨진다. `controllerPresentation`이
-		 * 같은 성격으로 이미 그 길을 갔다.
-		 */
-		left?: readonly string[]
-		/**
-		 * 오른쪽 패널에 세울 컨트롤 id — 창작자가 다룰 수는 있으나 다루리라 기대하지 않는 축이다.
-		 *
-		 * 🔑 **여기에도 `left`에도 없는 컨트롤은 창작자 화면에 그려지지 않는다.** 선언은 남아 있어
-		 *    manager가 Payload에서 조정할 수 있다 — 지우는 것이 아니라 후처리 자리로 내리는 것이다.
-		 *
-		 * 🔴 비워 두면 `left`가 아닌 전부가 오른쪽이다. 아직 정하지 않은 런타임의 축이 조용히
-		 *    사라지지 않게 한다 — 빈 배열은 「오른쪽에 아무것도 세우지 않는다」는 뜻이다.
-		 */
-		right?: readonly string[]
-		/**
 		 * 값이 바뀌면 런타임을 **다시 만들어야** 하는 컨트롤 id.
 		 *
 		 * 대부분의 컨트롤은 uniform 하나를 바꾸므로 살아 있는 런타임에 흘려 넣으면 된다. 그런데
@@ -83,7 +59,12 @@ export type StudioRuntimeManifest = {
 		remountOn?: readonly string[]
 		/** 컨트롤 여러 개를 위젯 하나로 세우는 묶음(docs/10 §3.7). 가리킨 컨트롤은 그룹 행으로 다시 그려지지 않는다. */
 		clusters?: readonly ControllerCluster[]
-		/** 컨트롤 단위 역할(docs/10 §3.7) — 그룹 역할보다 앞선다. 위치가 아니라 의미다. */
+		/**
+		 * 컨트롤 단위 역할(docs/10 §3.7) — 그룹 역할보다 앞선다. 위치가 아니라 의미다.
+		 * 🔑 역할도 묶음도 없는 컨트롤은 창작자 화면에 서지 않는다. 선언은 남아 manager가 Payload에서
+		 *    조정할 수 있다 — 지우는 것이 아니라 어드민 자리로 내리는 것이다.
+		 * 🔴 `roles`·`clusters`를 하나도 선언하지 않은 런타임은 전부 Basic에 선다(화면이 비지 않게).
+		 */
 		roles?: Readonly<Record<string, ControllerRole>>
 	}
 }
@@ -252,29 +233,6 @@ export type ControllerGroupDefinition = {
 }
 
 /**
- * 창작자에게 **보이는** 축만 남긴다 — 좌·우를 한 자리에 이어 그리는 화면이 쓴다.
- *
- * 🔑 `splitControllerGroups`로 가른 뒤 두 벌을 잇지 **않는다.** 한 그룹의 컨트롤이 좌·우로
- *    갈려 있으면 같은 제목의 섹션이 두 번 그려진다. 여기서는 원래 그룹 순서·컨트롤 순서를
- *    유지하며 걸러내므로 그 일이 없다. 보임 규칙은 `splitControllerGroups`와 같은 것이다.
- */
-export function visibleControllerGroups(
-	groups: readonly ControllerGroupDefinition[],
-	left: readonly string[] | undefined,
-	right?: readonly string[],
-): readonly ControllerGroupDefinition[] {
-	// 선언이 반쪽이면 전부 보인다 — 선언하지 않은 런타임의 화면이 비지 않게 한다.
-	if (!left || !right) return groups
-	const visible = new Set([...left, ...right])
-	return groups
-		.map((group) => ({
-			...group,
-			controls: group.controls.filter((control) => visible.has(control.id)),
-		}))
-		.filter((group) => group.controls.length > 0)
-}
-
-/**
  * 셰이더 프로그램을 갈아끼우는 축들의 지문.
  *
  * 🔴 대부분의 컨트롤은 살아 있는 런타임에 흘려 넣으면 되지만, 「모양」처럼 프로그램 자체를
@@ -289,42 +247,6 @@ export function controllerRemountKey(
 	values: ControllerValues,
 ): string {
 	return (remountOn ?? []).map((id) => `${id}=${String(values[id])}`).join('&')
-}
-
-/**
- * 그룹을 왼쪽/오른쪽 두 벌로 가른다. 그룹 구조는 양쪽에서 그대로 유지되고,
- * 남는 컨트롤이 없는 그룹은 그 쪽에서 빠진다.
- *
- * 🔑 **어느 쪽에도 없는 컨트롤은 어느 쪽에도 그려지지 않는다** — 선언은 남으므로 manager는
- *    Payload에서 그 값을 조정할 수 있다. 창작자 화면에서만 내려가는 세 번째 층이다.
- *
- * 🔴 `left`가 없으면 전부 왼쪽이다 — 선언하지 않은 런타임의 화면이 비지 않게 한다.
- * 🔴 `right`가 없으면 왼쪽이 아닌 전부가 오른쪽이다. 빈 배열은 그것과 다르다 —
- *    「오른쪽에 아무것도 세우지 않는다」는 뜻이다.
- */
-export function splitControllerGroups(
-	groups: readonly ControllerGroupDefinition[],
-	left: readonly string[] | undefined,
-	right?: readonly string[],
-): { left: readonly ControllerGroupDefinition[]; right: readonly ControllerGroupDefinition[] } {
-	if (!left) return { left: groups, right: [] }
-	const leftIds = new Set(left)
-	const rightIds = right && new Set(right)
-	const pick = (side: 'left' | 'right') =>
-		groups
-			.map((group) => ({
-				...group,
-				controls: group.controls.filter((control) =>
-					side === 'left'
-						? leftIds.has(control.id)
-						: rightIds
-							? rightIds.has(control.id)
-							: !leftIds.has(control.id),
-				),
-			}))
-			.filter((group) => group.controls.length > 0)
-
-	return { left: pick('left'), right: pick('right') }
 }
 
 export type ControllerGroupPresentation = {
@@ -393,11 +315,7 @@ export function parseStudioControllerConfig(input: unknown): StudioControllerCon
 	parseStudioArtifactCapabilities(config.artifacts)
 
 	const controller = asRecord(config.controller, 'controller')
-	assertOnlyKeys(
-		controller,
-		['groups', 'left', 'remountOn', 'right', 'clusters', 'roles'],
-		'controller',
-	)
+	assertOnlyKeys(controller, ['groups', 'remountOn', 'clusters', 'roles'], 'controller')
 	if (!Array.isArray(controller.groups)) invalid('controller.groups', '배열이어야 합니다.')
 
 	const groupIds = new Set<string>()
@@ -418,10 +336,6 @@ export function parseStudioControllerConfig(input: unknown): StudioControllerCon
 			controlIds.add((controlValue as { id: string }).id)
 		}
 	}
-	if (controller.left !== undefined)
-		validateControlIdList(controller.left, controlIds, 'controller.left')
-	if (controller.right !== undefined)
-		validateControlIdList(controller.right, controlIds, 'controller.right')
 	if (controller.remountOn !== undefined)
 		validateControlIdList(controller.remountOn, controlIds, 'controller.remountOn')
 	validateComposition(controller, controlIds)
@@ -1362,7 +1276,7 @@ function asRecord(value: unknown, path: string): Record<string, unknown> {
  * 🔴 **없는 id를 통과시키면 안 된다.** 오타 하나가 「그 컨트롤이 조용히 고급으로 밀린 것」과
  *    구분되지 않고, 화면에서는 컨트롤 하나가 이유 없이 사라진 것으로만 보인다.
  */
-/** 존재하는 control id만 담은 중복 없는 배열인가 — `left`·`right`·`remountOn`이 같은 규칙을 쓴다. */
+/** 존재하는 control id만 담은 중복 없는 배열인가(`remountOn`). */
 function validateControlIdList(value: unknown, controlIds: ReadonlySet<string>, field: string) {
 	if (!Array.isArray(value)) invalid(field, '배열이어야 합니다.')
 	const seen = new Set<string>()

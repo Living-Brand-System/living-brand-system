@@ -32,14 +32,7 @@ export function TemplateWorkspace({
 	onChange?: (slug: string) => void
 	onReset: () => void
 }) {
-	const { config, canvas, execution, layers, navigation, background } = useTemplateStudio()
-	// 오른쪽 패널의 영역별 내용 — 고정 영역(Dimming·텍스트 색 등)은 레이어 종류로, 내용 영역은 배경 방식까지 갈린다.
-	// 🔴 배경 방식만 바뀌면 고정 영역은 그대로다(Dimming은 방식과 무관) — 그 카드는 다시 그리지 않는다.
-	const kind = layers.selectedKind ?? 'none'
-	const panelKeys = {
-		fixed: kind,
-		content: kind === 'background' ? `${kind}:${background.state.type}` : kind,
-	}
+	const { config, canvas, execution, layers, navigation } = useTemplateStudio()
 	const firstLayer =
 		config.template.slots.find((slot) => slot.kind === 'text')?.id ??
 		config.template.slots[0]?.id
@@ -111,8 +104,9 @@ export function TemplateWorkspace({
 					}
 					right={
 						<div data-slot="studio-sidebar" className="h-full min-h-0">
-							{/* 레이어(와 배경 방식)가 바뀌면 오른쪽 패널의 내용 열을 공용 패널 렌더로 다시 그린다. */}
-							<PanelRenderScope keys={panelKeys}>
+							{/* 패널 렌더 범위는 패널보다 위에 둔다 — 레이어마다 패널이 다시 마운트돼도 켜짐·기록이 남는다.
+							    무엇이 바뀌었는지는 패널이 구조 서명으로 안다(docs/10 §3.7). */}
+							<PanelRenderScope>
 								<TemplateControls />
 							</PanelRenderScope>
 						</div>

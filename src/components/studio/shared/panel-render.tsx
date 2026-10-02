@@ -17,7 +17,6 @@ import { PANEL_RENDER, type PanelSide, useMotionTransition } from '@/lib/motion'
 export type PanelRenderRegion = 'fixed' | 'content'
 
 type PanelRenderScopeValue = {
-	keys: Readonly<Partial<Record<PanelRenderRegion, string>>>
 	armed: boolean
 	/** 영역마다 마지막으로 그린 키 — 안쪽 패널이 통째로 다시 마운트돼도 같은 내용이면 움직이지 않는다. */
 	rendered: RefObject<Partial<Record<PanelRenderRegion, string>>>
@@ -26,25 +25,17 @@ type PanelRenderScopeValue = {
 const PanelRenderContext = createContext<PanelRenderScopeValue | null>(null)
 
 /**
- * 패널 렌더의 범위 — 영역마다 「지금 무엇을 그리는가」를 키로 알린다(예: 템플릿 배경을 고른 동안
- * 고정 영역은 `background`, 내용 영역은 `background:graphic`).
+ * 패널 렌더의 범위 — 「켜졌나」와 영역마다 「마지막에 그린 키」를 갖는다. 키는 영역이 스스로 안다
+ * (패널 컴포지션의 구조 서명, docs/10 §3.7).
  * 범위가 마운트된 뒤에야 켜진다 — 첫 진입은 움직이지 않는다(사용자 결정, 2026-10-02).
- * 🔴 키는 **영역의 내용**을 나타내야 한다. 내용이 같은데 키를 바꾸면 그대로인 카드가 다시 그려진다
- *    (배경 방식만 바꿨는데 Dimming 카드가 움직였던 원인).
+ * 🔴 범위는 패널보다 위에 깐다 — 안쪽 패널이 레이어마다 다시 마운트돼도 켜짐과 기록이 남아야 한다.
  */
-export function PanelRenderScope({
-	keys = {},
-	children,
-}: {
-	/** 영역 키. 영역이 스스로 키를 아는 경우(패널 컴포지션)는 비워 두고 범위만 깐다. */
-	keys?: Readonly<Partial<Record<PanelRenderRegion, string>>>
-	children: ReactNode
-}) {
+export function PanelRenderScope({ children }: { children: ReactNode }) {
 	const [armed, setArmed] = useState(false)
 	const rendered = useRef<Partial<Record<PanelRenderRegion, string>>>({})
 	useEffect(() => setArmed(true), [])
 	return (
-		<PanelRenderContext.Provider value={{ keys, armed, rendered }}>
+		<PanelRenderContext.Provider value={{ armed, rendered }}>
 			{children}
 		</PanelRenderContext.Provider>
 	)
@@ -54,23 +45,19 @@ type PanelRenderTargetProps = {
 	/** 패널이 놓인 쪽 — 그쪽에서 들어온다. */
 	side: PanelSide
 	region: PanelRenderRegion
-	/**
-	 * 이 영역이 무엇을 그리는지 직접 알 때의 키(패널 컴포지션의 구조 서명). 범위의 키보다 앞선다.
-	 * 범위는 그래도 「켜졌나」와 「마지막에 그린 키」를 제공한다.
-	 */
+	/** 이 영역이 무엇을 그리나(패널 컴포지션의 구조 서명). 없으면 움직이지 않는다. */
 	renderKey?: string
 	className?: string
 	children: ReactNode
 }
 
 /**
- * 범위가 알린 자기 영역의 키가 **실제로 바뀌었을 때만** 공용 패널 렌더로 들어오는 자리.
+ * 자기 영역의 키가 **실제로 바뀌었을 때만** 공용 패널 렌더로 들어오는 자리.
  * 범위 밖에서는 움직이지 않는 평범한 상자다. 레일처럼 고정된 크롬은 이 바깥에 둔다.
  */
 export function PanelRenderTarget(props: PanelRenderTargetProps) {
 	const scope = useContext(PanelRenderContext)
-	const renderKey = props.renderKey ?? scope?.keys[props.region]
-	return <PanelRenderItem key={renderKey} scope={scope} {...props} renderKey={renderKey} />
+	return <PanelRenderItem key={props.renderKey} scope={scope} {...props} />
 }
 
 function PanelRenderItem({

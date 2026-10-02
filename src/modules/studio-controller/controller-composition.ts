@@ -138,8 +138,8 @@ export function conditionControlIds(condition: ControllerCondition): string[] {
 
 /**
  * 역할 정책대로 슬롯을 채운다. 숨은 그룹·묶음·컨트롤은 빠지고, 묶음이 가리킨 컨트롤은 그룹에서 빠진다.
- * 🔴 정책에 없는 역할·역할이 없는 그룹은 어느 슬롯에도 서지 않는다 — 지금의 「left/right 어디에도 없으면
- *    그리지 않는다」 규칙과 같다(선언은 남아 manager가 조정할 수 있다).
+ * 🔴 정책에 없는 역할·역할이 없는 그룹은 어느 슬롯에도 서지 않는다 — 어드민 전용 층이다
+ *    (선언은 남아 manager가 Payload에서 조정할 수 있다).
  */
 export function arrangeStudioPanel(
 	controller: {
@@ -147,7 +147,7 @@ export function arrangeStudioPanel(
 		clusters?: readonly ControllerCluster[]
 		/**
 		 * 컨트롤 단위 역할 — 그룹 역할보다 앞선다. 한 그룹 안에 창작자용·어드민 전용 컨트롤이 섞인 런타임이 쓴다
-		 * (지금의 `left/right`처럼 id → 의미). 역할이 갈리면 같은 그룹 제목 아래 따로 선다.
+		 * (id → 의미). 역할이 갈리면 같은 그룹 제목 아래 따로 선다.
 		 */
 		roles?: Readonly<Record<string, ControllerRole>>
 	},

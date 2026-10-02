@@ -23,22 +23,17 @@ const CARD_BODY =
 
 /**
  * 패널 컴포지션 입력(docs/10 §3.7) — 화면이 `arrangeStudioPanel`로 역할을 슬롯에 놓은 결과와 그릴 값.
- * 슬롯은 같은 자리의 JSX 입력이 없을 때만 쓴다(이행 기간 동안 두 길이 함께 돈다).
+ * 패널에 무엇이 서는지는 이것뿐이다 — 화면이 자리마다 JSX를 꽂는 길은 없다.
  */
 export type ControlPanelComposition = StudioPanelSlotRenderProps & {
 	slots: Readonly<Record<StudioPanelSlot, readonly StudioPanelEntry[]>>
 }
 
 type ControlPanelProps = {
-	fixed?: ReactNode
-	basic?: ReactNode
-	presets?: ReactNode
-	adjustment?: ReactNode
-	basicPresets?: ReactNode
 	composition?: ControlPanelComposition
 	/**
-	 * 컴포지션 슬롯 뒤에 같은 목록으로 이어 붙이는 화면 고유 그룹(예: 생성 버튼).
-	 * 같은 자리의 JSX 입력과 달리 계약 슬롯을 대체하지 않는다 — 간격과 펼침이 이어진다.
+	 * 컴포지션 슬롯 뒤에 같은 목록으로 이어 붙이는 계약 밖의 것(생성 버튼·오류·안내).
+	 * 계약 슬롯을 대체하지 않는다 — 간격과 펼침이 이어진다.
 	 */
 	extras?: Partial<Record<Exclude<StudioPanelSlot, 'settings'>, ReactNode>>
 }
@@ -85,11 +80,11 @@ export function ControlPanel(props: ControlPanelProps) {
 }
 
 function ControlPanelView({
-	composition: _own,
 	compositions,
 	extras,
-	...explicit
-}: ControlPanelProps & { compositions: readonly ControlPanelComposition[] }) {
+}: Omit<ControlPanelProps, 'composition'> & {
+	compositions: readonly ControlPanelComposition[]
+}) {
 	const pick = (name: StudioPanelSlot) =>
 		compositions.find((item) => item.slots[name].length) ?? compositions[0]
 	const slot = (name: Exclude<StudioPanelSlot, 'settings'>) => {
@@ -103,26 +98,20 @@ function ControlPanelView({
 			</Slot>
 		) : undefined
 	}
-	const fixed = explicit.fixed ?? slot('fixed')
-	const basic = explicit.basic ?? slot('basic')
-	const presets = explicit.presets ?? slot('presets')
-	const adjustment = explicit.adjustment ?? slot('adjustment')
-	const basicPresets = explicit.basicPresets ?? slot('basicPresets')
-	// 구조 서명 — 보이는 것이 바뀐 영역만 다시 그린다. JSX로 꽂은 영역은 범위의 키를 따른다.
+	const fixed = slot('fixed')
+	const basic = slot('basic')
+	const presets = slot('presets')
+	const adjustment = slot('adjustment')
+	const basicPresets = slot('basicPresets')
+	// 구조 서명 — 보이는 것이 바뀐 영역만 다시 그린다. 손으로 정한 키는 없다.
 	const signature = (names: readonly StudioPanelSlot[]) =>
 		compositions.length
 			? names
 					.map((name) => controllerStructureSignature(pick(name)?.slots[name] ?? []))
 					.join('/')
 			: undefined
-	const fixedKey = explicit.fixed === undefined ? signature(['fixed']) : undefined
-	const contentKey =
-		explicit.basic === undefined &&
-		explicit.presets === undefined &&
-		explicit.adjustment === undefined &&
-		explicit.basicPresets === undefined
-			? signature(['basicPresets', 'basic', 'presets', 'adjustment'])
-			: undefined
+	const fixedKey = signature(['fixed'])
+	const contentKey = signature(['basicPresets', 'basic', 'presets', 'adjustment'])
 	const [selected, setSelected] = useState('basic')
 	const id = useId()
 	const tabs = [

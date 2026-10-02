@@ -195,7 +195,7 @@ Template·Image·Graphic Config는 이 Manifest 구조를 그대로 쓰고, 실�
 
 형식 선택은 Controller Definition에 중복하지 않습니다. 세 Studio의 Export hook은 Artifact 선택과 batch/ZIP 같은 전달 정책만 조정하고, 모든 형식 분기와 인코딩은 공통 `executeArtifactExport()`가 소유합니다. `Controller.Footer`는 그 결과인 export view model만 표시합니다. 공통 `useExport.canExport(request)`가 Effective capability·Artifact 가용성·도메인 실행 조건을 함께 판정하고, `run()`은 실행 시 같은 판정을 다시 적용합니다. `ExportRequest`는 먼저 `raster | vector | video | original` Artifact로 분기합니다. Image 원본은 파일 형식이 아니므로 `OriginalArtifact`, `output.original` boolean, format 없는 Original 요청으로 표현합니다. Runtime·Provider·Canvas는 출력 형식을 해석하지 않습니다.
 
-직렬화 가능한 데이터 어휘의 정본은 `src/modules/studio-controller/controller-definition.ts`의 `ControllerControlDefinition`입니다. Definition에는 `kind`·`defaultValue`·선택지·레인지 같은 정적 정의만 싣습니다. 현재 값은 session values에, `error`·런타임 availability·대상 기하는 runtime bindings에 둡니다. `ControllerRenderer`는 `groups`와 이 두 런타임 입력을 결합해 `Group`과 primitive만 그립니다. 별도 배치가 필요한 footer·Template slot은 `ControllerControlRenderer`로 같은 단일 control 투영을 재사용합니다. 공통 `StudioSidebar`가 `Controller.Root`와 고정 `Header`·스크롤 `Content`·고정 `Footer` 배치를, Domain Sidebar가 내부 복합 UI와 브라우저 트리거를 소유합니다. 창작자 화면은 **패널 두 자리**입니다 — 왼쪽은 색 조합·큰 형태처럼 창작자가 실제로 다루는 축, 오른쪽은 세기·속도 같은 잔 축이고, 어느 쪽에도 서지 않은 컨트롤은 manager가 Payload에서만 조정합니다. 어느 컨트롤이 어느 자리인지는 표현이 아니라 Runtime Manifest의 `controller.left`·`controller.right` 선언이 정하며, 근거와 규칙은 `controller-definition.ts`가 갖습니다(`StudioWorkspace`의 `leftPanel`은 그 선언이 있는 Studio만 채웁니다). ReactNode·콜백·DOM 참조·formatter 함수는 Definition에 넣지 않습니다.
+직렬화 가능한 데이터 어휘의 정본은 `src/modules/studio-controller/controller-definition.ts`의 `ControllerControlDefinition`입니다. Definition에는 `kind`·`defaultValue`·선택지·레인지 같은 정적 정의만 싣습니다. 현재 값은 session values에, `error`·런타임 availability·대상 기하는 runtime bindings에 둡니다. `ControllerRenderer`는 `groups`와 이 두 런타임 입력을 결합해 `Group`과 primitive만 그립니다. 별도 배치가 필요한 footer·Template slot은 `ControllerControlRenderer`로 같은 단일 control 투영을 재사용합니다. 공통 `StudioSidebar`가 `Controller.Root`와 고정 `Header`·스크롤 `Content`·고정 `Footer` 배치를, Domain Sidebar가 내부 복합 UI와 브라우저 트리거를 소유합니다. 창작자 화면의 어느 자리에 무엇이 서는지는 표현이 아니라 Runtime Manifest의 역할·묶음 선언과 패널 정책이 정합니다(§3.7 패널 컴포지션 계약). 역할도 묶음도 없는 컨트롤은 manager가 Payload에서만 조정합니다. ReactNode·콜백·DOM 참조·formatter 함수는 Definition에 넣지 않습니다.
 
 각 Studio Config는 렌더링·실행 전의 **Canonical IR**입니다. Payload·published 원본은 도메인 projection과 strict validation을 한 번 거쳐 Config가 되고, Template 같은 host는 원본에 없는 기능을 추가하지 않고 options·availability·features를 좁힌 **Effective IR**만 만듭니다. Projection과 제한 정책은 같은 입력에 반복 적용해도 결과가 달라지지 않는 순수 함수여야 하며, Renderer는 IR이나 session values를 변경하지 않습니다. Config 정규화의 멱등성과 생성 모델·시간 기반 그래픽의 출력 재현성은 별도 계약입니다.
 
@@ -312,7 +312,7 @@ type ControllerInteraction = 'idle' | 'hover' | 'focused' | 'error'
 
 ### 패널 컴포지션 계약 (§3.7)
 
-**무엇이 있나(매니페스트)와 어디에 서나(패널)를 나눕니다.** 각 Generator는 매니페스트와 세션 값만 넘기고, 자리는 패널이, 나타남·사라짐·재렌더는 패널 렌더러가 정합니다. 화면 코드에 조건부 컨트롤 JSX·런타임 id 특례·손으로 정한 패널 렌더 키를 두지 않습니다. 이행 중에는 기존 화면 조립이 남아 있으며(§3.7 이행 순서), 계약 어휘는 `src/modules/studio-controller/controller-composition.ts`가 소유합니다.
+**무엇이 있나(매니페스트)와 어디에 서나(패널)를 나눕니다.** 각 Generator는 매니페스트와 세션 값만 넘기고, 자리는 패널이, 나타남·사라짐·재렌더는 패널 렌더러가 정합니다. 화면 코드에 조건부 컨트롤 JSX·런타임 id 특례·손으로 정한 패널 렌더 키를 두지 않습니다. 모든 스튜디오(Review 제외 — deprecated)가 이 계약으로 그려지며, 계약 어휘는 `src/modules/studio-controller/controller-composition.ts`가 소유합니다.
 
 | 층 | 소유 | 담는 것 | 모르는 것 |
 | --- | --- | --- | --- |
@@ -382,9 +382,9 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 
 **결정(2026-10-02)**: 프리셋은 `preset` 역할의 select로 다루고 패널이 목록 모양으로 그립니다(전용 항목 타입 없음). 이미지 장수·비율·해상도는 `output`(지금 자리 유지), fluted zoom·tilt는 `tuning`, 카메라 시점은 `view`. 템플릿 이미지 슬롯 Dimming은 방식과 무관하게 보입니다(배경 Dimming과 같게).
 
-**렌더러(2단계)**: 화면은 `arrangeStudioPanel(controller, policy, values)`로 슬롯을 채워 `ControlPanel`의 `composition`(`slots` + 값·바인딩·표시·`onChange`·`widgets`)으로 넘깁니다. 슬롯 하나는 `StudioPanelSlot`이 그리며, 그룹은 `ControllerRenderer`와 같은 `ControllerDefinitionGroup`으로, 묶음은 화면이 넘긴 위젯 레지스트리(`ControllerWidgetRegistry`)로 그립니다. 영역 키는 구조 서명이 정하고(`PanelRenderTarget`의 `renderKey`), 위에 패널 렌더 범위가 없으면 `ControlPanel`이 스스로 범위를 깝니다. 같은 자리의 JSX 입력이 있으면 그쪽이 앞섭니다(이행 기간).
+**렌더러(2단계)**: 화면은 `arrangeStudioPanel(controller, policy, values)`로 슬롯을 채워 `ControlPanel`의 `composition`(`slots` + 값·바인딩·표시·`onChange`·`widgets`)으로 넘깁니다. 슬롯 하나는 `StudioPanelSlot`이 그리며, 그룹은 `ControllerRenderer`와 같은 `ControllerDefinitionGroup`으로, 묶음은 화면이 넘긴 위젯 레지스트리(`ControllerWidgetRegistry`)로 그립니다. 영역 키는 구조 서명이 정하고(`PanelRenderTarget`의 `renderKey`), 위에 패널 렌더 범위가 없으면 `ControlPanel`이 스스로 범위를 깝니다. 화면이 자리마다 JSX를 꽂는 길은 없습니다 — 계약 밖의 것(생성 버튼·오류·안내)은 `extras`로 슬롯 뒤에 잇습니다.
 
-**이행 순서**: ① 어휘·조건 평가기·구조 서명(단위 테스트) → ② 패널 렌더러 + `ControlPanel` 슬롯화(조건 없는 매니페스트로 지금 화면과 같은 결과) → ③ 파일럿 템플릿 배경 → ④ 그래픽(완료 2026-10-02 — 런타임 다섯 개가 역할·묶음을 선언하고 `GRAPHIC_WIDGETS`가 그린다. 남은 id 특례는 Fluted Glass 기준점의 실효값 표시와 Pattern 최대 굵기 비활성 binding 둘이며 `ponytail:` 주석이 상한을 적는다)·이미지(완료 2026-10-02 — `cluster.group` 도입)·템플릿 텍스트·심볼(완료 2026-10-02 — 옛 `TemplateLayerControls`와 그만 닿던 `TemplateBackgroundPanel`·`BackgroundSection` 삭제)·템플릿 이미지 슬롯(완료 2026-10-02) → ⑤ 화면 조건부 JSX·`controller.left/right`·손 키 제거, `Controller.Reveal`은 계약 밖 화면에만 남김.
+**이행 순서**: ① 어휘·조건 평가기·구조 서명(단위 테스트) → ② 패널 렌더러 + `ControlPanel` 슬롯화(조건 없는 매니페스트로 지금 화면과 같은 결과) → ③ 파일럿 템플릿 배경 → ④ 그래픽(완료 2026-10-02 — 런타임 다섯 개가 역할·묶음을 선언하고 `GRAPHIC_WIDGETS`가 그린다. 남은 id 특례는 Fluted Glass 기준점의 실효값 표시와 Pattern 최대 굵기 비활성 binding 둘이며 `ponytail:` 주석이 상한을 적는다)·이미지(완료 2026-10-02 — `cluster.group` 도입)·템플릿 텍스트·심볼(완료 2026-10-02 — 옛 `TemplateLayerControls`와 그만 닿던 `TemplateBackgroundPanel`·`BackgroundSection` 삭제)·템플릿 이미지 슬롯(완료 2026-10-02) → ⑤ 이행 장치 제거(완료 2026-10-02 — `controller.left/right`와 `splitControllerGroups`·`visibleControllerGroups`, `ControlPanel`의 자리별 JSX 입력, `PanelRenderScope`의 손 키를 지웠다. 미선언 런타임은 전부 Basic. `Controller.Reveal`은 계약 밖 화면(출력·색 컴파운드)과 슬롯 렌더러 안에만 남는다).
 
 ## 4. 스타일 계약 Do/Don't
 
