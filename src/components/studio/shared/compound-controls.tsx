@@ -7,6 +7,7 @@ import { snapCameraAngle } from '@/components/shared/controller/camera-orbit'
 import { ControllerColorRow } from '@/components/shared/controller/color-row'
 import { ControllerCompound } from '@/components/shared/controller/compound'
 import { ControllerInput } from '@/components/shared/controller/input'
+import { ControllerReveal } from '@/components/shared/controller/presence'
 import { ControllerRow } from '@/components/shared/controller/row'
 import { ControllerSegmented } from '@/components/shared/controller/segmented'
 import { ImageReferenceUpload } from '@/components/studio/image/image-reference-upload'
@@ -115,7 +116,7 @@ function ColorCompound({
 		...new Set(swatches.flatMap((swatch) => [swatch.background, swatch.foreground])),
 	]
 	return (
-		<div className="flex flex-col gap-4">
+		<ControllerReveal gap={4}>
 			{showDate && (
 				<ControllerRow label="Date">
 					<ControllerInput
@@ -189,7 +190,7 @@ function ColorCompound({
 					</div>
 				)}
 			</ControllerCompound>
-		</div>
+		</ControllerReveal>
 	)
 }
 

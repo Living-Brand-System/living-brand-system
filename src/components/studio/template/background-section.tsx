@@ -131,7 +131,8 @@ export function BackgroundSection({
 			)}
 		</>
 	)
-	if (content === 'settings') return settings
+	// 왼쪽 Setting 카드에서는 이 행들이 그룹 밖이다 — 방식에 따라 생기는 Image Mode 행이 높이로 펼쳐지게 감싼다.
+	if (content === 'settings') return <Controller.Reveal gap={1}>{settings}</Controller.Reveal>
 	return (
 		<ControllerGroupRenderer
 			definition={groupDefinition}
