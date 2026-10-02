@@ -17,9 +17,9 @@ import { Button } from '@/components/ui/button'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import { useShellLock } from '@/hooks/use-shell-lock'
 
-const TRANSITION = { duration: 0.25, ease: 'easeOut' } as const
-// 편집 패널은 마스터가 밀려난 절반 지점에서 짧게 들어온다.
-const EDITING_TRANSITION = { duration: 0.15, ease: 'easeOut' } as const
+// 마스터·편집 패널이 같은 스프링을 쓴다 — 함께 출발해 함께 멈춘다.
+// visualDuration은 눈에 보이는 도착 시간이고, 남는 bounce는 그 뒤에 잦아든다.
+const TRANSITION = { type: 'spring', visualDuration: 0.15, bounce: 0.1 } as const
 
 /** 두 화면의 편집 진입·이탈 UI. 값 복원과 요청 무효화는 Provider가 소유한다. */
 export function TemplateEditingPanel({ children }: { children: ReactNode }) {
@@ -65,7 +65,7 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 							initial={reducedMotion ? false : { x: '-50%' }}
 							animate={{ x: 0 }}
 							exit={reducedMotion ? undefined : { x: '-50%', pointerEvents: 'none' }}
-							transition={reducedMotion ? { duration: 0 } : EDITING_TRANSITION}
+							transition={reducedMotion ? { duration: 0 } : TRANSITION}
 						>
 							<ControllerRoot className="aspect-square shrink-0 lg:h-auto">
 								<StudioSelectionCard
