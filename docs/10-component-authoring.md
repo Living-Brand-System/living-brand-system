@@ -150,7 +150,7 @@ studio·global·home 같은 표면의 화면 컴포넌트도 위 계약을 그�
     | `--motion-feedback` | CSS 누름·호버 반응(패드 thumb, 슬라이더 핸들) | 150ms `ease-out` |
     | `--motion-layout` | CSS 배치 변화(미리보기 확대·축소) | 200ms `ease-out` |
 
-  - JS는 `useMotionTransition(preset)`이 모션 감소 시 즉시 전환을 돌려주고, 진입·이탈 자체(`initial`·`exit`)를 끄는 판단은 소유 컴포넌트가 `useReducedMotion()`으로 합니다. CSS는 `duration-(--motion-*) ease-out`에 `motion-reduce:transition-none`을 함께 씁니다. 오버레이(dialog·select·tooltip·자산 브라우저)는 tw-animate CSS 그대로 둡니다. `Controller.Group`·`Controller.GroupList`의 직계 자식은 `ControllerPresence`가 감싸, 새로 생기면 높이 0에서 펼쳐지고 빠지면 접힙니다(`MOTION.loose`) — 카드 높이도 함께 자랍니다. 부르는 쪽은 `{조건 && <컨트롤 />}`을 그대로 쓰고, 간격은 gap이 아니라 각 상자의 위 여백(그룹 안 6px, 목록 12px)이 갖습니다. 첫 렌더는 움직이지 않습니다. 패널 렌더는 첫 진입에 걸지 않습니다. 같은 자리 내용 교체는 `Controller.TabPanel`, 패널 단위 교체는 `PanelRenderScope`(무엇을 그리는지의 키)·`PanelRenderTarget`(움직일 자리)으로 걸고, 레일 같은 고정 크롬은 대상 밖에 둡니다. 이전 내용은 즉시 내리고 새 내용만 들어옵니다.
+  - JS는 `useMotionTransition(preset)`이 모션 감소 시 즉시 전환을 돌려주고, 진입·이탈 자체(`initial`·`exit`)를 끄는 판단은 소유 컴포넌트가 `useReducedMotion()`으로 합니다. CSS는 `duration-(--motion-*) ease-out`에 `motion-reduce:transition-none`을 함께 씁니다. 오버레이(dialog·select·tooltip·자산 브라우저)는 tw-animate CSS 그대로 둡니다. `Controller.Group`·`Controller.GroupList`의 직계 자식은 `ControllerPresence`가 감싸, 새로 생기면 높이 0에서 펼쳐지고 빠지면 접힙니다(`MOTION.loose`) — 카드 높이도 함께 자랍니다. 부르는 쪽은 `{조건 && <컨트롤 />}`을 그대로 쓰고, 간격은 gap이 아니라 각 상자의 위 여백(그룹 안 6px, 목록 12px)이 갖습니다. 첫 렌더는 움직이지 않습니다. 패널 렌더는 첫 진입에 걸지 않습니다. 같은 자리 내용 교체는 `Controller.TabPanel`, 패널 단위 교체는 `PanelRenderScope`(영역별로 무엇을 그리는지의 키 — `fixed`·`content`)·`PanelRenderTarget`(움직일 자리)으로 겁니다. 키는 영역의 **내용**을 나타내야 하고, 범위가 영역별 마지막 키를 기억해 분기가 갈려 다시 마운트돼도 같은 내용이면 움직이지 않습니다(템플릿 배경 방식만 바꾸면 Dimming 카드는 그대로, 내용 영역만 다시 그림). 그리고 레일 같은 고정 크롬은 대상 밖에 둡니다. 이전 내용은 즉시 내리고 새 내용만 들어옵니다.
 
 ### 컨트롤러 컨트롤 계약 (§3.6)
 

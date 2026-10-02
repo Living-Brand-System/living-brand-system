@@ -53,64 +53,76 @@ export function ControlPanel({
 				data-slot="studio-control-panel"
 				className="flex h-full min-h-0 w-102 gap-3 p-4"
 			>
-				{/* 레일은 고정 크롬이라 움직이지 않는다 — 내용 열만 패널 렌더로 다시 그린다. */}
-				<PanelRenderTarget side="right" className="flex min-h-0 w-80 flex-col gap-3">
+				{/* 레일은 고정 크롬이라 움직이지 않는다. 고정 영역과 내용 영역은 바뀌는 때가 달라
+				    따로 다시 그린다 — 내용만 바뀌었는데 그대로인 위 카드가 움직이지 않게. */}
+				<div className="flex min-h-0 w-80 flex-col gap-3">
 					{fixed && (
-						<ControllerRoot
-							data-slot="studio-control-fixed"
-							className="shrink-0 lg:h-auto lg:max-h-[50%]"
+						<PanelRenderTarget
+							side="right"
+							region="fixed"
+							className="flex min-h-0 shrink-0 flex-col lg:max-h-[50%]"
 						>
-							<div className={CARD_BODY}>{fixed}</div>
-						</ControllerRoot>
+							<ControllerRoot data-slot="studio-control-fixed" className="lg:h-auto">
+								<div className={CARD_BODY}>{fixed}</div>
+							</ControllerRoot>
+						</PanelRenderTarget>
 					)}
-					{tabs.map((tab) => (
-						// 탭은 상태를 지키려고 모두 띄워 둔다 — 다시 그리지 않고, 보이게 될 때 패널 렌더를 재생한다.
-						// 숨을 때는 즉시 숨김 값으로 돌려 두고(첫 렌더는 제자리에서 시작), 나타날 때만 움직인다.
-						<m.div
-							key={tab.id}
-							id={`${id}-${tab.id}`}
-							hidden={active !== tab.id}
-							className="min-h-0 flex-1"
-							style={{ transformOrigin: PANEL_RENDER.right.origin }}
-							initial={false}
-							animate={
-								active === tab.id
-									? PANEL_RENDER.right.shown
-									: PANEL_RENDER.right.hidden
-							}
-							transition={active === tab.id ? transition : { duration: 0 }}
-						>
-							<div className="flex h-full min-h-0 flex-col gap-3">
-								{tab.list && (
-									<ControllerRoot
-										data-slot="studio-preset-list"
-										className="min-h-0 shrink lg:h-auto"
-									>
-										<div className={CARD_BODY}>{tab.list}</div>
-									</ControllerRoot>
-								)}
-								{tab.content && (
-									<ControllerRoot
-										className={
-											tab.list
-												? 'relative min-h-0 shrink-0 lg:h-auto max-h-[60%]'
-												: 'relative min-h-0 flex-1 lg:h-auto'
-										}
-									>
-										{/* 끝까지 내리면 마지막 컨트롤이 흐림 위로 올라오도록 아래 여백을 흐림 높이만큼 둔다. */}
-										<div className={`${CARD_BODY} pb-16`}>{tab.content}</div>
-										{/* Figma 529:19501·529:25146 — 스크롤 본문 아래 64px 흐림. */}
-										<div
-											aria-hidden="true"
-											data-slot="studio-control-fade"
-											className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-b from-transparent to-background to-75%"
-										/>
-									</ControllerRoot>
-								)}
-							</div>
-						</m.div>
-					))}
-				</PanelRenderTarget>
+					<PanelRenderTarget
+						side="right"
+						region="content"
+						className="flex min-h-0 flex-1 flex-col"
+					>
+						{tabs.map((tab) => (
+							// 탭은 상태를 지키려고 모두 띄워 둔다 — 다시 그리지 않고, 보이게 될 때 패널 렌더를 재생한다.
+							// 숨을 때는 즉시 숨김 값으로 돌려 두고(첫 렌더는 제자리에서 시작), 나타날 때만 움직인다.
+							<m.div
+								key={tab.id}
+								id={`${id}-${tab.id}`}
+								hidden={active !== tab.id}
+								className="min-h-0 flex-1"
+								style={{ transformOrigin: PANEL_RENDER.right.origin }}
+								initial={false}
+								animate={
+									active === tab.id
+										? PANEL_RENDER.right.shown
+										: PANEL_RENDER.right.hidden
+								}
+								transition={active === tab.id ? transition : { duration: 0 }}
+							>
+								<div className="flex h-full min-h-0 flex-col gap-3">
+									{tab.list && (
+										<ControllerRoot
+											data-slot="studio-preset-list"
+											className="min-h-0 shrink lg:h-auto"
+										>
+											<div className={CARD_BODY}>{tab.list}</div>
+										</ControllerRoot>
+									)}
+									{tab.content && (
+										<ControllerRoot
+											className={
+												tab.list
+													? 'relative min-h-0 shrink-0 lg:h-auto max-h-[60%]'
+													: 'relative min-h-0 flex-1 lg:h-auto'
+											}
+										>
+											{/* 끝까지 내리면 마지막 컨트롤이 흐림 위로 올라오도록 아래 여백을 흐림 높이만큼 둔다. */}
+											<div className={`${CARD_BODY} pb-16`}>
+												{tab.content}
+											</div>
+											{/* Figma 529:19501·529:25146 — 스크롤 본문 아래 64px 흐림. */}
+											<div
+												aria-hidden="true"
+												data-slot="studio-control-fade"
+												className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-b from-transparent to-background to-75%"
+											/>
+										</ControllerRoot>
+									)}
+								</div>
+							</m.div>
+						))}
+					</PanelRenderTarget>
+				</div>
 				<StudioRail>
 					{tabs.length === 0 && (
 						<StudioRailIcon icon="basic" label="Basic" state="disabled" />
