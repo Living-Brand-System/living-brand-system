@@ -31,6 +31,8 @@ type PageHeroProps = {
 	 * `down`은 위에 깔고 아래로 녹인다. 없으면 그래픽이 판 전체에 그대로 보인다.
 	 */
 	fade?: 'up' | 'down'
+	/** false면 셰이더를 세우지 않는다(정지 이미지만 남는다) — 화면 밖으로 나간 배경이 GPU를 쓰지 않게. */
+	active?: boolean
 	/** 배경 위 중앙에 앉는 락업(워드마크·CI 조합). */
 	children?: ReactNode
 }
@@ -51,13 +53,14 @@ export function PageHero({
 	fallbackSrc,
 	className,
 	fade,
+	active = true,
 	children,
 }: PageHeroProps) {
 	const containerRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => {
 		const container = containerRef.current
-		if (!container) return
+		if (!container || !active) return
 		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
 		let runtime: GraphicRuntime | undefined
@@ -102,7 +105,7 @@ export function PageHero({
 			observer.disconnect()
 			runtime?.destroy()
 		}
-	}, [overrides, runtimeId])
+	}, [active, overrides, runtimeId])
 
 	return (
 		<div

@@ -28,11 +28,13 @@ describe('SectionLayout', () => {
 
 		// 🔴 상단 여백은 셸이 아니라 본문 안쪽이 갖는다 — 그래야 본문이 헤더 밑으로 흘러간다.
 		expect(container.querySelector('[data-slot="section-scroll-container"]')).not.toHaveClass(
-			'xl:pt-(--global-header-height)',
+			'pt-(--section-header-inset)',
 		)
+		// 여백은 변수로 둔다 — 헤더 밑까지 깔리는 첫 화면 히어로가 같은 값만큼 끌어올린다(LandingHero).
 		expect(container.querySelector('main')).toHaveClass(
-			'pt-[50px]',
-			'xl:pt-(--global-header-height)',
+			'[--section-header-inset:50px]',
+			'xl:[--section-header-inset:var(--global-header-height)]',
+			'pt-(--section-header-inset)',
 		)
 		expect(container.querySelector('[data-slot="section-scroll-container"]')).toHaveClass(
 			'lg:overflow-hidden',
