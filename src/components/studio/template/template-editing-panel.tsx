@@ -20,12 +20,12 @@ import { useMotionTransition } from '@/lib/motion'
 
 // 두 패널은 자산 브라우저와 같은 시간으로 움직인다.
 // 마스터는 왼쪽 아래 대각선(16px)으로 밀리며 반투명·흐려지고(blur 4px), 편집 패널은 자산 브라우저와 같은
-// 거리(16px)로 왼쪽에서 흐린 채로 들어오고 나간다.
+// 거리(16px)로 왼쪽에서 흐린 채 0.95 크기로 들어오고 나간다.
 const INACTIVE = { x: -16, y: 16, opacity: 0.5, filter: 'blur(4px)' } as const
-const ACTIVE = { x: 0, y: 0, opacity: 1 } as const
+const ACTIVE = { x: 0, y: 0, scale: 1, opacity: 1 } as const
 // 🔴 끝나면 filter를 걷는다 — blur(0px)도 필터라서 남겨 두면 안쪽 backdrop-blur·fixed 배치가 깨진다.
 const MASTER_ACTIVE = { ...ACTIVE, filter: 'blur(0px)', transitionEnd: { filter: 'none' } } as const
-const EDITING_HIDDEN = { x: -16, opacity: 0 } as const
+const EDITING_HIDDEN = { x: -16, scale: 0.95, opacity: 0 } as const
 
 /** 두 화면의 편집 진입·이탈 UI. 값 복원과 요청 무효화는 Provider가 소유한다. */
 export function TemplateEditingPanel({ children }: { children: ReactNode }) {
