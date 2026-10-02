@@ -68,8 +68,9 @@ function SectionBody({
 					<SidePanelOpen data-icon="inline-start" />
 				</SidebarTrigger>
 			)}
-			{/* 첫 화면은 헤더에 가리지 않고, 스크롤하면 콘텐츠가 헤더 뒤로 지나간다. */}
-			<main className="min-h-0 w-full flex-1 pt-[50px] xl:pt-(--global-header-height)">
+			{/* 첫 화면은 헤더에 가리지 않고, 스크롤하면 콘텐츠가 헤더 뒤로 지나간다.
+			    여백을 변수로 둔다 — 헤더 밑까지 깔리는 첫 화면 히어로(`LandingHero`)가 같은 값만큼 끌어올린다. */}
+			<main className="min-h-0 w-full flex-1 [--section-header-inset:50px] xl:[--section-header-inset:var(--global-header-height)] pt-(--section-header-inset)">
 				{children}
 			</main>
 		</div>

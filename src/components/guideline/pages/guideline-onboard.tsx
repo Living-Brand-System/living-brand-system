@@ -8,8 +8,7 @@ import {
 	GuidelineDisplayFrame,
 	GuidelineGridContainer,
 } from '@/components/guideline/structure/grid'
-import { LandingHero, LandingLockup } from '@/components/shared/landing-hero'
-import { GUIDELINE_DOCUMENT_SURFACE } from '@/features/guideline/cards/displays/dynamics/surface'
+import { LandingHero, LandingLockup, LandingSurface } from '@/components/shared/landing-hero'
 import type { GetGuidelineNavigationOutput } from '@/features/guideline/services/get-guideline-navigation.service'
 
 /**
@@ -19,46 +18,49 @@ import type { GetGuidelineNavigationOutput } from '@/features/guideline/services
  */
 export function GuidelineOnboard({ navigation }: { navigation: GetGuidelineNavigationOutput }) {
 	return (
-		<article className={`relative flex w-full flex-col ${GUIDELINE_DOCUMENT_SURFACE}`}>
+		// 바탕은 히어로 아래 블록만 칠한다 — 판 전체에 칠하면 히어로의 고정 배경층을 가린다(`LandingHero`).
+		<article className="relative flex w-full flex-col text-foreground">
 			<LandingHero size="screen" fade="down">
 				<LandingLockup title={navigation.title} />
 			</LandingHero>
-			{navigation.chapters
-				.filter((chapter) => chapter.topics.length > 0)
-				.map((chapter) => {
-					const id = `chapter-${chapter.id}`
-					return (
-						<GuidelineSection key={chapter.id} id={id} hierarchy="main">
-							<GuidelineSectionHeading
-								id={`${id}-heading`}
-								hierarchy="main"
-								title={chapter.title}
-								description={chapter.description ?? undefined}
-							/>
-							<GuidelineGridContainer
-								cards={chapter.topics.map((topic) => ({
-									id: String(topic.id),
-									ratio: '1:1',
-									href: topic.href,
-									display: topic.thumbnail ? (
-										<GuidelineCardDisplay
-											src={topic.thumbnail.src}
-											alt={topic.thumbnail.alt}
-											fit="cover"
-										/>
-									) : (
-										<GuidelineDisplayFrame />
-									),
-									caption: {
-										title: topic.title,
-										description: topic.description ?? undefined,
-									},
-								}))}
-							/>
-						</GuidelineSection>
-					)
-				})}
-			<GuidelineDisplayFooter />
+			<LandingSurface>
+				{navigation.chapters
+					.filter((chapter) => chapter.topics.length > 0)
+					.map((chapter) => {
+						const id = `chapter-${chapter.id}`
+						return (
+							<GuidelineSection key={chapter.id} id={id} hierarchy="main">
+								<GuidelineSectionHeading
+									id={`${id}-heading`}
+									hierarchy="main"
+									title={chapter.title}
+									description={chapter.description ?? undefined}
+								/>
+								<GuidelineGridContainer
+									cards={chapter.topics.map((topic) => ({
+										id: String(topic.id),
+										ratio: '1:1',
+										href: topic.href,
+										display: topic.thumbnail ? (
+											<GuidelineCardDisplay
+												src={topic.thumbnail.src}
+												alt={topic.thumbnail.alt}
+												fit="cover"
+											/>
+										) : (
+											<GuidelineDisplayFrame />
+										),
+										caption: {
+											title: topic.title,
+											description: topic.description ?? undefined,
+										},
+									}))}
+								/>
+							</GuidelineSection>
+						)
+					})}
+				<GuidelineDisplayFooter />
+			</LandingSurface>
 		</article>
 	)
 }

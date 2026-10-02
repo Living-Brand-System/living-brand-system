@@ -5,10 +5,9 @@ import {
 	GuidelineSection,
 	GuidelineSectionHeading,
 } from '@/components/guideline/structure/components'
-import { LandingHero } from '@/components/shared/landing-hero'
+import { LandingHero, LandingSurface } from '@/components/shared/landing-hero'
 import { StudioHomeCard, type StudioHomeItem } from '@/components/studio/shared/studio-home-card'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
-import { GUIDELINE_DOCUMENT_SURFACE } from '@/features/guideline/cards/displays/dynamics/surface'
 
 export type StudioHomeGroup = {
 	/** 블록 제목 — 템플릿 카테고리, 그래픽 렌더러 종류(P5 Vectors·Shaders), 이미지의 Generate. */
@@ -38,36 +37,39 @@ export function StudioHome({ title, subtitle, groups, empty, cardFit, children }
 	const visibleGroups = groups.filter((group) => group.items.length > 0)
 	return (
 		<div data-slot="studio-home" className="h-full min-h-0 overflow-y-auto">
-			<article className={`flex w-full flex-col ${GUIDELINE_DOCUMENT_SURFACE}`}>
+			{/* 바탕은 띠 아래 블록만 칠한다 — 판 전체에 칠하면 띠의 고정 배경층을 가린다(`LandingHero`). */}
+			<article className="flex w-full flex-col text-foreground">
 				<LandingHero size="banner" fade="down">
 					<div className="flex flex-col items-center gap-6 text-center">
 						<GuidelineDisplayTitle title={title} subtitle={subtitle} />
 					</div>
 				</LandingHero>
-				{visibleGroups.length === 0 ? (
-					<Empty className="min-h-96 rounded-none">
-						<EmptyHeader>
-							<EmptyTitle>{empty.title}</EmptyTitle>
-							<EmptyDescription>{empty.description}</EmptyDescription>
-						</EmptyHeader>
-					</Empty>
-				) : (
-					visibleGroups.map((group, index) => (
-						<StudioHomeBlock
-							key={group.title}
-							id={`studio-group-${index}`}
-							title={group.title}
-						>
-							<StudioHomeGrid>
-								{group.items.map((item) => (
-									<StudioHomeCard key={item.key} item={item} fit={cardFit} />
-								))}
-							</StudioHomeGrid>
-						</StudioHomeBlock>
-					))
-				)}
-				{children}
-				<GuidelineDisplayFooter />
+				<LandingSurface>
+					{visibleGroups.length === 0 ? (
+						<Empty className="min-h-96 rounded-none">
+							<EmptyHeader>
+								<EmptyTitle>{empty.title}</EmptyTitle>
+								<EmptyDescription>{empty.description}</EmptyDescription>
+							</EmptyHeader>
+						</Empty>
+					) : (
+						visibleGroups.map((group, index) => (
+							<StudioHomeBlock
+								key={group.title}
+								id={`studio-group-${index}`}
+								title={group.title}
+							>
+								<StudioHomeGrid>
+									{group.items.map((item) => (
+										<StudioHomeCard key={item.key} item={item} fit={cardFit} />
+									))}
+								</StudioHomeGrid>
+							</StudioHomeBlock>
+						))
+					)}
+					{children}
+					<GuidelineDisplayFooter />
+				</LandingSurface>
 			</article>
 		</div>
 	)
