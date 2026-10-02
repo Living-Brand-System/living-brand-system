@@ -18,6 +18,8 @@ import { useTemplateStudio } from '@/features/template-customization/hooks/use-t
 import { useShellLock } from '@/hooks/use-shell-lock'
 
 const TRANSITION = { duration: 0.25, ease: 'easeOut' } as const
+// 편집 패널은 마스터가 밀려난 절반 지점에서 짧게 들어온다.
+const EDITING_TRANSITION = { duration: 0.15, ease: 'easeOut' } as const
 
 /** 두 화면의 편집 진입·이탈 UI. 값 복원과 요청 무효화는 Provider가 소유한다. */
 export function TemplateEditingPanel({ children }: { children: ReactNode }) {
@@ -58,12 +60,12 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 							tabIndex={-1}
 							aria-label="선택한 레이어 편집"
 							className="scrollbar-none absolute inset-0 flex min-h-0 flex-col gap-4 overflow-y-auto p-4 outline-none"
-							// 마스터 패널이 밀려나는 동안 편집 패널은 왼쪽 바깥에서 제자리로 들어오고, 나갈 때 되돌아간다.
+							// 편집 패널은 -50%에서 제자리로 들어오고, 나갈 때 같은 자리로 되돌아간다.
 							// 퇴장 중에는 마지막 화면이 남아 있으므로 클릭을 받지 않는다.
-							initial={reducedMotion ? false : { x: '-100%' }}
+							initial={reducedMotion ? false : { x: '-50%' }}
 							animate={{ x: 0 }}
-							exit={reducedMotion ? undefined : { x: '-100%', pointerEvents: 'none' }}
-							transition={reducedMotion ? { duration: 0 } : TRANSITION}
+							exit={reducedMotion ? undefined : { x: '-50%', pointerEvents: 'none' }}
+							transition={reducedMotion ? { duration: 0 } : EDITING_TRANSITION}
 						>
 							<ControllerRoot className="aspect-square shrink-0 lg:h-auto">
 								<StudioSelectionCard
