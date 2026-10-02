@@ -16,8 +16,10 @@ const LANDING_HERO_FALLBACK = '/images/hero_guideline.png'
  *
  * 🔑 그래픽은 **화면 고정 배경층**이다 — 본문 열 안에 두면 스크롤 영역에 갇혀 헤더·가이드라인 목차 열 뒤로 깔리지 못한다
  *    (위·아래·왼쪽이 잘렸다). 히어로 자리는 투명하게 비우고, 그 아래 블록은 불투명한 바탕(`LandingSurface`)으로 덮는다.
- * 🔑 히어로 자리가 화면 밖으로 나가면 배경층을 흐려 감추고 셰이더도 내린다 — 목차 열 뒤에 그래픽이 계속 남지 않고,
- *    보이지 않는 배경이 GPU를 쓰지 않는다. 돌아오면 다시 띄운다.
+ * 🔑 배경층은 스크롤을 따라 히어로 자리와 함께 올라간다 — 고정된 채로 두면 본문 열만 흰 블록에 덮이고, 스크롤되지 않는
+ *    목차 열 뒤에는 그래픽이 그대로 남아 두 영역 경계가 잘려 보였다. 함께 올라가면 그래픽 아래 끝(바탕으로 녹은 부분)이
+ *    두 열에서 같은 높이라 경계가 없다.
+ * 🔑 히어로 자리가 화면 밖으로 다 나가면 배경층을 감추고 셰이더도 내린다 — 보이지 않는 배경이 GPU를 쓰지 않는다.
  */
 export function LandingHero({
 	size,
@@ -29,7 +31,40 @@ export function LandingHero({
 	children: ReactNode
 }) {
 	const placeRef = useRef<HTMLDivElement>(null)
+	const backdropRef = useRef<HTMLDivElement>(null)
 	const [visible, setVisible] = useState(true)
+	useEffect(() => {
+		const place = placeRef.current
+		const backdrop = backdropRef.current
+		if (!place || !backdrop) return
+		// 히어로를 스크롤시키는 가장 가까운 조상(섹션 스크롤 영역) — 없으면 문서다.
+		let scroller: HTMLElement | Window = window
+		for (let node = place.parentElement; node; node = node.parentElement) {
+			const { overflowY } = getComputedStyle(node)
+			if (overflowY === 'auto' || overflowY === 'scroll') {
+				scroller = node
+				break
+			}
+		}
+		let frame = 0
+		const sync = () => {
+			frame = 0
+			// 히어로 자리가 위로 밀려난 만큼만 따라간다(되튕김으로 아래로 내려온 값은 무시).
+			const top = Math.min(0, place.getBoundingClientRect().top)
+			backdrop.style.transform = `translate3d(0, ${top}px, 0)`
+		}
+		const schedule = () => {
+			if (!frame) frame = requestAnimationFrame(sync)
+		}
+		sync()
+		scroller.addEventListener('scroll', schedule, { passive: true })
+		window.addEventListener('resize', schedule)
+		return () => {
+			scroller.removeEventListener('scroll', schedule)
+			window.removeEventListener('resize', schedule)
+			cancelAnimationFrame(frame)
+		}
+	}, [])
 	useEffect(() => {
 		const place = placeRef.current
 		if (!place) return
@@ -44,6 +79,7 @@ export function LandingHero({
 	return (
 		<>
 			<div
+				ref={backdropRef}
 				aria-hidden
 				data-slot="landing-hero-backdrop"
 				className={cn(

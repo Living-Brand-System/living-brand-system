@@ -40,3 +40,30 @@ it('히어로 자리가 화면을 벗어나면 배경층을 감추고 셰이더�
 	expect(backdrop).not.toHaveClass('opacity-0')
 	expect(shader()).toHaveAttribute('data-active', 'true')
 })
+
+it('배경층은 히어로 자리가 위로 밀려난 만큼 함께 올라간다 — 목차 열 뒤에서 잘리지 않게', async () => {
+	const { container } = render(
+		<div data-testid="scroller" style={{ overflowY: 'auto' }}>
+			<LandingHero size="screen" fade="down">
+				<h1>Brand Guideline</h1>
+			</LandingHero>
+		</div>,
+	)
+	const backdrop = container.querySelector('[data-slot="landing-hero-backdrop"]') as HTMLElement
+	const place = container.querySelector('[data-slot="landing-hero"]') as HTMLElement
+	const frame = () => new Promise((resolve) => requestAnimationFrame(resolve))
+	place.getBoundingClientRect = () => ({ top: -240 }) as DOMRect
+	act(() => {
+		container.querySelector('[data-testid="scroller"]')?.dispatchEvent(new Event('scroll'))
+	})
+	await act(frame)
+	expect(backdrop.style.transform).toBe('translate3d(0, -240px, 0)')
+
+	// 되튕김으로 아래로 내려온 값은 따라가지 않는다.
+	place.getBoundingClientRect = () => ({ top: 30 }) as DOMRect
+	act(() => {
+		container.querySelector('[data-testid="scroller"]')?.dispatchEvent(new Event('scroll'))
+	})
+	await act(frame)
+	expect(backdrop.style.transform).toBe('translate3d(0, 0px, 0)')
+})
