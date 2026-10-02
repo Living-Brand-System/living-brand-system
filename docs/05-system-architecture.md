@@ -511,6 +511,7 @@ Plugin은 collection으로 두지 않습니다 — 2026-08-18에 삭제했습니
 | `rule-checkers` | RuleChecker | executor 유형과 checker 또는 model binding을 1:1로 관리하는 검사 도구 계약 |
 | `brand-logos` | BrandLogo | guideline document와 check basis에서 참조. 향후 asset generation session에도 사용 가능 |
 | `brand-colors` | BrandColor | guideline document, Check, template, plugin에서 참조 |
+| `brand-color-pairs` | BrandColorPair | 듀오 컬러(바탕 + 위 색) 정본. 두 색을 `brand-colors` 관계로 참조하고 hex를 다시 적지 않는다. 스튜디오 공용 색 조합 스와치가 읽는다 |
 | `brand-typefaces` | BrandTypeface | guideline document, Check, template에서 참조 |
 | `application-images` | ApplicationImage | page와 check basis에서 참조. 향후 asset generation session에도 사용 가능 |
 | `image-profiles` | ImageProfile | 이미지 생성 Runtime Manifest에 적용할 published feature·Controller 제한·Export 정책을 관리 |

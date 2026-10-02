@@ -14,6 +14,23 @@ const { mount, update, destroy } = vi.hoisted(() => ({
 	update: vi.fn(),
 	destroy: vi.fn(),
 }))
+vi.mock('@/features/template-core/services/template-editor-options.client', async (original) => ({
+	...(await original<object>()),
+	requestPublishedBrandColorPairs: async () => [
+		{
+			id: 1,
+			name: 'Eco on Deep',
+			background: { id: 7, hex: '#00280A' },
+			foreground: { id: 1, hex: '#73D75A' },
+		},
+		{
+			id: 2,
+			name: 'Discovery on Light Blue',
+			background: { id: 6, hex: '#DCF0F5' },
+			foreground: { id: 4, hex: '#003087' },
+		},
+	],
+}))
 vi.mock('@/features/graphic-generation/graphic-runtimes/fluted-glass/runtime.client', () => ({
 	default: { type: 'shader', mount },
 }))
@@ -133,20 +150,20 @@ it('상단의 Swatch/Custom이 같은 색을 공유하고 하단에는 세부 �
 	await user.click(screen.getByRole('button', { name: 'Basic' }))
 	expect(screen.queryByRole('radiogroup', { name: '팔레트' })).not.toBeInTheDocument()
 	const color = within(screen.getByRole('group', { name: 'Color' }))
-	await user.click(color.getByRole('radio', { name: '색 조합 12' }))
+	await user.click(await color.findByRole('radio', { name: 'Discovery on Light Blue' }))
 	expect(update).toHaveBeenLastCalledWith(
-		expect.objectContaining(flutedGlassColors('#003087', '#dfe4f4')),
+		expect.objectContaining(flutedGlassColors('#003087', '#dcf0f5')),
 	)
 	await user.click(color.getByRole('radio', { name: 'Custom' }))
 	expect(color.getByLabelText('Foreground 색상 선택')).toHaveValue('#003087')
 	fireEvent.change(color.getByLabelText('Foreground 색상 선택'), { target: { value: '#ff0000' } })
 	expect(update).toHaveBeenLastCalledWith(
-		expect.objectContaining(flutedGlassColors('#ff0000', '#dfe4f4')),
+		expect.objectContaining(flutedGlassColors('#ff0000', '#dcf0f5')),
 	)
 	await user.click(color.getByRole('radio', { name: 'Swatch' }))
 	expect(
 		color
-			.getAllByRole('radio', { name: /색 조합/ })
+			.getAllByRole('radio', { name: / on / })
 			.some((radio) => (radio as HTMLInputElement).checked),
 	).toBe(false)
 	await user.click(screen.getByRole('button', { name: 'Reset' }))

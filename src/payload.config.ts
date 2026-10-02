@@ -23,6 +23,7 @@ import { AgentSkills } from './collections/AgentSkills'
 import { AiUsageEvents } from './collections/AiUsageEvents'
 import { ApplicationImages } from './collections/ApplicationImages'
 import { BrandColorGroups } from './collections/BrandColorGroups'
+import { BrandColorPairs } from './collections/BrandColorPairs'
 import { BrandColors } from './collections/BrandColors'
 import { BrandIcons } from './collections/BrandIcons'
 import { BrandLogos } from './collections/BrandLogos'
@@ -82,6 +83,7 @@ const collections = [
 	BrandLogos,
 	BrandColors,
 	BrandColorGroups,
+	BrandColorPairs,
 	BrandTypefaces,
 	BrandIcons,
 	ApplicationImages,

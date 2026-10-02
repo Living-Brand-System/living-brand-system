@@ -73,6 +73,7 @@ export interface Config {
     'brand-logos': BrandLogo;
     'brand-colors': BrandColor;
     'brand-color-groups': BrandColorGroup;
+    'brand-color-pairs': BrandColorPair;
     'brand-typefaces': BrandTypeface;
     'brand-icons': BrandIcon;
     'application-images': ApplicationImage;
@@ -114,6 +115,7 @@ export interface Config {
     'brand-logos': BrandLogosSelect<false> | BrandLogosSelect<true>;
     'brand-colors': BrandColorsSelect<false> | BrandColorsSelect<true>;
     'brand-color-groups': BrandColorGroupsSelect<false> | BrandColorGroupsSelect<true>;
+    'brand-color-pairs': BrandColorPairsSelect<false> | BrandColorPairsSelect<true>;
     'brand-typefaces': BrandTypefacesSelect<false> | BrandTypefacesSelect<true>;
     'brand-icons': BrandIconsSelect<false> | BrandIconsSelect<true>;
     'application-images': ApplicationImagesSelect<false> | ApplicationImagesSelect<true>;
@@ -781,6 +783,28 @@ export interface BrandColorGroup {
    * 선택한 순서대로 팔레트에 표시됩니다. 드래그로 순서를 바꿉니다.
    */
   colors?: (number | BrandColor)[] | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "brand-color-pairs".
+ */
+export interface BrandColorPair {
+  id: number;
+  /**
+   * 스와치 이름입니다. 예: Deep Green 위 Light Green
+   */
+  name: string;
+  /**
+   * 바탕(면) 색입니다.
+   */
+  background: number | BrandColor;
+  /**
+   * 바탕 위에 올리는 선·글자 색입니다.
+   */
+  foreground: number | BrandColor;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -1971,6 +1995,10 @@ export interface PayloadLockedDocument {
         value: number | BrandColorGroup;
       } | null)
     | ({
+        relationTo: 'brand-color-pairs';
+        value: number | BrandColorPair;
+      } | null)
+    | ({
         relationTo: 'brand-typefaces';
         value: number | BrandTypeface;
       } | null)
@@ -2316,6 +2344,18 @@ export interface BrandColorGroupsSelect<T extends boolean = true> {
   name?: T;
   family?: T;
   colors?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "brand-color-pairs_select".
+ */
+export interface BrandColorPairsSelect<T extends boolean = true> {
+  name?: T;
+  background?: T;
+  foreground?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -3208,6 +3248,10 @@ export interface TaskSchedulePublish {
       | ({
           relationTo: 'brand-color-groups';
           value: number | BrandColorGroup;
+        } | null)
+      | ({
+          relationTo: 'brand-color-pairs';
+          value: number | BrandColorPair;
         } | null)
       | ({
           relationTo: 'brand-typefaces';

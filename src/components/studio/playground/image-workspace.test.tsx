@@ -14,6 +14,23 @@ const mocks = vi.hoisted(() => ({
 		.mockResolvedValue({ data: new Blob(), filename: 'image.png', mimeType: 'image/png' }),
 	download: vi.fn(),
 }))
+vi.mock('@/features/template-core/services/template-editor-options.client', async (original) => ({
+	...(await original<object>()),
+	requestPublishedBrandColorPairs: async () => [
+		{
+			id: 1,
+			name: 'Eco on Deep',
+			background: { id: 7, hex: '#00280A' },
+			foreground: { id: 1, hex: '#73D75A' },
+		},
+		{
+			id: 2,
+			name: 'Discovery on Light Blue',
+			background: { id: 6, hex: '#DCF0F5' },
+			foreground: { id: 4, hex: '#003087' },
+		},
+	],
+}))
 vi.mock('@/features/image-generation/services/list-image-studio-configs.client', () => ({
 	fetchImageStudioConfigs: mocks.profiles,
 }))
@@ -137,7 +154,7 @@ it('발행 계약으로 생성·색 조정·시점 변경·저장을 연결하�
 	).toHaveAttribute('aria-checked', 'true')
 	expect(screen.getAllByRole('button', { name: '이미지 생성' })).toHaveLength(1)
 	await user.click(screen.getByRole('button', { name: 'Adjustment' }))
-	await user.click(screen.getByRole('radio', { name: '색 조합 4' }))
+	await user.click(await screen.findByRole('radio', { name: 'Eco on Deep' }))
 	await user.click(screen.getByRole('button', { name: '선택 저장' }))
 	await waitFor(() => expect(mocks.export).toHaveBeenCalled())
 	await waitFor(() => expect(mocks.download).toHaveBeenCalled())

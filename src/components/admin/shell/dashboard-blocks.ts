@@ -41,7 +41,11 @@ export const DASHBOARD_CARD_BLOCKS: DashboardBlock[] = [
 	},
 	{
 		title: '브랜드 색상',
-		entries: [collection('brand-color-groups'), collection('brand-colors')],
+		entries: [
+			collection('brand-color-groups'),
+			collection('brand-colors'),
+			collection('brand-color-pairs'),
+		],
 	},
 	{
 		title: '제작 도구',
