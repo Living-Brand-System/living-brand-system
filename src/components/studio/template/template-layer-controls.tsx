@@ -20,7 +20,6 @@ import {
 	subsectionProps,
 } from '@/components/studio/template/template-section-focus'
 import { TextSlotInput } from '@/components/studio/template/text-slot-input'
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import { Typography } from '@/components/ui/typography'
 import { usePublishedBrandColorValues } from '@/features/template-core/hooks/use-published-brand-color-values'
 import type { TemplateFocusTarget } from '@/features/template-customization/contexts/template-studio-context'
@@ -67,8 +66,6 @@ export function TemplateLayerControls({
 					(slot) => slot.id === slotId && slot.kind === selectedKind,
 				)
 			: layers.selectedId === slotId
-	// 배경은 노드가 아니라 도화지라 항상 있다 — 「고를 것이 있나」는 나머지로 판단한다.
-	const hasSlots = config.template.slots.some((slot) => slot.kind !== 'background')
 	const textGroup = textSlots[0]
 		? findTemplateControlGroup(config, textSlots[0].controlId)
 		: undefined
@@ -77,7 +74,7 @@ export function TemplateLayerControls({
 		: undefined
 
 	return (
-		<Controller.GroupList className={!layers.selectedId ? 'flex-1' : undefined}>
+		<Controller.GroupList>
 			{/* 🔴 텍스트 색은 그룹 공용이라 필터를 타지 않는다 — 행이 전부 걸러지면 그룹이 껍데기로
 				    남아 `Color`만 뜬다. 보일 행이 하나도 없으면 그룹째 접는다. */}
 			{textSlots.some((slot) => showsLayer(slot.id)) && textGroup && (
@@ -235,24 +232,6 @@ export function TemplateLayerControls({
 			})}
 			{showsLayer('background') && (
 				<TemplateBackgroundPanel content={separateSettings ? 'controls' : 'all'} />
-			)}
-			{/* 🔴 메인 필드가 비어 있는 상태는 **말을 한다.** 이 큰 공간이 아무
-							    설명 없이 비어 있으면 처음 온 사람이 어디서 시작하는지 알 수 없다. */}
-			{!layers.selectedId && (
-				<Empty className="my-auto border-0">
-					<EmptyHeader>
-						<EmptyTitle>
-							{hasSlots
-								? '왼쪽에서 레이어를 선택해 주세요'
-								: '이 템플릿에는 편집할 레이어가 없습니다'}
-						</EmptyTitle>
-						{hasSlots && (
-							<EmptyDescription>
-								고른 묶음의 컨트롤이 이 자리에 나옵니다.
-							</EmptyDescription>
-						)}
-					</EmptyHeader>
-				</Empty>
 			)}
 		</Controller.GroupList>
 	)

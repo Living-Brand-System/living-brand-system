@@ -177,6 +177,29 @@ it('Image 편집은 현재 슬롯만 열고 완료 또는 취소 전에는 다�
 	expect(within(panel).getByRole('button', { name: /^Background$/ })).toBeEnabled()
 })
 
+it('편집을 마치면 빈 선택 없이 마스터 레이어(Text)로 돌아간다', async () => {
+	renderTemplate(
+		studio(1, {
+			html: '<div><p data-node-id="t" data-figma-type="TEXT" data-name="제목">제목</p><div data-node-id="a" data-figma-type="FRAME" data-name="사진 A" data-image-carrier=""></div></div>',
+			nodeConfigs: { t: { input: { label: '제목' } }, a: { imageInput: {} } },
+		}),
+	)
+	const panel = await screen.findByRole('region', { name: 'Layers' })
+	const text = within(panel).getByRole('button', { name: /^Text$/ })
+	expect(text).toHaveAttribute('aria-pressed', 'true')
+	for (const action of ['취소', '완료']) {
+		fireEvent.click(within(panel).getByRole('button', { name: /^Image$/ }))
+		fireEvent.click(screen.getByRole('button', { name: action }))
+		await waitFor(() =>
+			expect(within(panel).getByRole('button', { name: /^Text$/ })).toHaveAttribute(
+				'aria-pressed',
+				'true',
+			),
+		)
+		expect(screen.queryByText('왼쪽에서 레이어를 선택해 주세요')).toBeNull()
+	}
+})
+
 it('배경 Type·Image Mode는 왼쪽에서 전환하고 오른쪽에는 편집 도구만 표시한다', async () => {
 	renderTemplate()
 	await screen.findByRole('textbox', { name: '제목' })
