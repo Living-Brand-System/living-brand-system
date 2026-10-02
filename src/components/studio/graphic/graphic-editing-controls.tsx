@@ -4,10 +4,7 @@ import {
 	GRAPHIC_WIDGETS,
 	type GraphicWidgetScope,
 } from '@/components/studio/graphic/graphic-widgets'
-import {
-	ControlPanel,
-	type ControlPanelComposition,
-} from '@/components/studio/shared/control-panel'
+import type { ControlPanelComposition } from '@/components/studio/shared/control-panel'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
 import { toFlutedGlassInput } from '@/features/graphic-generation/graphic-runtimes/fluted-glass/model'
 import { getGraphicStudioRuntimeGroups } from '@/features/graphic-generation/runtime/graphic-studio-runtime'
@@ -106,9 +103,4 @@ export function buildGraphicPanelComposition({
 			onChange(id, next)
 		},
 	}
-}
-
-/** 템플릿 배경 그래픽의 패널. ponytail: 템플릿이 공통 셸로 옮기면(2단계) 이 감싸개는 사라진다. */
-export function GraphicEditingControls(props: GraphicPanelInput) {
-	return <ControlPanel composition={buildGraphicPanelComposition(props)} />
 }

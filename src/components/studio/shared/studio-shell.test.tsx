@@ -22,11 +22,13 @@ const surface = (identity: string, label: string): StudioSurface => ({
 	canvas: <p>Canvas</p>,
 	panel: {
 		identity,
-		composition: {
-			slots: arrangeStudioPanel({ groups: groups(label) }, policy, {}),
-			values: {},
-			onChange: () => {},
-		},
+		compositions: [
+			{
+				slots: arrangeStudioPanel({ groups: groups(label) }, policy, {}),
+				values: {},
+				onChange: () => {},
+			},
+		],
 	},
 })
 const panel = () => screen.getByRole('complementary', { name: '편집 도구' })

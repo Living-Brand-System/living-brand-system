@@ -2,76 +2,28 @@
 
 import { ColorPalette, Image, Shapes, TextFont, View, ViewOff } from '@carbon/icons-react'
 import type { ReactNode } from 'react'
-import { Controller } from '@/components/shared/controller'
 import { ControllerRoot } from '@/components/shared/controller/layout'
-import {
-	ControlPanel,
-	type ControlPanelComposition,
-	ControlPanelCompositionProvider,
-} from '@/components/studio/shared/control-panel'
+import type { ControlPanelComposition } from '@/components/studio/shared/control-panel'
 import { StudioPanelSlot } from '@/components/studio/shared/studio-panel-slot'
-import { ImageSlotMode } from '@/components/studio/template/image-slot-input'
-import { useTemplateBackgroundComposition } from '@/components/studio/template/template-background-composition'
-import { TemplateLayerPanel } from '@/components/studio/template/template-layer-composition'
 import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import { cn } from '@/lib/utils'
-import { TemplateGraphicControls, TemplateImageControls } from './template-media-controls'
-
-export function TemplateControls() {
-	const { config, layers, background } = useTemplateStudio()
-	const backgroundComposition = useTemplateBackgroundComposition()
-	const selectedKind = config.template.slots.find((slot) => slot.id === layers.selectedId)?.kind
-	if (selectedKind === 'image')
-		return (
-			<Controller.Browser.Root className="min-h-0 h-full">
-				<TemplateImageControls />
-			</Controller.Browser.Root>
-		)
-	if (selectedKind === 'background')
-		return (
-			// 배경의 고정·색 자리는 패널 컴포지션이 채운다(docs/10 §3.7) — 방식별 화면은 자기 몫만 꽂는다.
-			<ControlPanelCompositionProvider value={backgroundComposition}>
-				<Controller.Browser.Root className="min-h-0 h-full">
-					{background.state.type === 'graphic' ? (
-						<TemplateGraphicControls key={background.state.graphicConfigId} />
-					) : background.state.type === 'image' ? (
-						<TemplateImageControls background />
-					) : (
-						<ControlPanel />
-					)}
-				</Controller.Browser.Root>
-			</ControlPanelCompositionProvider>
-		)
-
-	return (
-		<Controller.Browser.Root className="min-h-0 h-full">
-			{selectedKind === 'text' || selectedKind === 'vector' ? (
-				<TemplateLayerPanel key={selectedKind} kind={selectedKind} />
-			) : (
-				<ControlPanel />
-			)}
-		</Controller.Browser.Root>
-	)
-}
 
 /**
  * 선택한 묶음의 방식과 편집 완료·취소를 한 카드에 배치한다(Figma 525:8777).
- * 값과 전환은 기존 슬롯 세션을 사용한다.
+ * 방식 행은 패널 모델(`useTemplatePanel`)의 settings 슬롯이다 — 오른쪽 패널과 같은 계산을 쓴다.
  */
-export function TemplateSettings({ actions }: { actions: ReactNode }) {
-	const { config, layers, images } = useTemplateStudio()
-	const backgroundComposition = useTemplateBackgroundComposition()
-	const selectedKind = config.template.slots.find((slot) => slot.id === layers.selectedId)?.kind
-	const background = selectedKind === 'background'
-	const slots = config.template.slots.filter(
-		(slot) =>
-			slot.kind === 'image' &&
-			slot.id === layers.selectedId &&
-			slot.access === 'editable' &&
-			images.states[slot.id],
-	)
+export function TemplateSettings({
+	settings,
+	actions,
+}: {
+	settings: ControlPanelComposition | null
+	actions: ReactNode
+}) {
+	const { config, layers } = useTemplateStudio()
+	const selected = config.template.slots.find((slot) => slot.id === layers.selectedId)
+	const selectedKind = selected?.kind
 	return (
 		<ControllerRoot className="shrink-0 px-4 pt-1 pb-4 lg:h-auto">
 			<Typography
@@ -81,27 +33,18 @@ export function TemplateSettings({ actions }: { actions: ReactNode }) {
 				tone="muted"
 				className="flex h-9 items-center"
 			>
-				{background ? 'Background Setting' : 'Image Setting'}
+				{selectedKind === 'background' ? 'Background Setting' : 'Image Setting'}
 			</Typography>
 			<div className="flex flex-col gap-1 pt-1 pb-3">
-				{background
-					? backgroundComposition && (
-							<BackgroundSettings composition={backgroundComposition} />
-						)
-					: slots.map((slot) => (
-							<fieldset key={slot.id} aria-label={slot.label}>
-								{slots.length > 1 && (
-									<Typography size="xs" tone="muted" className="mb-1">
-										{slot.label}
-									</Typography>
-								)}
-								<ImageSlotMode
-									label="Mode"
-									value={images.states[slot.id].imageMode}
-									onChange={(imageMode) => images.update(slot.id, { imageMode })}
-								/>
-							</fieldset>
-						))}
+				{settings &&
+					(selectedKind === 'image' && selected ? (
+						// 슬롯 방식은 그 슬롯의 묶음이다 — 슬롯 이름으로 묶어 읽힌다.
+						<fieldset aria-label={selected.label}>
+							<SettingsRows composition={settings} />
+						</fieldset>
+					) : (
+						<SettingsRows composition={settings} />
+					))}
 			</div>
 			{actions}
 		</ControllerRoot>
@@ -204,8 +147,8 @@ export function TemplateLayerGroups() {
 	)
 }
 
-/** 배경 방식(source) 행 — 카드가 제목을 가지므로 그룹 제목 없이 행만 쌓는다(docs/10 §3.7). */
-function BackgroundSettings({
+/** 방식(source) 행 — 카드가 제목을 가지므로 그룹 제목 없이 행만 쌓는다(docs/10 §3.7). */
+function SettingsRows({
 	composition: { slots, ...render },
 }: {
 	composition: ControlPanelComposition

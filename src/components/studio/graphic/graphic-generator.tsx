@@ -112,12 +112,14 @@ function GraphicWorkspace({
 				canvas: <GraphicCanvas output={output} registerArtifacts={registerArtifacts} />,
 				panel: {
 					identity: config.id,
-					composition: buildGraphicPanelComposition({
-						config,
-						storedValues: controls.values,
-						bindings: controls.bindings,
-						onChange: controls.update,
-					}),
+					compositions: [
+						buildGraphicPanelComposition({
+							config,
+							storedValues: controls.values,
+							bindings: controls.bindings,
+							onChange: controls.update,
+						}),
+					],
 				},
 			}}
 		/>

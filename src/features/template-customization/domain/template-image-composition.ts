@@ -59,6 +59,7 @@ export function deriveTemplateImageComposition({
 	dimmer,
 	samples,
 	transform,
+	modeInSettings = false,
 }: {
 	/** 지금 고른 프로파일의 생성 계약. 없으면 생성 입력이 없다. */
 	contract?: ResolvedTemplateImageConfig
@@ -68,11 +69,18 @@ export function deriveTemplateImageComposition({
 	dimmer: boolean
 	samples: boolean
 	transform: boolean
+	/** 방식(Preset/Generate)을 이 컴포지션이 왼쪽 설정 카드(`source`)에 세우나 — 이미지 슬롯. 배경은 배경 컴포지션이 갖는다. */
+	modeInSettings?: boolean
 }): { groups: ControllerGroupDefinition[]; clusters: ControllerCluster[] } {
 	return {
 		groups: [
-			// 방식은 왼쪽 설정 카드가 고른다 — 여기서는 조건이 읽는 값으로만 둔다.
-			{ id: 'image-mode', title: 'Mode', controls: [MODE] },
+			// 방식은 왼쪽 설정 카드가 고른다. 배경 이미지에서는 조건이 읽는 값으로만 둔다(역할 없음).
+			{
+				id: 'image-mode',
+				title: 'Mode',
+				...(modeInSettings ? { role: 'source' as const } : {}),
+				controls: [MODE],
+			},
 			...(dimmer && !readonly
 				? [
 						{

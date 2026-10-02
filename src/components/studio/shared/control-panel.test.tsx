@@ -64,11 +64,13 @@ const policy: StudioPanelPolicy = { fixed: ['overlay'], basic: ['form'], adjustm
 function ComposedPanel({ values }: { values: ControllerValues }) {
 	return (
 		<ControlPanel
-			composition={{
-				slots: arrangeStudioPanel({ groups }, policy, values),
-				values,
-				onChange: () => {},
-			}}
+			compositions={[
+				{
+					slots: arrangeStudioPanel({ groups }, policy, values),
+					values,
+					onChange: () => {},
+				},
+			]}
 		/>
 	)
 }
@@ -88,11 +90,13 @@ it('빈 프리셋 보기는 숨기고, 탭을 옮겨도 고정 영역과 탭 본
 
 	rerender(
 		<ControlPanel
-			composition={{
-				slots: arrangeStudioPanel({ groups }, { basic: ['form'] }, values),
-				values,
-				onChange: () => {},
-			}}
+			compositions={[
+				{
+					slots: arrangeStudioPanel({ groups }, { basic: ['form'] }, values),
+					values,
+					onChange: () => {},
+				},
+			]}
 		/>,
 	)
 	expect(screen.queryByRole('button', { name: 'Adjustment' })).toBeNull()
@@ -127,12 +131,14 @@ it('묶음은 레지스트리 위젯으로 그리고, 등록되지 않은 위젯
 	const values = createControllerValues(groups)
 	render(
 		<ControlPanel
-			composition={{
-				slots: arrangeStudioPanel({ groups, clusters }, { basic: ['palette'] }, values),
-				values,
-				onChange: () => {},
-				widgets: { 'color-pair': ({ cluster }) => <p>{`위젯 ${cluster.title}`}</p> },
-			}}
+			compositions={[
+				{
+					slots: arrangeStudioPanel({ groups, clusters }, { basic: ['palette'] }, values),
+					values,
+					onChange: () => {},
+					widgets: { 'color-pair': ({ cluster }) => <p>{`위젯 ${cluster.title}`}</p> },
+				},
+			]}
 		/>,
 	)
 	expect(screen.getByText('위젯 Color')).toBeInTheDocument()
@@ -144,11 +150,13 @@ it('extras는 계약 슬롯을 대체하지 않고 같은 목록 뒤에 이어 �
 	const values = createControllerValues(groups)
 	render(
 		<ControlPanel
-			composition={{
-				slots: arrangeStudioPanel({ groups }, policy, values),
-				values,
-				onChange: () => {},
-			}}
+			compositions={[
+				{
+					slots: arrangeStudioPanel({ groups }, policy, values),
+					values,
+					onChange: () => {},
+				},
+			]}
 			extras={{ fixed: <section data-slot="controller-group">생성 버튼 자리</section> }}
 		/>,
 	)

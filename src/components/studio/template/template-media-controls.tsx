@@ -1,12 +1,10 @@
 'use client'
 
-import { createContext, useContext, useEffect } from 'react'
 import { Controller } from '@/components/shared/controller'
-import { GraphicEditingControls } from '@/components/studio/graphic/graphic-editing-controls'
+import { buildGraphicPanelComposition } from '@/components/studio/graphic/graphic-editing-controls'
 import { graphicProfileCard } from '@/components/studio/graphic/graphic-profile-picker'
 import { ImageColor } from '@/components/studio/image/image-controls'
 import { imageProfileCard } from '@/components/studio/image/image-profile-picker'
-import { ControlPanel } from '@/components/studio/shared/control-panel'
 import type {
 	ControllerWidgetProps,
 	ControllerWidgetRegistry,
@@ -17,10 +15,14 @@ import {
 	ImageTransformControl,
 } from '@/components/studio/template/image-transform-control'
 import { SampleImagePicker } from '@/components/studio/template/sample-image-picker'
+import type { TemplateTargetPanel } from '@/components/studio/template/template-panel'
 import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
 import { acceptsImagePromptExecution } from '@/features/image-generation/domain/image-studio-config'
-import type { TemplateImageSlotState } from '@/features/template-customization/contexts/template-studio-context'
+import type {
+	TemplateImageSlotState,
+	TemplateStudioValue,
+} from '@/features/template-customization/contexts/template-studio-context'
 import { resolveTemplateImageColorControls } from '@/features/template-customization/domain/image-colorize'
 import {
 	deriveTemplateImageComposition,
@@ -45,22 +47,23 @@ import type {
 	ControllerValues,
 } from '@/modules/studio-controller/controller-definition'
 
-/** 배경과 독립 그래픽은 같은 편집 컨트롤을 사용한다. */
-export function TemplateGraphicControls() {
-	const { background } = useTemplateStudio()
+/** 배경 그래픽의 패널 — 독립 Graphic과 같은 빌더다. 그래픽이 없으면 배경 공통(Dimming·색)만 선다. */
+export function buildTemplateGraphicPanel({
+	background,
+}: TemplateStudioValue): TemplateTargetPanel {
 	const config = background.graphicConfigs.find(
 		(item) => item.id === background.state.graphicConfigId,
 	)
-	// 배경 Dimming은 패널 컴포지션이 고정 자리에 세운다(docs/10 §3.7).
-	if (!config) return <ControlPanel />
-	return (
-		<GraphicEditingControls
-			config={config}
-			storedValues={background.state.graphicValues}
-			bindings={background.graphicBindings}
-			onChange={background.updateGraphic}
-		/>
-	)
+	return {
+		composition: config
+			? buildGraphicPanelComposition({
+					config,
+					storedValues: background.state.graphicValues,
+					bindings: background.graphicBindings,
+					onChange: background.updateGraphic,
+				})
+			: null,
+	}
 }
 
 /** 그래픽 변경 — 독립 Graphic 스튜디오와 같은 카드 그리드다. */
@@ -91,6 +94,8 @@ type ImageTarget = {
 	onFeature: (id: string, value: ControllerControlValue) => void
 	onSample: (option: SampleImageOption) => void
 	onGenerate: () => void
+	/** 슬롯 방식(Preset/Generate) — 배경 방식은 배경 컴포지션이 갖는다(없음). */
+	onMode?: (mode: 'preset' | 'generate') => void
 	/** 슬롯 Transform — 배경에는 없다. */
 	transform?: {
 		limits: TemplateImageConfigSlot['transform']['limits']
@@ -107,12 +112,18 @@ type ImageTarget = {
 export function templateImagePanelPolicy(generating: boolean): StudioPanelPolicy {
 	return generating
 		? {
+				settings: ['source'],
 				fixed: ['overlay'],
 				basic: ['content'],
 				presets: ['preset'],
 				adjustment: ['palette', 'placement'],
 			}
-		: { fixed: ['overlay'], basicPresets: ['preset'], adjustment: ['palette', 'placement'] }
+		: {
+				settings: ['source'],
+				fixed: ['overlay'],
+				basicPresets: ['preset'],
+				adjustment: ['palette', 'placement'],
+			}
 }
 
 // 생성 그룹은 접지 않는다 — 프롬프트가 이 방식의 주 입력이다.
@@ -120,24 +131,26 @@ const TEMPLATE_IMAGE_PRESENTATION = {
 	groups: [{ groupId: 'generate', collapsible: false, defaultOpen: true }],
 }
 
-/** 이미지 묶음 위젯은 편집 대상(슬롯·배경) 하나를 본다 — 본문(샘플·색·Transform)의 값은 대상 세션이 갖는다. */
-const TemplateImageTargetContext = createContext<ImageTarget | null>(null)
-function useImageTarget() {
-	const target = useContext(TemplateImageTargetContext)
-	if (!target) throw new Error('이미지 위젯은 TemplateImageControls 안에서만 그린다.')
-	return target
+/**
+ * 이미지 묶음 위젯은 편집 대상(슬롯·배경) 하나를 본다 — 컴포지션의 `scope`로 받는다.
+ * 본문(샘플·색·Transform)의 값은 대상 세션이 갖는다.
+ */
+function imageTarget(scope: unknown): ImageTarget {
+	if (!scope)
+		throw new Error('이미지 위젯은 템플릿 이미지 컴포지션(scope = 대상) 안에서만 그린다.')
+	return scope as ImageTarget
 }
 
-function SamplesWidget() {
-	const target = useImageTarget()
+function SamplesWidget({ scope }: ControllerWidgetProps) {
+	const target = imageTarget(scope)
 	const sample = target.state.image?.kind === 'sample' ? target.state.image : undefined
 	return (
 		<SampleImagePicker inline selectedId={sample?.sampleImageId} onSelect={target.onSample} />
 	)
 }
 
-function ColorWidget() {
-	const target = useImageTarget()
+function ColorWidget({ scope }: ControllerWidgetProps) {
+	const target = imageTarget(scope)
 	const { state } = target
 	const contract = target.contracts.find((item) => item.config.id === state.profileId)
 	const definitions = contract ? resolveTemplateImageColorControls(state, contract.config) : null
@@ -170,8 +183,8 @@ function ColorWidget() {
 }
 
 /** 생성 전에는 닫힌 채 잠긴다 — compose가 배정된 이미지에만 transform을 적용해서다. */
-function TransformWidget({ cluster }: ControllerWidgetProps) {
-	const target = useImageTarget()
+function TransformWidget({ cluster, scope }: ControllerWidgetProps) {
+	const target = imageTarget(scope)
 	if (!target.transform) return null
 	const disabled = target.readonly || !target.state.image
 	return (
@@ -193,16 +206,11 @@ const TEMPLATE_IMAGE_WIDGETS: ControllerWidgetRegistry = {
 	transform: TransformWidget,
 }
 
-/** 생성 API·비율·장수는 Template 계약을 유지하고 Image의 표현 컴포넌트만 공유한다. */
-export function TemplateImageControls({
-	background: isBackground = false,
-}: {
-	background?: boolean
-}) {
-	const { config, images, background, layers, sampleImages } = useTemplateStudio()
-	useEffect(() => {
-		sampleImages.load()
-	}, [sampleImages.load])
+/** 지금 편집하는 이미지 대상 — 선택한 이미지 슬롯, 또는 배경(이미지 방식). 없으면 `null`. */
+function templateImageTarget(
+	{ config, images, background, layers }: TemplateStudioValue,
+	isBackground: boolean,
+): ImageTarget | null {
 	const targets: ImageTarget[] = isBackground
 		? [
 				{
@@ -256,6 +264,8 @@ export function TemplateImageControls({
 						onSample: (option: SampleImageOption) =>
 							images.selectSampleImage(slot.id, option),
 						onGenerate: () => images.generate(slot.id),
+						onMode: (imageMode: 'preset' | 'generate') =>
+							images.update(slot.id, { imageMode }),
 						...(slot.transform.enabled
 							? {
 									transform: {
@@ -273,8 +283,20 @@ export function TemplateImageControls({
 					},
 				]
 			})
-	const target = targets[0]
-	if (!target) return null
+	return targets[0] ?? null
+}
+
+/**
+ * 이미지 슬롯·배경 이미지의 패널 — 생성 API·비율·장수는 Template 계약을 유지하고 Image의 표현 컴포넌트만 공유한다.
+ * 순수(훅 없음) — 샘플 목록 불러오기는 패널 훅(`useTemplatePanel`)이 한다.
+ */
+export function buildTemplateImagePanel(
+	studio: TemplateStudioValue,
+	isBackground: boolean,
+): TemplateTargetPanel {
+	const target = templateImageTarget(studio, isBackground)
+	if (!target) return { composition: null }
+	const { sampleImages } = studio
 	const { state } = target
 	const contract = target.contracts.find((item) => item.config.id === state.profileId)
 	const generating = state.imageMode === 'generate' && !target.readonly && Boolean(contract)
@@ -284,6 +306,8 @@ export function TemplateImageControls({
 		readonly: target.readonly,
 		// 배경 Dimming은 배경 컴포지션이 고정 자리에 세운다 — 슬롯만 자기 Dimming을 갖는다.
 		dimmer: !isBackground,
+		// 슬롯 방식은 왼쪽 설정 카드가 이 컴포지션으로 그린다. 배경 방식은 배경 컴포지션이 갖는다.
+		modeInSettings: Boolean(target.onMode) && !target.readonly,
 		samples: Boolean(sampleImages.data?.length),
 		transform: Boolean(target.transform),
 	})
@@ -302,7 +326,9 @@ export function TemplateImageControls({
 		else if (id === TEMPLATE_IMAGE_IDS.strength && typeof next === 'number')
 			target.onDimmer({ dimmerOpacity: next })
 		else if (id === contract?.prompt.id && typeof next === 'string') target.onPrompt(next)
-		else if (id !== TEMPLATE_IMAGE_IDS.mode) target.onFeature(id, next)
+		else if (id === TEMPLATE_IMAGE_IDS.mode) {
+			if (next === 'preset' || next === 'generate') target.onMode?.(next)
+		} else target.onFeature(id, next)
 	}
 	const status =
 		generating && state.error ? (
@@ -314,43 +340,36 @@ export function TemplateImageControls({
 				사용 가능한 이미지 생성 프로파일이 없습니다.
 			</Typography>
 		) : undefined
-	return (
-		<TemplateImageTargetContext.Provider value={target}>
-			<ControlPanel
-				composition={{
-					slots: arrangeStudioPanel(
-						manifest,
-						templateImagePanelPolicy(generating),
-						values,
-					),
-					values,
-					bindings: target.bindings,
-					presentation: TEMPLATE_IMAGE_PRESENTATION,
-					widgets: TEMPLATE_IMAGE_WIDGETS,
-					onChange,
-				}}
-				extras={{
-					// 생성은 셸 액션이라 계약 밖이다 — Dimming 뒤에 같은 목록으로 잇는다.
-					fixed: generating && contract && (
-						<Controller.Group title="Generate">
-							<Button
-								variant="muted"
-								className="h-11 w-full rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
-								disabled={
-									state.generating ||
-									!acceptsImagePromptExecution(contract.prompt, state.prompt)
-								}
-								onClick={target.onGenerate}
-							>
-								{state.generating ? '생성 중…' : '이미지 생성'}
-							</Button>
-						</Controller.Group>
-					),
-					basic: status,
-				}}
-			/>
-		</TemplateImageTargetContext.Provider>
-	)
+	return {
+		composition: {
+			slots: arrangeStudioPanel(manifest, templateImagePanelPolicy(generating), values),
+			values,
+			bindings: target.bindings,
+			presentation: TEMPLATE_IMAGE_PRESENTATION,
+			widgets: TEMPLATE_IMAGE_WIDGETS,
+			scope: target,
+			onChange,
+		},
+		extras: {
+			// 생성은 셸 액션이라 계약 밖이다 — Dimming 뒤에 같은 목록으로 잇는다.
+			fixed: generating && contract && (
+				<Controller.Group title="Generate">
+					<Button
+						variant="muted"
+						className="h-11 w-full rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
+						disabled={
+							state.generating ||
+							!acceptsImagePromptExecution(contract.prompt, state.prompt)
+						}
+						onClick={target.onGenerate}
+					>
+						{state.generating ? '생성 중…' : '이미지 생성'}
+					</Button>
+				</Controller.Group>
+			),
+			basic: status,
+		},
+	}
 }
 
 /** 왼쪽 카테고리 카드는 기존 슬롯 프로파일 계약과 선택 동작을 그대로 사용한다. */

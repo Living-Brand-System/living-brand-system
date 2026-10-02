@@ -25,8 +25,13 @@ import {
 export type StudioSurface = {
 	/** 왼쪽 위 — 작업 대상 카드(Figma 448:9791 Select Card). */
 	selection: StudioSelectionCardProps
-	/** 왼쪽 아래 카드 — Output. */
+	/** 왼쪽 아래 카드 — Output(템플릿은 레이어 목록 + Output). */
 	output: ReactNode
+	/**
+	 * 왼쪽 위에 겹치는 자리 — 템플릿의 편집 오버레이(대상 카드·설정 카드·완료/취소)가 기본 카드 묶음을 감싼다.
+	 * 없으면 기본 카드 묶음만 선다.
+	 */
+	frame?: (master: ReactNode) => ReactNode
 	/** 가운데 — 작업 결과. */
 	canvas: ReactNode
 	panel: {
@@ -35,8 +40,11 @@ export type StudioSurface = {
 		 * 프로파일을 바꾸면 바뀌고, 같은 대상 안의 조작으로는 바뀌지 않는다.
 		 */
 		identity: string | number
-		composition: ControlPanelComposition
+		/** 자리마다 앞쪽부터 먼저 채운 것이 그린다(`ControlPanel`). */
+		compositions: readonly ControlPanelComposition[]
 		extras?: ControlPanelExtras
+		/** 같은 패널 안에서 편집 대상이 바뀌는 스튜디오(템플릿의 레이어) — 바뀌면 탭 선택만 Basic으로 돌아간다. */
+		target?: string
 	}
 }
 
@@ -46,12 +54,13 @@ export type StudioSurface = {
  *    통째로 다시 마운트된다(템플릿에서 실측). 패널 렌더 범위도 여기 깔아 둔다 — 첫 진입만 움직이지 않는다.
  */
 export function StudioShell({ surface }: { surface: StudioSurface }) {
-	const { selection, output, canvas, panel } = surface
+	const { selection, output, frame, canvas, panel } = surface
+	const master = <SelectionPanel top={<StudioSelectionCard {...selection} />} bottom={output} />
 	return (
 		<WorkspaceLayout
 			left={
 				<ControllerBrowser.Root className="min-h-0">
-					<SelectionPanel top={<StudioSelectionCard {...selection} />} bottom={output} />
+					{frame ? frame(master) : master}
 				</ControllerBrowser.Root>
 			}
 			right={
@@ -60,8 +69,9 @@ export function StudioShell({ surface }: { surface: StudioSurface }) {
 						<ControllerBrowser.Root className="min-h-0 h-full">
 							<ControlPanel
 								key={panel.identity}
-								composition={panel.composition}
+								compositions={panel.compositions}
 								extras={panel.extras}
+								target={panel.target}
 							/>
 						</ControllerBrowser.Root>
 					</PanelRenderScope>

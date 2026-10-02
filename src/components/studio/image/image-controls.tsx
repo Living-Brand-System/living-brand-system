@@ -63,21 +63,25 @@ export function useImagePanel(): StudioSurface['panel'] {
 	const { prompt } = getImageStudioControls(config)
 	return {
 		identity: config.id,
-		composition: {
-			slots: arrangeStudioPanel(manifest, IMAGE_PANEL_POLICY, values),
-			values,
-			// 카메라 시점 변경은 시드 이미지를 돌려 그린다 — 그동안 프롬프트는 쓰이지 않는다.
-			bindings: camera.enabled
-				? { ...controls.bindings, [prompt.id]: { availability: 'disabled' } }
-				: controls.bindings,
-			presentation: IMAGE_PANEL_PRESENTATION,
-			widgets: IMAGE_WIDGETS,
-			onChange: (id, next) => {
-				if (id === IMAGE_COMPOSITION_GATE_IDS.reference) reference.setEnabled(next === true)
-				else if (id === IMAGE_COMPOSITION_GATE_IDS.camera) camera.setEnabled(next === true)
-				else controls.update(id, next)
+		compositions: [
+			{
+				slots: arrangeStudioPanel(manifest, IMAGE_PANEL_POLICY, values),
+				values,
+				// 카메라 시점 변경은 시드 이미지를 돌려 그린다 — 그동안 프롬프트는 쓰이지 않는다.
+				bindings: camera.enabled
+					? { ...controls.bindings, [prompt.id]: { availability: 'disabled' } }
+					: controls.bindings,
+				presentation: IMAGE_PANEL_PRESENTATION,
+				widgets: IMAGE_WIDGETS,
+				onChange: (id, next) => {
+					if (id === IMAGE_COMPOSITION_GATE_IDS.reference)
+						reference.setEnabled(next === true)
+					else if (id === IMAGE_COMPOSITION_GATE_IDS.camera)
+						camera.setEnabled(next === true)
+					else controls.update(id, next)
+				},
 			},
-		},
+		],
 		extras: generation.error
 			? {
 					basic: (

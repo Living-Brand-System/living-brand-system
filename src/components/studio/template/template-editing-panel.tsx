@@ -4,6 +4,7 @@ import { AnimatePresence, domAnimation, LazyMotion, useReducedMotion } from 'mot
 import * as m from 'motion/react-m'
 import { type ReactNode, useEffect, useRef } from 'react'
 import { ControllerRoot } from '@/components/shared/controller/layout'
+import type { ControlPanelComposition } from '@/components/studio/shared/control-panel'
 import {
 	StudioSelectionCard,
 	StudioSelectionChange,
@@ -31,7 +32,14 @@ const MASTER_ACTIVE = {
 } as const
 
 /** 두 화면의 편집 진입·이탈 UI. 값 복원과 요청 무효화는 Provider가 소유한다. */
-export function TemplateEditingPanel({ children }: { children: ReactNode }) {
+export function TemplateEditingPanel({
+	children,
+	settings,
+}: {
+	children: ReactNode
+	/** 설정 카드의 방식 행 — 패널 모델(`useTemplatePanel`)의 settings 슬롯. */
+	settings: ControlPanelComposition | null
+}) {
 	const { editing } = useTemplateStudio()
 	const panel = useRef<HTMLElement>(null)
 	const reducedMotion = useReducedMotion()
@@ -110,6 +118,7 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 								/>
 							</ControllerRoot>
 							<TemplateSettings
+								settings={settings}
 								actions={
 									<fieldset
 										className="flex gap-2"

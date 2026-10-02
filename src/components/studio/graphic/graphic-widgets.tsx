@@ -60,11 +60,17 @@ function ColorPairWidget({
 	scope,
 }: ControllerWidgetProps) {
 	const config = graphicConfig(scope)
-	const [palette, setPalette] = useState<{
+	// 고른 모드·색은 그래픽마다다 — 패널이 그래픽을 바꿔도 남아 있으므로(템플릿 배경) 다른 그래픽이면 처음부터 본다.
+	const [stored, setStored] = useState<{
+		configId: string
 		colorMode: 'swatch' | 'custom'
 		swatch: string
 		foreground?: string
-	}>({ colorMode: 'swatch', swatch: '' })
+	}>({ configId: config.id, colorMode: 'swatch', swatch: '' })
+	const palette =
+		stored.configId === config.id
+			? stored
+			: { configId: config.id, colorMode: 'swatch' as const, swatch: '' }
 	const foregroundId = cluster.members.foreground
 	const backgroundId = cluster.members.background
 	const background = controls.background
@@ -90,13 +96,20 @@ function ColorPairWidget({
 		return (
 			<StudioColorCompound
 				showDate={false}
-				value={{ date: '', ...palette, foreground, background: back }}
+				value={{
+					date: '',
+					colorMode: palette.colorMode,
+					swatch: palette.swatch,
+					foreground,
+					background: back,
+				}}
 				onChange={(patch) => {
-					setPalette((current) => ({
-						colorMode: patch.colorMode ?? current.colorMode,
-						swatch: patch.swatch ?? current.swatch,
-						foreground: patch.foreground ?? current.foreground,
-					}))
+					setStored({
+						configId: config.id,
+						colorMode: patch.colorMode ?? palette.colorMode,
+						swatch: patch.swatch ?? palette.swatch,
+						foreground: patch.foreground ?? palette.foreground,
+					})
 					if (patch.foreground === undefined && patch.background === undefined) return
 					for (const [id, next] of Object.entries(
 						spread(patch.foreground ?? foreground, patch.background ?? back),
