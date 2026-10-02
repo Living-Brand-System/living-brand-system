@@ -8,25 +8,32 @@ import { getStudioGraphicRoute, routes } from '@/lib/routes'
 //    (docs/05 「렌더링 캐시 무효화」).
 export const dynamic = 'force-dynamic'
 
+const GRAPHIC_GROUPS = [
+	{ type: 'p5', title: 'P5 Vectors' },
+	{ type: 'shader', title: 'Shaders' },
+] as const
+
 export default async function GenerateGraphicPage() {
 	const { user } = await requireUser(routes.studio.graphic)
 	const configs = await listGraphicStudioConfigs(user)
 
 	return (
 		<StudioHome
-			title="그래픽 제작"
-			description="그래픽 프로파일을 선택해 브랜드 그래픽을 만듭니다."
-			groups={[
-				{
-					items: configs.map((config) => ({
+			title="Graphics"
+			subtitle="그래픽 생성"
+			// Figma 571:8320 — 렌더러 종류로 블록을 나눈다.
+			groups={GRAPHIC_GROUPS.map(({ type, title }) => ({
+				title,
+				items: configs
+					.filter((config) => config.type === type)
+					.map((config) => ({
 						key: config.id,
 						name: config.name,
 						subtitle: `${config.type.toUpperCase()} Graphic`,
 						href: getStudioGraphicRoute(config.id),
 						previewImage: config.previewImage,
 					})),
-				},
-			]}
+			}))}
 			cardFit="cover"
 			empty={{
 				title: '발행된 그래픽 프로파일이 없습니다',

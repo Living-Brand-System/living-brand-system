@@ -10,6 +10,18 @@ import styles from './structure.module.css'
 export function GuidelineDisplayHeading({ title, subtitle }: { title: string; subtitle?: string }) {
 	return (
 		<header data-slot="guideline-display-heading" className={styles.displayHeading}>
+			<GuidelineDisplayTitle title={title} subtitle={subtitle} />
+		</header>
+	)
+}
+
+/**
+ * 표시 제목(display/h1 + 부제) — 문서 첫 화면과 스튜디오 첫 화면 띠(Figma 571:8040)가 같은 크기를 쓴다.
+ * 높이·배경은 부르는 쪽이 갖는다.
+ */
+export function GuidelineDisplayTitle({ title, subtitle }: { title: string; subtitle?: string }) {
+	return (
+		<>
 			<Typography as="h1" weight="semibold" className={styles.displayTitle}>
 				{title}
 			</Typography>
@@ -18,7 +30,7 @@ export function GuidelineDisplayHeading({ title, subtitle }: { title: string; su
 					{subtitle}
 				</Typography>
 			)}
-		</header>
+		</>
 	)
 }
 
@@ -98,8 +110,14 @@ export function GuidelineSectionHeading({
 	)
 }
 
-type FooterProps = { logo: { src: string; alt: string; width: number; height: number } }
-export function GuidelineDisplayFooter({ logo }: FooterProps) {
+const HD_KO_LOGO = {
+	src: '/brand/hd/ko-horizontal-default-blk@2x.png',
+	alt: 'HD현대',
+	width: 1246,
+	height: 328,
+}
+type FooterProps = { logo?: { src: string; alt: string; width: number; height: number } }
+export function GuidelineDisplayFooter({ logo = HD_KO_LOGO }: FooterProps) {
 	return (
 		<footer data-slot="guideline-display-footer" className={styles.footer}>
 			<Image {...logo} className={styles.logo} />

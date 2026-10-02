@@ -37,6 +37,7 @@ function renderHeader(updates?: NavigationHeaderUpdates) {
 						id: 1,
 						topics: [],
 						title: 'Foundations',
+						description: null,
 					},
 				],
 				updates,

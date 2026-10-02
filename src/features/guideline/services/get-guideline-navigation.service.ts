@@ -18,9 +18,12 @@ export interface GetGuidelineNavigationOutput {
 	chapters: {
 		id: number
 		title: string
+		description: string | null
 		topics: {
 			id: number
 			title: string
+			description: string | null
+			thumbnail: GuidelineNavigationTopicData['thumbnail']
 			href: string
 			sections: (GuidelineNavigationTopicData['sections'][number] & { href: string })[]
 		}[]
@@ -61,6 +64,7 @@ export function buildGuidelineNavigationChapters(
 	return chapters.map((chapter) => ({
 		id: chapter.id,
 		title: chapter.title,
+		description: chapter.description,
 		topics: topics
 			.filter((topic) => topic.chapterId === chapter.id)
 			.map((topic) => {
@@ -68,6 +72,8 @@ export function buildGuidelineNavigationChapters(
 				return {
 					id: topic.id,
 					title: topic.title,
+					description: topic.description,
+					thumbnail: topic.thumbnail,
 					href,
 					sections: topic.sections.map((section) => ({
 						...section,

@@ -117,9 +117,17 @@ describe('listPublishedGuidelineNavigationTopics', () => {
 				{
 					id: 2,
 					title: 'Basics',
+					description: '브랜드의 기본 요소',
 					slug: 'basics',
 					chapter: { id: 1, title: 'Brand' },
+					// depth 1 — 업로드 관계가 문서로 풀려 온다. 카드 썸네일이 그 URL을 쓴다.
+					headerImage: {
+						id: 9,
+						url: '/api/application-images/file/basics.webp',
+						alt: '기본 요소 표지',
+					},
 				},
+				{ id: 3, title: 'Empty', slug: 'empty', chapter: 1, headerImage: 9 },
 			],
 		})
 		vi.mocked(getPayload).mockResolvedValue({ find } as never)
@@ -127,10 +135,25 @@ describe('listPublishedGuidelineNavigationTopics', () => {
 		await expect(listPublishedGuidelineNavigationTopics()).resolves.toEqual([
 			{
 				chapterId: 1,
+				description: '브랜드의 기본 요소',
 				id: 2,
 				sections: [],
 				slug: 'basics',
+				thumbnail: {
+					src: '/api/application-images/file/basics.webp',
+					alt: '기본 요소 표지',
+				},
 				title: 'Basics',
+			},
+			// 풀리지 않은 관계(id)는 썸네일을 만들지 않는다 — 빈 판이다.
+			{
+				chapterId: 1,
+				description: null,
+				id: 3,
+				sections: [],
+				slug: 'empty',
+				thumbnail: null,
+				title: 'Empty',
 			},
 		])
 	})

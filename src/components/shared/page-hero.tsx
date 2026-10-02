@@ -26,6 +26,11 @@ type PageHeroProps = {
 	/** 정지 폴백 이미지. shader가 붙지 않는 경우(WebGL 불가, 모션 감소 설정)에 그대로 남는다. */
 	fallbackSrc: string
 	className?: string
+	/**
+	 * 그래픽을 바탕색으로 녹이는 방향(Figma 571:8889) — `up`은 아래에 그래픽을 깔고 위로 갈수록 바탕이 되고,
+	 * `down`은 위에 깔고 아래로 녹인다. 없으면 그래픽이 판 전체에 그대로 보인다.
+	 */
+	fade?: 'up' | 'down'
 	/** 배경 위 중앙에 앉는 락업(워드마크·CI 조합). */
 	children?: ReactNode
 }
@@ -45,6 +50,7 @@ export function PageHero({
 	values: overrides,
 	fallbackSrc,
 	className,
+	fade,
 	children,
 }: PageHeroProps) {
 	const containerRef = useRef<HTMLDivElement>(null)
@@ -108,6 +114,15 @@ export function PageHero({
 			style={{ backgroundImage: `url(${fallbackSrc})` }}
 		>
 			<div className="absolute inset-0" ref={containerRef} />
+			{fade && (
+				<div
+					aria-hidden
+					className={cn(
+						'pointer-events-none absolute inset-0 from-transparent to-background',
+						fade === 'up' ? 'bg-linear-to-t to-[32%]' : 'bg-linear-to-b to-75%',
+					)}
+				/>
+			)}
 			<div className="pointer-events-none absolute inset-0 flex items-center justify-center">
 				{children}
 			</div>
