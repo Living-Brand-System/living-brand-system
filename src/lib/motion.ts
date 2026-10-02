@@ -16,6 +16,11 @@ export const MOTION = {
 	disclosure: { type: 'spring', visualDuration: 0.35, bounce: 0.15 },
 	/** 패널 진입·이탈과 탭 내용 교체. */
 	panel: { type: 'spring', visualDuration: 0.15, bounce: 0.15 },
+	/**
+	 * 겹쳐 뜨는 패널의 열림·닫힘. 자산 브라우저(`ControllerBrowser.Panel`)의 tw-animate CSS와 같은 값이다 —
+	 * 150ms, CSS `ease`. 둘 중 하나를 바꾸면 다른 쪽도 함께 바꾼다.
+	 */
+	overlay: { duration: 0.15, ease: [0.25, 0.1, 0.25, 1] },
 } as const satisfies Record<string, Transition>
 
 export type MotionPreset = keyof typeof MOTION

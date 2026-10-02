@@ -146,6 +146,7 @@ studio·global·home 같은 표면의 화면 컴포넌트도 위 계약을 그�
     | `MOTION.control` | 컨트롤 자체의 움직임(바 등장, 슬라이더 채움) | spring 0.25 |
     | `MOTION.disclosure` | 접기·펴기(그룹 본문 높이, chevron) | spring 0.35 |
     | `MOTION.panel` | 패널 진입·이탈, 탭 내용 교체 | spring 0.15 |
+    | `MOTION.overlay` | 겹쳐 뜨는 패널의 열림·닫힘(템플릿 이미지·배경 편집 패널). 자산 브라우저 CSS와 같은 값 | 150ms CSS `ease` |
     | `--motion-feedback` | CSS 누름·호버 반응(패드 thumb, 슬라이더 핸들) | 150ms `ease-out` |
     | `--motion-layout` | CSS 배치 변화(미리보기 확대·축소) | 200ms `ease-out` |
 

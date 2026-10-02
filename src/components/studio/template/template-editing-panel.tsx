@@ -18,17 +18,19 @@ import { useTemplateStudio } from '@/features/template-customization/hooks/use-t
 import { useShellLock } from '@/hooks/use-shell-lock'
 import { useMotionTransition } from '@/lib/motion'
 
-// 비활성 패널(밀려난 마스터, 들어오기 전·나간 뒤의 편집 패널)은 절반 자리에서 반투명하다.
+// 밀려난 마스터 패널은 절반 자리에서 반투명하다.
 const INACTIVE = { x: '-50%', opacity: 0.5 } as const
 const ACTIVE = { x: 0, opacity: 1 } as const
+// 편집 패널은 자산 브라우저와 같은 모양으로 열리고 닫힌다 — 왼쪽 16px에서 흐린 채로.
+const EDITING_HIDDEN = { x: -16, opacity: 0 } as const
 
 /** 두 화면의 편집 진입·이탈 UI. 값 복원과 요청 무효화는 Provider가 소유한다. */
 export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 	const { editing } = useTemplateStudio()
 	const panel = useRef<HTMLElement>(null)
 	const reducedMotion = useReducedMotion()
-	// 마스터·편집 패널이 같은 프리셋을 쓴다 — 함께 출발해 함께 멈춘다.
 	const transition = useMotionTransition('panel')
+	const overlay = useMotionTransition('overlay')
 	const targetId = editing.targetId
 	// 상단 이동도 완료·취소 전까지 잠근다 — 헤더는 셸 잠금을 읽어 스스로 inert가 된다.
 	useShellLock(Boolean(targetId))
@@ -63,17 +65,15 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 							tabIndex={-1}
 							aria-label="선택한 레이어 편집"
 							className="scrollbar-none absolute inset-0 flex min-h-0 flex-col gap-4 overflow-y-auto p-4 outline-none"
-							// 편집 패널은 -50%에서 제자리로 들어오고, 나갈 때 같은 자리로 되돌아간다.
 							// 퇴장 중에는 마지막 화면이 남아 있으므로 클릭을 받지 않는다.
-							initial={reducedMotion ? false : INACTIVE}
+							initial={reducedMotion ? false : EDITING_HIDDEN}
 							animate={ACTIVE}
-							// 나갈 때는 끝까지 흐려져 툭 사라지지 않는다.
 							exit={
 								reducedMotion
 									? undefined
-									: { ...INACTIVE, opacity: 0, pointerEvents: 'none' }
+									: { ...EDITING_HIDDEN, pointerEvents: 'none' }
 							}
-							transition={transition}
+							transition={overlay}
 						>
 							<ControllerRoot className="aspect-square shrink-0 lg:h-auto">
 								<StudioSelectionCard
