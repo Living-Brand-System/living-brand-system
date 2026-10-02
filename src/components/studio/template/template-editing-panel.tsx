@@ -18,10 +18,10 @@ import { useTemplateStudio } from '@/features/template-customization/hooks/use-t
 import { useShellLock } from '@/hooks/use-shell-lock'
 import { useMotionTransition } from '@/lib/motion'
 
-// 밀려난 마스터 패널은 절반 자리에서 반투명하다.
-const INACTIVE = { x: '-50%', opacity: 0.5 } as const
+// 두 패널은 자산 브라우저와 같은 거리(16px)·시간으로 움직인다.
+// 마스터는 왼쪽으로 밀리며 반투명해지고, 편집 패널은 그 자리에서 흐린 채로 들어오고 나간다.
+const INACTIVE = { x: -16, opacity: 0.5 } as const
 const ACTIVE = { x: 0, opacity: 1 } as const
-// 편집 패널은 자산 브라우저와 같은 모양으로 열리고 닫힌다 — 왼쪽 16px에서 흐린 채로.
 const EDITING_HIDDEN = { x: -16, opacity: 0 } as const
 
 /** 두 화면의 편집 진입·이탈 UI. 값 복원과 요청 무효화는 Provider가 소유한다. */
@@ -29,8 +29,7 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 	const { editing } = useTemplateStudio()
 	const panel = useRef<HTMLElement>(null)
 	const reducedMotion = useReducedMotion()
-	const transition = useMotionTransition('panel')
-	const overlay = useMotionTransition('overlay')
+	const transition = useMotionTransition('overlay')
 	const targetId = editing.targetId
 	// 상단 이동도 완료·취소 전까지 잠근다 — 헤더는 셸 잠금을 읽어 스스로 inert가 된다.
 	useShellLock(Boolean(targetId))
@@ -47,7 +46,7 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 	return (
 		<LazyMotion features={domAnimation}>
 			<div className="relative h-full min-h-0">
-				{/* 편집 중에는 기본 패널을 폭의 절반만큼 밀어 뒤에 깐다(Figma 529:28027). */}
+				{/* 편집 중에는 기본 패널을 뒤로 밀어 반투명하게 깐다(Figma 529:28027). */}
 				<m.div
 					inert={Boolean(targetId)}
 					className="h-full"
@@ -73,7 +72,7 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 									? undefined
 									: { ...EDITING_HIDDEN, pointerEvents: 'none' }
 							}
-							transition={overlay}
+							transition={transition}
 						>
 							<ControllerRoot className="aspect-square shrink-0 lg:h-auto">
 								<StudioSelectionCard
