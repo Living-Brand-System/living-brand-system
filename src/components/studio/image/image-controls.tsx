@@ -1,9 +1,7 @@
 'use client'
 
-import { type ReactNode, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { ControllerCompound } from '@/components/shared/controller/compound'
-import { ControllerGroup } from '@/components/shared/controller/group'
-import { ControllerGroupList } from '@/components/shared/controller/group-list'
 import { ControllerSegmented } from '@/components/shared/controller/segmented'
 import { ControllerControlRenderer } from '@/components/shared/controller-renderer'
 import { ImageCameraControl } from '@/components/studio/image/image-camera-control'
@@ -31,12 +29,7 @@ import {
 	arrangeStudioPanel,
 	type StudioPanelPolicy,
 } from '@/modules/studio-controller/controller-composition'
-import type {
-	ControllerControlDefinition,
-	ControllerControlValue,
-	ControllerRuntimeBinding,
-	ControllerValues,
-} from '@/modules/studio-controller/controller-definition'
+import type { ControllerValues } from '@/modules/studio-controller/controller-definition'
 import { resolveControllerAvailability } from '@/modules/studio-controller/controller-definition'
 
 const TOGGLE = [
@@ -266,43 +259,5 @@ function ImageCamera({
 				/>
 			)}
 		</ControllerCompound>
-	)
-}
-
-/** 공통 생성 폼. 실행·비율·결과는 각 Studio 세션이 소유한다. */
-export function ImageGenerate({
-	prompt,
-	value,
-	binding,
-	onChange,
-	error,
-	children,
-}: {
-	prompt?: Extract<ControllerControlDefinition, { kind: 'text' }>
-	value?: ControllerControlValue
-	binding?: ControllerRuntimeBinding
-	onChange: (value: ControllerControlValue) => void
-	error: string | null
-	children?: ReactNode
-}) {
-	return (
-		<ControllerGroupList>
-			<ControllerGroup title="Generate" collapsible={false}>
-				{prompt && (
-					<ControllerControlRenderer
-						definition={prompt}
-						value={value ?? prompt.defaultValue ?? ''}
-						binding={binding}
-						onChange={onChange}
-					/>
-				)}
-				{children}
-				{error && (
-					<Typography role="alert" size="sm" className="text-destructive">
-						{error}
-					</Typography>
-				)}
-			</ControllerGroup>
-		</ControllerGroupList>
 	)
 }

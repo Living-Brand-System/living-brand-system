@@ -1,13 +1,16 @@
 'use client'
 
-import { type ReactNode, useEffect } from 'react'
+import { createContext, useContext, useEffect } from 'react'
 import { Controller } from '@/components/shared/controller'
-import { ControllerControlRenderer } from '@/components/shared/controller-renderer'
 import { GraphicEditingControls } from '@/components/studio/graphic/graphic-editing-controls'
 import { graphicProfileCard } from '@/components/studio/graphic/graphic-profile-picker'
-import { ImageColor, ImageGenerate } from '@/components/studio/image/image-controls'
+import { ImageColor } from '@/components/studio/image/image-controls'
 import { imageProfileCard } from '@/components/studio/image/image-profile-picker'
 import { ControlPanel } from '@/components/studio/shared/control-panel'
+import type {
+	ControllerWidgetProps,
+	ControllerWidgetRegistry,
+} from '@/components/studio/shared/studio-panel-slot'
 import { StudioProfileCards } from '@/components/studio/shared/studio-profile-cards'
 import {
 	IMAGE_TRANSFORM_DEFAULT,
@@ -20,15 +23,26 @@ import { acceptsImagePromptExecution } from '@/features/image-generation/domain/
 import type { TemplateImageSlotState } from '@/features/template-customization/contexts/template-studio-context'
 import { resolveTemplateImageColorControls } from '@/features/template-customization/domain/image-colorize'
 import {
+	deriveTemplateImageComposition,
+	TEMPLATE_IMAGE_DIMMER,
+	TEMPLATE_IMAGE_DIMMER_STRENGTH,
+	TEMPLATE_IMAGE_IDS,
+} from '@/features/template-customization/domain/template-image-composition'
+import {
 	partitionTemplateSlots,
 	type ResolvedTemplateImageConfig,
+	type TemplateImageConfigSlot,
 } from '@/features/template-customization/domain/template-studio-config'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import type { SampleImageOption } from '@/features/template-customization/services/list-sample-images.client'
+import {
+	arrangeStudioPanel,
+	type StudioPanelPolicy,
+} from '@/modules/studio-controller/controller-composition'
 import type {
-	ControllerControlDefinition,
 	ControllerControlValue,
 	ControllerRuntimeBindings,
+	ControllerValues,
 } from '@/modules/studio-controller/controller-definition'
 
 /** 배경과 독립 그래픽은 같은 편집 컨트롤을 사용한다. */
@@ -63,51 +77,6 @@ export function TemplateGraphicSelection() {
 	)
 }
 
-const IMAGE_DIMMER = {
-	id: 'image.dimmer',
-	kind: 'toggle',
-	label: 'Use',
-	defaultValue: false,
-} as const satisfies ControllerControlDefinition
-const IMAGE_DIMMER_OPACITY = {
-	id: 'image.dimmerOpacity',
-	kind: 'range',
-	label: 'Strength',
-	defaultValue: 0.2,
-	min: 0,
-	max: 0.7,
-	step: 0.01,
-	display: { precision: 2 },
-} as const satisfies ControllerControlDefinition
-
-/** 이미지 슬롯의 Dimming(Figma 529:27139). 배경 Dimming과 같은 모양이고, 값은 슬롯 세션이 소유한다. */
-function ImageSlotDimmer({ target }: { target: ImageTarget }) {
-	const dimmer = target.state.dimmer ?? IMAGE_DIMMER.defaultValue
-	const opacity = target.state.dimmerOpacity ?? IMAGE_DIMMER_OPACITY.defaultValue
-	return (
-		<Controller.Group title="Dimming">
-			<ControllerControlRenderer
-				definition={IMAGE_DIMMER}
-				value={dimmer}
-				onChange={(next) => {
-					// 화면에 보이는 기본 강도를 함께 싣는다 — 합성은 기본값을 모른다.
-					if (typeof next === 'boolean')
-						target.onDimmer({ dimmer: next, dimmerOpacity: opacity })
-				}}
-			/>
-			{dimmer && (
-				<ControllerControlRenderer
-					definition={IMAGE_DIMMER_OPACITY}
-					value={opacity}
-					onChange={(next) => {
-						if (typeof next === 'number') target.onDimmer({ dimmerOpacity: next })
-					}}
-				/>
-			)}
-		</Controller.Group>
-	)
-}
-
 type ImageTarget = {
 	id: string
 	label: string
@@ -122,7 +91,106 @@ type ImageTarget = {
 	onFeature: (id: string, value: ControllerControlValue) => void
 	onSample: (option: SampleImageOption) => void
 	onGenerate: () => void
-	transform?: ReactNode
+	/** 슬롯 Transform — 배경에는 없다. */
+	transform?: {
+		limits: TemplateImageConfigSlot['transform']['limits']
+		aspectRatio?: number
+		onChange: (transform: NonNullable<TemplateImageSlotState['transform']>) => void
+	}
+}
+
+/**
+ * 이미지 대상 패널의 배치 정책(docs/10 §3.7) — 생성 중인지가 정한다(Figma 529:26114·529:27139). 고를 것뿐이면
+ * 샘플 목록이 Basic 위 목록 카드이고, 생성 입력이 Basic을 차지하면 Presets 탭으로 비킨다.
+ * 🔑 자리는 패널의 몫이라 매니페스트가 아니라 정책이 방식을 본다.
+ */
+export function templateImagePanelPolicy(generating: boolean): StudioPanelPolicy {
+	return generating
+		? {
+				fixed: ['overlay'],
+				basic: ['content'],
+				presets: ['preset'],
+				adjustment: ['palette', 'placement'],
+			}
+		: { fixed: ['overlay'], basicPresets: ['preset'], adjustment: ['palette', 'placement'] }
+}
+
+// 생성 그룹은 접지 않는다 — 프롬프트가 이 방식의 주 입력이다.
+const TEMPLATE_IMAGE_PRESENTATION = {
+	groups: [{ groupId: 'generate', collapsible: false, defaultOpen: true }],
+}
+
+/** 이미지 묶음 위젯은 편집 대상(슬롯·배경) 하나를 본다 — 본문(샘플·색·Transform)의 값은 대상 세션이 갖는다. */
+const TemplateImageTargetContext = createContext<ImageTarget | null>(null)
+function useImageTarget() {
+	const target = useContext(TemplateImageTargetContext)
+	if (!target) throw new Error('이미지 위젯은 TemplateImageControls 안에서만 그린다.')
+	return target
+}
+
+function SamplesWidget() {
+	const target = useImageTarget()
+	const sample = target.state.image?.kind === 'sample' ? target.state.image : undefined
+	return (
+		<SampleImagePicker inline selectedId={sample?.sampleImageId} onSelect={target.onSample} />
+	)
+}
+
+function ColorWidget() {
+	const target = useImageTarget()
+	const { state } = target
+	const contract = target.contracts.find((item) => item.config.id === state.profileId)
+	const definitions = contract ? resolveTemplateImageColorControls(state, contract.config) : null
+	if (!contract || !definitions) return null
+	const foreground = state.featureValues[definitions.line.id]
+	const background = definitions.background && state.featureValues[definitions.background.id]
+	const value =
+		typeof foreground === 'string'
+			? { line: foreground, ...(typeof background === 'string' ? { background } : {}) }
+			: null
+	return (
+		<ImageColor
+			key={contract.config.id}
+			config={contract.config}
+			controls={{
+				values: state.featureValues,
+				bindings: target.bindings,
+				update: target.onFeature,
+			}}
+			color={{
+				value,
+				update: (patch) => {
+					if (patch.line !== undefined) target.onFeature(definitions.line.id, patch.line)
+					if (patch.background !== undefined && definitions.background)
+						target.onFeature(definitions.background.id, patch.background)
+				},
+			}}
+		/>
+	)
+}
+
+/** 생성 전에는 닫힌 채 잠긴다 — compose가 배정된 이미지에만 transform을 적용해서다. */
+function TransformWidget({ cluster }: ControllerWidgetProps) {
+	const target = useImageTarget()
+	if (!target.transform) return null
+	const disabled = target.readonly || !target.state.image
+	return (
+		<Controller.Group title={cluster.title} collapsible disabled={disabled}>
+			<ImageTransformControl
+				value={target.state.transform ?? IMAGE_TRANSFORM_DEFAULT}
+				disabled={disabled}
+				limits={target.transform.limits}
+				aspectRatio={target.transform.aspectRatio}
+				onChange={target.transform.onChange}
+			/>
+		</Controller.Group>
+	)
+}
+
+const TEMPLATE_IMAGE_WIDGETS: ControllerWidgetRegistry = {
+	'asset-browser': SamplesWidget,
+	'color-pair': ColorWidget,
+	transform: TransformWidget,
 }
 
 /** 생성 API·비율·장수는 Template 계약을 유지하고 Image의 표현 컴포넌트만 공유한다. */
@@ -188,149 +256,100 @@ export function TemplateImageControls({
 						onSample: (option: SampleImageOption) =>
 							images.selectSampleImage(slot.id, option),
 						onGenerate: () => images.generate(slot.id),
-						transform: slot.transform.enabled ? (
-							<Controller.Group
-								title="Image Transform"
-								collapsible
-								disabled={readonly || !state.image}
-							>
-								<ImageTransformControl
-									value={state.transform ?? IMAGE_TRANSFORM_DEFAULT}
-									disabled={readonly || !state.image}
-									limits={slot.transform.limits}
-									aspectRatio={
-										slot.box.width && slot.box.height
-											? slot.box.width / slot.box.height
-											: undefined
-									}
-									onChange={(transform) => images.update(slot.id, { transform })}
-								/>
-							</Controller.Group>
-						) : undefined,
+						...(slot.transform.enabled
+							? {
+									transform: {
+										limits: slot.transform.limits,
+										// 패드는 대상 슬롯 박스와 같은 비율로 그려진다(디자인 Wide/Portrait/Square).
+										aspectRatio:
+											slot.box.width && slot.box.height
+												? slot.box.width / slot.box.height
+												: undefined,
+										onChange: (transform) =>
+											images.update(slot.id, { transform }),
+									},
+								}
+							: {}),
 					},
 				]
 			})
 	const target = targets[0]
 	if (!target) return null
-	const contract = target.contracts.find((item) => item.config.id === target.state.profileId)
-	const generating =
-		target.state.imageMode === 'generate' && !target.readonly && Boolean(contract)
-	const sample = target.state.image?.kind === 'sample' ? target.state.image : undefined
-	const generate = generating && (
-		<Controller.Group title="Generate">
-			<Button
-				variant="muted"
-				className="h-11 w-full rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
-				disabled={
-					target.state.generating ||
-					!contract ||
-					!acceptsImagePromptExecution(contract.prompt, target.state.prompt)
-				}
-				onClick={target.onGenerate}
-			>
-				{target.state.generating ? '생성 중…' : '이미지 생성'}
-			</Button>
-		</Controller.Group>
-	)
-	const list =
-		!target.readonly && sampleImages.data?.length ? (
-			<SampleImagePicker
-				inline
-				selectedId={sample?.sampleImageId}
-				onSelect={target.onSample}
-			/>
+	const { state } = target
+	const contract = target.contracts.find((item) => item.config.id === state.profileId)
+	const generating = state.imageMode === 'generate' && !target.readonly && Boolean(contract)
+	const manifest = deriveTemplateImageComposition({
+		contract,
+		colors: contract ? resolveTemplateImageColorControls(state, contract.config) : null,
+		readonly: target.readonly,
+		// 배경 Dimming은 배경 컴포지션이 고정 자리에 세운다 — 슬롯만 자기 Dimming을 갖는다.
+		dimmer: !isBackground,
+		samples: Boolean(sampleImages.data?.length),
+		transform: Boolean(target.transform),
+	})
+	const dimmerOpacity = state.dimmerOpacity ?? TEMPLATE_IMAGE_DIMMER_STRENGTH.defaultValue
+	const values: ControllerValues = {
+		...state.featureValues,
+		[TEMPLATE_IMAGE_IDS.mode]: state.imageMode,
+		[TEMPLATE_IMAGE_IDS.dimmer]: state.dimmer ?? TEMPLATE_IMAGE_DIMMER.defaultValue,
+		[TEMPLATE_IMAGE_IDS.strength]: dimmerOpacity,
+		...(contract ? { [contract.prompt.id]: state.prompt } : {}),
+	}
+	const onChange = (id: string, next: ControllerControlValue) => {
+		// 화면에 보이는 기본 강도를 함께 싣는다 — 합성은 기본값을 모른다.
+		if (id === TEMPLATE_IMAGE_IDS.dimmer && typeof next === 'boolean')
+			target.onDimmer({ dimmer: next, dimmerOpacity })
+		else if (id === TEMPLATE_IMAGE_IDS.strength && typeof next === 'number')
+			target.onDimmer({ dimmerOpacity: next })
+		else if (id === contract?.prompt.id && typeof next === 'string') target.onPrompt(next)
+		else if (id !== TEMPLATE_IMAGE_IDS.mode) target.onFeature(id, next)
+	}
+	const status =
+		generating && state.error ? (
+			<Typography role="alert" size="sm" className="text-destructive">
+				{state.error}
+			</Typography>
+		) : state.imageMode === 'generate' && !contract ? (
+			<Typography size="sm" tone="muted">
+				사용 가능한 이미지 생성 프로파일이 없습니다.
+			</Typography>
 		) : undefined
 	return (
-		<ControlPanel
-			// 배경의 Dimming은 패널 컴포지션이 고정 자리에 세운다 — 여기서는 생성 버튼만 그 뒤에 잇는다.
-			// 이미지 슬롯은 아직 이 화면이 고정 카드를 직접 꽂는다(이행 4단계).
-			fixed={
-				isBackground ? undefined : !target.readonly || generate ? (
-					<Controller.GroupList>
-						{/* 슬롯 Dimming은 방식과 무관하게 선다 — 배경 Dimming과 같다(2026-10-02 결정). */}
-						{!target.readonly && <ImageSlotDimmer target={target} />}
-						{generate}
-					</Controller.GroupList>
-				) : undefined
-			}
-			extras={isBackground ? { fixed: generate } : undefined}
-			basicPresets={!generating ? list : undefined}
-			basic={
-				generating ? (
-					<ImageDetail target={target} />
-				) : target.state.imageMode === 'generate' && !contract ? (
-					<Typography size="sm" tone="muted">
-						사용 가능한 이미지 생성 프로파일이 없습니다.
-					</Typography>
-				) : undefined
-			}
-			presets={generating ? list : undefined}
-			adjustment={
-				target.transform ||
-				(contract && resolveTemplateImageColorControls(target.state, contract.config)) ? (
-					<div className="flex flex-col gap-3">
-						<ImagePrimary target={target} />
-						{target.transform}
-					</div>
-				) : undefined
-			}
-		/>
-	)
-}
-
-function ImagePrimary({ target }: { target: ImageTarget }) {
-	const { state } = target
-	const contract = target.contracts.find((item) => item.config.id === state.profileId)
-	const definitions = contract ? resolveTemplateImageColorControls(state, contract.config) : null
-	const foreground = definitions && state.featureValues[definitions.line.id]
-	const background = definitions?.background && state.featureValues[definitions.background.id]
-	const value =
-		typeof foreground === 'string'
-			? { line: foreground, ...(typeof background === 'string' ? { background } : {}) }
-			: null
-	return (
-		<>
-			{contract && definitions && (
-				<ImageColor
-					key={contract.config.id}
-					config={contract.config}
-					controls={{
-						values: state.featureValues,
-						bindings: target.bindings,
-						update: target.onFeature,
-					}}
-					color={{
-						value,
-						update: (patch) => {
-							if (patch.line !== undefined)
-								target.onFeature(definitions.line.id, patch.line)
-							if (patch.background !== undefined && definitions.background)
-								target.onFeature(definitions.background.id, patch.background)
-						},
-					}}
-				/>
-			)}
-		</>
-	)
-}
-
-function ImageDetail({ target }: { target: ImageTarget }) {
-	const { state } = target
-	const contract = target.contracts.find((item) => item.config.id === state.profileId)
-	return (
-		<>
-			{(state.imageMode === 'generate' || target.readonly) && (
-				<ImageGenerate
-					prompt={contract?.prompt}
-					value={state.prompt}
-					binding={target.readonly ? { availability: 'readonly' } : undefined}
-					onChange={(value) => {
-						if (typeof value === 'string') target.onPrompt(value)
-					}}
-					error={state.error}
-				/>
-			)}
-		</>
+		<TemplateImageTargetContext.Provider value={target}>
+			<ControlPanel
+				composition={{
+					slots: arrangeStudioPanel(
+						manifest,
+						templateImagePanelPolicy(generating),
+						values,
+					),
+					values,
+					bindings: target.bindings,
+					presentation: TEMPLATE_IMAGE_PRESENTATION,
+					widgets: TEMPLATE_IMAGE_WIDGETS,
+					onChange,
+				}}
+				extras={{
+					// 생성은 셸 액션이라 계약 밖이다 — Dimming 뒤에 같은 목록으로 잇는다.
+					fixed: generating && contract && (
+						<Controller.Group title="Generate">
+							<Button
+								variant="muted"
+								className="h-11 w-full rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
+								disabled={
+									state.generating ||
+									!acceptsImagePromptExecution(contract.prompt, state.prompt)
+								}
+								onClick={target.onGenerate}
+							>
+								{state.generating ? '생성 중…' : '이미지 생성'}
+							</Button>
+						</Controller.Group>
+					),
+					basic: status,
+				}}
+			/>
+		</TemplateImageTargetContext.Provider>
 	)
 }
 

@@ -353,6 +353,7 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 | `preset-list` | 프리셋 select 1개 — 카드 목록으로 그린다 |
 | `swatches` | 브랜드 색 하나(color) — CMS 정본 스와치, Custom 잠금. 제목은 접근성 이름의 대상(`텍스트`·심볼 이름) |
 | `text-field` | 템플릿 텍스트 슬롯 1개 — 발행 text 정의에 슬롯 입력 제약(형식·줄 수)을 얹는다 |
+| `transform` | 이미지 Transform(위치 pad + Scale + Rotate를 한 값으로) — 배정된 이미지가 생기기 전에는 잠긴다 |
 
 **그룹 소속 `cluster.group`** — 묶음이 그 그룹 **안**, 그룹 컨트롤 뒤에 섭니다(Figma 529:19999 — Generate 안의 Reference Image). 자리가 아니라 소속이라 그룹이 어느 슬롯에 서든 따라가고, 그룹이 보이지 않으면 자기 역할대로 섭니다. 묶음을 품은 그룹은 자기 행이 모두 묶음으로 가도 제목·섹션째 섭니다(텍스트 슬롯 목록). 구조 서명에도 실립니다. 미지 그룹은 `parseStudioControllerConfig`가 거부합니다.
 
@@ -370,6 +371,7 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 - **역할은 그룹에 주거나, 한 그룹 안에 창작자용·어드민 전용 컨트롤이 섞이면 `controller.roles`(컨트롤 id → 역할)로 줍니다.** 컨트롤 역할이 그룹 역할보다 앞서고, 역할이 갈리면 같은 그룹 제목 아래 따로 섭니다. 역할이 없는 컨트롤은 어느 자리에도 서지 않습니다(어드민 전용).
 - 이미지 정책: `basic: [content, source]`, `adjustment: [palette, view]`. 매니페스트는 `deriveImageStudioComposition`이 발행 config의 정의를 그대로 써서 만들고, 레퍼런스·카메라 사용은 `gate` 컨트롤로 승격합니다(값은 이미지 세션이 갖고, 첨부·시드 이미지·각도 본문은 위젯이 세션에서 읽습니다). 생성 오류는 계약 밖이라 `extras.basic`으로 잇습니다.
 - 템플릿 텍스트·심볼 정책: `fixed: [palette]`, `basic: [content]`(Figma 529:19461·529:25611). 무엇을 편집하나(레이어 선택)는 셸 어휘라 매니페스트가 아니라 화면이 텍스트/심볼 매니페스트를 고릅니다(`deriveTemplateTextComposition`·`deriveTemplateSymbolComposition`). 심볼 색은 `templateSymbolColorId`로 승격합니다.
+- 템플릿 이미지 정책(슬롯·배경 이미지 공통, `templateImagePanelPolicy`): `fixed: [overlay]`, `adjustment: [palette, placement]`이고, 샘플 목록(`preset`)은 고를 것뿐이면 `basicPresets`, 생성 입력이 Basic을 차지하면 `presets` 탭이다(Figma 529:26114·529:27139). 자리는 패널의 몫이라 이 분기는 매니페스트가 아니라 정책이 본다. 방식·Dimming은 `TEMPLATE_IMAGE_IDS`로 승격하고, 배경 이미지의 Dimming은 배경 컴포지션이 세운다(자리마다 먼저 채운 쪽). 생성 버튼·오류·「프로파일 없음」은 계약 밖이라 `extras`다.
 - 그래픽 정책: `basicPresets: [preset]`, `basic: [palette, form, placement, source]`, `adjustment: [tuning]`. `roles`·`clusters`를 하나도 선언하지 않은 런타임은 전부 Basic에 섭니다 — 정하지 않은 런타임의 화면이 비면 안 됩니다.
 - 한 패널에 컴포지션이 둘이면(템플릿 배경 위 그래픽 편집) **자리마다 먼저 채운 쪽**이 그립니다 — 화면 자기 것 다음 위에서 공급받은 것(`ControlPanelCompositionProvider`). 배경 Dimming(`fixed`)과 그래픽 Basic이 한 패널에 함께 섭니다.
 - 🔴 프로파일 config를 파생할 때 controller를 키별로 다시 조립하지 않습니다. 제한만 얹고 나머지 선언은 전개로 싣습니다(`deriveCanvasStudioConfig`) — 골라 싣던 시절 `roles`·`clusters`가 조용히 빠져 패널이 평면 목록으로 돌아갔습니다.
@@ -382,7 +384,7 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 
 **렌더러(2단계)**: 화면은 `arrangeStudioPanel(controller, policy, values)`로 슬롯을 채워 `ControlPanel`의 `composition`(`slots` + 값·바인딩·표시·`onChange`·`widgets`)으로 넘깁니다. 슬롯 하나는 `StudioPanelSlot`이 그리며, 그룹은 `ControllerRenderer`와 같은 `ControllerDefinitionGroup`으로, 묶음은 화면이 넘긴 위젯 레지스트리(`ControllerWidgetRegistry`)로 그립니다. 영역 키는 구조 서명이 정하고(`PanelRenderTarget`의 `renderKey`), 위에 패널 렌더 범위가 없으면 `ControlPanel`이 스스로 범위를 깝니다. 같은 자리의 JSX 입력이 있으면 그쪽이 앞섭니다(이행 기간).
 
-**이행 순서**: ① 어휘·조건 평가기·구조 서명(단위 테스트) → ② 패널 렌더러 + `ControlPanel` 슬롯화(조건 없는 매니페스트로 지금 화면과 같은 결과) → ③ 파일럿 템플릿 배경 → ④ 그래픽(완료 2026-10-02 — 런타임 다섯 개가 역할·묶음을 선언하고 `GRAPHIC_WIDGETS`가 그린다. 남은 id 특례는 Fluted Glass 기준점의 실효값 표시와 Pattern 최대 굵기 비활성 binding 둘이며 `ponytail:` 주석이 상한을 적는다)·이미지(완료 2026-10-02 — `cluster.group` 도입)·템플릿 텍스트·심볼(완료 2026-10-02 — 옛 `TemplateLayerControls`와 그만 닿던 `TemplateBackgroundPanel`·`BackgroundSection` 삭제)·템플릿 텍스트·심볼·이미지 슬롯 → ⑤ 화면 조건부 JSX·`controller.left/right`·손 키 제거, `Controller.Reveal`은 계약 밖 화면에만 남김.
+**이행 순서**: ① 어휘·조건 평가기·구조 서명(단위 테스트) → ② 패널 렌더러 + `ControlPanel` 슬롯화(조건 없는 매니페스트로 지금 화면과 같은 결과) → ③ 파일럿 템플릿 배경 → ④ 그래픽(완료 2026-10-02 — 런타임 다섯 개가 역할·묶음을 선언하고 `GRAPHIC_WIDGETS`가 그린다. 남은 id 특례는 Fluted Glass 기준점의 실효값 표시와 Pattern 최대 굵기 비활성 binding 둘이며 `ponytail:` 주석이 상한을 적는다)·이미지(완료 2026-10-02 — `cluster.group` 도입)·템플릿 텍스트·심볼(완료 2026-10-02 — 옛 `TemplateLayerControls`와 그만 닿던 `TemplateBackgroundPanel`·`BackgroundSection` 삭제)·템플릿 이미지 슬롯(완료 2026-10-02) → ⑤ 화면 조건부 JSX·`controller.left/right`·손 키 제거, `Controller.Reveal`은 계약 밖 화면에만 남김.
 
 ## 4. 스타일 계약 Do/Don't
 

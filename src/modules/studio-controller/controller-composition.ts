@@ -37,6 +37,7 @@ export const CONTROLLER_WIDGETS = [
 	'preset-list',
 	'swatches',
 	'text-field',
+	'transform',
 ] as const
 export type ControllerWidget = (typeof CONTROLLER_WIDGETS)[number]
 
