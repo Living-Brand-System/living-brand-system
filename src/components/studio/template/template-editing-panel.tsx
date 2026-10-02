@@ -67,8 +67,11 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 							// 퇴장 중에는 마지막 화면이 남아 있으므로 클릭을 받지 않는다.
 							initial={reducedMotion ? false : INACTIVE}
 							animate={ACTIVE}
+							// 나갈 때는 끝까지 흐려져 툭 사라지지 않는다.
 							exit={
-								reducedMotion ? undefined : { ...INACTIVE, pointerEvents: 'none' }
+								reducedMotion
+									? undefined
+									: { ...INACTIVE, opacity: 0, pointerEvents: 'none' }
 							}
 							transition={reducedMotion ? { duration: 0 } : TRANSITION}
 						>
