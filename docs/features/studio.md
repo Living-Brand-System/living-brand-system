@@ -187,9 +187,9 @@ Studio는 GlobalHeader의 진입점 여섯 개로 노출됩니다. 목록과 순
 
 | 메뉴 | 경로 | 성격 | 딥링크 | 화면 |
 | --- | --- | --- | --- | --- |
-| Template | `/studio/template` | 생성 Studio | `/studio/template/<templateSlug>` | 진입하면 첫 렌더 가능한 발행 템플릿으로 redirect하고, 없으면 빈 상태를 그립니다 |
-| Image | `/studio/image` | 생성 Studio | `/studio/image/<profileSlug>` | 시작 Config 하나만 싣습니다. 프로파일 교체는 자산 브라우저가 담당합니다 |
-| Graphic | `/studio/graphic` | 생성 Studio | `/studio/graphic/<profileSlug>` | 세그먼트 값은 runtime id입니다 — `GraphicProfiles.runtime`이 `unique`라 프로파일과 런타임이 1:1이고 runtime id가 그대로 slug 역할을 합니다 |
+| Template | `/studio/template` | 생성 Studio | `/studio/template/<templateSlug>` | 진입하면 공통 홈(`StudioHome`)이 발행 템플릿을 카테고리별 카드로 펼칩니다. 없으면 빈 상태를 그립니다 |
+| Image | `/studio/image` | 생성 Studio | `/studio/image/<profileSlug>` | 진입하면 공통 홈이 프로파일을 카드로 펼칩니다. 딥링크 화면 안의 프로파일 교체는 자산 브라우저가 담당합니다 |
+| Graphic | `/studio/graphic` | 생성 Studio | `/studio/graphic/<profileSlug>` | 진입하면 공통 홈이 프로파일을 카드로 펼칩니다. 세그먼트 값은 runtime id입니다 — `GraphicProfiles.runtime`이 `unique`라 프로파일과 런타임이 1:1이고 runtime id가 그대로 slug 역할을 합니다 |
 | Graph | `/studio/graph` | 생성 Studio | `/studio/graph/<profileSlug>` | Graphic과 같은 계약을 씁니다 — 카탈로그와 컬렉션만 갈립니다 |
 | Review | `/studio/review` | 검수 | 없음 | 업로드한 래스터를 CheckScenario로 검수하고 결과 테이블을 돌려줍니다 |
 | Assets | `/studio/assets` | 자리만 확보 | 없음 | 🔴 경로와 메뉴만 서 있고 화면이 없습니다(`page.tsx`가 `requireUser()` 뒤 `null` 반환) |

@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation'
+import { StudioHome } from '@/components/studio/shared/studio-home'
 import { listGraphicStudioConfigs } from '@/features/graphic-generation/services/list-graphic-studio-configs.service'
 import { requireUser } from '@/lib/request-auth'
 import { getStudioGraphicRoute, routes } from '@/lib/routes'
@@ -10,15 +10,28 @@ export const dynamic = 'force-dynamic'
 
 export default async function GenerateGraphicPage() {
 	const { user } = await requireUser(routes.studio.graphic)
-	// 시작 계약 하나만 싣는다 — 교체 후보 목록은 자산 브라우저가 열릴 때 /api/graphic-profiles가 내려준다.
-	const [config] = await listGraphicStudioConfigs(user)
-	if (!config) notFound()
+	const configs = await listGraphicStudioConfigs(user)
 
-	/**
-	 * 고를 것이 정해졌으면 주소도 그것을 가리켜야 한다 — 그래야 새로고침·공유·뒤로가기가 같은
-	 * 화면을 연다(`/studio/template`이 이미 같은 방식이다).
-	 * 🔴 이 자리에서 화면을 그리지 않는다. 그리면 「무엇을 보고 있는지 주소가 모르는 화면」이
-	 *    딥링크와 나란히 생겨 같은 것을 두 벌로 관리하게 된다.
-	 */
-	redirect(getStudioGraphicRoute(config.id))
+	return (
+		<StudioHome
+			title="그래픽 제작"
+			description="그래픽 프로파일을 선택해 브랜드 그래픽을 만듭니다."
+			groups={[
+				{
+					items: configs.map((config) => ({
+						key: config.id,
+						name: config.name,
+						subtitle: `${config.type.toUpperCase()} Graphic`,
+						href: getStudioGraphicRoute(config.id),
+						previewImage: config.previewImage,
+					})),
+				},
+			]}
+			cardFit="cover"
+			empty={{
+				title: '발행된 그래픽 프로파일이 없습니다',
+				description: '프로파일이 발행되면 이 화면에서 바로 만들고 내보낼 수 있습니다.',
+			}}
+		/>
+	)
 }

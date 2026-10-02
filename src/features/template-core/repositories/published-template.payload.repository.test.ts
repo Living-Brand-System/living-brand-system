@@ -48,7 +48,7 @@ describe('listPublishedTemplateNavItems', () => {
 			},
 		])
 		expect((await listPublishedTemplateNavItems())[0]?.previewImage).toEqual({
-			url: '/media/poster-320x240.png',
+			url: '/media/poster.png',
 			alt: '포스터 미리보기',
 		})
 

@@ -914,14 +914,14 @@ describe('previewImage', () => {
 })
 
 describe('toStudioPreviewImage', () => {
-	it('thumbnail이 있으면 그것을 쓰고 없으면 원본 url로 떨어진다', () => {
+	it('잘린 thumbnail이 있어도 원본 url을 쓴다', () => {
 		expect(
 			toStudioPreviewImage({
 				url: '/media/full.png',
 				alt: '방사형 광선',
 				sizes: { thumbnail: { url: '/media/full-320x240.png' } },
 			}),
-		).toEqual({ url: '/media/full-320x240.png', alt: '방사형 광선' })
+		).toEqual({ url: '/media/full.png', alt: '방사형 광선' })
 		expect(toStudioPreviewImage({ url: '/media/full.png', alt: '광선' })).toEqual({
 			url: '/media/full.png',
 			alt: '광선',
