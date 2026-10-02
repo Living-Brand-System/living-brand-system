@@ -1038,11 +1038,9 @@ describe('TemplateGenerator', () => {
 		).toBeInTheDocument()
 
 		fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 변경' }))
-		if (!screen.queryByRole('combobox', { name: 'Image' }))
+		if (!screen.queryByRole('button', { name: /프로파일 7/ }))
 			fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 변경' }))
-		screen.getByRole('combobox', { name: 'Image' }).focus()
-		await user.keyboard('{ArrowDown}')
-		await user.click(screen.getByRole('option', { name: '프로파일 7' }))
+		await user.click(screen.getByRole('button', { name: /프로파일 7/ }))
 
 		await waitFor(() =>
 			expect(within(slot).queryByLabelText(/^(Line Color|Foreground) 색상 선택$/)).toBeNull(),
@@ -1896,11 +1894,9 @@ describe('TemplateGenerator', () => {
 			target: { value: '사용자 입력' },
 		})
 
-		if (!screen.queryByRole('combobox', { name: 'Image' }))
+		if (!screen.queryByRole('button', { name: /프로파일 7/ }))
 			fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 변경' }))
-		screen.getByRole('combobox', { name: 'Image' }).focus()
-		await user.keyboard('{ArrowDown}')
-		await user.click(screen.getByRole('option', { name: '프로파일 7' }))
+		await user.click(screen.getByRole('button', { name: /프로파일 7/ }))
 
 		expect(screen.getByLabelText('Prompt')).toHaveValue('고정 기본값')
 	})
@@ -1942,9 +1938,7 @@ describe('TemplateGenerator', () => {
 		expect(container.querySelector('[data-slot="template-graphic-background"]')).not.toBeNull()
 
 		fireEvent.click(screen.getByRole('button', { name: '그래픽 변경' }))
-		screen.getByRole('combobox', { name: 'Graphic Type' }).focus()
-		await user.keyboard('{ArrowDown}')
-		await user.click(screen.getByRole('option', { name: 'Fluted Glass' }))
+		await user.click(screen.getByRole('button', { name: /Fluted Glass/ }))
 		await waitFor(() => expect(mocks.mountGraphicPreview).toHaveBeenCalledTimes(2))
 		expect(mocks.destroyGraphicPreview).toHaveBeenCalledOnce()
 		fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
@@ -2243,11 +2237,9 @@ describe('TemplateGenerator', () => {
 		)
 
 		fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 변경' }))
-		if (!screen.queryByRole('combobox', { name: 'Image' }))
+		if (!screen.queryByRole('button', { name: /프로파일 7/ }))
 			fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 변경' }))
-		screen.getByRole('combobox', { name: 'Image' }).focus()
-		await user.keyboard('{ArrowDown}')
-		await user.click(screen.getByRole('option', { name: '프로파일 7' }))
+		await user.click(screen.getByRole('button', { name: /프로파일 7/ }))
 		await waitFor(() =>
 			expect(
 				container.querySelector('[data-slot="studio-layout-canvas"]')?.innerHTML,

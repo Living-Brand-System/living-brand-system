@@ -404,13 +404,16 @@ it('패널 탐색은 실제 템플릿 세션을 유지하고 왼쪽 종류 선�
 	}
 	await selectType('Graphic')
 	fireEvent.click(screen.getByRole('button', { name: '그래픽 변경' }))
-	expect(screen.getByRole('combobox', { name: 'Graphic Type' })).toHaveTextContent(manifest.name)
+	// 변경 화면은 독립 스튜디오와 같은 카드 그리드다 — 지금 고른 카드가 aria-current로 선다.
+	expect(
+		document.querySelector('[data-slot="graphic-profile-picker"] [aria-current="true"]'),
+	).toHaveTextContent(manifest.name)
 	fireEvent.click(screen.getByRole('radio', { name: '네이비 · 블루' }))
 	await selectType('Image')
 	fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 변경' }))
-	expect(screen.getByRole('combobox', { name: 'Image' })).toHaveTextContent(
-		'실제 이미지 프로파일',
-	)
+	expect(
+		document.querySelector('[data-slot="image-profile-picker"] [aria-current="true"]'),
+	).toHaveTextContent('실제 이미지 프로파일')
 	fireEvent.click(screen.getByRole('radio', { name: 'Generate' }))
 	fireEvent.change(screen.getByRole('textbox', { name: 'Prompt' }), {
 		target: { value: '남아 있는 배경 프롬프트' },

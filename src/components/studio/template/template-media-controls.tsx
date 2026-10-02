@@ -4,8 +4,11 @@ import { type ReactNode, useEffect } from 'react'
 import { Controller } from '@/components/shared/controller'
 import { ControllerControlRenderer } from '@/components/shared/controller-renderer'
 import { GraphicEditingControls } from '@/components/studio/graphic/graphic-editing-controls'
+import { graphicProfileCard } from '@/components/studio/graphic/graphic-profile-picker'
 import { ImageColor, ImageGenerate } from '@/components/studio/image/image-controls'
+import { imageProfileCard } from '@/components/studio/image/image-profile-picker'
 import { ControlPanel } from '@/components/studio/shared/control-panel'
+import { StudioProfileCards } from '@/components/studio/shared/studio-profile-cards'
 import {
 	IMAGE_TRANSFORM_DEFAULT,
 	ImageTransformControl,
@@ -46,21 +49,17 @@ export function TemplateGraphicControls() {
 	)
 }
 
+/** 그래픽 변경 — 독립 Graphic 스튜디오와 같은 카드 그리드다. */
 export function TemplateGraphicSelection() {
 	const { background } = useTemplateStudio()
 	return (
-		<Controller.Row label="Graphic Type">
-			<Controller.Select
-				options={background.graphicConfigs.map((config) => ({
-					value: config.id,
-					label: config.name,
-				}))}
-				value={background.state.graphicConfigId}
-				onChange={background.selectGraphicConfig}
-				placeholder="사용 가능한 그래픽 없음"
-				disabled={background.graphicConfigs.length === 0}
-			/>
-		</Controller.Row>
+		<StudioProfileCards
+			slot="graphic-profile-picker"
+			cards={background.graphicConfigs.map(graphicProfileCard)}
+			currentId={background.state.graphicConfigId}
+			empty="사용 가능한 그래픽이 없습니다."
+			onSelect={(id) => background.selectGraphicConfig(String(id))}
+		/>
 	)
 }
 
@@ -369,35 +368,15 @@ export function TemplateImageSelection() {
 							]
 						: []
 				})
-	return (
-		<div className="flex flex-col gap-1">
-			{targets.map((target) => (
-				<ImageProfileSelection key={target.id} target={target} />
-			))}
-		</div>
-	)
-}
-
-function ImageProfileSelection({
-	target,
-}: {
-	target: Pick<ImageTarget, 'label' | 'state' | 'contracts' | 'pinned' | 'readonly' | 'onProfile'>
-}) {
-	const { state } = target
-	return (
-		<Controller.Row label="Image">
-			<Controller.Select
-				options={target.contracts.map(({ config }) => ({
-					value: String(config.id),
-					label: config.name,
-				}))}
-				value={state.profileId === undefined ? undefined : String(state.profileId)}
-				onChange={(next) => target.onProfile(Number(next))}
-				disabled={
-					target.pinned || target.readonly || state.generating || !target.contracts.length
-				}
-				placeholder="사용 가능한 프로파일 없음"
-			/>
-		</Controller.Row>
-	)
+	return targets.map((target) => (
+		<StudioProfileCards
+			key={target.id}
+			slot="image-profile-picker"
+			cards={target.contracts.map(({ config }) => imageProfileCard(config))}
+			currentId={target.state.profileId}
+			disabled={target.pinned || target.readonly || target.state.generating}
+			empty="사용 가능한 프로파일이 없습니다."
+			onSelect={(id) => target.onProfile(Number(id))}
+		/>
+	))
 }
