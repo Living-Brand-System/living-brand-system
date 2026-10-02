@@ -54,10 +54,11 @@ export async function listGuidelineChapters(): Promise<GuidelineChapterData[]> {
 		limit: 100,
 		locale: LOCALE,
 		sort: 'displayOrder',
-		select: { title: true, slug: true, displayOrder: true },
+		select: { title: true, description: true, slug: true, displayOrder: true },
 	})
 
 	return chapters.docs.map((chapter) => ({
+		description: chapter.description ?? null,
 		displayOrder: chapter.displayOrder,
 		id: chapter.id,
 		slug: chapter.slug,
@@ -69,9 +70,10 @@ export async function listPublishedGuidelineNavigationTopics(): Promise<
 	GuidelineNavigationTopicData[]
 > {
 	const payload = await getPayload({ config })
+	// depth 1 — 카드 썸네일(headerImage)의 URL이 필요하다. 함께 풀리는 chapter는 relationshipId가 정규화한다.
 	const documents = await payload.find({
 		collection: 'guideline-documents',
-		depth: 0,
+		depth: 1,
 		draft: false,
 		fallbackLocale: FALLBACK_LOCALE,
 		limit: 2000,
@@ -79,15 +81,18 @@ export async function listPublishedGuidelineNavigationTopics(): Promise<
 		sort: 'displayOrder',
 		select: {
 			title: true,
+			description: true,
 			slug: true,
 			displayOrder: true,
 			chapter: true,
+			headerImage: true,
 			sections: { id: true, type: true, anchor: true, title: true },
 		},
 	})
 
 	return documents.docs.map((document) => ({
 		chapterId: relationshipId(document.chapter),
+		description: document.description ?? null,
 		id: document.id,
 		sections: withSectionHierarchy(document.sections ?? []).flatMap((section) =>
 			section.anchor
@@ -103,6 +108,10 @@ export async function listPublishedGuidelineNavigationTopics(): Promise<
 				: [],
 		),
 		slug: document.slug,
+		thumbnail:
+			typeof document.headerImage === 'object' && document.headerImage?.url
+				? { src: document.headerImage.url, alt: document.headerImage.alt ?? document.title }
+				: null,
 		title: document.title,
 	}))
 }
@@ -116,12 +125,13 @@ export async function findChapterBySlug(chapterSlug: string): Promise<GuidelineC
 		limit: 1,
 		locale: LOCALE,
 		where: { slug: { equals: chapterSlug } },
-		select: { title: true, slug: true, displayOrder: true },
+		select: { title: true, description: true, slug: true, displayOrder: true },
 	})
 
 	const chapter = chapters.docs[0]
 	return chapter
 		? {
+				description: chapter.description ?? null,
 				displayOrder: chapter.displayOrder,
 				id: chapter.id,
 				slug: chapter.slug,

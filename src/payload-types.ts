@@ -222,6 +222,10 @@ export interface GuidelineChapter {
    */
   title: string;
   /**
+   * 가이드라인 첫 화면에서 챕터 제목 아래에 표시됩니다.
+   */
+  description?: string | null;
+  /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
   generateSlug?: boolean | null;
@@ -252,12 +256,16 @@ export interface GuidelineDocument {
   chapter: number | GuidelineChapter;
   title: string;
   /**
+   * 가이드라인 첫 화면의 토픽 카드에서 제목 아래에 표시됩니다.
+   */
+  description?: string | null;
+  /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
   generateSlug?: boolean | null;
   slug: string;
   /**
-   * 토픽 헤더에 표시할 선택 이미지입니다.
+   * 토픽 헤더와 가이드라인 첫 화면의 토픽 카드에 표시할 선택 이미지입니다.
    */
   headerImage?: (number | null) | ApplicationImage;
   contentModel?: ('legacy' | 'sections') | null;
@@ -2140,6 +2148,7 @@ export interface PayloadMigration {
  */
 export interface GuidelineChaptersSelect<T extends boolean = true> {
   title?: T;
+  description?: T;
   generateSlug?: T;
   slug?: T;
   topics?: T;
@@ -2154,6 +2163,7 @@ export interface GuidelineChaptersSelect<T extends boolean = true> {
 export interface GuidelineDocumentsSelect<T extends boolean = true> {
   chapter?: T;
   title?: T;
+  description?: T;
   generateSlug?: T;
   slug?: T;
   headerImage?: T;

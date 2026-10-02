@@ -76,6 +76,12 @@ export const GuidelineDocuments: CollectionConfig = {
 			required: true,
 			localized: true,
 		},
+		{
+			name: 'description',
+			type: 'textarea',
+			localized: true,
+			admin: { description: '가이드라인 첫 화면의 토픽 카드에서 제목 아래에 표시됩니다.' },
+		},
 		// 🔴 slug는 localized가 아니다(2026-09-04). URL은 언어를 가리지 않는다 — 섹션 앵커와 같은
 		//    이유로, 로케일마다 slug가 갈리면 공유한 링크가 언어를 바꾸는 순간 끊긴다.
 		//    (제목 위 라벨 `label` 필드는 같은 날 지웠다 — 어디에서도 그리지 않았다.)
@@ -103,7 +109,7 @@ export const GuidelineDocuments: CollectionConfig = {
 			relationTo: 'application-images',
 			admin: {
 				position: 'sidebar',
-				description: '토픽 헤더에 표시할 선택 이미지입니다.',
+				description: '토픽 헤더와 가이드라인 첫 화면의 토픽 카드에 표시할 선택 이미지입니다.',
 			},
 		},
 		// 과거 버전의 복원 형식만 판별합니다. 본문 선택이나 API 응답에 노출하지 않습니다.
