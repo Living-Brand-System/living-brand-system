@@ -34,8 +34,11 @@ export async function fetchSampleImages(): Promise<SampleImageOption[]> {
 	return (Array.isArray(body.docs) ? body.docs : []).flatMap(toSampleImageOption)
 }
 
-/** url이 없는 문서(업로드 실패·마이그레이션 잔해)는 고를 수 없으므로 목록에서 뺀다. */
-function toSampleImageOption(doc: SampleImage): SampleImageOption[] {
+/**
+ * url이 없는 문서(업로드 실패·마이그레이션 잔해)는 고를 수 없으므로 목록에서 뺀다.
+ * 이미지 스튜디오 첫 화면의 Examples(서버 조회)도 같은 투영을 쓴다.
+ */
+export function toSampleImageOption(doc: SampleImage): SampleImageOption[] {
 	if (!doc.url) return []
 	return [
 		{

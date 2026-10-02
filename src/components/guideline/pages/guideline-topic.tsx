@@ -23,14 +23,7 @@ export function GuidelineTopic({
 				sections={topic.sections ?? []}
 				paletteCatalog={topic.paletteCatalog}
 			/>
-			<GuidelineDisplayFooter
-				logo={{
-					src: '/brand/hd/ko-horizontal-default-blk@2x.png',
-					alt: 'HD현대',
-					width: 1246,
-					height: 328,
-				}}
-			/>
+			<GuidelineDisplayFooter />
 		</article>
 	)
 }

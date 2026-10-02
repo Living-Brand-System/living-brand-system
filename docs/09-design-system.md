@@ -131,7 +131,7 @@ HTML 의미와 시각 역할은 분리합니다. `GuidelineHeader`가 h1/h2를 �
 
 캡션 배치는 `below`(기본, 카드 아래)와 `overlay`(판 안쪽 하단) 중 고릅니다. 오버레이는 Figma 136:231의 `text-base` 크기와 여백을 따르며, 제목·설명의 Medium·행간 155%는 공유합니다. 그라데이션은 판 폭을 채우고 텍스트 폭은 제한합니다. `dark` 토큰 스코프로 밝은 글자와 어두운 그라데이션의 대비를 유지하며, 긴 내용은 키보드로 접근할 수 있는 캡션 영역 안에서 스크롤합니다. 제목·설명·2열 스펙 표는 두 배치가 같은 렌더러를 사용합니다. 배치가 없는 기존 콘텐츠는 카드 아래에 표시합니다.
 
-메인 히어로의 제목·버전 표기와 푸터 `LBS`는 화면 비율에 맞춘 lockup을 유지해야 하므로 유일한 viewport 반응형 예외이며 기존 `clamp()` 크기를 사용합니다. 템플릿 캔버스와 `TypeScale`·`TypeSpecimen`이 데이터로 받은 글자 크기도 UI 타이포그래피가 아니므로 예외입니다. 그 밖의 `TypeSpecimen` 같은 대형 표본은 viewport 계산식 대신 `text-9xl` 같은 고정 유틸리티를 사용합니다. 클래스 주입이 불가능한 `.typeset` 내부 생성 HTML은 `typeset.css`에서 같은 고정 단계만 직접 선언합니다.
+첫 화면(메인·가이드라인·스튜디오) 히어로의 `HD │ 제목` 락업(`LandingLockup`)은 CI 높이(32px)와 짝을 이루는 고정 크기(34px)이고, 문서·스튜디오 띠의 표시 제목(`GuidelineDisplayTitle`)은 화면 비율에 맞춘 `clamp()` 크기를 씁니다 — 둘이 viewport 반응형·임의 크기의 예외입니다. 템플릿 캔버스와 `TypeScale`·`TypeSpecimen`이 데이터로 받은 글자 크기도 UI 타이포그래피가 아니므로 예외입니다. 그 밖의 `TypeSpecimen` 같은 대형 표본은 viewport 계산식 대신 `text-9xl` 같은 고정 유틸리티를 사용합니다. 클래스 주입이 불가능한 `.typeset` 내부 생성 HTML은 `typeset.css`에서 같은 고정 단계만 직접 선언합니다.
 
 현재 상태를 정직하게 기술합니다.
 
@@ -198,7 +198,7 @@ CMS 섹션은 평면 섹션 구조를 사용합니다. Subsection은 직전 Sect
 
 CMS `section`·`base`·`overview`·`examples`는 `CardBlock` 어댑터가 같은 `GuidelineSection`으로 연결합니다. `prepareCards`는 저장 데이터를 바꾸지 않고 언어 비교를 독립 카드로 펼칩니다. 컨트롤러와 프리뷰 상태는 화면 구성과 별도이며 푸터에 넣지 않습니다. 하단 캡션은 카드 폭 안에서 제한하고 왼쪽에 붙입니다.
 
-헤딩 계층은 `GuidelineHeader`가 `variant`(`topic` h1 / `section` h2)로 분기해 소유합니다(`guideline-header.tsx`). 토픽 안의 `section`·`base`·`overview`·`examples`는 동급 블록이므로 같은 h2를 사용하며 h3 단계는 없습니다. 인덱스 화면의 h1은 히어로 락업이, 챕터 카드 제목은 `PanelCard`가 그립니다. 랜드마크는 셸이 `main`을(`section-layout.tsx`), 토픽 화면이 `article` 하나를(`pages/guideline-topic.tsx`) 갖고, 블록 프레임과 섹션 안쪽은 랜드마크를 만들지 않습니다.
+헤딩 계층은 `GuidelineHeader`가 `variant`(`topic` h1 / `section` h2)로 분기해 소유합니다(`guideline-header.tsx`). 토픽 안의 `section`·`base`·`overview`·`examples`는 동급 블록이므로 같은 h2를 사용하며 h3 단계는 없습니다. 가이드라인 첫 화면(Figma 458:16373)의 h1은 히어로 락업이, 챕터는 문서와 같은 `GuidelineSection`·`GuidelineSectionHeading`(h2)이, 토픽은 링크 가이드라인 카드(`GuidelineGridContainer`의 `href`)가 그립니다. 스튜디오 첫 화면(`StudioHome`)도 같은 섹션 블록에 프로파일 카드를 담습니다. 랜드마크는 셸이 `main`을(`section-layout.tsx`), 토픽 화면이 `article` 하나를(`pages/guideline-topic.tsx`) 갖고, 블록 프레임과 섹션 안쪽은 랜드마크를 만들지 않습니다.
 
 ### 가이드라인 계층 이름은 Figma 정본과 다릅니다
 

@@ -40,6 +40,16 @@
 	width: 100%;
 	margin: 0;
 }
+.cardLink {
+	display: block;
+	color: inherit;
+	text-decoration: none;
+	border-radius: var(--radius-lg);
+	outline: none;
+}
+.cardLink:focus-visible {
+	box-shadow: 0 0 0 2px var(--ring);
+}
 .fluid > .card {
 	max-width: var(--display-width);
 	justify-self: center;

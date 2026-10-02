@@ -109,7 +109,8 @@ export const GuidelineDocuments: CollectionConfig = {
 			relationTo: 'application-images',
 			admin: {
 				position: 'sidebar',
-				description: '토픽 헤더와 가이드라인 첫 화면의 토픽 카드에 표시할 선택 이미지입니다.',
+				description:
+					'토픽 헤더와 가이드라인 첫 화면의 토픽 카드에 표시할 선택 이미지입니다.',
 			},
 		},
 		// 과거 버전의 복원 형식만 판별합니다. 본문 선택이나 API 응답에 노출하지 않습니다.
