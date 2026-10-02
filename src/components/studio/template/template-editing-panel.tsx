@@ -71,6 +71,7 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 							aria-label="선택한 레이어 편집"
 							className="scrollbar-none absolute inset-0 flex min-h-0 flex-col gap-4 overflow-y-auto p-4 outline-none"
 							// 퇴장 중에는 마지막 화면이 남아 있으므로 클릭을 받지 않는다.
+							style={{ transformOrigin: PANEL_RENDER.left.origin }}
 							initial={reducedMotion ? false : PANEL_RENDER.left.hidden}
 							animate={PANEL_RENDER.left.shown}
 							exit={

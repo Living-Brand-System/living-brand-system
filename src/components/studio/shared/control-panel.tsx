@@ -71,6 +71,7 @@ export function ControlPanel({
 							id={`${id}-${tab.id}`}
 							hidden={active !== tab.id}
 							className="min-h-0 flex-1"
+							style={{ transformOrigin: PANEL_RENDER.right.origin }}
 							initial={false}
 							animate={
 								active === tab.id

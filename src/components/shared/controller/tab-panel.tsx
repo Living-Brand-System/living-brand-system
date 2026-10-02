@@ -38,6 +38,7 @@ export function ControllerTabPanel({
 				key={tabKey}
 				data-slot="controller-tab-panel"
 				className={cn('flex flex-col gap-1.5', className)}
+				style={{ transformOrigin: PANEL_RENDER[side].origin }}
 				initial={mounted && !reducedMotion ? PANEL_RENDER[side].hidden : false}
 				animate={PANEL_RENDER[side].shown}
 				transition={transition}

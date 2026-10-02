@@ -53,6 +53,7 @@ export function PanelRenderTarget({
 				key={scope?.renderKey}
 				data-slot="panel-render"
 				className={className}
+				style={{ transformOrigin: PANEL_RENDER[side].origin }}
 				initial={scope?.armed && !reducedMotion ? PANEL_RENDER[side].hidden : false}
 				animate={PANEL_RENDER[side].shown}
 				transition={transition}
