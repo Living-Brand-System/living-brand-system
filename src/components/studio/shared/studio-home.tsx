@@ -1,7 +1,21 @@
-import { StudioHomeCard, type StudioHomeItem } from '@/components/studio/shared/studio-home-card'
+import Link from 'next/link'
+import {
+	StudioSelectionCard,
+	StudioSelectionTile,
+} from '@/components/studio/shared/studio-selection-card'
 import { StudioWorkspacePage } from '@/components/studio/shared/studio-workspace'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import { Typography } from '@/components/ui/typography'
+import type { StudioPreviewImage } from '@/modules/studio-controller/controller-definition'
+
+export type StudioHomeItem = {
+	key: string | number
+	name: string
+	/** 이름 아래 한 줄 — 편집 화면 좌상단 카드의 부제와 같은 값을 준다. */
+	subtitle?: string
+	href: string
+	previewImage?: StudioPreviewImage
+}
 
 export type StudioHomeGroup = {
 	/** 묶음 제목 — 분류가 없는 스튜디오(Graphic·Image)는 비운다. */
@@ -43,10 +57,18 @@ export function StudioHome({ title, description, groups, empty }: StudioHomeProp
 										{group.title}
 									</Typography>
 								)}
-								{/* 카드 폭은 Figma Large(320px) 근처에서 열 수가 따라간다. */}
+								{/* 카드 폭은 Figma Select Card(320px) 근처에서 열 수가 따라간다. */}
 								<div className="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-4">
 									{group.items.map((item) => (
-										<StudioHomeCard key={item.key} item={item} />
+										<StudioSelectionTile key={item.key} asChild>
+											<Link href={item.href}>
+												<StudioSelectionCard
+													title={item.name}
+													subtitle={item.subtitle}
+													image={item.previewImage}
+												/>
+											</Link>
+										</StudioSelectionTile>
 									))}
 								</div>
 							</section>

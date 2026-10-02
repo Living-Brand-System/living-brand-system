@@ -1,4 +1,5 @@
 import { StudioHome } from '@/components/studio/shared/studio-home'
+import { graphicRendererLabel } from '@/features/graphic-generation/domain/graphic-studio-config'
 import { listGraphicStudioConfigs } from '@/features/graphic-generation/services/list-graphic-studio-configs.service'
 import { requireUser } from '@/lib/request-auth'
 import { getStudioGraphicRoute, routes } from '@/lib/routes'
@@ -21,7 +22,7 @@ export default async function GenerateGraphicPage() {
 					items: configs.map((config) => ({
 						key: config.id,
 						name: config.name,
-						subtitle: `${config.type.toUpperCase()} Graphic`,
+						subtitle: graphicRendererLabel(config.type),
 						href: getStudioGraphicRoute(config.id),
 						previewImage: config.previewImage,
 					})),

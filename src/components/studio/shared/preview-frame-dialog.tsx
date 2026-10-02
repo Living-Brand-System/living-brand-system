@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Slider } from '@/components/ui/slider'
 import { Typography } from '@/components/ui/typography'
+import { sampleAverageColor } from './average-color'
 import {
 	clampFrame,
 	initialFrame,
@@ -20,7 +21,6 @@ import {
 	scaleRange,
 	zoomFrame,
 } from './square-frame'
-import { sampleAverageColor } from './studio-home-card'
 
 /** 저장하는 정사각 썸네일의 한 변(px). */
 const OUTPUT_SIZE = 1024
