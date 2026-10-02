@@ -222,10 +222,9 @@ Studio는 GlobalHeader의 진입점 여섯 개로 노출됩니다. 목록과 순
 
 Template이 Image나 Graphic을 포함해도 해당 Studio Provider를 중첩하지 않습니다. Template Provider는 published Effective Config와 공개 Runtime adapter만 소비합니다.
 
-### 레이아웃 플레이그라운드
+### 작업 영역 레이아웃
 
-`/studio/playground`는 개발 모드에서만 열리는 레이아웃 검증 화면입니다. 실제 Studio 적용 전에
-`src/components/studio/shared/workspace-layout.tsx`에서 다음 경계를 검증합니다.
+세 Generator는 `src/components/studio/shared/workspace-layout.tsx`의 다음 경계를 공유합니다. 레이아웃은 실제 Studio 라우트에서 검증합니다(별도 플레이그라운드는 2026-10-02에 제거).
 
 - Workspace는 헤더 아래 남은 공간의 좌·중·우 배치만 소유합니다.
 - 왼쪽 패널은 폭 352px(카드 320px + 좌우 여백 16px), 정사각형 위 카드와 콘텐츠 높이의 아래 카드를 소유합니다. 카드 묶음 전체가 스크롤됩니다.
@@ -234,9 +233,7 @@ Template이 Image나 Graphic을 포함해도 해당 Studio Provider를 중첩하
 - Canvas는 결과 영역과 보기 도구 행을 분리합니다. 출력 크기는 레이아웃의 책임이 아닙니다.
 - 빈 콘텐츠에도 열과 카드가 유지됩니다. 자산 브라우저의 포털 프레임은 왼쪽 스크롤 영역 밖에 둡니다.
 
-최상위 화면은 Image Generator → Graphic Generator → Template Generator 순서로 구분합니다.
-화면 선택과 제목에 같은 이름을 사용하며 세 화면 모두 실제 Generator를 렌더합니다. 프로파일·템플릿 선택은 대상 카드의 Change로 연결합니다. 컴포넌트 플레이그라운드에서 만든 Output·Stack·Compound·TemplateLayerGroups가 최신 공통 UI이며, 실제 스튜디오도 동일한 구현을 사용합니다. Playground는 카탈로그 로딩과 템플릿 URL 대신 로컬 화면 전환만 담당합니다.
-Stack·Compound 샘플 화면과 콘텐츠 길이 선택은 제거합니다. 경계 표시는 유지합니다.
+프로파일·템플릿 선택은 대상 카드의 Change로 연결합니다. Output·Stack·Compound·TemplateLayerGroups는 세 Generator가 같은 구현을 씁니다.
 데스크톱(`lg` 이상)에서 내부 스크롤을 검증하며 좁은 화면에서는 세 영역을 세로로 쌓습니다.
 컨트롤 패널은 스크롤 동작을 유지하고 `scrollbar-none`으로 스크롤바만 숨깁니다.
 대상 카드 우측 상단에 Reset(테두리)·Change(채움)를 배치합니다.
@@ -307,7 +304,7 @@ Output에는 실제 계약의 장수·비율·해상도·파일 형식 및 선�
 
 Image Reset·Change는 Provider와 출력 상태를 함께 새로 시작해 프롬프트·색·각도·참조·결과·출력 편집을
 초기화합니다. 이전 비동기 응답은 새 세션에 반영되지 않습니다. 이미 서버가 저장한 generated-images를
-삭제하거나 진행 중 서버 생성을 취소하지는 않습니다. 과거 이미지 자동 복원은 이 Playground에서 사용하지 않습니다.
+삭제하거나 진행 중 서버 생성을 취소하지는 않습니다. 과거 이미지 자동 복원은 사용하지 않습니다.
 실제 생성은 기존 API와 동일하게 현재 환경 DB에 결과를 저장합니다.
 
 Template Generator는 실제 발행 카탈로그와 인증된
@@ -318,8 +315,8 @@ Image Setting은 현재 이미지의 Preset/Generate를, Background Setting은 M
 방식 전환은 편집값을 유지하며, 편집 중에는 완료·취소 전까지 다른 레이어로 이동할 수 없습니다.
 오른쪽은 선택한 종류의 편집 컨트롤을 표시하고 Type·Mode를 중복 표시하지 않습니다.
 Text를 선택하면 오른쪽 위에 공통 텍스트 Color(Solid/Custom), 아래에 텍스트 입력을 배치합니다.
-Graphic 배경은 독립 Graphic의 PlaygroundGraphicControls(Fluted Glass 포함)를 재사용합니다.
-발행 계약·런타임 binding의 선택지·잠금·범위를 유지합니다. 프리셋 선택은 `createGraphicPresetValues`로 기본값과 프리셋 값을 합치며 이전 조정값은 남기지 않습니다. 운영 Graphic Provider와 Playground도 이 함수를 사용합니다.
+Graphic 배경은 독립 Graphic의 `GraphicEditingControls`(Fluted Glass 포함)를 재사용합니다.
+발행 계약·런타임 binding의 선택지·잠금·범위를 유지합니다. 프리셋 선택은 `createGraphicPresetValues`로 기본값과 프리셋 값을 합치며 이전 조정값은 남기지 않습니다. 운영 Graphic Provider도 이 함수를 사용합니다.
 색 조합만 허용한 계약은 공통 Color의 Swatch로, 자유 두 색을 허용한 계약은 Swatch/Custom으로 표시합니다.
 Image 슬롯과 이미지 배경은 독립 Image의 Color·Generate 표현 컴포넌트를 공유합니다.
 생성은 기존 Template 세션의 한 장·고정 슬롯 비율 요청과 결과 배정을 사용합니다. 샘플 선택·슬롯 Transform·배경 Dimmer는 유지합니다.
@@ -334,17 +331,17 @@ Multi의 의미와 개별 텍스트 색 계약은 아직 확정하지 않았으�
 기존 Template Provider·Canvas·레이어 편집·Export를 재사용해 텍스트 제약, 이미지·로고·배경,
 고정 판형과 허용 출력 형식을 유지합니다. Color는 모드만 바꿀 때 원본 색을 덮어쓰지 않습니다.
 Reset과 Change는 편집·출력 세션을 함께 초기화하고, 이전 상세 조회는 중단합니다.
-운영 Template Studio와 Playground는 같은 편집 패널을 사용하며 Output은 왼쪽에 둡니다.
+Template Studio의 Output은 왼쪽에 둡니다.
 
 ### 공통 StudioRail
 
-`StudioRail`은 세 Generator와 Playground의 오른쪽 패널에 공통으로 배치합니다. Figma `529:17049`·`529:17075` 기준으로 버튼은 44px, 원본 아이콘은 20px, 모서리는 12px, 버튼 간격은 6px입니다. 본문과 레일 사이 간격은 12px입니다.
+`StudioRail`은 세 Generator의 오른쪽 패널에 공통으로 배치합니다. Figma `529:17049`·`529:17075` 기준으로 버튼은 44px, 원본 아이콘은 20px, 모서리는 12px, 버튼 간격은 6px입니다. 본문과 레일 사이 간격은 12px입니다.
 `StudioRailIcon`은 `active`·`idle`·`disabled`를 표현합니다. Active는 배경·테두리·그림자와 `aria-pressed`로 구분하고, Disabled는 네이티브 `disabled`로 클릭과 키보드 실행을 막습니다. 아이콘 윤곽은 `public/studio/rail/`의 Figma 원본 SVG를 사용합니다.
 레일은 편집 상태를 소유하지 않습니다. 기존 `ControlPanel`의 전환 상태를 연결하고, 아직 보기 분리가 없는 패널은 Basic 한 개를 표시합니다. 미지원 보기를 억지로 추가하지 않습니다.
 
 ### 템플릿 패널 탐색과 편집 세션
 
-디자인 기준은 Figma V2 `529:16921`이며, 아래 규칙은 디자인 검토 후 확정한 동작입니다. `/studio/playground?view=template`와 운영 Template Studio는 `TemplateControls`·`TemplateEditingPanel`을 공유합니다. 별도 목업 실험은 제거했으며 이전 `experiment=panels`도 실제 Template Editor로 연결됩니다.
+디자인 기준은 Figma V2 `529:16921`이며, 아래 규칙은 디자인 검토 후 확정한 동작입니다.
 
 - 이미지 또는 배경 레이어를 고르면 중첩 편집을 시작합니다. 왼쪽 카드는 실제 이미지 프로파일·그래픽 종류를 고르며, Setting 카드에 방식 설정과 그 아래 취소(테두리)·완료(회색)를 표시합니다(Figma `525:8777`). 기본 패널은 폭의 절반만큼 왼쪽으로 밀리고 20% 불투명도로 뒤에 남으며, 전환은 `motion/react`의 ease-out 250ms입니다(모션 감소 시 즉시). 템플릿·레이어·출력과 상단 이동은 완료 또는 취소 전까지 `inert`로 잠급니다. 상단 헤더는 스튜디오 트리 밖 앱 셸에 있어서, 편집 패널이 `useShellLock`(`src/hooks/use-shell-lock.ts`)으로 잠금을 걸고 헤더가 `useShellLocked`를 읽어 스스로 `inert`가 됩니다. DOM을 찾아 속성을 바꾸지 않습니다. Provider도 다른 레이어 선택을 거부합니다.
 - `TemplateStudioProvider.editing`이 진입 시 상태를 보관합니다. 변경은 캔버스에 즉시 미리보기하고, 완료는 유지하며 취소는 진입 상태로 복원합니다. Reset은 현재 대상의 프로파일·방식·배정 이미지를 유지하고 설정을 기본값으로 되돌립니다. Reset 뒤 취소해도 진입 상태가 복원됩니다.
@@ -422,4 +419,4 @@ src/features/graphic-generation/graphic-runtimes/<id>/
 
 ### 공통 Template Layers
 
-`TemplateLayerGroups`는 Text·Symbol·Image·Background 네 묶음을 표시합니다. 없는 묶음은 비활성화하며 표시·숨김은 visibility 변경이 허용된 슬롯에만 적용합니다. 처음에는 Text를 선택하고, 이미지·배경 편집 중에는 다른 묶음 이동을 잠급니다. 완료·취소는 기존 Template 세션의 적용·복원 동작을 사용합니다. 실제 스튜디오와 Playground가 같은 모듈을 렌더하므로 별도 레이어 목록을 유지하지 않습니다.
+`TemplateLayerGroups`는 Text·Symbol·Image·Background 네 묶음을 표시합니다. 없는 묶음은 비활성화하며 표시·숨김은 visibility 변경이 허용된 슬롯에만 적용합니다. 처음에는 Text를 선택하고, 이미지·배경 편집 중에는 다른 묶음 이동을 잠급니다. 완료·취소는 기존 Template 세션의 적용·복원 동작을 사용합니다.

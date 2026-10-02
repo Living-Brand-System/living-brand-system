@@ -8,11 +8,9 @@ import {
 	deriveTemplateStudioConfig,
 	type PublishedHtmlTemplate,
 } from '@/features/template-customization/domain/template-studio-config'
-import { PlaygroundTemplateWorkspace } from './template-workspace'
+import { TemplateGenerator } from './template-generator'
 
 const mocks = vi.hoisted(() => ({
-	navigation: vi.fn(),
-	detail: vi.fn(),
 	export: vi.fn(),
 	generate: vi.fn(),
 	graphicUpdate: vi.fn(),
@@ -34,12 +32,6 @@ vi.mock('@/features/graphic-generation/runtime/client/graphic-runtime.client', (
 			artifacts: { raster: { source: { withSurface: vi.fn() } } },
 		}),
 	}),
-}))
-vi.mock('@/features/template-customization/services/get-create-navigation.client', () => ({
-	fetchCreateNavigation: mocks.navigation,
-}))
-vi.mock('@/features/template-customization/services/get-template-studio.client', () => ({
-	fetchTemplateStudio: mocks.detail,
 }))
 vi.mock('@/features/studio-export/hooks/use-export', () => ({
 	useExport: () => ({ canExport: () => true, exporting: null, error: null, run: mocks.export }),
@@ -74,28 +66,27 @@ beforeEach(() => {
 			disconnect() {}
 		},
 	)
-	mocks.navigation.mockResolvedValue([
-		{
-			id: 1,
-			title: '포스터',
-			slug: 'posters',
-			templates: [1, 2].map((id) => ({
-				id,
-				name: `포스터 ${id}`,
-				slug: `poster-${id}`,
-				href: `/studio/template/poster-${id}`,
-			})),
-		},
-	])
-	mocks.detail.mockImplementation(async (slug: string) => studio(slug === 'poster-2' ? 2 : 1))
 })
 afterEach(() => {
 	cleanup()
 	vi.unstubAllGlobals()
 })
 
+/** 실제 `/studio/template/[slug]` 라우트처럼 발행 상세 하나로 편집기를 연다. */
+function renderTemplate(data: ReturnType<typeof studio> = studio()) {
+	return render(
+		<TemplateGenerator
+			config={data.config}
+			template={data.template}
+			highlightColor={data.highlightColor}
+			categoryTitle="포스터"
+		/>,
+		{ wrapper: TooltipProvider },
+	)
+}
+
 it('실제 합성 캔버스·출력에 연결하고 Reset은 텍스트·색·출력 설정을 초기화한다', async () => {
-	const { container } = render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
+	const { container } = renderTemplate()
 	const input = await screen.findByRole('textbox', { name: '제목' })
 	expect(input).toHaveAttribute('maxlength', '20')
 	fireEvent.change(input, { target: { value: '바꾼 제목' } })
@@ -117,41 +108,8 @@ it('실제 합성 캔버스·출력에 연결하고 Reset은 텍스트·색·출
 	expect(screen.getByRole('combobox', { name: 'Format' })).toHaveTextContent('PNG')
 })
 
-it('Change는 실제 카탈로그를 읽고 선택한 템플릿을 새 편집 세션으로 연다', async () => {
-	render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
-	fireEvent.change(await screen.findByRole('textbox', { name: '제목' }), {
-		target: { value: '이전 편집' },
-	})
-	fireEvent.click(screen.getByRole('button', { name: '템플릿 변경' }))
-	fireEvent.click(await screen.findByRole('button', { name: '포스터 2' }))
-	await waitFor(() =>
-		expect(mocks.detail).toHaveBeenCalledWith('poster-2', expect.any(AbortSignal)),
-	)
-	expect(await screen.findByRole('textbox', { name: '제목' })).toHaveValue('원본 제목')
-	expect(
-		within(screen.getByRole('complementary', { name: '작업 대상과 출력' })).getByText(
-			'포스터 2',
-		),
-	).toBeInTheDocument()
-})
-
-it('상세 실패를 표시하고 같은 템플릿을 다시 조회할 수 있다', async () => {
-	mocks.detail.mockRejectedValueOnce(new Error('템플릿을 불러오지 못했습니다.'))
-	render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
-	expect(await screen.findByRole('alert')).toHaveTextContent('템플릿을 불러오지 못했습니다.')
-	fireEvent.click(screen.getByRole('button', { name: '다시 시도' }))
-	expect(await screen.findByRole('textbox', { name: '제목' })).toHaveValue('원본 제목')
-})
-
-it('빈 카탈로그에서는 샘플 템플릿이나 상세 요청을 만들지 않는다', async () => {
-	mocks.navigation.mockResolvedValueOnce([])
-	render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
-	expect(await screen.findByText('발행된 템플릿이 없습니다.')).toBeInTheDocument()
-	expect(mocks.detail).not.toHaveBeenCalled()
-})
-
 it('네 가지 묶음만 표시하고 눈 아이콘은 허용된 텍스트들을 함께 숨기고 복원한다', async () => {
-	mocks.detail.mockResolvedValueOnce(
+	const { container } = renderTemplate(
 		studio(1, {
 			html: '<div><p data-node-id="title">제목 원본</p><p data-node-id="subtitle">부제 원본</p><p data-node-id="fixed">고정 문구</p></div>',
 			nodeConfigs: {
@@ -167,7 +125,6 @@ it('네 가지 묶음만 표시하고 눈 아이콘은 허용된 텍스트들을
 			},
 		}),
 	)
-	const { container } = render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
 	await screen.findByRole('textbox', { name: '제목' })
 	const panel = screen.getByRole('region', { name: 'Layers' })
 	expect(panel.querySelectorAll('[data-slot="template-layer-group"]')).toHaveLength(4)
@@ -197,13 +154,12 @@ it('네 가지 묶음만 표시하고 눈 아이콘은 허용된 텍스트들을
 })
 
 it('Image 편집은 현재 슬롯만 열고 완료 또는 취소 전에는 다른 레이어를 잠근다', async () => {
-	mocks.detail.mockResolvedValueOnce(
+	renderTemplate(
 		studio(1, {
 			html: '<div><div data-node-id="a" data-figma-type="FRAME" data-name="사진 A" data-image-carrier=""></div><div data-node-id="b" data-figma-type="FRAME" data-name="사진 B" data-image-carrier=""></div></div>',
 			nodeConfigs: { a: { imageInput: {} }, b: { imageInput: {} } },
 		}),
 	)
-	render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
 	const panel = await screen.findByRole('region', { name: 'Layers' })
 	fireEvent.click(within(panel).getByRole('button', { name: /^Image$/ }))
 	const editing = screen.getByRole('region', { name: '선택한 레이어 편집' })
@@ -217,7 +173,7 @@ it('Image 편집은 현재 슬롯만 열고 완료 또는 취소 전에는 다�
 })
 
 it('배경 Type·Image Mode는 왼쪽에서 전환하고 오른쪽에는 편집 도구만 표시한다', async () => {
-	render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
+	renderTemplate()
 	await screen.findByRole('textbox', { name: '제목' })
 	const layers = screen.getByRole('region', { name: 'Layers' })
 	fireEvent.click(within(layers).getByRole('button', { name: /^Background$/ }))
@@ -260,8 +216,7 @@ it.each([
 	height,
 	unit,
 }) => {
-	mocks.detail.mockResolvedValueOnce(studio(1, { canvasPpi }))
-	const { container } = render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
+	const { container } = renderTemplate(studio(1, { canvasPpi }))
 	await screen.findByRole('textbox', { name: '제목' })
 	const output = container.querySelector('[data-slot="studio-layout-output"]')
 	const rows = output?.querySelectorAll(
@@ -291,11 +246,10 @@ it('Image 공통 생성 폼은 한 장을 요청하고 결과를 선택한 템�
 		nodeConfigs: { photo: { imageInput: {} } },
 	})
 	data.config = deriveTemplateStudioConfig(data.template, [profile], [])
-	mocks.detail.mockResolvedValueOnce(data)
 	mocks.generate.mockResolvedValueOnce({
 		generatedImages: [{ id: 91, url: '/template-image.png' }],
 	})
-	const { container } = render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
+	const { container } = renderTemplate(data)
 	fireEvent.click(await screen.findByRole('button', { name: /^Image$/ }))
 	const prompt = await screen.findByRole('textbox', { name: 'Prompt' })
 	fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
@@ -324,8 +278,7 @@ it('Graphic 공통 패널의 팔레트와 Position을 템플릿 배경 런타임
 	const graphic = { ...manifest, output: resolveGraphicStudioOutput(manifest) }
 	const data = studio(1, { backgroundPolicy: { types: ['graphic'] } })
 	data.config = deriveTemplateStudioConfig(data.template, [], [graphic])
-	mocks.detail.mockResolvedValueOnce(data)
-	const { container } = render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
+	const { container } = renderTemplate(data)
 	await screen.findByRole('textbox', { name: '제목' })
 	fireEvent.click(screen.getByRole('button', { name: /^Background$/ }))
 	const top = container.querySelector<HTMLElement>('[data-slot="studio-control-panel"]')
@@ -360,8 +313,7 @@ it('패널 탐색은 실제 템플릿 세션을 유지하고 왼쪽 종류 선�
 	const graphic = { ...manifest, output: resolveGraphicStudioOutput(manifest) }
 	const data = studio(1, { backgroundPolicy: { types: ['color', 'image', 'graphic'] } })
 	data.config = deriveTemplateStudioConfig(data.template, [profile], [graphic])
-	mocks.detail.mockResolvedValueOnce(data)
-	const { container } = render(<PlaygroundTemplateWorkspace />, { wrapper: TooltipProvider })
+	const { container } = renderTemplate(data)
 	fireEvent.change(await screen.findByRole('textbox', { name: '제목' }), {
 		target: { value: '실제 편집값 유지' },
 	})
@@ -406,5 +358,4 @@ it('패널 탐색은 실제 템플릿 세션을 유지하고 왼쪽 종류 선�
 	await waitFor(() =>
 		expect(mocks.export).toHaveBeenCalledWith(expect.objectContaining({ format: 'jpeg' })),
 	)
-	expect(mocks.detail).toHaveBeenCalledTimes(1)
 })

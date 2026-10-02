@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { deriveImageStudioConfig } from '@/features/image-generation/domain/image-studio-config'
-import { PlaygroundImageWorkspace } from './image-workspace'
+import { ImageGenerator } from './image-generator'
 
 const mocks = vi.hoisted(() => ({
 	profiles: vi.fn(),
@@ -31,6 +31,7 @@ vi.mock('@/features/template-core/services/template-editor-options.client', asyn
 		},
 	],
 }))
+// 「프로파일 변경」 자산 브라우저가 여는 실제 교체 후보 목록.
 vi.mock('@/features/image-generation/services/list-image-studio-configs.client', () => ({
 	fetchImageStudioConfigs: mocks.profiles,
 }))
@@ -105,7 +106,7 @@ async function setup() {
 	const user = userEvent.setup()
 	render(
 		<TooltipProvider>
-			<PlaygroundImageWorkspace />
+			<ImageGenerator config={profile} />
 		</TooltipProvider>,
 	)
 	await screen.findByRole('textbox', { name: 'Prompt' })
@@ -251,17 +252,8 @@ it('Reference와 Camera는 상호 배타적으로 실행하고 Off는 첨부를 
 	expect(screen.queryByRole('group', { name: 'Reference Image' })).not.toBeInTheDocument()
 })
 
-it('목록 오류는 재시도할 수 있고 Reset 이전 응답이 새 세션에 나타나지 않는다', async () => {
-	mocks.profiles.mockRejectedValueOnce(new Error('Unauthorized'))
-	const user = userEvent.setup()
-	render(
-		<TooltipProvider>
-			<PlaygroundImageWorkspace />
-		</TooltipProvider>,
-	)
-	await screen.findByRole('alert')
-	await user.click(screen.getByRole('button', { name: '다시 시도' }))
-	await screen.findByRole('textbox', { name: 'Prompt' })
+it('Reset 이전 응답이 새 세션에 나타나지 않는다', async () => {
+	const user = await setup()
 	let complete!: (value: typeof result) => void
 	mocks.generate.mockReturnValueOnce(
 		new Promise((resolve) => {
