@@ -2,9 +2,12 @@
 
 import {
 	GRAPHIC_WIDGETS,
-	GraphicWidgetConfigProvider,
+	type GraphicWidgetScope,
 } from '@/components/studio/graphic/graphic-widgets'
-import { ControlPanel } from '@/components/studio/shared/control-panel'
+import {
+	ControlPanel,
+	type ControlPanelComposition,
+} from '@/components/studio/shared/control-panel'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
 import { toFlutedGlassInput } from '@/features/graphic-generation/graphic-runtimes/fluted-glass/model'
 import { getGraphicStudioRuntimeGroups } from '@/features/graphic-generation/runtime/graphic-studio-runtime'
@@ -33,18 +36,23 @@ export const GRAPHIC_PANEL_POLICY: StudioPanelPolicy = {
 /** 컴포지션을 선언하지 않은 런타임은 전부 Basic에 선다 — 정하지 않은 런타임의 화면이 비면 안 된다. */
 const UNDECLARED_PANEL_POLICY: StudioPanelPolicy = { basic: ['content'] }
 
-/** 배경 그래픽도 독립 Graphic과 같은 컨트롤을 쓴다. 상태는 Template이 소유한다. */
-export function GraphicEditingControls({
-	config,
-	storedValues,
-	bindings,
-	onChange,
-}: {
+type GraphicPanelInput = {
 	config: GraphicStudioConfig
 	storedValues: ControllerValues
 	bindings: ControllerRuntimeBindings
 	onChange: (id: string, value: ControllerControlValue) => void
-}) {
+}
+
+/**
+ * 그래픽 패널 컴포지션 — 세션 값에서 슬롯·값·바인딩·위젯을 만든다(순수, 훅 없음).
+ * 독립 Graphic(Graph 포함)과 템플릿 배경 그래픽이 같은 것을 쓴다. 상태는 부르는 쪽이 소유한다.
+ */
+export function buildGraphicPanelComposition({
+	config,
+	storedValues,
+	bindings,
+	onChange,
+}: GraphicPanelInput): ControlPanelComposition {
 	const defaults = createControllerValues(config.controller.groups)
 	const hasPreset = 'preset' in defaults
 	const values = hasPreset
@@ -75,40 +83,32 @@ export function GraphicEditingControls({
 	const groups = getGraphicStudioRuntimeGroups(config, values)
 	const { roles, clusters } = config.controller
 	const declared = roles !== undefined || clusters !== undefined
-	return (
-		<GraphicWidgetConfigProvider value={config}>
-			<ControlPanel
-				composition={{
-					slots: declared
-						? arrangeStudioPanel(
-								{ groups, clusters, roles },
-								GRAPHIC_PANEL_POLICY,
-								shown,
-							)
-						: arrangeStudioPanel(
-								{
-									groups: groups.map((group) => ({
-										...group,
-										role: 'content' as const,
-									})),
-								},
-								UNDECLARED_PANEL_POLICY,
-								shown,
-							),
-					values: shown,
-					bindings: panelBindings,
-					widgets: GRAPHIC_WIDGETS,
-					onChange: (id, next) => {
-						if (!hasPreset && id === 'preset') {
-							if (next === 'default')
-								for (const [controlId, value] of Object.entries(defaults))
-									onChange(controlId, value)
-							return
-						}
-						onChange(id, next)
-					},
-				}}
-			/>
-		</GraphicWidgetConfigProvider>
-	)
+	const scope: GraphicWidgetScope = { config }
+	return {
+		slots: declared
+			? arrangeStudioPanel({ groups, clusters, roles }, GRAPHIC_PANEL_POLICY, shown)
+			: arrangeStudioPanel(
+					{ groups: groups.map((group) => ({ ...group, role: 'content' as const })) },
+					UNDECLARED_PANEL_POLICY,
+					shown,
+				),
+		values: shown,
+		bindings: panelBindings,
+		widgets: GRAPHIC_WIDGETS,
+		scope,
+		onChange: (id, next) => {
+			if (!hasPreset && id === 'preset') {
+				if (next === 'default')
+					for (const [controlId, value] of Object.entries(defaults))
+						onChange(controlId, value)
+				return
+			}
+			onChange(id, next)
+		},
+	}
+}
+
+/** 템플릿 배경 그래픽의 패널. ponytail: 템플릿이 공통 셸로 옮기면(2단계) 이 감싸개는 사라진다. */
+export function GraphicEditingControls(props: GraphicPanelInput) {
+	return <ControlPanel composition={buildGraphicPanelComposition(props)} />
 }

@@ -1,19 +1,11 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { ControllerBrowser } from '@/components/shared/controller/browser'
 import { GraphicCanvas } from '@/components/studio/graphic/graphic-canvas'
 import { PreviewRefreshButton } from '@/components/studio/shared/preview-refresh-button'
-import {
-	StudioSelectionCard,
-	StudioSelectionChange,
-} from '@/components/studio/shared/studio-selection-card'
+import { StudioSelectionChange } from '@/components/studio/shared/studio-selection-card'
+import { StudioShell } from '@/components/studio/shared/studio-shell'
 import { useProfilePreview } from '@/components/studio/shared/use-profile-preview'
-import {
-	SelectionPanel,
-	WorkspaceCanvas,
-	WorkspaceLayout,
-} from '@/components/studio/shared/workspace-layout'
 import { Typography } from '@/components/ui/typography'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
 import { graphicRendererLabel } from '@/features/graphic-generation/domain/graphic-studio-config'
@@ -21,7 +13,7 @@ import { useGraphicStudio } from '@/features/graphic-generation/hooks/use-graphi
 import { GraphicStudioProvider } from '@/features/graphic-generation/providers/graphic-studio-provider'
 import type { GraphicRuntime } from '@/features/graphic-generation/runtime/client/graphic-runtime.client'
 import { useGraphicExport } from '@/features/studio-export/hooks/use-graphic-export'
-import { GraphicEditingControls } from './graphic-editing-controls'
+import { buildGraphicPanelComposition } from './graphic-editing-controls'
 import { GraphicOutput } from './graphic-output'
 import { GraphicProfilePicker } from './graphic-profile-picker'
 
@@ -90,54 +82,44 @@ function GraphicWorkspace({
 	})
 
 	return (
-		<WorkspaceLayout
-			left={
-				<ControllerBrowser.Root className="min-h-0">
-					<SelectionPanel
-						top={
-							<StudioSelectionCard
-								title={config.name}
-								subtitle={graphicRendererLabel(config.type)}
-								image={preview.image ?? config.previewImage}
-								onReset={() => onReset(config)}
-								actions={
-									<>
-										<PreviewRefreshButton preview={preview} />
-										{profileSwitching && (
-											<StudioSelectionChange
-												label="그래픽 변경"
-												tabs={['Graphic Profiles']}
-											>
-												<GraphicProfilePicker />
-											</StudioSelectionChange>
-										)}
-									</>
-								}
-							>
-								{preview.error && (
-									<Typography role="alert" size="xs">
-										{preview.error}
-									</Typography>
-								)}
-							</StudioSelectionCard>
-						}
-						bottom={<GraphicOutput output={output} />}
-					/>
-				</ControllerBrowser.Root>
-			}
-			right={
-				<GraphicEditingControls
-					key={config.id}
-					config={config}
-					storedValues={controls.values}
-					bindings={controls.bindings}
-					onChange={controls.update}
-				/>
-			}
-		>
-			<WorkspaceCanvas>
-				<GraphicCanvas output={output} registerArtifacts={registerArtifacts} />
-			</WorkspaceCanvas>
-		</WorkspaceLayout>
+		<StudioShell
+			surface={{
+				selection: {
+					title: config.name,
+					subtitle: graphicRendererLabel(config.type),
+					image: preview.image ?? config.previewImage,
+					onReset: () => onReset(config),
+					actions: (
+						<>
+							<PreviewRefreshButton preview={preview} />
+							{profileSwitching && (
+								<StudioSelectionChange
+									label="그래픽 변경"
+									tabs={['Graphic Profiles']}
+								>
+									<GraphicProfilePicker />
+								</StudioSelectionChange>
+							)}
+						</>
+					),
+					children: preview.error && (
+						<Typography role="alert" size="xs">
+							{preview.error}
+						</Typography>
+					),
+				},
+				output: <GraphicOutput output={output} />,
+				canvas: <GraphicCanvas output={output} registerArtifacts={registerArtifacts} />,
+				panel: {
+					identity: config.id,
+					composition: buildGraphicPanelComposition({
+						config,
+						storedValues: controls.values,
+						bindings: controls.bindings,
+						onChange: controls.update,
+					}),
+				},
+			}}
+		/>
 	)
 }

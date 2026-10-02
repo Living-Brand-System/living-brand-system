@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
 import type { StudioPreviewImage } from '@/modules/studio-controller/controller-definition'
 
-type StudioSelectionCardProps = {
+export type StudioSelectionCardProps = {
 	title: ReactNode
 	subtitle?: ReactNode
 	image?: StudioPreviewImage

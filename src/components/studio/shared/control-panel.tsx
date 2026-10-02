@@ -29,13 +29,16 @@ export type ControlPanelComposition = StudioPanelSlotRenderProps & {
 	slots: Readonly<Record<StudioPanelSlot, readonly StudioPanelEntry[]>>
 }
 
+/** 컴포지션 슬롯 뒤에 잇는 계약 밖의 것(생성 버튼·오류·안내) — 자리마다 하나. */
+export type ControlPanelExtras = Partial<Record<Exclude<StudioPanelSlot, 'settings'>, ReactNode>>
+
 type ControlPanelProps = {
 	composition?: ControlPanelComposition
 	/**
 	 * 컴포지션 슬롯 뒤에 같은 목록으로 이어 붙이는 계약 밖의 것(생성 버튼·오류·안내).
 	 * 계약 슬롯을 대체하지 않는다 — 간격과 펼침이 이어진다.
 	 */
-	extras?: Partial<Record<Exclude<StudioPanelSlot, 'settings'>, ReactNode>>
+	extras?: ControlPanelExtras
 }
 
 const ControlPanelCompositionContext = createContext<ControlPanelComposition | null>(null)
