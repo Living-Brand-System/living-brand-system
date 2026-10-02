@@ -20,6 +20,9 @@ import { useShellLock } from '@/hooks/use-shell-lock'
 // 마스터·편집 패널이 같은 스프링을 쓴다 — 함께 출발해 함께 멈춘다.
 // visualDuration은 눈에 보이는 도착 시간이고, 남는 bounce는 그 뒤에 잦아든다.
 const TRANSITION = { type: 'spring', visualDuration: 0.15, bounce: 0.1 } as const
+// 비활성 패널(밀려난 마스터, 들어오기 전·나간 뒤의 편집 패널)은 절반 자리에서 반투명하다.
+const INACTIVE = { x: '-50%', opacity: 0.5 } as const
+const ACTIVE = { x: 0, opacity: 1 } as const
 
 /** 두 화면의 편집 진입·이탈 UI. 값 복원과 요청 무효화는 Provider가 소유한다. */
 export function TemplateEditingPanel({ children }: { children: ReactNode }) {
@@ -47,7 +50,7 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 					inert={Boolean(targetId)}
 					className="h-full"
 					initial={false}
-					animate={targetId ? { x: '-50%', opacity: 0.2 } : { x: 0, opacity: 1 }}
+					animate={targetId ? INACTIVE : ACTIVE}
 					transition={reducedMotion ? { duration: 0 } : TRANSITION}
 				>
 					{children}
@@ -62,9 +65,11 @@ export function TemplateEditingPanel({ children }: { children: ReactNode }) {
 							className="scrollbar-none absolute inset-0 flex min-h-0 flex-col gap-4 overflow-y-auto p-4 outline-none"
 							// 편집 패널은 -50%에서 제자리로 들어오고, 나갈 때 같은 자리로 되돌아간다.
 							// 퇴장 중에는 마지막 화면이 남아 있으므로 클릭을 받지 않는다.
-							initial={reducedMotion ? false : { x: '-50%' }}
-							animate={{ x: 0 }}
-							exit={reducedMotion ? undefined : { x: '-50%', pointerEvents: 'none' }}
+							initial={reducedMotion ? false : INACTIVE}
+							animate={ACTIVE}
+							exit={
+								reducedMotion ? undefined : { ...INACTIVE, pointerEvents: 'none' }
+							}
 							transition={reducedMotion ? { duration: 0 } : TRANSITION}
 						>
 							<ControllerRoot className="aspect-square shrink-0 lg:h-auto">
