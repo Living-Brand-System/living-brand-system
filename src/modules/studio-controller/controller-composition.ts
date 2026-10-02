@@ -231,17 +231,26 @@ export function arrangeStudioPanel(
 }
 
 /**
- * 슬롯의 보이는 구조 서명 — 패널 렌더가 언제 다시 그릴지의 키다. 값이 아니라 **무엇이 서 있나**만 본다.
- * 🔑 배경 방식만 바뀌어도 Dimming 슬롯은 같은 컨트롤이 그대로 서 있어 서명이 같다 — 다시 그리지 않는다.
+ * 슬롯의 구조 서명 — 패널 렌더가 언제 다시 그릴지의 키다. 값이 아니라 **선언된 구조**(무엇이 서 있을 수 있나)만 본다.
+ * 🔑 노출 조건(`visibleWhen`)이 붙은 그룹·묶음·컨트롤은 서명에 넣지 않는다 — 조건이 바뀌어 생기고 빠지는 것은
+ *    그 줄만 높이로 펼치고 접는다(`ControllerPresence`). 서명에 넣으면 조건 하나에 칸 전체가 다시 마운트돼
+ *    진입 모션이 재생되고 포커스를 잃는다(디밍 Use를 켜면 고정 카드가 통째로 다시 들어왔다).
+ * 🔑 서명이 바뀌는 것은 대상이 바뀌거나(레이어·그래픽 종류) 정책이 묶음의 자리를 옮길 때다.
  */
 export function controllerStructureSignature(entries: readonly StudioPanelEntry[]): string {
 	return entries
-		.map((entry) =>
-			entry.type === 'group'
-				? `${entry.group.id}(${entry.group.controls.map((control) => control.id).join(',')})${
-						entry.clusters ? `[${controllerStructureSignature(entry.clusters)}]` : ''
-					}`
-				: `${entry.cluster.id}<${entry.cluster.widget}>`,
-		)
+		.flatMap((entry) => {
+			if (entry.type === 'cluster')
+				return entry.cluster.visibleWhen
+					? []
+					: [`${entry.cluster.id}<${entry.cluster.widget}>`]
+			const group = entry.group as ComposableGroup
+			if (group.visibleWhen) return []
+			const controls = group.controls
+				.filter((control) => !(control as ComposableControl).visibleWhen)
+				.map((control) => control.id)
+			const nested = entry.clusters ? controllerStructureSignature(entry.clusters) : ''
+			return [`${group.id}(${controls.join(',')})${nested ? `[${nested}]` : ''}`]
+		})
 		.join('|')
 }

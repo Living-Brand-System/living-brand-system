@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo } from 'react'
 import type { ControlPanelComposition } from '@/components/studio/shared/control-panel'
+import type { TemplateStudioValue } from '@/features/template-customization/contexts/template-studio-context'
 import {
 	deriveTemplateBackgroundComposition,
 	TEMPLATE_BACKGROUND_IMAGE_MODE_ID,
@@ -10,7 +10,6 @@ import {
 	partitionTemplateSlots,
 	type TemplateBackgroundType,
 } from '@/features/template-customization/domain/template-studio-config'
-import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import {
 	arrangeStudioPanel,
 	type StudioPanelPolicy,
@@ -31,12 +30,15 @@ export const TEMPLATE_BACKGROUND_PANEL_POLICY: StudioPanelPolicy = {
 }
 
 /**
- * 배경 세션을 패널 컴포지션으로 잇는다 — 값은 세션이 갖고, 바꾸기는 세션 액션으로 보낸다.
- * 배경 슬롯이 없는 템플릿이면 `null`이다.
+ * 배경 세션을 패널 컴포지션으로 잇는다 — 값은 세션이 갖고, 바꾸기는 세션 액션으로 보낸다(순수, 훅 없음).
+ * 오른쪽 패널(Dimming·색)과 왼쪽 설정 카드(방식)가 같은 결과를 쓴다. 배경 슬롯이 없는 템플릿이면 `null`이다.
  */
-export function useTemplateBackgroundComposition(): ControlPanelComposition | null {
-	const { config, background, focus } = useTemplateStudio()
-	const manifest = useMemo(() => deriveTemplateBackgroundComposition(config), [config])
+export function buildTemplateBackgroundComposition({
+	config,
+	background,
+	focus,
+}: TemplateStudioValue): ControlPanelComposition | null {
+	const manifest = deriveTemplateBackgroundComposition(config)
 	const slot = partitionTemplateSlots(config.template.slots).background
 	if (!manifest || !slot) return null
 	const state = background.state

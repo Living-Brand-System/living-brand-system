@@ -163,7 +163,7 @@ it('Image 편집은 현재 슬롯만 열고 완료 또는 취소 전에는 다�
 	const panel = await screen.findByRole('region', { name: 'Layers' })
 	fireEvent.click(within(panel).getByRole('button', { name: /^Image$/ }))
 	const editing = screen.getByRole('region', { name: '선택한 레이어 편집' })
-	expect(within(editing).getAllByRole('radiogroup', { name: '슬롯 이미지 방식' })).toHaveLength(1)
+	expect(within(editing).getAllByRole('radiogroup', { name: 'Mode' })).toHaveLength(1)
 	expect(within(editing).getByRole('group', { name: '사진 A' })).toBeInTheDocument()
 	expect(within(editing).queryByRole('group', { name: '사진 B' })).not.toBeInTheDocument()
 	expect(within(panel).getByRole('button', { name: /^Background$/ })).toBeDisabled()
@@ -200,6 +200,27 @@ it('편집을 마치면 빈 선택 없이 마스터 레이어(Text)로 돌아간
 	}
 })
 
+it('레이어를 바꿔도 오른쪽 패널은 셸의 같은 인스턴스다 — 레일·패널이 다시 마운트되지 않는다', async () => {
+	renderTemplate(
+		studio(1, {
+			html: '<div><p data-node-id="t" data-figma-type="TEXT" data-name="제목">제목</p><div data-node-id="a" data-figma-type="FRAME" data-name="사진 A" data-image-carrier=""></div></div>',
+			nodeConfigs: { t: { input: { label: '제목' } }, a: { imageInput: {} } },
+		}),
+	)
+	const layers = await screen.findByRole('region', { name: 'Layers' })
+	const editing = () => screen.getByRole('complementary', { name: '편집 도구' })
+	const panel = editing()
+	const rail = panel.querySelector('[data-slot="studio-rail"]')
+	// Text → Image → (취소로 Text) → Background — 갈래마다 패널을 따로 그리던 때는 매번 새로 마운트됐다.
+	fireEvent.click(within(layers).getByRole('button', { name: /^Image$/ }))
+	expect(editing()).toBe(panel)
+	fireEvent.click(screen.getByRole('button', { name: '취소' }))
+	fireEvent.click(within(layers).getByRole('button', { name: /^Background$/ }))
+	expect(editing()).toBe(panel)
+	expect(editing().querySelector('[data-slot="studio-rail"]')).toBe(rail)
+	fireEvent.click(screen.getByRole('button', { name: '취소' }))
+})
+
 it('배경은 패널 컴포지션으로 선다 — 방식을 바꿔도 Dimming 카드는 그대로, 조건 행만 펼친다', async () => {
 	renderTemplate()
 	await screen.findByRole('textbox', { name: '제목' })
@@ -220,6 +241,11 @@ it('배경은 패널 컴포지션으로 선다 — 방식을 바꿔도 Dimming �
 		}),
 	)
 	expect(await within(editing()).findByRole('slider', { name: 'Strength' })).toBeInTheDocument()
+	const panel = editing()
+	const rail = panel.querySelector('[data-slot="studio-rail"]')
+	const card = fixed()
+	// Use를 켜도 카드는 그대로다 — Strength 한 줄만 펼친다(조건부 컨트롤은 구조 서명에 들지 않는다).
+	expect(card).toBe(dimming)
 	// source → 왼쪽 설정 카드. Image일 때만 Image Mode 행이 선다.
 	expect(within(selection).queryByRole('radiogroup', { name: 'Image Mode' })).toBeNull()
 	fireEvent.click(
@@ -228,12 +254,11 @@ it('배경은 패널 컴포지션으로 선다 — 방식을 바꿔도 Dimming �
 		}),
 	)
 	expect(within(selection).getByRole('radiogroup', { name: 'Image Mode' })).toBeInTheDocument()
-	// 방식마다 화면 분기가 달라 패널은 다시 마운트되지만, 고정 영역의 구조가 같으니 들어오는 모션을
-	// 재생하지 않는다 — 숨김 상태(오른쪽 16px·투명)에서 시작하지 않고 제자리다.
-	const region = fixed()?.parentElement as HTMLElement
-	expect(region).toHaveAttribute('data-slot', 'panel-render')
-	expect(region.style.opacity).not.toBe('0')
-	expect(region.style.transform).not.toContain('translateX(16px)')
+	// 패널은 셸이 소유하는 하나다(docs/10 §3.7 공통 셸) — 방식을 바꿔도 패널·레일·고정 카드가 같은 DOM이다.
+	// 고정 영역은 구조가 같아(Dimming) 다시 그리지 않는다.
+	expect(editing()).toBe(panel)
+	expect(editing().querySelector('[data-slot="studio-rail"]')).toBe(rail)
+	expect(fixed()).toBe(card)
 	expect(dimming).not.toBeNull()
 	fireEvent.click(screen.getByRole('button', { name: '취소' }))
 })

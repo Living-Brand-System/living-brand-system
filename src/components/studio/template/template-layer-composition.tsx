@@ -1,17 +1,20 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
-import { ControlPanel } from '@/components/studio/shared/control-panel'
+import { useEffect } from 'react'
 import type {
 	ControllerWidgetProps,
 	ControllerWidgetRegistry,
 } from '@/components/studio/shared/studio-panel-slot'
 import { TemplateColorSwatches } from '@/components/studio/template/template-color-swatches'
+import type { TemplateTargetPanel } from '@/components/studio/template/template-panel'
 import { rowFocusProps, sectionProps } from '@/components/studio/template/template-section-focus'
 import { TextSlotInput } from '@/components/studio/template/text-slot-input'
 import { Typography } from '@/components/ui/typography'
 import { usePublishedBrandColorValues } from '@/features/template-core/hooks/use-published-brand-color-values'
-import type { TemplateFocusTarget } from '@/features/template-customization/contexts/template-studio-context'
+import type {
+	TemplateFocusTarget,
+	TemplateStudioValue,
+} from '@/features/template-customization/contexts/template-studio-context'
 import {
 	deriveTemplateSymbolComposition,
 	deriveTemplateTextComposition,
@@ -114,17 +117,15 @@ const TEMPLATE_LAYER_WIDGETS: ControllerWidgetRegistry = {
 	'text-field': TextFieldWidget,
 }
 
-/** 텍스트·심볼 레이어의 편집 패널. 값은 레이어 세션이 갖고, 바꾸기는 세션 액션으로 보낸다. */
-export function TemplateLayerPanel({ kind }: { kind: 'text' | 'vector' }) {
-	const { config, text, vectors, focus } = useTemplateStudio()
-	useTextCaretHandoff(focus.target)
-	const manifest = useMemo(
-		() =>
-			kind === 'text'
-				? deriveTemplateTextComposition(config)
-				: deriveTemplateSymbolComposition(config),
-		[config, kind],
-	)
+/** 텍스트·심볼 레이어의 패널 — 값은 레이어 세션이 갖고, 바꾸기는 세션 액션으로 보낸다(순수, 훅 없음). */
+export function buildTemplateLayerPanel(
+	kind: 'text' | 'vector',
+	{ config, text, vectors, focus }: TemplateStudioValue,
+): TemplateTargetPanel {
+	const manifest =
+		kind === 'text'
+			? deriveTemplateTextComposition(config)
+			: deriveTemplateSymbolComposition(config)
 	const { text: textSlots, vector: vectorSlots } = partitionTemplateSlots(config.template.slots)
 	const textColorId = config.template.textColorControlId
 	const values: ControllerValues =
@@ -160,43 +161,35 @@ export function TemplateLayerPanel({ kind }: { kind: 'text' | 'vector' }) {
 		// 섹션 헤더를 누르면 이 섹션이 다루는 텍스트 상자를 **전부** 집는다.
 		nodeIds: textSlots.map((slot) => slot.id),
 	}
-	return (
-		<ControlPanel
-			composition={
-				manifest
-					? {
-							slots: arrangeStudioPanel(
-								manifest,
-								TEMPLATE_LAYER_PANEL_POLICY,
-								values,
-							),
-							values,
-							onChange,
-							presentation: config.controllerPresentation,
-							widgets: TEMPLATE_LAYER_WIDGETS,
-							groupSection: (group) =>
-								group.role === 'content' && kind === 'text'
-									? sectionProps(focus, textSection)
-									: undefined,
-						}
-					: undefined
-			}
-			extras={
-				kind === 'text' && !textColorId
-					? {
-							fixed: (
-								<Typography size="sm" tone="muted">
-									이 템플릿은 원본 텍스트 색상을 사용합니다.
-								</Typography>
-							),
-						}
-					: undefined
-			}
-		/>
-	)
+	return {
+		composition: manifest
+			? {
+					slots: arrangeStudioPanel(manifest, TEMPLATE_LAYER_PANEL_POLICY, values),
+					values,
+					onChange,
+					presentation: config.controllerPresentation,
+					widgets: TEMPLATE_LAYER_WIDGETS,
+					groupSection: (group) =>
+						group.role === 'content' && kind === 'text'
+							? sectionProps(focus, textSection)
+							: undefined,
+				}
+			: null,
+		extras:
+			kind === 'text' && !textColorId
+				? {
+						fixed: (
+							<Typography size="sm" tone="muted">
+								이 템플릿은 원본 텍스트 색상을 사용합니다.
+							</Typography>
+						),
+					}
+				: undefined,
+	}
 }
 
-function useTextCaretHandoff(target: TemplateFocusTarget | null) {
+/** 캔버스에서 글자를 누르면 그 슬롯 입력칸으로 커서를 넘긴다 — 패널 훅(`useTemplatePanel`)이 늘 부른다. */
+export function useTextCaretHandoff(target: TemplateFocusTarget | null) {
 	useEffect(() => {
 		if (target?.kind !== 'nodes' || !target.caret) return
 		const [nodeId] = target.nodeIds

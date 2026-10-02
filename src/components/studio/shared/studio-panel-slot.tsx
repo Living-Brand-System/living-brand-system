@@ -30,6 +30,11 @@ export type ControllerWidgetProps = {
 	values: ControllerValues
 	bindings?: ControllerRuntimeBindings
 	onChange: (controlId: string, value: ControllerControlValue) => void
+	/**
+	 * 위젯이 읽는 화면 데이터(그래픽 config 등) — 컴포지션이 함께 싣는다. 위젯은 자기 레지스트리가 아는 모양으로 읽는다.
+	 * 🔑 context로 내리지 않는다 — 그러면 provider가 패널 안쪽 화면 갈래에 묶여 패널을 하나로 둘 수 없다.
+	 */
+	scope?: unknown
 }
 
 /**
@@ -49,6 +54,8 @@ export type StudioPanelSlotRenderProps = {
 	onChange: (controlId: string, value: ControllerControlValue) => void
 	widgets?: ControllerWidgetRegistry
 	assetSources?: ControllerAssetSources
+	/** 위젯에 그대로 넘기는 화면 데이터 — `ControllerWidgetProps.scope`. */
+	scope?: unknown
 }
 
 /**
@@ -165,6 +172,7 @@ function renderWidget(
 			values={props.values}
 			bindings={props.bindings}
 			onChange={props.onChange}
+			scope={props.scope}
 		/>
 	)
 }

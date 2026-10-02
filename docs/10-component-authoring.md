@@ -377,12 +377,23 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 - 🔴 프로파일 config를 파생할 때 controller를 키별로 다시 조립하지 않습니다. 제한만 얹고 나머지 선언은 전개로 싣습니다(`deriveCanvasStudioConfig`) — 골라 싣던 시절 `roles`·`clusters`가 조용히 빠져 패널이 평면 목록으로 돌아갔습니다.
 
 - 조건이 바뀌어 생기거나 빠지면 `ControllerPresence`(높이 펼침, `MOTION.loose`).
-- 슬롯의 **보이는 구조 서명**(보이는 그룹·묶음·컨트롤 id 목록, `controllerStructureSignature`)이 바뀌면 그 슬롯만 패널 렌더(`PANEL_RENDER`, `MOTION.tight`). 손으로 키를 정하지 않습니다 — 배경 방식만 바뀌어도 `overlay` 슬롯은 서명이 같아 그대로입니다.
+- 슬롯의 **선언된 구조 서명**(`controllerStructureSignature`)이 바뀌면 그 슬롯만 패널 렌더(`PANEL_RENDER`, `MOTION.tight`). 손으로 키를 정하지 않습니다 — 배경 방식만 바뀌어도 `overlay` 슬롯은 서명이 같아 그대로입니다.
+- 🔴 **노출 조건이 붙은 그룹·묶음·컨트롤은 서명에 넣지 않습니다**(2026-10-02). 조건이 바뀌어 생기고 빠지는 것은 묶음이든 한 줄이든 펼침이 맡습니다. 서명에 넣으면 조건 하나에 칸 전체가 다시 마운트돼 진입 모션이 재생되고 포커스를 잃었습니다(디밍 Use). 서명이 바뀌는 것은 대상이 바뀌거나(레이어·그래픽 종류) 정책이 묶음의 자리를 옮길 때(이미지 Preset↔Generate의 샘플 목록)뿐입니다.
+- Basic 위 목록 카드(`basicPresets`)도 같은 펼침으로 생기고 빠집니다(Fluted Glass Style).
 - 첫 진입은 움직이지 않습니다.
 
 **결정(2026-10-02)**: 프리셋은 `preset` 역할의 select로 다루고 패널이 목록 모양으로 그립니다(전용 항목 타입 없음). 이미지 장수·비율·해상도는 `output`(지금 자리 유지), fluted zoom·tilt는 `tuning`, 카메라 시점은 `view`. 템플릿 이미지 슬롯 Dimming은 방식과 무관하게 보입니다(배경 Dimming과 같게).
 
 **렌더러(2단계)**: 화면은 `arrangeStudioPanel(controller, policy, values)`로 슬롯을 채워 `ControlPanel`의 `composition`(`slots` + 값·바인딩·표시·`onChange`·`widgets`)으로 넘깁니다. 슬롯 하나는 `StudioPanelSlot`이 그리며, 그룹은 `ControllerRenderer`와 같은 `ControllerDefinitionGroup`으로, 묶음은 화면이 넘긴 위젯 레지스트리(`ControllerWidgetRegistry`)로 그립니다. 영역 키는 구조 서명이 정하고(`PanelRenderTarget`의 `renderKey`), 위에 패널 렌더 범위가 없으면 `ControlPanel`이 스스로 범위를 깝니다. 화면이 자리마다 JSX를 꽂는 길은 없습니다 — 계약 밖의 것(생성 버튼·오류·안내)은 `extras`로 슬롯 뒤에 잇습니다.
+
+**공통 셸 `StudioShell` (2026-10-02)**: 스튜디오 화면의 왼쪽(대상 카드·Output)·가운데(캔버스)·오른쪽(패널)은 셸이 **한 번만** 조립하고, 스튜디오는 세션에서 표면 모델(`StudioSurface` — `selection`·`output`·`canvas`·`panel{identity, composition, extras}`)을 만들기만 합니다.
+- 패널은 셸이 소유하는 인스턴스 하나입니다. 🔴 화면 갈래마다 `ControlPanel`을 따로 그리지 않습니다 — 갈래가 바뀔 때 패널·레일·고정 카드·자산 브라우저가 통째로 다시 마운트됩니다(템플릿에서 실측).
+- `panel.identity`가 바뀔 때만(프로파일 교체) 패널을 새로 시작합니다 — 위젯 내부 상태·탭 선택이 다른 대상으로 이어지지 않게.
+- 위젯이 읽는 화면 데이터는 컴포지션의 `scope`로 싣습니다(`ControllerWidgetProps.scope`). 위젯 context provider를 패널 안쪽 갈래에 두면 패널을 하나로 둘 수 없습니다. 페이지 전체를 감싸는 세션 provider(`useImageStudio` 등)는 그대로 읽어도 됩니다.
+- 컴포지션 우선순위는 `panel.compositions` 배열 순서뿐입니다(자리마다 앞쪽부터 먼저 채운 것). context로 공급하는 길은 없습니다.
+- 템플릿은 `useTemplatePanel()` 하나가 선택한 대상(레이어·배경 방식)에 맞는 순수 빌더(`buildTemplateLayerPanel`·`buildTemplateImagePanel`·`buildTemplateGraphicPanel`·`buildTemplateBackgroundComposition`)를 고릅니다. 오른쪽 패널과 왼쪽 설정 카드(settings 슬롯 — 배경 방식·이미지 슬롯 방식)가 이 한 번의 계산을 씁니다. 대상이 바뀌면 `panel.target`이 바뀌어 탭 선택만 Basic으로 돌아갑니다.
+- 왼쪽 겹침(템플릿 편집 오버레이)은 `surface.frame`이 기본 카드 묶음을 감쌉니다.
+- 이행: ① Image·Graphic(Graph 포함) — 완료 → ② 템플릿 — 완료(위젯 context 3종 모두 `scope`로) → ③ 구조 서명에서 조건 제외 — 완료.
 
 **이행 순서**: ① 어휘·조건 평가기·구조 서명(단위 테스트) → ② 패널 렌더러 + `ControlPanel` 슬롯화(조건 없는 매니페스트로 지금 화면과 같은 결과) → ③ 파일럿 템플릿 배경 → ④ 그래픽(완료 2026-10-02 — 런타임 다섯 개가 역할·묶음을 선언하고 `GRAPHIC_WIDGETS`가 그린다. 남은 id 특례는 Fluted Glass 기준점의 실효값 표시와 Pattern 최대 굵기 비활성 binding 둘이며 `ponytail:` 주석이 상한을 적는다)·이미지(완료 2026-10-02 — `cluster.group` 도입)·템플릿 텍스트·심볼(완료 2026-10-02 — 옛 `TemplateLayerControls`와 그만 닿던 `TemplateBackgroundPanel`·`BackgroundSection` 삭제)·템플릿 이미지 슬롯(완료 2026-10-02) → ⑤ 이행 장치 제거(완료 2026-10-02 — `controller.left/right`와 `splitControllerGroups`·`visibleControllerGroups`, `ControlPanel`의 자리별 JSX 입력, `PanelRenderScope`의 손 키를 지웠다. 미선언 런타임은 전부 Basic. `Controller.Reveal`은 계약 밖 화면(출력·색 컴파운드)과 슬롯 렌더러 안에만 남는다).
 

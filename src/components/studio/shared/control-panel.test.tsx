@@ -64,11 +64,13 @@ const policy: StudioPanelPolicy = { fixed: ['overlay'], basic: ['form'], adjustm
 function ComposedPanel({ values }: { values: ControllerValues }) {
 	return (
 		<ControlPanel
-			composition={{
-				slots: arrangeStudioPanel({ groups }, policy, values),
-				values,
-				onChange: () => {},
-			}}
+			compositions={[
+				{
+					slots: arrangeStudioPanel({ groups }, policy, values),
+					values,
+					onChange: () => {},
+				},
+			]}
 		/>
 	)
 }
@@ -88,11 +90,13 @@ it('빈 프리셋 보기는 숨기고, 탭을 옮겨도 고정 영역과 탭 본
 
 	rerender(
 		<ControlPanel
-			composition={{
-				slots: arrangeStudioPanel({ groups }, { basic: ['form'] }, values),
-				values,
-				onChange: () => {},
-			}}
+			compositions={[
+				{
+					slots: arrangeStudioPanel({ groups }, { basic: ['form'] }, values),
+					values,
+					onChange: () => {},
+				},
+			]}
 		/>,
 	)
 	expect(screen.queryByRole('button', { name: 'Adjustment' })).toBeNull()
@@ -100,16 +104,22 @@ it('빈 프리셋 보기는 숨기고, 탭을 옮겨도 고정 영역과 탭 본
 	expect(screen.getByRole('button', { name: 'Basic' })).toBeDisabled()
 })
 
-it('조건이 바뀌면 컨트롤이 접히며 빠지고, 내용 영역만 다시 그려 고정 영역은 그대로다', async () => {
+it('조건이 바뀌면 그 컨트롤만 접히며 빠지고, 두 영역 모두 다시 그리지 않는다', async () => {
 	const values = createControllerValues(groups)
 	const { container, rerender } = render(<ComposedPanel values={{ ...values, kind: 'dot' }} />)
 	fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
 	expect(screen.getByRole('slider', { name: 'Dot Size' })).toBeInTheDocument()
-	const fixed = container.querySelector('[data-slot="studio-control-fixed"]')
+	const regions = () => [...container.querySelectorAll('[data-slot="panel-render"]')]
+	const before = regions()
+	const gap = screen.getByRole('slider', { name: 'Gap' })
+	gap.focus()
 	rerender(<ComposedPanel values={{ ...values, kind: 'line' }} />)
 	await waitFor(() => expect(screen.queryByRole('slider', { name: 'Dot Size' })).toBeNull())
-	// 구조 서명이 같은 고정 영역은 같은 DOM이다 — 다시 그리지 않았다.
-	expect(container.querySelector('[data-slot="studio-control-fixed"]')).toBe(fixed)
+	// 조건부 컨트롤은 구조 서명에 들지 않는다 — 고정·내용 영역이 같은 DOM이고, 만지던 컨트롤의 포커스가 남는다.
+	const after = regions()
+	expect(after).toHaveLength(before.length)
+	for (const [index, region] of after.entries()) expect(region).toBe(before[index])
+	expect(document.activeElement).toBe(gap)
 })
 
 it('묶음은 레지스트리 위젯으로 그리고, 등록되지 않은 위젯은 경고하고 빼놓는다', () => {
@@ -127,12 +137,14 @@ it('묶음은 레지스트리 위젯으로 그리고, 등록되지 않은 위젯
 	const values = createControllerValues(groups)
 	render(
 		<ControlPanel
-			composition={{
-				slots: arrangeStudioPanel({ groups, clusters }, { basic: ['palette'] }, values),
-				values,
-				onChange: () => {},
-				widgets: { 'color-pair': ({ cluster }) => <p>{`위젯 ${cluster.title}`}</p> },
-			}}
+			compositions={[
+				{
+					slots: arrangeStudioPanel({ groups, clusters }, { basic: ['palette'] }, values),
+					values,
+					onChange: () => {},
+					widgets: { 'color-pair': ({ cluster }) => <p>{`위젯 ${cluster.title}`}</p> },
+				},
+			]}
 		/>,
 	)
 	expect(screen.getByText('위젯 Color')).toBeInTheDocument()
@@ -144,11 +156,13 @@ it('extras는 계약 슬롯을 대체하지 않고 같은 목록 뒤에 이어 �
 	const values = createControllerValues(groups)
 	render(
 		<ControlPanel
-			composition={{
-				slots: arrangeStudioPanel({ groups }, policy, values),
-				values,
-				onChange: () => {},
-			}}
+			compositions={[
+				{
+					slots: arrangeStudioPanel({ groups }, policy, values),
+					values,
+					onChange: () => {},
+				},
+			]}
 			extras={{ fixed: <section data-slot="controller-group">생성 버튼 자리</section> }}
 		/>,
 	)

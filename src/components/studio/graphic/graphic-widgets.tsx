@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useId, useState } from 'react'
+import { useId, useState } from 'react'
 import { ControllerCompound } from '@/components/shared/controller/compound'
 import { ControllerPad } from '@/components/shared/controller/pad'
 import { ControllerPadPair } from '@/components/shared/controller/pad-pair'
@@ -25,14 +25,13 @@ import {
 /**
  * 그래픽 묶음 위젯 레지스트리(docs/10 §3.7) — 매니페스트가 적은 위젯 종류를 그래픽 표면으로 그린다.
  * 🔑 위젯은 모듈 수준 컴포넌트다 — 렌더마다 새로 만들면 React가 매번 새 종류로 보고 다시 마운트한다.
- *    런타임에 따라 달라지는 것(선택지 조합·색 펼침)은 아래 컨텍스트의 config로 푼다.
+ *    런타임에 따라 달라지는 것(선택지 조합·색 펼침)은 컴포지션이 싣는 `scope`(그래픽 config)로 푼다.
  */
-const GraphicWidgetConfigContext = createContext<GraphicStudioConfig | null>(null)
-export const GraphicWidgetConfigProvider = GraphicWidgetConfigContext.Provider
+export type GraphicWidgetScope = { config: GraphicStudioConfig }
 
-function useGraphicWidgetConfig() {
-	const config = useContext(GraphicWidgetConfigContext)
-	if (!config) throw new Error('그래픽 위젯은 GraphicWidgetConfigProvider 안에서만 그린다.')
+function graphicConfig(scope: unknown): GraphicStudioConfig {
+	const config = (scope as GraphicWidgetScope | undefined)?.config
+	if (!config) throw new Error('그래픽 위젯은 그래픽 컴포지션(scope.config) 안에서만 그린다.')
 	return config
 }
 
@@ -52,13 +51,26 @@ const hasColors = (control: ControllerControlDefinition) =>
  * 전경·배경 한 쌍. 자유 색이면 Custom까지 열고 런타임 입력으로 펼친다. 둘 다 색 선택지면 런타임이 허용하는
  * 조합만 스와치로 만든다(Figma 529:23010 — 선의 허용 범위가 면을 따른다). 어느 쪽도 아니면 멤버 행을 그대로 둔다.
  */
-function ColorPairWidget({ cluster, controls, values, bindings, onChange }: ControllerWidgetProps) {
-	const config = useGraphicWidgetConfig()
-	const [palette, setPalette] = useState<{
+function ColorPairWidget({
+	cluster,
+	controls,
+	values,
+	bindings,
+	onChange,
+	scope,
+}: ControllerWidgetProps) {
+	const config = graphicConfig(scope)
+	// 고른 모드·색은 그래픽마다다 — 패널이 그래픽을 바꿔도 남아 있으므로(템플릿 배경) 다른 그래픽이면 처음부터 본다.
+	const [stored, setStored] = useState<{
+		configId: string
 		colorMode: 'swatch' | 'custom'
 		swatch: string
 		foreground?: string
-	}>({ colorMode: 'swatch', swatch: '' })
+	}>({ configId: config.id, colorMode: 'swatch', swatch: '' })
+	const palette =
+		stored.configId === config.id
+			? stored
+			: { configId: config.id, colorMode: 'swatch' as const, swatch: '' }
 	const foregroundId = cluster.members.foreground
 	const backgroundId = cluster.members.background
 	const background = controls.background
@@ -84,13 +96,20 @@ function ColorPairWidget({ cluster, controls, values, bindings, onChange }: Cont
 		return (
 			<StudioColorCompound
 				showDate={false}
-				value={{ date: '', ...palette, foreground, background: back }}
+				value={{
+					date: '',
+					colorMode: palette.colorMode,
+					swatch: palette.swatch,
+					foreground,
+					background: back,
+				}}
 				onChange={(patch) => {
-					setPalette((current) => ({
-						colorMode: patch.colorMode ?? current.colorMode,
-						swatch: patch.swatch ?? current.swatch,
-						foreground: patch.foreground ?? current.foreground,
-					}))
+					setStored({
+						configId: config.id,
+						colorMode: patch.colorMode ?? palette.colorMode,
+						swatch: patch.swatch ?? palette.swatch,
+						foreground: patch.foreground ?? palette.foreground,
+					})
 					if (patch.foreground === undefined && patch.background === undefined) return
 					for (const [id, next] of Object.entries(
 						spread(patch.foreground ?? foreground, patch.background ?? back),

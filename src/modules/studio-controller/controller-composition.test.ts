@@ -182,10 +182,8 @@ describe('arrangeStudioPanel', () => {
 				clusters: [expect.objectContaining({ cluster: clusters[0] })],
 			}),
 		])
-		// 서명에도 실린다 — 그룹 안 묶음이 생기고 빠지면 그 슬롯이 다시 그려진다.
-		expect(controllerStructureSignature(color.basic)).toBe(
-			'color(color)[dimming-pair<compound>]',
-		)
+		// 조건부 그룹(type = color)은 서명에 들지 않는다 — 생기고 빠지는 것은 펼침이 맡는다.
+		expect(controllerStructureSignature(color.basic)).toBe('')
 
 		const image = arrangeStudioPanel({ groups, clusters }, policy, { ...values, type: 'image' })
 		expect(image.basic).toEqual([])
@@ -222,12 +220,39 @@ describe('arrangeStudioPanel', () => {
 })
 
 describe('controllerStructureSignature', () => {
-	it('서 있는 것이 같으면 값이 달라도 같고, 보이는 컨트롤이 바뀌면 달라진다', () => {
-		const sign = (v: typeof values) =>
-			controllerStructureSignature(arrangeStudioPanel({ groups }, policy, v).fixed)
+	it('조건이 바뀌어도 같고(펼침이 맡는다), 선언된 구조가 다르면 달라진다', () => {
+		const sign = (v: typeof values, p = policy) =>
+			controllerStructureSignature(arrangeStudioPanel({ groups }, p, v).fixed)
 		// 배경 방식만 바꿔도 Dimming 슬롯은 그대로다.
 		expect(sign({ ...values, type: 'image' })).toBe(sign(values))
-		expect(sign({ ...values, dimmer: true })).not.toBe(sign(values))
+		// Use를 켜 Strength가 생겨도 같다 — 칸을 다시 마운트하지 않아 카드·포커스가 남는다.
+		expect(sign({ ...values, dimmer: true })).toBe(sign(values))
+		// 다른 대상·자리(여기서는 고정 칸에 다른 역할) — 선언된 구조가 다르면 다시 그린다.
+		expect(sign(values, { fixed: ['source'] })).not.toBe(sign(values))
+	})
+
+	it('그룹 안 묶음도 실리고, 조건부 묶음은 빠진다', () => {
+		const clusters: ControllerCluster[] = [
+			{
+				id: 'use',
+				title: 'Use',
+				role: 'overlay',
+				widget: 'compound',
+				members: { gate: 'dimmer' },
+				group: 'dimming',
+			},
+		]
+		const fixed = arrangeStudioPanel({ groups, clusters }, policy, values).fixed
+		expect(controllerStructureSignature(fixed)).toBe('dimming()[use<compound>]')
+		const conditional = arrangeStudioPanel(
+			{
+				groups,
+				clusters: [{ ...clusters[0], visibleWhen: { control: 'type', equals: 'color' } }],
+			},
+			policy,
+			values,
+		).fixed
+		expect(controllerStructureSignature(conditional)).toBe('dimming()')
 	})
 })
 

@@ -7,11 +7,11 @@ import { ControllerControlRenderer } from '@/components/shared/controller-render
 import { ImageCameraControl } from '@/components/studio/image/image-camera-control'
 import { ImageReferenceUpload } from '@/components/studio/image/image-reference-upload'
 import { StudioColorCompound } from '@/components/studio/shared/compound-controls'
-import { ControlPanel } from '@/components/studio/shared/control-panel'
 import type {
 	ControllerWidgetProps,
 	ControllerWidgetRegistry,
 } from '@/components/studio/shared/studio-panel-slot'
+import type { StudioSurface } from '@/components/studio/shared/studio-shell'
 import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
 import type { ImageStudioValue } from '@/features/image-generation/contexts/image-studio-context'
@@ -51,7 +51,8 @@ const IMAGE_PANEL_PRESENTATION = {
 	groups: [{ groupId: 'generate', collapsible: false, defaultOpen: true }],
 }
 
-export function ImageControls() {
+/** 이미지 스튜디오의 오른쪽 패널 — 셸(`StudioShell`)이 그린다. 프로파일을 바꾸면 패널을 새로 시작한다. */
+export function useImagePanel(): StudioSurface['panel'] {
 	const { config, controls, generation, camera, reference } = useImageStudio()
 	const manifest = useMemo(() => deriveImageStudioComposition(config), [config])
 	const values: ControllerValues = {
@@ -60,9 +61,10 @@ export function ImageControls() {
 		[IMAGE_COMPOSITION_GATE_IDS.camera]: camera.enabled,
 	}
 	const { prompt } = getImageStudioControls(config)
-	return (
-		<ControlPanel
-			composition={{
+	return {
+		identity: config.id,
+		compositions: [
+			{
 				slots: arrangeStudioPanel(manifest, IMAGE_PANEL_POLICY, values),
 				values,
 				// 카메라 시점 변경은 시드 이미지를 돌려 그린다 — 그동안 프롬프트는 쓰이지 않는다.
@@ -78,20 +80,18 @@ export function ImageControls() {
 						camera.setEnabled(next === true)
 					else controls.update(id, next)
 				},
-			}}
-			extras={
-				generation.error
-					? {
-							basic: (
-								<Typography role="alert" size="sm" className="text-destructive">
-									{generation.error}
-								</Typography>
-							),
-						}
-					: undefined
-			}
-		/>
-	)
+			},
+		],
+		extras: generation.error
+			? {
+					basic: (
+						<Typography role="alert" size="sm" className="text-destructive">
+							{generation.error}
+						</Typography>
+					),
+				}
+			: undefined,
+	}
 }
 
 function ImageColorWidget() {

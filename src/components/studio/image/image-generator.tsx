@@ -2,19 +2,11 @@
 
 import { Image as ImageIcon } from '@carbon/icons-react'
 import { useState } from 'react'
-import { ControllerBrowser } from '@/components/shared/controller/browser'
 import { ImageCanvas } from '@/components/studio/image/image-canvas'
 import { PreviewRefreshButton } from '@/components/studio/shared/preview-refresh-button'
-import {
-	StudioSelectionCard,
-	StudioSelectionChange,
-} from '@/components/studio/shared/studio-selection-card'
+import { StudioSelectionChange } from '@/components/studio/shared/studio-selection-card'
+import { StudioShell } from '@/components/studio/shared/studio-shell'
 import { useProfilePreview } from '@/components/studio/shared/use-profile-preview'
-import {
-	SelectionPanel,
-	WorkspaceCanvas,
-	WorkspaceLayout,
-} from '@/components/studio/shared/workspace-layout'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { Typography } from '@/components/ui/typography'
 import { toOpenAIImageSize } from '@/features/image-generation/domain/image-size'
@@ -23,7 +15,7 @@ import { useImageStudio } from '@/features/image-generation/hooks/use-image-stud
 import { ImageStudioProvider } from '@/features/image-generation/providers/image-studio-provider'
 import { createImageArtifacts } from '@/features/image-generation/runtime/image-artifact.client'
 import { useImageExport } from '@/features/studio-export/hooks/use-image-export'
-import { ImageControls } from './image-controls'
+import { useImagePanel } from './image-controls'
 import { ImageProfilePicker } from './image-profile-picker'
 import { ImageSettingPanel } from './image-setting-panel'
 
@@ -65,6 +57,7 @@ export function ImageGenerator({ config }: { config: ImageStudioConfig | null })
 
 function ImageWorkspace({ onReset }: { onReset: (config: ImageStudioConfig) => void }) {
 	const { config, profiles, results } = useImageStudio()
+	const panel = useImagePanel()
 	const items = results.items
 	const resultConfig = profiles.options.find((candidate) => candidate.id === items[0]?.profileId)
 	const exportSize = results.output
@@ -102,51 +95,39 @@ function ImageWorkspace({ onReset }: { onReset: (config: ImageStudioConfig) => v
 	})
 
 	return (
-		<WorkspaceLayout
-			left={
-				<ControllerBrowser.Root className="min-h-0">
-					<SelectionPanel
-						top={
-							<StudioSelectionCard
-								title={config.name}
-								image={preview.image ?? config.previewImage}
-								onReset={() => onReset(config)}
-								actions={
-									<>
-										<PreviewRefreshButton preview={preview} />
-										<StudioSelectionChange
-											label="프로파일 변경"
-											tabs={['Image Profiles']}
-											empty={
-												profiles.browse.status === 'ready' &&
-												!profiles.browse.data?.some(
-													(item) => item.id !== config.id,
-												)
-													? '교체할 다른 이미지 프로파일이 없습니다.'
-													: undefined
-											}
-										>
-											<ImageProfilePicker />
-										</StudioSelectionChange>
-									</>
+		<StudioShell
+			surface={{
+				selection: {
+					title: config.name,
+					image: preview.image ?? config.previewImage,
+					onReset: () => onReset(config),
+					actions: (
+						<>
+							<PreviewRefreshButton preview={preview} />
+							<StudioSelectionChange
+								label="프로파일 변경"
+								tabs={['Image Profiles']}
+								empty={
+									profiles.browse.status === 'ready' &&
+									!profiles.browse.data?.some((item) => item.id !== config.id)
+										? '교체할 다른 이미지 프로파일이 없습니다.'
+										: undefined
 								}
 							>
-								{preview.error && (
-									<Typography role="alert" size="xs">
-										{preview.error}
-									</Typography>
-								)}
-							</StudioSelectionCard>
-						}
-						bottom={<ImageSettingPanel title="Output" download={download} />}
-					/>
-				</ControllerBrowser.Root>
-			}
-			right={<ImageControls key={config.id} />}
-		>
-			<WorkspaceCanvas>
-				<ImageCanvas />
-			</WorkspaceCanvas>
-		</WorkspaceLayout>
+								<ImageProfilePicker />
+							</StudioSelectionChange>
+						</>
+					),
+					children: preview.error && (
+						<Typography role="alert" size="xs">
+							{preview.error}
+						</Typography>
+					),
+				},
+				output: <ImageSettingPanel title="Output" download={download} />,
+				canvas: <ImageCanvas />,
+				panel,
+			}}
+		/>
 	)
 }

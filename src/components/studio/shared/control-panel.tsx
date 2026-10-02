@@ -2,8 +2,9 @@
 
 import { domAnimation, LazyMotion } from 'motion/react'
 import * as m from 'motion/react-m'
-import { createContext, type ReactNode, useContext, useId, useState } from 'react'
+import { type ReactNode, useId, useState } from 'react'
 import { ControllerRoot } from '@/components/shared/controller/layout'
+import { ControllerPresence } from '@/components/shared/controller/presence'
 import { PANEL_RENDER, useMotionTransition } from '@/lib/motion'
 import {
 	controllerStructureSignature,
@@ -29,45 +30,32 @@ export type ControlPanelComposition = StudioPanelSlotRenderProps & {
 	slots: Readonly<Record<StudioPanelSlot, readonly StudioPanelEntry[]>>
 }
 
+/** 컴포지션 슬롯 뒤에 잇는 계약 밖의 것(생성 버튼·오류·안내) — 자리마다 하나. */
+export type ControlPanelExtras = Partial<Record<Exclude<StudioPanelSlot, 'settings'>, ReactNode>>
+
 type ControlPanelProps = {
-	composition?: ControlPanelComposition
+	/**
+	 * 그릴 컴포지션 — **자리마다 앞쪽부터 먼저 채운 것이 그린다.** 템플릿 배경은 [대상 자기 것, 배경 공통(Dimming·색)].
+	 * 우선순위는 이 배열 순서뿐이다.
+	 */
+	compositions?: readonly ControlPanelComposition[]
 	/**
 	 * 컴포지션 슬롯 뒤에 같은 목록으로 이어 붙이는 계약 밖의 것(생성 버튼·오류·안내).
 	 * 계약 슬롯을 대체하지 않는다 — 간격과 펼침이 이어진다.
 	 */
-	extras?: Partial<Record<Exclude<StudioPanelSlot, 'settings'>, ReactNode>>
-}
-
-const ControlPanelCompositionContext = createContext<ControlPanelComposition | null>(null)
-
-/**
- * 패널 주인(스튜디오 셸)이 안쪽 화면에 컴포지션을 공급한다 — 안쪽 화면(이미지·그래픽 컨트롤)이 몇 겹이든
- * prop을 뚫지 않고 `ControlPanel`이 읽는다. 배치는 패널이 소유한다는 계약(docs/10 §3.7)의 배선이다.
- */
-export function ControlPanelCompositionProvider({
-	value,
-	children,
-}: {
-	value: ControlPanelComposition | null
-	children: ReactNode
-}) {
-	return (
-		<ControlPanelCompositionContext.Provider value={value}>
-			{children}
-		</ControlPanelCompositionContext.Provider>
-	)
+	extras?: ControlPanelExtras
+	/**
+	 * 지금 무엇을 편집하나(템플릿의 선택 레이어) — 바뀌면 탭 선택이 Basic으로 돌아간다.
+	 * 패널 자체는 다시 마운트하지 않는다(레일·고정 카드가 그대로 남는다).
+	 */
+	target?: string
 }
 
 /**
  * 고정 영역은 탭 스크롤 밖에, 목록과 조정 내용은 각각 남은 높이 안에 둔다.
  * 고정 영역은 최대 절반 높이까지 자라고 넘치면 자체 스크롤한다.
  */
-export function ControlPanel(props: ControlPanelProps) {
-	const provided = useContext(ControlPanelCompositionContext)
-	// 자리마다 먼저 채운 쪽이 그린다 — 화면 자기 컴포지션(그래픽 편집) 다음 공급받은 것(템플릿 배경의 Dimming).
-	const compositions = [props.composition, provided].filter(
-		(item): item is ControlPanelComposition => Boolean(item),
-	)
+export function ControlPanel({ compositions = [], ...props }: ControlPanelProps) {
 	// 컴포지션으로 그리면 영역 키를 스스로 안다 — 위에 범위가 없으면 직접 깔아 켜짐·마지막 키를 갖게 한다.
 	const hasScope = useHasPanelRenderScope()
 	if (compositions.length && !hasScope)
@@ -82,7 +70,8 @@ export function ControlPanel(props: ControlPanelProps) {
 function ControlPanelView({
 	compositions,
 	extras,
-}: Omit<ControlPanelProps, 'composition'> & {
+	target,
+}: ControlPanelProps & {
 	compositions: readonly ControlPanelComposition[]
 }) {
 	const pick = (name: StudioPanelSlot) =>
@@ -112,7 +101,10 @@ function ControlPanelView({
 			: undefined
 	const fixedKey = signature(['fixed'])
 	const contentKey = signature(['basicPresets', 'basic', 'presets', 'adjustment'])
-	const [selected, setSelected] = useState('basic')
+	// 탭 선택은 편집 대상마다다 — 대상이 바뀌면 Basic부터 보인다(패널은 다시 마운트하지 않는다).
+	const [choice, setChoice] = useState({ target, tab: 'basic' })
+	const selected = choice.target === target ? choice.tab : 'basic'
+	const setSelected = (tab: string) => setChoice({ target, tab })
 	const id = useId()
 	const tabs = [
 		{ id: 'basic' as const, label: 'Basic', content: basic, list: basicPresets },
@@ -171,15 +163,20 @@ function ControlPanelView({
 								}
 								transition={active === tab.id ? transition : { duration: 0 }}
 							>
-								<div className="flex h-full min-h-0 flex-col gap-3">
-									{tab.list && (
-										<ControllerRoot
-											data-slot="studio-preset-list"
-											className="min-h-0 shrink lg:h-auto"
-										>
-											<div className={CARD_BODY}>{tab.list}</div>
-										</ControllerRoot>
-									)}
+								<div className="flex h-full min-h-0 flex-col">
+									{/* 목록 카드도 조건으로 생기고 빠진다(Fluted Style) — 다른 조건부 행과 같은 높이 펼침이다.
+									    카드 사이 간격은 부모 gap이 아니라 펼치는 상자의 아래 여백이 갖는다(높이 0일 때 남지 않게). */}
+									<ControllerPresence itemClassName="flex min-h-0 shrink flex-col pb-3">
+										{tab.list && (
+											<ControllerRoot
+												key="list"
+												data-slot="studio-preset-list"
+												className="min-h-0 shrink lg:h-auto"
+											>
+												<div className={CARD_BODY}>{tab.list}</div>
+											</ControllerRoot>
+										)}
+									</ControllerPresence>
 									{tab.content && (
 										<ControllerRoot
 											className={
