@@ -10,6 +10,7 @@ import {
 } from 'motion/react'
 import * as m from 'motion/react-m'
 import { type KeyboardEvent, useEffect, useRef } from 'react'
+import { MOTION } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { clampControllerValue, snapControllerValue, useControllerPointerDrag } from './pointer-drag'
 
@@ -73,9 +74,7 @@ export function ControllerRange({
 			slideRef.current = reducedMotion
 				? null
 				: animate(fill, ratioOf(next), {
-						type: 'spring',
-						visualDuration: 0.25,
-						bounce: 0.15,
+						...MOTION.control,
 						onComplete: () => {
 							slideRef.current = null
 						},
@@ -138,7 +137,7 @@ export function ControllerRange({
 				<m.div
 					aria-hidden
 					data-slot="controller-range-handle"
-					className="-translate-y-1/2 absolute top-1/2 h-5 w-[3px] scale-x-25 rounded-full bg-foreground opacity-0 transition-[opacity,scale] duration-200 ease-out group-focus-visible/range:scale-x-100 group-focus-visible/range:opacity-50 group-hover/range:scale-x-100 group-hover/range:opacity-50 group-data-[dragging=true]/range:scale-x-100 group-data-[dragging=true]/range:opacity-90 motion-reduce:transition-none"
+					className="-translate-y-1/2 absolute top-1/2 h-5 w-[3px] scale-x-25 rounded-full bg-foreground opacity-0 transition-[opacity,scale] duration-(--motion-feedback) ease-out group-focus-visible/range:scale-x-100 group-focus-visible/range:opacity-50 group-hover/range:scale-x-100 group-hover/range:opacity-50 group-data-[dragging=true]/range:scale-x-100 group-data-[dragging=true]/range:opacity-90 motion-reduce:transition-none"
 					style={{ left: handleLeft }}
 				/>
 			</LazyMotion>

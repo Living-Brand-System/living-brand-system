@@ -440,7 +440,11 @@ describe('프리셋', () => {
 	// 🔴 프리셋이 건드리지 않는 축은 색 하나다 — 창작자가 고른 색이 프리셋 하나에 사라지면 안 된다.
 	//    자기 자신(preset)도 건드리지 않는다. 그 둘을 뺀 나머지는 전부 정한다.
 	it('색과 자기 자신을 뺀 모든 컨트롤을 정한다', () => {
-		const all = new Set<string>([...runtime.controller.left, ...runtime.controller.right])
+		// 창작자 화면에 서는 축 = 역할이 있는 컨트롤 + 묶음 멤버(docs/10 §3.7).
+		const all = new Set<string>([
+			...Object.keys(runtime.controller.roles),
+			...runtime.controller.clusters.flatMap((cluster) => Object.values(cluster.members)),
+		])
 		const expected = new Set([...all].filter((id) => id !== 'colorway' && id !== 'preset'))
 
 		for (const preset of KEY_VISUAL_PATTERN_PRESETS) {
@@ -499,7 +503,9 @@ describe('프리셋', () => {
 
 	it('선택지는 색도 썸네일도 없이 번호만 보여 준다', () => {
 		const preset = controls.find((control) => control.id === 'preset')
-		expect(runtime.controller.left).toContain('preset')
+		expect(runtime.controller.clusters.map((cluster) => cluster.widget)).toContain(
+			'preset-list',
+		)
 		expect(preset?.kind).toBe('select')
 		const options = preset?.kind === 'select' ? preset.options : []
 		expect(options.map((option) => option.label)).toEqual(['1', '2', '3', '4', '5', '6'])

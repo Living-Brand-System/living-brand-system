@@ -205,10 +205,45 @@ export default defineGraphicRuntime({
 		 * 🔴 나머지 컨트롤은 **선언에서 빼기만 한다.** 지우지 않는다 — 창작자에게 감추더라도
 		 *    manager는 Payload에서 그 값을 조정할 수 있어야 한다.
 		 */
-		// 왼쪽은 색 조합과 형태 — 방향과 시점이 그림을 통째로 바꾼다.
-		left: ['preset', 'direction', 'viewpoint', 'colorway'],
-		// 오른쪽은 공용 4축 — 이 런타임은 정지 그래픽이라 속도가 없다.
-		right: ['columnGap', 'rowGap', 'variableWeight', 'minWeight', 'maxWeight', 'origin'],
+		// 패널 컴포지션(docs/10 §3.7) — 무엇을 뜻하나만 선언한다. 자리는 그래픽 패널이 정한다.
+		// 방향·시점은 내용이 어떻게 놓이나(placement)다 — Figma 345:17104에서 Position 다음에 선다.
+		roles: {
+			columnGap: 'tuning',
+			rowGap: 'tuning',
+			variableWeight: 'tuning',
+			minWeight: 'tuning',
+			maxWeight: 'tuning',
+		},
+		clusters: [
+			{
+				id: 'preset',
+				title: 'Preset',
+				role: 'preset',
+				widget: 'preset-list',
+				members: { value: 'preset' },
+			},
+			{
+				id: 'color',
+				title: 'Color',
+				role: 'palette',
+				widget: 'colorway',
+				members: { value: 'colorway' },
+			},
+			{
+				id: 'position',
+				title: 'Position',
+				role: 'placement',
+				widget: 'position',
+				members: { value: 'origin' },
+			},
+			{
+				id: 'direction',
+				title: 'Direction',
+				role: 'placement',
+				widget: 'compound',
+				members: { direction: 'direction', viewpoint: 'viewpoint' },
+			},
+		],
 		groups: [
 			{
 				id: 'preset',

@@ -3,6 +3,7 @@
 import { domAnimation, LazyMotion, useReducedMotion } from 'motion/react'
 import * as m from 'motion/react-m'
 import type { ReactNode } from 'react'
+import { useMotionTransition } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 
 /**
@@ -42,6 +43,7 @@ export function ControllerBar({
 	children: ReactNode
 }) {
 	const reducedMotion = useReducedMotion()
+	const transition = useMotionTransition('control')
 
 	return (
 		<LazyMotion features={domAnimation}>
@@ -54,11 +56,7 @@ export function ControllerBar({
 				initial={reducedMotion ? false : { opacity: 0, y: 8 }}
 				animate={{ opacity: 1, y: 0 }}
 				// 킷의 다른 모션과 같은 스프링이다(range·segmented) — 한 화면에서 감속이 갈리면 안 된다.
-				transition={
-					reducedMotion
-						? { duration: 0 }
-						: { type: 'spring', visualDuration: 0.25, bounce: 0.15 }
-				}
+				transition={transition}
 				className={cn(
 					'pointer-events-auto hidden items-center gap-2 rounded-xl bg-background p-3 shadow-lg lg:flex',
 					PLACEMENT[placement],

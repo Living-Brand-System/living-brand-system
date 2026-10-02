@@ -20,6 +20,7 @@ import { ControllerListRow } from './list-row'
 import { ControllerPad } from './pad'
 import { ControllerPadPair } from './pad-pair'
 import { ControllerPagination } from './pagination'
+import { ControllerPresence, ControllerReveal } from './presence'
 import { ControllerPreviewChips } from './preview-chips'
 import { ControllerRange } from './range'
 import { ControllerRow } from './row'
@@ -62,6 +63,8 @@ export const Controller = {
 	Item: ControllerItem,
 	Segmented: ControllerSegmented,
 	TabPanel: ControllerTabPanel,
+	Reveal: ControllerReveal,
+	Presence: ControllerPresence,
 	ColorChips: ControllerColorChips,
 	ColorStrip: ControllerColorStrip,
 	ColorRow: ControllerColorRow,
@@ -108,8 +111,10 @@ export {
 	ControllerPad,
 	ControllerPadPair,
 	ControllerPagination,
+	ControllerPresence,
 	ControllerPreviewChips,
 	ControllerRange,
+	ControllerReveal,
 	ControllerRoot,
 	ControllerRow,
 	ControllerSegmented,

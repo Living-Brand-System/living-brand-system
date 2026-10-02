@@ -129,7 +129,7 @@ export function ControllerPadPair({
 						key={key}
 						aria-hidden
 						// 잡고 있는 동안만 커진다 — 손가락 아래 가려진 점의 위치를 다시 알려준다.
-						className="-translate-x-1/2 -translate-y-1/2 absolute size-3.5 rounded-full bg-foreground shadow-sm transition-transform duration-150 ease-out group-data-[dragging=true]/pad:scale-125 motion-reduce:transition-none"
+						className="-translate-x-1/2 -translate-y-1/2 absolute size-3.5 rounded-full bg-foreground shadow-sm transition-transform duration-(--motion-feedback) ease-out group-data-[dragging=true]/pad:scale-125 motion-reduce:transition-none"
 						style={{
 							left: `${toPercent(value[key].x)}%`,
 							top: `${toPercent(value[key].y)}%`,

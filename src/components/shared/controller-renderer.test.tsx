@@ -31,10 +31,10 @@ describe('ControllerRenderer', () => {
 
 		expect(screen.getByRole('button', { name: 'First' })).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: 'Second' })).toBeInTheDocument()
-		expect(container.querySelector('[data-slot="controller-group-list"]')).toHaveClass(
-			'gap-3',
-			'pt-1',
-		)
+		// 그룹 사이 간격은 목록이 각 그룹 상자의 위 여백으로 소유한다.
+		const list = container.querySelector('[data-slot="controller-group-list"]')
+		expect(list).toHaveClass('-mt-2')
+		expect(list?.firstElementChild).toHaveClass('pt-3')
 		expect(renderedGroups[0]).not.toHaveClass('border-t')
 		expect(renderedGroups[1]).not.toHaveClass('border-t')
 
