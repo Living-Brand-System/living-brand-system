@@ -16,7 +16,17 @@ import { cn } from '@/lib/utils'
  * 🔑 표면은 컨트롤러 킷이다. 디자인이 새 패널 언어를 그린 게 아니라 스튜디오 컨트롤러의
  *    Root/Row/Field를 그대로 재활용했으므로, 여기서 카드·행·필드 스타일을 다시 만들지 않는다.
  */
-export function McpKeyIssuer() {
+/** 발급일 표시 — 계정 카드의 가입일과 같은 형식. 🔴 존을 못 박는다(서버 TZ면 하루 밀린다). */
+const ISSUED_AT_FORMAT = new Intl.DateTimeFormat('ko-KR', {
+	dateStyle: 'long',
+	timeZone: 'Asia/Seoul',
+})
+
+/**
+ * @param issuedAt 이 계정의 현재 키 발급 시각(없으면 null). 키 값은 다시 보여 주지 않으므로, 이것으로
+ *   「이미 키가 있다」와 「재발급하면 이전 키가 끊긴다」를 말한다 — 재발급은 교체다(계정당 키 하나).
+ */
+export function McpKeyIssuer({ issuedAt = null }: { issuedAt?: string | null }) {
 	const { copyMessage, copyText, credential, error, issueKey, loading } = useMcpKeyIssuance()
 	/*
 	 * 🔑 Codex는 키를 **설정 파일에 헤더째** 넣는다 — Claude처럼 한 번 붙여 넣으면 끝난다.
@@ -133,28 +143,44 @@ export function McpKeyIssuer() {
 					</Typography>
 				</>
 			) : (
-				/*
-				 * 발급 중에는 highlight의 흐르는 그라디언트가 진행을 말한다(디자인 64:1409).
-				 * 🔴 그래서 disabled를 걸지 않는다 — highlight의 disabled는 그라디언트와 애니메이션을
-				 *    모두 끄므로, 진행 표시가 통째로 사라진다. 중복 발급은 훅이 막는다.
-				 */
-				<Button
-					aria-busy={loading || undefined}
-					aria-disabled={loading || undefined}
-					className={cn('h-11 w-full rounded-lg', !loading && 'text-foreground')}
-					onClick={issueKey}
-					type="button"
-					variant={loading ? 'highlight' : 'muted'}
-				>
-					{loading ? (
-						<>
-							<Spinner aria-hidden />
-							<span className="sr-only">발급 중…</span>
-						</>
-					) : (
-						'MCP 키 발급'
+				<>
+					{issuedAt && (
+						<Controller.Row readonly label="발급됨">
+							<span className="text-muted-foreground text-sm">
+								{ISSUED_AT_FORMAT.format(new Date(issuedAt))}
+							</span>
+						</Controller.Row>
 					)}
-				</Button>
+					{/*
+					 * 발급 중에는 highlight의 흐르는 그라디언트가 진행을 말한다(디자인 64:1409).
+					 * 🔴 그래서 disabled를 걸지 않는다 — highlight의 disabled는 그라디언트와 애니메이션을
+					 *    모두 끄므로, 진행 표시가 통째로 사라진다. 중복 발급은 훅이 막는다.
+					 */}
+					<Button
+						aria-busy={loading || undefined}
+						aria-disabled={loading || undefined}
+						className={cn('h-11 w-full rounded-lg', !loading && 'text-foreground')}
+						onClick={issueKey}
+						type="button"
+						variant={loading ? 'highlight' : 'muted'}
+					>
+						{loading ? (
+							<>
+								<Spinner aria-hidden />
+								<span className="sr-only">발급 중…</span>
+							</>
+						) : issuedAt ? (
+							'MCP 키 재발급'
+						) : (
+							'MCP 키 발급'
+						)}
+					</Button>
+					{issuedAt && (
+						<Typography className="text-center" size="sm" tone="muted">
+							재발급하면 이전 키는 바로 사용할 수 없습니다.
+						</Typography>
+					)}
+				</>
 			)}
 
 			{error && (

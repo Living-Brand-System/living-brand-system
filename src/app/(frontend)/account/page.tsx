@@ -4,11 +4,13 @@ import { FigmaTokenCard } from '@/components/auth/figma-token-card'
 import { PayloadEntryLink } from '@/components/auth/payload-entry-link'
 import { McpKeyIssuer } from '@/components/studio/mcp/mcp-key-issuer'
 import { MyAiUsageCard } from '@/components/studio/usage/my-ai-usage-card'
+import { getMcpApiKeyIssuedAt } from '@/features/mcp-access/services/issue-mcp-api-key.service'
 import { hasFigmaToken } from '@/features/template-import/services/figma-token.service'
 import { isManager, isPayloadUser } from '@/lib/auth'
 import { requireUser } from '@/lib/request-auth'
 import { loginHref, routes } from '@/lib/routes'
 import { getAiUsageBreakdown } from '@/modules/ai-usage/services/get-ai-usage-breakdown.service'
+import { getTokenLimitStatus } from '@/modules/ai-usage/services/token-limit.service'
 
 // 렌더링: 매 요청. 로그인 계정을 읽으므로 캐시하지 않는다(docs/05).
 export const dynamic = 'force-dynamic'
@@ -26,6 +28,10 @@ export default async function AccountPage() {
 
 	// 계정 화면은 본인 사용량만 보인다 — 전체 계정 보기는 매니저 화면이 맡는다.
 	const { rows, todayKey } = await getAiUsageBreakdown(user)
+	// 본인 한도·오늘·이번 달 사용량 — AI 요청을 막는 판정과 같은 계산이다.
+	const tokenLimitStatus = await getTokenLimitStatus(user.id)
+	// 키 값은 다시 보여 주지 않는다 — 발급 시각만 읽어 「이미 키가 있다」를 말한다.
+	const mcpKeyIssuedAt = await getMcpApiKeyIssuedAt(user)
 	// Figma 가져오기는 manager 이상만 쓴다 — 쓸 수 없는 사람에게 토큰 칸을 보이지 않는다.
 	const figmaConnected = isManager(user) ? await hasFigmaToken(payload, user) : false
 
@@ -51,15 +57,19 @@ export default async function AccountPage() {
 						role={user.role}
 					/>
 					{/* MCP 키는 계정당 하나다 — 스튜디오 도구가 아니라 이 계정의 설정이라 여기 선다. */}
-					<McpKeyIssuer />
+					<McpKeyIssuer issuedAt={mcpKeyIssuedAt} />
 					{/* Figma 토큰도 이 계정의 외부 연결 설정이라 MCP 옆에 선다. */}
 					{isManager(user) && <FigmaTokenCard connected={figmaConnected} />}
 					{/* 앱에서 Payload Admin으로 가는 유일한 입구 — worker에게는 그 주소가 404다. */}
 					{isManager(user) && <PayloadEntryLink />}
 				</div>
 				{/* 사용량은 계정에 매달린 **기록**이다 — 설정과 성격이 달라 자기 열을 갖는다. */}
-				{/* ponytail: 토큰 한도는 옆 팀 작업이 들어오면 tokenLimit으로 넘긴다 — 그전엔 분모가 없다. */}
-				<MyAiUsageCard rows={rows} todayKey={todayKey} userId={user.id} />
+				<MyAiUsageCard
+					limitStatus={tokenLimitStatus}
+					rows={rows}
+					todayKey={todayKey}
+					userId={user.id}
+				/>
 			</div>
 		</main>
 	)
