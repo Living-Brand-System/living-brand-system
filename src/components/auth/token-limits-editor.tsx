@@ -121,7 +121,7 @@ function DefaultsPanel({ defaults }: { defaults: Limits }) {
 				</Typography>
 				<Typography size="sm" tone="muted">
 					모든 계정의 기본값입니다(합계 토큰). 일 한도는 한국 시간 0시에 다시 시작합니다.
-					저장한 적이 없으면 LBS 기본값(일 10만·월 100만)이 걸립니다.
+					저장한 적이 없으면 LBS 기본값(일 1만·월 10만)이 걸립니다.
 				</Typography>
 			</header>
 			<div className="flex flex-col gap-1">

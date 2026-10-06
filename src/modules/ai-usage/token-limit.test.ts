@@ -25,8 +25,8 @@ describe('resolveTokenLimits', () => {
 		})
 	})
 
-	it('전역 기본값을 저장하지 않았어도 LBS 기본값(10만·100만)이 걸린다', () => {
-		expect(resolveTokenLimits({}, {})).toEqual({ daily: 100_000, monthly: 1_000_000 })
+	it('전역 기본값을 저장하지 않았어도 LBS 기본값(1만·10만)이 걸린다', () => {
+		expect(resolveTokenLimits({}, {})).toEqual({ daily: 10_000, monthly: 100_000 })
 		expect(resolveTokenLimits({}, null)).toEqual(DEFAULT_TOKEN_LIMITS)
 	})
 })

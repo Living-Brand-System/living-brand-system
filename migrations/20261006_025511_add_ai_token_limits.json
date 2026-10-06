@@ -21918,14 +21918,14 @@
           "type": "numeric",
           "primaryKey": false,
           "notNull": true,
-          "default": 100000
+          "default": 10000
         },
         "monthly": {
           "name": "monthly",
           "type": "numeric",
           "primaryKey": false,
           "notNull": true,
-          "default": 1000000
+          "default": 100000
         },
         "updated_at": {
           "name": "updated_at",

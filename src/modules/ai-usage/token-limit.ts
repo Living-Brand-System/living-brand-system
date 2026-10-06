@@ -16,8 +16,8 @@ export type TokenLimitPeriod = (typeof TOKEN_LIMIT_PERIODS)[number]
  * LBS 자체의 기본값 — 전역 설정이 비어 있어도 한도는 항상 있다. 전역 설정 필드의 기본값도 이것을 읽는다.
  */
 export const DEFAULT_TOKEN_LIMITS: Record<TokenLimitPeriod, number> = {
-	daily: 100_000,
-	monthly: 1_000_000,
+	daily: 10_000,
+	monthly: 100_000,
 }
 
 /** 전체 기본값 — 아직 한 번도 저장하지 않았으면 비어 있을 수 있다(그때는 `DEFAULT_TOKEN_LIMITS`). */
