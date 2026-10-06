@@ -1961,7 +1961,8 @@ describe('TemplateGenerator', () => {
 		fireEvent.change(screen.getByLabelText('Background Color 색상 선택'), {
 			target: { value: '#ff0000' },
 		})
-		expect(canvasOf().style.backgroundImage).toBe('')
+		// 색만 고르면 루트 이미지를 걷는다(compose가 none으로 선언) — 고른 색이 사진 아래 묻히지 않게.
+		expect(canvasOf().style.backgroundImage).toBe('none')
 		expect(canvasOf().style.backgroundColor).toBe('rgb(255, 0, 0)')
 
 		await user.click(

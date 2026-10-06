@@ -453,7 +453,11 @@ export function composeTemplateHtml(
 	const root = doc.body.firstElementChild
 	if (canvasBackground && root instanceof HTMLElement) {
 		if (canvasBackground.clear) root.style.background = 'transparent'
-		if (canvasBackground.color) root.style.backgroundColor = canvasBackground.color
+		if (canvasBackground.color) {
+			root.style.backgroundColor = canvasBackground.color
+			// 색만 고른 것이면 원본 루트의 이미지 fill을 걷는다 — 안 걷으면 고른 색이 사진 아래에 깔려 안 보인다.
+			if (!canvasBackground.imageUrl) root.style.backgroundImage = 'none'
+		}
 		if (canvasBackground.imageUrl) {
 			root.style.backgroundImage = `url("${canvasBackground.imageUrl}")`
 			root.style.backgroundSize = 'cover'
