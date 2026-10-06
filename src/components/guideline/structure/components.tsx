@@ -1,5 +1,4 @@
 import { cva } from 'class-variance-authority'
-import Image from 'next/image'
 import type { ComponentProps } from 'react'
 import { Typography } from '@/components/ui/typography'
 import type { SectionDownload } from '@/features/guideline/services/download-section-assets.client'
@@ -111,16 +110,32 @@ export function GuidelineSectionHeading({
 }
 
 const HD_KO_LOGO = {
-	src: '/brand/hd/ko-horizontal-default-blk@2x.png',
+	src: '/brand/hd/ko-horizontal-default.svg',
 	alt: 'HD현대',
-	width: 1246,
-	height: 328,
+	width: 623,
+	height: 164,
 }
 type FooterProps = { logo?: { src: string; alt: string; width: number; height: number } }
 export function GuidelineDisplayFooter({ logo = HD_KO_LOGO }: FooterProps) {
 	return (
 		<footer data-slot="guideline-display-footer" className={styles.footer}>
-			<Image {...logo} className={styles.logo} />
+			{/*
+			 * 🔑 로고를 글자색(`bg-foreground`)으로 칠하고 모양은 SVG 마스크로 낸다 — 검정 PNG 한 장은
+			 *    다크에서 사라졌다. 다크 변형 분기가 아니라 토큰이라 다크 페이지 속 밝은 면에서도 맞는다
+			 *    (`logo-on-background-display`의 단색 로고와 같은 방식).
+			 */}
+			<div
+				role="img"
+				aria-label={logo.alt}
+				className={cn(styles.logo, 'bg-foreground')}
+				style={{
+					aspectRatio: `${logo.width} / ${logo.height}`,
+					maskImage: `url(${logo.src})`,
+					maskSize: 'contain',
+					maskRepeat: 'no-repeat',
+					maskPosition: 'center',
+				}}
+			/>
 		</footer>
 	)
 }

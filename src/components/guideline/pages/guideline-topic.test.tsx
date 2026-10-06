@@ -58,7 +58,7 @@ it('신규 제목·섹션·도판·푸터 순서와 CMS 앵커를 유지한다',
 	const footer = container.querySelector('[data-slot="guideline-display-footer"]')
 	if (!section || !footer) throw new Error('섹션 또는 푸터 누락')
 	expect(section.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-	expect(footer.querySelector('img')).toHaveAttribute('alt', 'HD현대')
+	expect(footer.querySelector('[role="img"]')).toHaveAttribute('aria-label', 'HD현대')
 	expect(container.querySelector('.pointer-events-none.absolute.inset-0')).toBeNull()
 	expect(screen.queryByTestId('preview-refresh')).not.toBeInTheDocument()
 })
