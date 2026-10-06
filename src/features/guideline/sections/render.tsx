@@ -123,7 +123,7 @@ export function CmsGuidelineSections({
 							hierarchy={hierarchy}
 							title={sectionTitle(section)}
 							description={section.description ?? undefined}
-							align={incorrect ? 'center' : (section.align ?? 'start')}
+							align={incorrect ? 'center' : 'start'}
 							download={assets.length ? { filename: `${id}.zip`, assets } : undefined}
 						/>
 						{(section.containers ?? []).map((container, containerIndex) => (

@@ -281,7 +281,6 @@ export interface GuidelineDocument {
          */
         anchor?: string | null;
         description?: string | null;
-        align?: ('start' | 'center') | null;
         download: {
           source: 'none' | 'assets' | 'registered';
           /**
@@ -2187,7 +2186,6 @@ export interface GuidelineDocumentsSelect<T extends boolean = true> {
         title?: T;
         anchor?: T;
         description?: T;
-        align?: T;
         download?:
           | T
           | {
