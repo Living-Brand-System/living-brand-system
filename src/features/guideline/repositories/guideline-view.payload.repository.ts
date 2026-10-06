@@ -29,8 +29,6 @@ export async function findGuidelineMetadataGlobal(): Promise<GuidelineMetadataDa
 			documentTitle: true,
 			favicon: true,
 			issuedLabel: true,
-			primaryColor: true,
-			primaryColorDark: true,
 		},
 	})
 
@@ -39,8 +37,6 @@ export async function findGuidelineMetadataGlobal(): Promise<GuidelineMetadataDa
 		documentTitle: guideline.documentTitle,
 		faviconHref: relationshipString(guideline.favicon, 'url'),
 		issuedLabel: guideline.issuedLabel || null,
-		primaryDarkHex: relationshipString(guideline.primaryColorDark, 'hex'),
-		primaryHex: relationshipString(guideline.primaryColor, 'hex'),
 	}
 }
 

@@ -16,7 +16,7 @@
 
 Payload Admin 기본 화면은 이 문서의 대상이 아닙니다. Payload가 제공하는 기본 스타일과 접근성을 우선하며, `docs/08-accessibility-i18n.md`의 적용 범위와 동일하게 프로젝트가 직접 추가한 Admin 확장 화면에만 이 문서를 참고합니다.
 
-브랜드 색·폰트·로고는 스타일 규칙이 아니라 **데이터**입니다. 그 소유와 주입 경로는 `docs/05-system-architecture.md`가 정의하며, 이 문서는 데이터가 토큰에 들어오는 지점만 기술합니다.
+가이드라인 **콘텐츠**가 그리는 브랜드 색·폰트·로고(스와치·팔레트·로고 카드)는 스타일 규칙이 아니라 **데이터**입니다. 그 소유와 주입 경로는 `docs/05-system-architecture.md`가 정의합니다. 앱 UI 자체의 색은 데이터가 아니라 §3의 토큰입니다 — 제품이 HD 전용이 되어(2026-10-06) 런타임 브랜드 주입을 걷었습니다.
 
 접근성·다국어 경계는 `docs/08-accessibility-i18n.md`, 소스 위치·네이밍·`use client` 경계는 `docs/06-project-structure.md`가 소유합니다. 이 문서는 두 문서를 링크만 하고 규칙을 복제하지 않습니다.
 
@@ -26,7 +26,7 @@ Payload Admin 기본 화면은 이 문서의 대상이 아닙니다. Payload가 
 
 | 층 | 대상 | 변경 빈도 | 소유 문서 |
 | --- | --- | --- | --- |
-| (A) 불변 파운데이션 | 색, 타이포, radius, 다크 모드, 런타임 브랜드 오버라이드, 셸/프레임 골격 | 값이 실제로 바뀔 때만 | 09 (이 문서) |
+| (A) 불변 파운데이션 | 색, 타이포, radius, 다크 모드, 셸/프레임 골격 | 값이 실제로 바뀔 때만 | 09 (이 문서) |
 | (B) 컴포넌트별 UI | 매번 추가되는 블록·프리미티브 조합, variant, 저작 규칙 | 상시 (슬롭 위험 큼) | `docs/10` |
 
 컴포넌트를 새로 추가할 때 09를 손대지 않습니다. 새 블록은 (A)가 정한 토큰과 프레임을 소비할 뿐, 파운데이션을 바꾸지 않습니다. 파운데이션을 건드려야 하는 변경이라면 그것은 컴포넌트 작업이 아니라 09 개정입니다.
@@ -37,14 +37,17 @@ Payload Admin 기본 화면은 이 문서의 대상이 아닙니다. Payload가 
 
 | 토큰군 | 의미 | 소유 파일(SoT) |
 | --- | --- | --- |
-| color 원시값 | `:root`(라이트), `.dark`(다크)의 원시 색 정의 | `src/app/(frontend)/theme.css`, `src/app/(payload)/admin-tailwind.css` |
-| color 유틸 매핑 | 원시값 → `@theme inline`의 `--color-*` 유틸 토큰 | `src/app/(frontend)/theme.css`, `src/app/(payload)/admin-tailwind.css` |
-| inverted | 반전 표면과 그 전경의 짝 `--inverted`/`--inverted-foreground` | `src/app/(frontend)/theme.css` |
-| action-hover-foreground | 액션의 호버·포커스 전경색. 눌림은 기존 `foreground`를 사용 | `src/app/(frontend)/theme.css` |
-| 상태색 | 판정·상태 표시 전용 `--success`/`--info`/`--warning`(실패는 기존 `--destructive`, 해당 없음은 `--muted`). Admin 확장은 같은 이름을 Payload 테마에 매핑 | `src/app/(frontend)/theme.css`, `src/app/(payload)/admin-tailwind.css` |
-| highlight | 강조 배경과 전경 토큰, `bg-highlight` 유틸. Frontend는 gradient, Admin은 Payload success 색에 매핑 | `src/app/(frontend)/theme.css`, `src/app/(payload)/admin-tailwind.css` |
+| L0 원시 팔레트 | Tailwind 기본 팔레트(neutral 50~950·white·black·상태색 계열) + HD 팔레트(`--color-hd-*`, `@theme` 등록). 컴포넌트는 직접 쓰지 않는다 | `tailwindcss/theme.css`, `src/app/color-tokens.css` |
+| L1 shadcn 세트 | `:root`(라이트)·`.dark`/`[data-theme="dark"]`(다크)의 shadcn 표준 슬롯(background·primary·muted·border·chart-1~5·sidebar-* 등). 값은 L0 참조만. **앱과 어드민이 같은 파일을 import한다** | `src/app/color-tokens.css` |
+| color 유틸 매핑 | L1·L2 → `@theme inline`의 `--color-*` 유틸 토큰 | `src/app/color-tokens.css` |
+| inverted | 반전 표면과 그 전경의 짝 `--inverted`/`--inverted-foreground` | `src/app/color-tokens.css` |
+| overlay | 모달(dialog·sheet) 뒤를 가리는 막. 테마와 무관하게 검정이고 알파는 쓰는 쪽이 붙인다(`bg-overlay/80`) | `src/app/color-tokens.css` |
+| action-hover-foreground | 액션의 호버·포커스 전경색. 눌림은 기존 `foreground`를 사용 | `src/app/color-tokens.css` |
+| chart-1~5 | HD 초록 다섯 단(prosperity·heritage·eco·deep·light, 다크는 4·5 교대). 번호가 계약 — 사용량 막대·일자 스트립·카메라 궤도 축·어드민 대시보드가 번호로 집는다 | `src/app/color-tokens.css` |
+| 상태색 | 판정·상태 표시 전용 `--success`/`--info`/`--warning`(실패는 기존 `--destructive`, 해당 없음은 `--muted`) | `src/app/color-tokens.css` |
+| highlight | 강조 배경(그라디언트)과 전경 토큰, `.bg-highlight` 클래스. 앱·어드민 공통 | `src/app/color-tokens.css` |
 | radius | `--radius` 뿌리 1개에서 `--radius-sm/md/lg/xl/2xl/3xl` 6단 파생(`lg`는 뿌리값, 나머지는 calc) | `src/app/(frontend)/theme.css`, `src/app/(payload)/admin-tailwind.css` |
-| studio-rail-idle-foreground | StudioRail의 Idle 아이콘 전경색 | `src/app/(frontend)/theme.css` |
+| studio-rail-idle-foreground | StudioRail의 Idle 아이콘 전경색 | `src/app/color-tokens.css` |
 | controller-pad radius | Position 컴파운드 내부 패드의 `--radius-controller-pad` 파생 토큰 | `src/app/(frontend)/theme.css` |
 | 폰트 패밀리 | `--font-body`(Pretendard), `--font-title`(**미정 — Pretendard로 폴백.** 토큰과 `.font-title`은 자리를 지키고 있으니 서체가 정해지면 값만 바꿉니다), `HD`(CI 락업 워드마크 전용 @font-face) | `src/app/(frontend)/theme.css` |
 | 루트 크기 | 모든 화면에서 고정된 16px `rem` 기준 크기 | `src/app/(frontend)/styles.css`의 `html` |
@@ -53,7 +56,7 @@ Payload Admin 기본 화면은 이 문서의 대상이 아닙니다. Payload가 
 
 `--radius`는 뿌리 토큰 하나이고 나머지 6단은 그것을 기준으로 파생합니다(`--radius-lg`는 뿌리값 그대로, 나머지는 `calc()`; `theme.css`). radius를 조정할 때는 파생값이 아니라 뿌리 하나만 바꿉니다.
 
-Frontend의 `highlight`는 Figma 강조 스타일을 옮긴 그라디언트입니다. `bg-highlight`가 가로 밴드를 2배로 늘려 왼쪽에서 오른쪽으로 반복 이동시키고, 모션 감소 설정에서는 정지합니다. Admin은 같은 유틸 이름을 Payload success 색에 매핑합니다. Badge와 Button은 `bg-highlight`와 `text-highlight-foreground`를 함께 사용하며, 개별 컴포넌트에서 색이나 gradient stop을 다시 선언하지 않습니다.
+Frontend의 `highlight`는 Figma 강조 스타일을 옮긴 그라디언트입니다. `bg-highlight`가 가로 밴드를 2배로 늘려 왼쪽에서 오른쪽으로 반복 이동시키고, 모션 감소 설정에서는 정지합니다. 어드민도 같은 클래스를 씁니다(2026-10-06 전까지는 Payload success 색에 매핑돼 있었습니다). Badge와 Button은 `bg-highlight`와 `text-highlight-foreground`를 함께 사용하며, 개별 컴포넌트에서 색이나 gradient stop을 다시 선언하지 않습니다.
 
 ## 4. 닫힌 토큰 규칙
 
@@ -64,9 +67,10 @@ Frontend의 `highlight`는 Figma 강조 스타일을 옮긴 그라디언트입�
 토큰은 2단 인디렉션을 거칩니다.
 
 ```text
-원시 oklch (theme.css :root / .dark)
-  → @theme inline --color-* (theme.css)
-    → Tailwind 유틸 (bg-primary, text-foreground, ...)
+L0 원시 팔레트 (tailwindcss/theme.css, color-tokens.css의 --color-hd-*)
+  → L1·L2 슬롯 (color-tokens.css :root / .dark·[data-theme="dark"])
+    → @theme inline --color-* (color-tokens.css)
+      → Tailwind 유틸 (bg-primary, text-foreground, ...)
 ```
 
 `className`/`style` 리터럴에서 다음은 금지합니다.
@@ -75,7 +79,7 @@ Frontend의 `highlight`는 Figma 강조 스타일을 옮긴 그라디언트입�
 - 생 Tailwind 팔레트 + 숫자 — 무채색(`neutral`/`gray`/`zinc`/`slate`/`stone`)만이 아니라 **유채색 전체**(`emerald`, `sky`, `amber`, `orange` 등)를 포함합니다. 🔴 숫자가 없는 `white`·`black`도 같습니다 — 탐지 grep이 숫자만 보고 있어 `bg-white`가 실제로 통과한 적이 있습니다(2026-08-12, shadcn slider). `bg-emerald-500/15`처럼 유채 팔레트로 상태를 칠하는 것도 위반입니다.
 - `.tsx` 안의 `oklch(...)` 리터럴
 
-성공/정보/경고/실패 같은 **판정·상태 표시는 상태 토큰만** 사용합니다: `--success`/`--info`/`--warning`/`--destructive`(해당 없음은 `muted`). 사용 형태는 destructive 선례를 따릅니다 — pill은 `bg-success/15 text-success`, dot은 `bg-success`. 상태 토큰으로 표현할 수 없는 새 상태가 생기면 팔레트로 우회하지 말고 이 문서와 `theme.css`에 토큰을 추가합니다.
+성공/정보/경고/실패 같은 **판정·상태 표시는 상태 토큰만** 사용합니다: `--success`/`--info`/`--warning`/`--destructive`(해당 없음은 `muted`). 사용 형태는 destructive 선례를 따릅니다 — pill은 `bg-success/15 text-success`, dot은 `bg-success`. 상태 토큰으로 표현할 수 없는 새 상태가 생기면 팔레트로 우회하지 말고 이 문서와 `color-tokens.css`에 토큰을 추가합니다.
 
 **예외:** 색 자체를 데이터로 다루는 컴포넌트(`ColorSwatch`, `ColorPalette` 등)가 props나 CMS로 받는 hex는 스타일이 아니라 **데이터**이므로 허용합니다. 이때 hex는 코드에 고정되지 않고 주입됩니다.
 
@@ -89,7 +93,7 @@ rg -n '#[0-9a-fA-F]{3,8}\b|(?:bg|text|border|ring|fill|from|to|via)-(?:(?:red|or
 
 ## 5. 다크 모드와 브랜드 오버라이드
 
-다크 모드는 `.dark` **클래스** 방식입니다. `prefers-color-scheme` 미디어 쿼리가 아니라, `@custom-variant dark (&:where(.dark, .dark *))`(`theme.css`)로 정의하고, `next-themes`의 `ThemeProvider`를 `attribute="class"` + `defaultTheme="system"` + `enableSystem`(`layout.tsx`)으로 구동합니다. 시스템 설정은 `next-themes`가 읽어 `.dark` 클래스로 변환하므로, 원시값은 라이트가 `:root, .light`(`theme.css`), 다크가 `.dark`(`theme.css`) 한 곳에서만 갈립니다.
+다크 모드는 `.dark` **클래스** 방식입니다. `prefers-color-scheme` 미디어 쿼리가 아니라, `@custom-variant dark (&:where(.dark, .dark *))`(`theme.css`)로 정의하고, `next-themes`의 `ThemeProvider`를 `attribute="class"` + `defaultTheme="system"` + `enableSystem`(`layout.tsx`)으로 구동합니다. 시스템 설정은 `next-themes`가 읽어 `.dark` 클래스로 변환하므로, 원시값은 라이트가 `:root, .light`, 다크가 `.dark, [data-theme="dark"]`(둘 다 `color-tokens.css`) 한 곳에서만 갈립니다. `[data-theme="dark"]`는 Payload 어드민의 다크 스위치입니다.
 
 `:root`가 `.light`와 블록을 공유하는 것은 **부분 트리에 라이트 토큰을 다시 선언할 수 있게** 하기 위한 것입니다. 값을 복제하지 않고 선택자만 늘렸습니다.
 
@@ -101,9 +105,18 @@ rg -n '#[0-9a-fA-F]{3,8}\b|(?:bg|text|border|ring|fill|from|to|via)-(?:(?:red|or
 
 🔴 이 스코프 전환은 토큰만 되돌립니다. `dark:` 유틸은 `.dark *` **후손** 선택자라 다크 페이지 안의 밝은 섬에서도 여전히 걸립니다. §4가 컴포넌트에서 `dark:` 팔레트 클래스를 금지하는 이유가 여기서 한 번 더 성립합니다.
 
-런타임 브랜드 색은 CMS 메타데이터에서 옵니다. `layout.tsx`가 `metadata.primaryHex` 등으로 문자열을 만들고 `layout.tsx`가 `<style>`로 주입해 `--primary`와 `--primary-foreground` **2개 토큰만** 오버라이드합니다(라이트는 `:root`, 다크는 `.dark`). 코드에는 브랜드 색이 없고 데이터만 흐르므로 브랜드 어그노스틱이 유지됩니다.
+**색 토큰은 3층입니다(2026-10-06).** L0 원시 팔레트 → L1 shadcn 세트 → L2 확장. 구조와 규칙은 `color-tokens.css` 머리 주석이 소유합니다. 요점만:
 
-주입 대상이 `--primary` 계열 2개뿐이라는 것은 현실의 제약을 만듭니다. `accent`, `secondary`, `ring`은 채도(chroma) 0의 뉴트럴로 고정되어 있고(🔴 `--accent`는 지금 `--muted`와 **같은 값**입니다 — hover가 `bg-muted`이므로 `accent`로 선택 상태를 칠하면 선택과 hover가 구별되지 않습니다. 채워진 상태는 `primary` 짝을 씁니다), `chart-1`~`chart-5`는 0이 아닌 채도의 고정된 다색 팔레트를 갖습니다(둘 다 `theme.css` 원시값). 어느 쪽도 브랜드 주입을 받지 않으므로, 브랜드 강조색은 `primary`를 쓰는 표면(예: `bg-primary`, `text-primary`)에만 반영되고 그 밖의 강조 토큰은 원래 값으로 남습니다.
+- **L1·L2 값은 L0 참조만** 씁니다(`--muted: var(--color-neutral-100)`). oklch·hex 리터럴을 적지 않습니다 — 숫자를 베끼면 L0와의 관계가 안 보이고, 그 틈으로 단계 밖 값(옛 다크 배경 `#121212`)이 섞였습니다. 예외는 작품 그라디언트(`--highlight-background`)뿐입니다.
+- **중립색은 Tailwind neutral 단계만** 씁니다. shadcn 다크 기본값의 흰색 알파 테두리도 neutral 단계(border 800·input 700)로 바꿨습니다.
+- **L1은 shadcn 슬롯을 그대로 유지**합니다. 쓰지 않는 슬롯(`secondary`·`sidebar-primary`)도 지우지 않습니다 — shadcn 컴포넌트를 새로 받을 때 그 이름을 전제합니다. 같은 값을 가진 슬롯이 여럿인 것(`muted`=`secondary`=`accent`)도 shadcn neutral 기본 구성입니다.
+- **L2 확장은 shadcn 규약**(같은 파일, `@theme inline` 등록)을 따릅니다: `inverted`·`overlay`·`action-hover-foreground`·상태색·`highlight`·`studio-rail-idle-foreground`.
+- **브랜드 색은 shadcn 슬롯으로만 들어옵니다.** `primary`는 브랜드 색이 아니라 neutral-900입니다(시안의 기본 버튼이 검정). HD 색은 L0 `--color-hd-*`에 등록하고 `chart-1~5`가 받습니다. 값의 정본은 `scripts/seed-hd-brand-colors.ts`이고 `color-tokens.css`는 그 사본입니다. 🔴 Figma 변수의 hex는 seed와 대조한 뒤 옮깁니다 — 둘이 갈라진 전례가 있습니다(HD LIGHT BLUE).
+- 예전에는 가이드라인 설정(`primaryColor`)이 `layout.tsx`에서 `--primary`를 덮었습니다. HD 전용이 되며 걷었습니다 — admin에서 색 하나를 바꾸면 버튼 40여 곳이 함께 바뀌는 통로였습니다. 필드는 MCP가 아직 읽으므로 남아 있습니다.
+
+`accent`, `secondary`, `ring`은 중립 단계로 고정되어 있습니다(🔴 `--accent`는 `--muted`와 **같은 값**입니다 — hover가 `bg-muted`이므로 `accent`로 선택 상태를 칠하면 선택과 hover가 구별되지 않습니다. 채워진 상태는 `primary` 짝을 씁니다).
+
+**어드민도 같은 토큰을 읽습니다(2026-10-06).** `admin-tailwind.css`가 `color-tokens.css`를 import해, 어드민에 올린 우리 컴포넌트(대시보드·필드·컨트롤러 킷·`components/ui`)는 앱과 같은 색입니다. Payload 자체 화면(목록·폼 크롬)은 여전히 Payload 회색(`--theme-elevation-*`)이라 둘 사이에 미세한 회색 차이가 있습니다 — 의도한 경계입니다. 예전 구조의 함정 하나: 어드민의 `@theme inline`이 Payload 변수로 **값을 직접** 컴파일했기 때문에, `.lbs-kit`에서 `--color-*`를 덮어쓴 것은 유틸에 아무 효과가 없었습니다(`@theme inline`은 변수 이름이 아니라 값을 유틸에 박는다).
 
 ## 6. 타이포그래피와 프리미티브 소재
 
@@ -116,30 +129,32 @@ rg -n '#[0-9a-fA-F]{3,8}\b|(?:bg|text|border|ring|fill|from|to|via)-(?:(?:red|or
 | Badge·비필수 메타·캡션 | `text-xs` |
 | 본문·입력·일반 버튼·메뉴 | `text-sm` |
 | 큰 버튼·카드 제목 | `text-base` |
-| H1 설명·lead·가이드라인 카드 캡션 | `text-xl` |
+| H1 설명·lead | `text-xl` |
 | 섹션·로컬 페이지 제목 | `text-2xl` |
 | 페이지·챕터 제목 | `text-5xl` |
 | 최상위 H1 | `text-6xl` |
 
 14px 텍스트와 함께 쓰는 아이콘은 `size-4`, 16px 텍스트와 함께 쓰는 아이콘은 `size-5`를 기본으로 합니다. 일반 컴포넌트에는 `clamp()`·`vw`·반응형 `text-*`·임의 글자 크기를 선언하지 않습니다.
 
-가이드라인의 역할별 크기·굵기·행간·자간은 `components/guideline/typography/guideline-typography.ts`가 소유합니다. 토픽 제목은 `text-6xl`, 동급 블록 제목은 `text-5xl`, 블록 설명·하단 캡션은 `text-xl`, 오버레이 캡션은 `text-base`, 스펙 라벨·값은 `text-sm`을 소비합니다. 이 역할 매핑은 가이드라인 본문에만 적용하고 일반 화면의 제목·컨트롤에는 적용하지 않습니다. `text-sm`처럼 제품에서 재정의한 유틸리티의 실제 크기는 Tailwind 기본값이 아닌 `theme.css`에서 확인합니다.
+가이드라인 구조(`components/guideline/structure/`)는 이 유틸리티 스케일을 쓰지 않습니다. 역할별 크기·행간·자간은 그 폴더의 CSS 모듈이 px로 소유하고(`structure.module.css`·`caption.module.css`), `Typography`는 요소(`as`)와 굵기만 정합니다 — 모듈 클래스가 `Typography`의 기본 크기를 덮습니다. 이 스케일은 가이드라인 본문과 첫 화면 블록에만 적용하고 일반 화면의 제목·컨트롤에는 적용하지 않습니다. `text-sm`처럼 제품에서 재정의한 유틸리티의 실제 크기(13px)는 Tailwind 기본값이 아닌 `theme.css`에서 확인합니다.
 
-카드 캡션 제목·설명은 같은 크기와 Medium, 행간 155%를 사용합니다(사용자 지정 2026-09-08). 블록 설명과 스펙 값은 Regular로 구분합니다. 캡션 설명과 스펙 값은 `text-muted-foreground`, 서체는 `font-body`입니다. 하단 캡션의 배치·폭·여백은 계속 `cards/caption/component.tsx`가 소유합니다. 섹션·블록 설명은 `SectionHeadings`에서 최대 폭 767px로 제한하며, 좁은 화면에서는 부모 영역에 맞춰 줄어듭니다. 기존 설명의 오른쪽 32px 패딩은 이 최대 폭 안에 포함됩니다.
+| 역할 | 컴포넌트 | 소유 |
+| --- | --- | --- |
+| 표시 제목·부제 | `GuidelineDisplayTitle` | `structure.module.css` |
+| 블록 제목(main·sub)·블록 설명(16/24, 최대 폭 480px) | `GuidelineSectionHeading` | `structure.module.css` |
+| 카드 캡션 — 제목·설명 16/24, 목록·명세 14/20 | `GuidelineCardCaption` | `caption.module.css`(수치의 정본은 `docs/10` 공통 캡션) |
 
-HTML 의미와 시각 역할은 분리합니다. `GuidelineHeader`가 h1/h2를 정하고 캡션은 문단, 스펙은 dt/dd를 유지합니다. `Typography`와 richText는 `components/ui/typography-variants.ts`의 같은 스타일 생성기를 사용합니다. 도판 속 브랜드 서체 표본·치수 라벨·컨트롤 값은 이 산문 스케일에 포함하지 않습니다.
+HTML 의미와 시각 역할은 분리합니다. 표시 제목은 h1, 블록 제목은 `hierarchy`에 따라 h2/h3이고, 캡션은 figcaption, 명세는 dt/dd를 유지합니다. `Typography`와 richText는 `components/ui/typography-variants.ts`의 같은 스타일 생성기를 사용합니다. 도판 속 브랜드 서체 표본·치수 라벨·컨트롤 값은 이 산문 스케일에 포함하지 않습니다.
 
-캡션 배치는 `below`(기본, 카드 아래)와 `overlay`(판 안쪽 하단) 중 고릅니다. 오버레이는 Figma 136:231의 `text-base` 크기와 여백을 따르며, 제목·설명의 Medium·행간 155%는 공유합니다. 그라데이션은 판 폭을 채우고 텍스트 폭은 제한합니다. `dark` 토큰 스코프로 밝은 글자와 어두운 그라데이션의 대비를 유지하며, 긴 내용은 키보드로 접근할 수 있는 캡션 영역 안에서 스크롤합니다. 제목·설명·2열 스펙 표는 두 배치가 같은 렌더러를 사용합니다. 배치가 없는 기존 콘텐츠는 카드 아래에 표시합니다.
-
-첫 화면(메인·가이드라인·스튜디오) 히어로의 `HD │ 제목` 락업(`LandingLockup`)은 CI 높이(32px)와 짝을 이루는 고정 크기(34px)이고, 문서·스튜디오 띠의 표시 제목(`GuidelineDisplayTitle`)은 화면 비율에 맞춘 `clamp()` 크기를 씁니다 — 둘이 viewport 반응형·임의 크기의 예외입니다. 템플릿 캔버스와 `TypeScale`·`TypeSpecimen`이 데이터로 받은 글자 크기도 UI 타이포그래피가 아니므로 예외입니다. 그 밖의 `TypeSpecimen` 같은 대형 표본은 viewport 계산식 대신 `text-9xl` 같은 고정 유틸리티를 사용합니다. 클래스 주입이 불가능한 `.typeset` 내부 생성 HTML은 `typeset.css`에서 같은 고정 단계만 직접 선언합니다.
+첫 화면(메인·가이드라인·스튜디오) 히어로의 `HD │ 제목` 락업(`LandingLockup`)은 CI 높이(32px)와 짝을 이루는 고정 크기(34px)이고, 문서·스튜디오 띠의 표시 제목(`GuidelineDisplayTitle`)과 main 블록 제목(`GuidelineSectionHeading hierarchy="main"`)은 화면 비율에 맞춘 `clamp()` 크기를 씁니다 — 이 셋이 viewport 반응형·임의 크기의 예외입니다. 템플릿 캔버스와 `TypeScale`·`TypeSpecimen`이 데이터로 받은 글자 크기도 UI 타이포그래피가 아니므로 예외입니다. 그 밖의 `TypeSpecimen` 같은 대형 표본은 viewport 계산식 대신 `text-9xl` 같은 고정 유틸리티를 사용합니다. 클래스 주입이 불가능한 `.typeset` 내부 생성 HTML은 `typeset.css`에서 같은 고정 단계만 직접 선언합니다.
 
 현재 상태를 정직하게 기술합니다.
 
 | 사실 | 근거 |
 | --- | --- |
 | `--font-body`(Pretendard)는 `body`에 배선되어 기본 폰트로 동작 | `src/app/(frontend)/theme.css`, `src/app/(frontend)/styles.css` |
-| `--font-title`은 값이 정해지지 않아 Pretendard로 폴백하며, `.font-title` 클래스는 정의되어 있으나 상위 guideline 헤더에 미배선 | `src/app/(frontend)/theme.css` |
-| 그래서 `GuidelineHeader`의 모든 variant는 `font-title` 없이 렌더되어 기본 body 폰트로 폴백 | `guideline-header.tsx` |
+| `--font-title`은 값이 정해지지 않아 Pretendard로 폴백하며, `.font-title` 클래스는 정의되어 있으나 가이드라인 제목에 미배선 | `src/app/(frontend)/theme.css` |
+| 그래서 가이드라인 제목(`GuidelineDisplayTitle`·`GuidelineSectionHeading`)은 `font-title` 없이 렌더되어 기본 body 폰트로 폴백 | `structure/components.tsx` |
 | `--font-heading`/`--font-mono`는 어디에도 정의되지 않아 `.typeset`의 `code`/`pre`는 브라우저 monospace로 폴백 | `src/app/(frontend)/typeset.css` (참조만, 정의 없음) |
 
 `font-title`을 헤더에 붙이거나 `--font-mono`를 정의하는 것은 파운데이션 변경(09)이지 컴포넌트 작업이 아닙니다. 상세한 텍스트 저작 규칙은 `docs/10`이 소유합니다.
@@ -175,30 +190,7 @@ CMS 섹션은 평면 섹션 구조를 사용합니다. Subsection은 직전 Sect
 
 신규 경로는 `ContentFrame`을 사용하지 않습니다. Section이 가용 폭과 좌우 여백을 제공하고, Heading·Sticky는 최대 1415px에서 중앙 배치합니다. Grid는 목표 카드 너비×열 수+가로 간격으로 최대 폭을 계산하고 Carousel은 가용 폭을 사용합니다. 카드 간격은 Grid 좌우 12px·상하 24px, Carousel 좌우 12px, Sticky 세로 24px입니다. 컴포넌트 API는 [10의 신규 문서 구조 계약](10-component-authoring.md#가이드라인-문서-구조-api-2026-09-23)을 따릅니다.
 
-### 레거시 문서 (`contentModel=legacy`)
-
-아래 규칙은 `deprecated/`와 기존 blocks 렌더링에만 적용합니다. 신규 Section에 옮겨 적용하지 않습니다.
-
-
-| 컴포넌트 | 소유 책임 |
-| --- | --- |
-| `GuidelineTitleDisplay` | 토픽 대표 이미지와 h1 배치 |
-| `GuidelineSections` | 섹션 순서와 섹션 사이 `gap-72`, Better Editor ID |
-| `GuidelineSection` | 앵커, 제목/콘텐츠 사이 `gap-12`, 캐러셀의 섹션 끝 clipping |
-| `SectionHeadings` | `ContentFrame` heading 여백과 최대 폭 1540px·중앙 배치, 제목/설명 `gap-8`, 설명 최대 폭 767px |
-| `SectionContents` | 공용 `ContentFrame`의 padded 폭·여백과 배치 방식 선택 |
-| `GridContainer` | 동일 너비·첫 열부터 배치·카드 간격, 콘텐츠 폭에 따른 열 수 제한 |
-| `CarouselContainer` | 가로 넘김·스냅·카드 간격 |
-| `GuidelineCard` | 비율·프레임과 Display·Mark·Actions·Caption 조합, 카드별 조작 스코프 |
-| `GuidelineFooter` | 본문 다음의 빈 footer 위치. 높이·콘텐츠 미지정 |
-
-모바일(md 미만)에서는 카드가 부모 폭을 채우며, 격자는 한 열로 쌓이고 캐러셀은 한 카드씩 넘깁니다. 그리드 영역은 `ContentFrame` 안에 중앙 배치하고, 카드는 `justify-content: flex-start`로 마지막 행까지 첫 열부터 채웁니다. 설명의 오른쪽 32px 패딩은 최대 폭 767px 안에 포함됩니다.
-
-`blocks/rhythm.ts`는 제거했습니다. 각 배치 컴포넌트가 자기 간격을 소유하고, 캐러셀에서 사용하는 행 높이만 `src/components/guideline/sections/row-height.ts`의 `CARD_ROW_HEIGHT`로 공유합니다. 폭·가로 여백의 기본값은 공용 `ContentFrame`을 재사용합니다. 페이지에 중복 패딩을 추가하지 않습니다.
-
-CMS `section`·`base`·`overview`·`examples`는 `CardBlock` 어댑터가 같은 `GuidelineSection`으로 연결합니다. `prepareCards`는 저장 데이터를 바꾸지 않고 언어 비교를 독립 카드로 펼칩니다. 컨트롤러와 프리뷰 상태는 화면 구성과 별도이며 푸터에 넣지 않습니다. 하단 캡션은 카드 폭 안에서 제한하고 왼쪽에 붙입니다.
-
-헤딩 계층은 `GuidelineHeader`가 `variant`(`topic` h1 / `section` h2)로 분기해 소유합니다(`guideline-header.tsx`). 토픽 안의 `section`·`base`·`overview`·`examples`는 동급 블록이므로 같은 h2를 사용하며 h3 단계는 없습니다. 가이드라인 첫 화면(Figma 458:16373)의 h1은 히어로 락업이, 챕터는 문서와 같은 `GuidelineSection`·`GuidelineSectionHeading`(h2)이, 토픽은 링크 가이드라인 카드(`GuidelineGridContainer`의 `href`)가 그립니다. 스튜디오 첫 화면(`StudioHome`)도 같은 섹션 블록에 프로파일 카드를 담습니다. 랜드마크는 셸이 `main`을(`section-layout.tsx`), 토픽 화면이 `article` 하나를(`pages/guideline-topic.tsx`) 갖고, 블록 프레임과 섹션 안쪽은 랜드마크를 만들지 않습니다.
+헤딩 계층은 토픽의 h1을 `GuidelineDisplayTitle`이, 섹션 제목을 `GuidelineSectionHeading`(`hierarchy` main h2 / sub h3)이 소유합니다. 가이드라인 첫 화면(Figma 458:16373)의 h1은 히어로 락업이, 챕터는 문서와 같은 `GuidelineSection`·`GuidelineSectionHeading`(h2)이, 토픽은 링크 가이드라인 카드(`GuidelineGridContainer`의 `href`)가 그립니다. 스튜디오 첫 화면(`StudioHome`)도 같은 섹션 블록에 프로파일 카드를 담습니다. 랜드마크는 셸이 `main`을(`section-layout.tsx`), 토픽 화면이 `article` 하나를(`pages/guideline-topic.tsx`) 갖고, 블록 프레임과 섹션 안쪽은 랜드마크를 만들지 않습니다.
 
 ### 가이드라인 계층 이름은 Figma 정본과 다릅니다
 
@@ -220,7 +212,7 @@ CMS `section`·`base`·`overview`·`examples`는 `CardBlock` 어댑터가 같은
 | --- | --- | --- |
 | 접근성·다국어 | `docs/08-accessibility-i18n.md` | 색만으로 상태를 구분하지 않는 규칙 등은 08이 소유 |
 | 소스 위치·네이밍·`use client` 경계 | `docs/06-project-structure.md` | 컴포넌트 배치와 명명은 06 기준 |
-| 보안 | `docs/07-security.md` | 런타임 브랜드 hex는 `<style>`로 미새니타이즈 주입(`layout.tsx`)되므로 입력 신뢰 경계는 07이 다룸 |
+| 보안 | `docs/07-security.md` | 입력 신뢰 경계는 07이 다룸(런타임 `<style>` 브랜드 주입은 2026-10-06에 걷혔다) |
 | 브랜드 자산 데이터 모델 | `docs/05-system-architecture.md` | 색·폰트·로고가 데이터로 흐르는 소유 구조는 05가 정의 |
 | 위젯 시각 어휘 | `docs/11-widget-authoring.md` | 가이드라인 위젯이 쓰는 표본 면·판독·캡션 어휘는 11이 소유 |
 
@@ -231,7 +223,7 @@ CMS `section`·`base`·`overview`·`examples`는 `CardBlock` 어댑터가 같은
 | 층 | 채택 | 비고 |
 | --- | --- | --- |
 | 프레임워크 | Next.js (App Router) | 라우트별 렌더링 방식은 **선언**합니다(`docs/05` 「렌더링 캐시 무효화」) |
-| 스타일 엔진 | Tailwind CSS v4 — **CSS-first** | `tailwind.config`가 없습니다. 토큰은 `theme.css`의 `@theme inline` |
+| 스타일 엔진 | Tailwind CSS v4 — **CSS-first** | `tailwind.config`가 없습니다. 토큰은 `color-tokens.css`(색)·`theme.css`(그 밖)의 `@theme inline` |
 | 컴포넌트 | **shadcn/ui** (`base: radix`) | 라이브러리가 아니라 **소스 복사본**입니다. `src/components/ui`를 우리가 소유 |
 | 동작·접근성 | **Radix** | shadcn 아래층. WAI-ARIA APG 패턴 구현체 |
 | variant | `class-variance-authority` | 원형은 `docs/10` §3 |
@@ -288,12 +280,13 @@ look은 언젠가 전부 바뀝니다. 그러므로 **겉모습이 어설픈 것
 | 슬라이더 | `components/ui/slider.tsx` |
 | 선택 컨트롤(토글·세그먼트) | `components/ui/toggle.tsx` (`toggle-group`이 공유) |
 | on/off 스위치 | `components/ui/switch.tsx` |
-| 패널 카드·알약 칩(어드민 대시보드·가이드라인 메인) | `components/shared/panel-card.tsx` — 두 표면(Payload 13px root ↔ frontend 16px root)에서 동일하게 그려져야 해서 수치를 px로 고정한 예외 |
+| 패널 카드·알약 칩(어드민 대시보드) | `components/shared/panel-card.tsx` — Payload 어드민의 root가 13px이라 rem 유틸리티가 프런트(16px)와 다르게 그려지므로 수치를 px로 고정한 예외 |
 | 페이지 히어로 배너(shader 배경 + 락업) | `components/shared/page-hero.tsx` |
 | 표본 면(테마 면·브랜드 면) | `features/guideline/cards/displays/dynamics/surface.ts` |
 | 수치·캡션 줄 | `features/guideline/cards/displays/dynamics/readout.ts` |
 | hairline 격자 | `features/guideline/cards/displays/dynamics/hairline.ts` |
-| 색·간격·radius·타입 원시값 | `app/(frontend)/theme.css` |
+| 색 원시값 | `app/color-tokens.css` |
+| 간격·radius·타입 원시값 | `app/(frontend)/theme.css` |
 
 🔴 이 목록이 늘어나는 것은 정상이고, **같은 요소가 두 자리에 생기는 것은 결함입니다.** `features/guideline/cards/displays/dynamics/visual-vocabulary.test.ts`가 `features/guideline` 전체(블록·카드·컴포넌트·위젯)를 훑어 색에 대해서만 이것을 지킵니다 — 다른 축은 아직 사람이 봅니다.
 

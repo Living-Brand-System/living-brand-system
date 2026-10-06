@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { ReactNode } from 'react'
 import {
 	GuidelineDisplayFooter,
@@ -6,8 +7,21 @@ import {
 	GuidelineSectionHeading,
 } from '@/components/guideline/structure/components'
 import { LandingHero, LandingSurface } from '@/components/shared/landing-hero'
-import { StudioHomeCard, type StudioHomeItem } from '@/components/studio/shared/studio-home-card'
+import {
+	StudioSelectionCard,
+	StudioSelectionTile,
+} from '@/components/studio/shared/studio-selection-card'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
+import type { StudioPreviewImage } from '@/modules/studio-controller/controller-definition'
+
+export type StudioHomeItem = {
+	key: string | number
+	name: string
+	/** 이름 아래 한 줄 — 편집 화면 좌상단 카드의 부제와 같은 값을 준다. */
+	subtitle?: string
+	href: string
+	previewImage?: StudioPreviewImage
+}
 
 export type StudioHomeGroup = {
 	/** 블록 제목 — 템플릿 카테고리, 그래픽 렌더러 종류(P5 Vectors·Shaders), 이미지의 Generate. */
@@ -22,8 +36,6 @@ type StudioHomeProps = {
 	subtitle: string
 	groups: readonly StudioHomeGroup[]
 	empty: { title: string; description: string }
-	/** 카드 안에 미리보기를 담는 방식 — `StudioHomeCard`의 `fit`. */
-	cardFit: 'contain' | 'cover'
 	/** 프로파일 블록 뒤에 잇는 블록(이미지 스튜디오의 Examples). */
 	children?: ReactNode
 }
@@ -31,9 +43,10 @@ type StudioHomeProps = {
 /**
  * 생성 스튜디오(Template·Graphic·Image)의 첫 화면(Figma 571:8889) — 히어로 띠, 묶음마다 블록, 푸터.
  * 블록의 제목·간격은 가이드라인 문서의 섹션과 같은 것을 쓴다(디자인이 같은 Block 컴포넌트다).
- * 카드는 프로파일 카드이고 딥링크(`/studio/<kind>/<slug>`)로 가는 링크일 뿐이다 — 편집 세션은 딥링크 화면이 소유한다.
+ * 카드는 편집 화면 좌상단과 같은 `StudioSelectionCard`이고 딥링크(`/studio/<kind>/<slug>`)로 가는 링크일 뿐이다 —
+ * 편집 세션은 딥링크 화면이 소유한다.
  */
-export function StudioHome({ title, subtitle, groups, empty, cardFit, children }: StudioHomeProps) {
+export function StudioHome({ title, subtitle, groups, empty, children }: StudioHomeProps) {
 	const visibleGroups = groups.filter((group) => group.items.length > 0)
 	return (
 		<div data-slot="studio-home" className="h-full min-h-0 overflow-y-auto">
@@ -61,7 +74,15 @@ export function StudioHome({ title, subtitle, groups, empty, cardFit, children }
 							>
 								<StudioHomeGrid>
 									{group.items.map((item) => (
-										<StudioHomeCard key={item.key} item={item} fit={cardFit} />
+										<StudioSelectionTile key={item.key} asChild>
+											<Link href={item.href}>
+												<StudioSelectionCard
+													title={item.name}
+													subtitle={item.subtitle}
+													image={item.previewImage}
+												/>
+											</Link>
+										</StudioSelectionTile>
 									))}
 								</StudioHomeGrid>
 							</StudioHomeBlock>

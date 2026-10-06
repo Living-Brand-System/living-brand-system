@@ -60,6 +60,8 @@ START에는 상태, CENTER에는 해당 도판이 지원하는 전환, END에는
 
 규정 수치는 단일 상수를 공유하고 CMS 검증·조작 범위가 같은 규정을 읽도록 합니다. 브랜드 규정은 출처를 주석에 남깁니다. 색상은 [09](09-design-system.md)의 닫힌 토큰 규칙과 카드 도판 색상 계약을 따릅니다. 테마 면과 규정상 고정 브랜드 면을 구분하고 현재 공유 `dynamics/surface.ts` 어휘를 재사용합니다.
 
+**카드 도판 전체는 브랜드 면입니다(2026-10-06).** `GuidelineDisplayFrame`이 판에 `light` 토큰 범위를 선언하므로, 다크 모드에서도 판 배경·판 안 글자·액션·위젯 UI는 라이트 값으로 그려집니다. 표본(브랜드 색 락업, 밝은 배경이 구워진 이미지)이 밝은 면을 전제로 설계돼 있어서입니다. 그래서 판 안의 `THEME_PANEL`(`bg-muted`)도 다크에서 밝게 남습니다. 앱 테마를 따르는 것은 판 밖(카드 캡션·섹션 설명)뿐입니다. 위젯이 이 범위를 벗어나려고 `dark:` 변형을 쓰지 않습니다(`visual-vocabulary.test.ts`가 막습니다). 검은 판이 규정인 표본은 지금처럼 `BRAND_PANEL_DARK`·`CI_STAGE_DARK`로 명시합니다.
+
 버튼·전환에는 접근 가능한 이름과 키보드 동작을 제공합니다. Slider의 이름은 손잡이에 연결하는 `aria-label/aria-labelledby/aria-valuetext`로 전달합니다. 실제 컨트롤이 필요하면 `components/shared/controller/`나 기존 앱 프리미티브를 먼저 재사용합니다. 제거한 Floating Helper·컨트롤러 레지스트리는 추가하지 않습니다.
 
 ## 6. 검색·검수·이력

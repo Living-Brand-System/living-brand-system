@@ -91,7 +91,7 @@ export async function AdminDashboard({ initPageResult }: AdminViewServerProps) {
 			</div>
 
 			{/* 카드에서 시선을 떼어 놓는 자리. 위 여백이 넓은 것이 이 제목의 일이다. */}
-			<h2 className="px-[12px] pt-[80px] pb-[12px] font-medium text-[26px] text-brand-deep leading-[32px]">
+			<h2 className="px-[12px] pt-[80px] pb-[12px] font-medium text-[26px] text-chart-4 leading-[32px]">
 				기타 설정
 			</h2>
 
@@ -110,7 +110,7 @@ function CardBlock({ block }: { block: ResolvedBlock }) {
 	return (
 		<PanelCard
 			className={cn(
-				'min-h-[381px] bg-brand-tint/10 text-brand-deep ring-brand/20',
+				'min-h-[381px] bg-chart-3/10 text-chart-4 ring-chart-2/20',
 				block.wide && 'md:col-span-2',
 			)}
 			title={block.title}
@@ -119,11 +119,11 @@ function CardBlock({ block }: { block: ResolvedBlock }) {
 				{block.entries.map((entry) => (
 					<li key={entry.href}>
 						<PanelChip
-							className="gap-[16px] border-brand-tint/10 bg-background/60 py-[16px] pr-[10px] pl-[16px] data-[bare=true]:pr-[16px]"
+							className="gap-[16px] border-chart-3/10 bg-background/60 py-[16px] pr-[10px] pl-[16px] data-[bare=true]:pr-[16px]"
 							data-bare={!entry.createHref}
 						>
 							<Link
-								className="font-semibold text-[13px] text-brand-deep leading-[16px] no-underline"
+								className="font-semibold text-[13px] text-chart-4 leading-[16px] no-underline"
 								href={entry.href}
 							>
 								{entry.label}
@@ -171,7 +171,7 @@ function CreateLink({ entry, tone }: { entry: ResolvedEntry; tone: 'brand' | 'pl
 			className={cn(
 				'flex size-[22px] items-center justify-center rounded-full border',
 				tone === 'brand'
-					? 'border-brand-tint/10 text-brand-deep'
+					? 'border-chart-3/10 text-chart-4'
 					: 'border-border text-muted-foreground',
 			)}
 			href={entry.createHref}

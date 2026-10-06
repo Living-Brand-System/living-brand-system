@@ -18701,25 +18701,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "token_limits_unlimited": {
-          "name": "token_limits_unlimited",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": false
-        },
-        "token_limits_daily": {
-          "name": "token_limits_daily",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "token_limits_monthly": {
-          "name": "token_limits_monthly",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": false
-        },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp(3) with time zone",
@@ -21902,51 +21883,6 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
-    },
-    "public.ai_token_limits": {
-      "name": "ai_token_limits",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "daily": {
-          "name": "daily",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 10000
-        },
-        "monthly": {
-          "name": "monthly",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 100000
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp(3) with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp(3) with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
     }
   },
   "enums": {
@@ -21983,6 +21919,7 @@
         "5:4",
         "4:3",
         "3:2",
+        "5:3",
         "16:9",
         "2:1",
         "7:3",
@@ -22210,6 +22147,7 @@
         "5:4",
         "4:3",
         "3:2",
+        "5:3",
         "16:9",
         "2:1",
         "7:3",
@@ -23293,6 +23231,6 @@
     "tables": {},
     "columns": {}
   },
-  "id": "bb036865-e788-400f-8270-060887e47b59",
+  "id": "380a3f3c-709c-48f4-b4c1-7fb88922d184",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }
