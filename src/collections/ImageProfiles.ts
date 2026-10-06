@@ -19,7 +19,6 @@ import {
 	type PublishedImageProfileDefinition,
 } from '@/features/image-generation/domain/image-studio-config'
 import { imageGenerationErrorResponse } from '@/features/image-generation/respond-image-generation'
-import { normalizeImageProfilePrompt } from '@/features/image-generation/services/normalize-image-profile-prompt.service'
 import {
 	assertImageProfileUnpinned,
 	isUnpublishTransition,
@@ -37,7 +36,7 @@ import { draftVersions } from './shared'
 const managerFieldRead: FieldAccess = ({ req }) => isManager(req.user)
 
 async function normalizePromptEndpoint(req: PayloadRequest) {
-	if (!isManager(req.user)) {
+	if (!req.user || !isManager(req.user)) {
 		return Response.json({ message: 'Forbidden' }, { status: 403 })
 	}
 
@@ -52,7 +51,11 @@ async function normalizePromptEndpoint(req: PayloadRequest) {
 	}
 
 	try {
-		return Response.json(await normalizeImageProfilePrompt(parsed.data))
+		// 동적 import — 토큰 한도·사용량 기록이 @payload-config를 읽으므로, 정적으로 물면 컬렉션 ↔ 설정이 순환한다.
+		const { previewImageProfilePrompt } = await import(
+			'@/features/image-generation/services/normalize-image-profile-prompt.service'
+		)
+		return Response.json(await previewImageProfilePrompt(parsed.data, req.user.id))
 	} catch (error) {
 		req.payload.logger.error({ err: error }, 'image-prompt-normalization.failed')
 		return (

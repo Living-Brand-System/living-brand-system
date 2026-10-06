@@ -47,6 +47,29 @@ describe('runFullCheck', () => {
 		}
 	})
 
+	it('토큰 한도로 막힌 AI 요청(429)은 전달 실패가 아니라 한도 초과로 채운다', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async (input: string) =>
+				input === '/api/check'
+					? jsonResponse(serverResult)
+					: new Response(null, { status: 429 }),
+			),
+		)
+		const onAiResult = vi.fn()
+
+		await runFullCheck(new File([new Uint8Array([1])], 'poster.png'), 'poster', {
+			onServerResult: () => {},
+			onAiResult,
+		})
+
+		const [, results] = onAiResult.mock.calls[0]
+		for (const key of serverResult.pendingCheckKeys) {
+			expect(results[key].rawResult.reasonCode).toBe('ai_token_limit')
+			expect(results[key].rawResult.detail).toBe('AI 토큰 한도 초과')
+		}
+	})
+
 	it('AI 요청이 성공하면 서버 판정을 그대로 전달한다', async () => {
 		const aiResults = { 'logo-misuse': { rawResult: { status: 'pass' } } }
 		vi.stubGlobal(
