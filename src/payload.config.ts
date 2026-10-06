@@ -5,7 +5,7 @@ import { resendAdapter } from '@payloadcms/email-resend'
 import { type MCPAccessSettings, mcpPlugin } from '@payloadcms/plugin-mcp'
 import { searchPlugin } from '@payloadcms/plugin-search'
 import { EXPERIMENTAL_TableFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
-import { s3Storage } from '@payloadcms/storage-s3'
+import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 import { ko } from '@payloadcms/translations/languages/ko'
 import { attachDatabasePool } from '@vercel/functions'
 import {
@@ -23,6 +23,7 @@ import { AgentSkills } from './collections/AgentSkills'
 import { AiUsageEvents } from './collections/AiUsageEvents'
 import { ApplicationImages } from './collections/ApplicationImages'
 import { BrandColorGroups } from './collections/BrandColorGroups'
+import { BrandColorPairs } from './collections/BrandColorPairs'
 import { BrandColors } from './collections/BrandColors'
 import { BrandIcons } from './collections/BrandIcons'
 import { BrandLogos } from './collections/BrandLogos'
@@ -48,6 +49,7 @@ import { listGuidelineSearchRules } from './features/guideline/repositories/guid
 import { buildGuidelineSearchText } from './features/guideline/utils/guideline-search-text'
 import { customMcpTools } from './features/mcp-access/mcp-tools'
 import { AgentSettings } from './globals/AgentSettings'
+import { AiTokenLimits } from './globals/AiTokenLimits'
 import { Guideline } from './globals/Guideline'
 import { adminOnly, authenticated, isAdmin, managerOrAdmin } from './lib/auth'
 import type { GuidelineDocument } from './payload-types'
@@ -82,6 +84,7 @@ const collections = [
 	BrandLogos,
 	BrandColors,
 	BrandColorGroups,
+	BrandColorPairs,
 	BrandTypefaces,
 	BrandIcons,
 	ApplicationImages,
@@ -104,15 +107,33 @@ const collections = [
 ]
 
 /**
- * upload를 갖는 컬렉션은 전부 S3에 저장한다.
+ * upload를 갖는 컬렉션은 전부 Vercel Blob에 저장한다.
  *
  * 🔴 손으로 나열하지 않는다. 등록에서 빠진 업로드 컬렉션은 Payload 기본 동작인 로컬 디스크 쓰기로
  * 떨어진다. 로컬 개발에서는 조용히 성공하고, 읽기 전용 파일시스템인 Vercel에서만 500이 난다
  * (sample-images가 실제로 그렇게 새어 나갔다). 파생으로 두면 그 어긋남이 생길 수 없다.
  */
-const s3UploadCollections = Object.fromEntries(
+const blobUploadCollections = Object.fromEntries(
 	collections.flatMap((collection) => (collection.upload ? [[collection.slug, true]] : [])),
 )
+
+/**
+ * 메일을 켜면 발신 주소·이름도 배포하는 쪽이 정해야 한다. 기본값을 두면 빠졌을 때 남의 주소로
+ * 조용히 나가므로, 없으면 부팅에서 멈춘다. 키가 없으면 메일 자체를 끈다.
+ */
+function resendEmail() {
+	if (!env.RESEND_API_KEY) return undefined
+	if (!env.EMAIL_FROM_ADDRESS || !env.EMAIL_FROM_NAME) {
+		throw new Error(
+			'RESEND_API_KEY를 쓰려면 EMAIL_FROM_ADDRESS와 EMAIL_FROM_NAME이 필요합니다.',
+		)
+	}
+	return resendAdapter({
+		apiKey: env.RESEND_API_KEY,
+		defaultFromAddress: env.EMAIL_FROM_ADDRESS,
+		defaultFromName: env.EMAIL_FROM_NAME,
+	})
+}
 
 export default buildConfig({
 	admin: {
@@ -143,13 +164,7 @@ export default buildConfig({
 		// 가이드라인 수치 규정 표(최소 사이즈, 자간 등) 입력용. EXPERIMENTAL: 업그레이드 시 변경 가능성 있음.
 		features: ({ defaultFeatures }) => [...defaultFeatures, EXPERIMENTAL_TableFeature()],
 	}),
-	email: env.RESEND_API_KEY
-		? resendAdapter({
-				apiKey: env.RESEND_API_KEY,
-				defaultFromAddress: env.EMAIL_FROM_ADDRESS || 'noreply@plus-ex.com',
-				defaultFromName: env.EMAIL_FROM_NAME || 'PROTO',
-			})
-		: undefined,
+	email: resendEmail(),
 	secret: env.PAYLOAD_SECRET,
 	upload: {
 		limits: {
@@ -252,18 +267,11 @@ export default buildConfig({
 				],
 			},
 		}),
-		s3Storage({
-			collections: s3UploadCollections,
-			bucket: env.S3_BUCKET || '',
-			config: {
-				region: env.S3_REGION || '',
-				endpoint: env.S3_ENDPOINT,
-				forcePathStyle: Boolean(env.S3_ENDPOINT),
-				credentials: {
-					accessKeyId: env.S3_ACCESS_KEY_ID || '',
-					secretAccessKey: env.S3_SECRET_ACCESS_KEY || '',
-				},
-			},
+		// 토큰이 없으면(로컬·CI·Docker 프리뷰) 어댑터가 꺼지고 로컬 디스크로 떨어진다.
+		// Vercel에서는 env.ts가 토큰을 필수로 막아 서버리스 임시 디스크에 쓰는 일이 없다.
+		vercelBlobStorage({
+			collections: blobUploadCollections,
+			token: env.BLOB_READ_WRITE_TOKEN,
 		}),
 	],
 	i18n: {
@@ -278,5 +286,5 @@ export default buildConfig({
 		// 기존 en revision은 보존하되 Admin 편집은 초기 릴리스 언어인 ko로 고정한다.
 		filterAvailableLocales: ({ locales }) => locales.filter((locale) => locale.code === 'ko'),
 	},
-	globals: [Guideline, AgentSettings, BetterEditorSettings],
+	globals: [Guideline, AgentSettings, BetterEditorSettings, AiTokenLimits],
 })

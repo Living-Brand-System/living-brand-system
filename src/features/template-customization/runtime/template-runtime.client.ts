@@ -176,8 +176,11 @@ export function composeTemplateStudioHtml({
 			{
 				profileId?: number
 				featureValues: ControllerValues
+				imageMode: 'preset' | 'generate'
 				image?: TemplateAssignedImage
 				transform?: ImageTransformValue
+				dimmer?: boolean
+				dimmerOpacity?: number
 			}
 		>
 	>
@@ -228,8 +231,11 @@ export function composeTemplateStudioHtml({
 								: {}),
 						}
 					: undefined
+			// 슬롯 Dimming은 방식과 무관하다 — 배경 Dimming처럼 켜져 있으면 늘 건다(2026-10-02 결정).
+			const dimmer = state.dimmer ? (state.dimmerOpacity ?? 0) : 0
 			const override = {
 				...(colorize ? { imageColorize: colorize } : {}),
+				...(dimmer > 0 ? { imageDimmer: dimmer } : {}),
 				...(state.image && state.transform
 					? {
 							imageTransform: toImageEditTransform(

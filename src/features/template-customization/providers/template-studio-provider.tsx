@@ -11,7 +11,12 @@ import {
 	useState,
 } from 'react'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
-import { getGraphicStudioRuntimeBindings } from '@/features/graphic-generation/runtime/graphic-studio-runtime'
+import { graphicRendererLabel } from '@/features/graphic-generation/domain/graphic-studio-config'
+import {
+	createGraphicPresetValues,
+	getGraphicStudioRuntimeBindings,
+	getGraphicStudioRuntimeGroups,
+} from '@/features/graphic-generation/runtime/graphic-studio-runtime'
 import {
 	acceptsImagePromptExecution,
 	getImageColorAdjustmentControls,
@@ -74,6 +79,7 @@ import {
 	type ControllerRuntimeBindings,
 	type ControllerValues,
 	createControllerValues,
+	followsChangedDefault,
 } from '@/modules/studio-controller/controller-definition'
 
 const GENERATION_ERROR_MESSAGE = '이미지 생성에 실패했어요. 잠시 후 다시 시도해 주세요.'
@@ -138,7 +144,11 @@ function useTemplateImageSession(
 	config: TemplateStudioConfig,
 	imageSlots: readonly TemplateImageConfigSlot[],
 	draft: TemplateDraft | null,
-): TemplateStudioValue['images'] {
+): TemplateStudioValue['images'] & {
+	restore: (states: Record<string, TemplateImageSlotState>) => void
+	reset: (slotId: string) => void
+} {
+	const requests = useRef(new Map<string, symbol>())
 	const contracts = useMemo(
 		() =>
 			Object.fromEntries(
@@ -158,13 +168,49 @@ function useTemplateImageSession(
 			imageSlots.map((slot) => slot.id),
 		),
 	}))
+	const restore = useCallback((snapshot: Record<string, TemplateImageSlotState>) => {
+		requests.current.clear()
+		setStates(snapshot)
+	}, [])
+	const reset = useCallback(
+		(slotId: string) => {
+			const slot = imageSlots.find((item) => item.id === slotId)
+			if (!slot) return
+			requests.current.delete(slotId)
+			setStates((current) => ({
+				...current,
+				[slotId]: {
+					...current[slotId],
+					...initialImageState(
+						slot,
+						(contracts[slotId] ?? []).filter(
+							(item) => item.config.id === current[slotId]?.profileId,
+						),
+					),
+					imageMode: current[slotId]?.imageMode ?? 'preset',
+					image: current[slotId]?.image,
+					transform: undefined,
+					dimmer: undefined,
+					dimmerOpacity: undefined,
+				},
+			}))
+		},
+		[contracts, imageSlots],
+	)
 	const updateState = useCallback(
 		(slotId: string, patch: Partial<TemplateImageSlotState>) => {
 			setStates((current) => {
 				const slot = imageSlots.find((candidate) => candidate.id === slotId)
 				if (!slot) return current
 				const previous = current[slotId] ?? initialImageState(slot, contracts[slotId] ?? [])
-				return { ...current, [slotId]: { ...previous, ...patch } }
+				return {
+					...current,
+					[slotId]: {
+						...previous,
+						...patch,
+						...(patch.image ? { transform: undefined } : {}),
+					},
+				}
 			})
 		},
 		[contracts, imageSlots],
@@ -219,23 +265,23 @@ function useTemplateImageSession(
 			),
 		[contracts, imageSlots],
 	)
-	const selectSampleImage = useCallback(
-		(slotId: string, option: SampleImageOption) =>
-			// 생성 중이던 요청 결과가 뒤늦게 덮지 않도록 error·generating도 함께 정리한다.
-			setStates((current) => ({
-				...current,
-				[slotId]: {
-					...current[slotId],
-					imageMode: current[slotId]?.imageMode ?? 'preset',
-					prompt: current[slotId]?.prompt ?? '',
-					generating: false,
-					error: null,
-					featureValues: current[slotId]?.featureValues ?? {},
-					image: toAssignedSampleImage(option),
-				},
-			})),
-		[],
-	)
+	const selectSampleImage = useCallback((slotId: string, option: SampleImageOption) => {
+		requests.current.delete(slotId)
+		// 생성 중이던 요청 결과가 뒤늦게 덮지 않도록 error·generating도 함께 정리한다.
+		setStates((current) => ({
+			...current,
+			[slotId]: {
+				...current[slotId],
+				imageMode: current[slotId]?.imageMode ?? 'preset',
+				prompt: current[slotId]?.prompt ?? '',
+				generating: false,
+				error: null,
+				featureValues: current[slotId]?.featureValues ?? {},
+				image: toAssignedSampleImage(option),
+				transform: undefined,
+			},
+		}))
+	}, [])
 	const generate = useCallback(
 		/**
 		 * 🔑 `promptOverride`가 있는 이유: 챗이 얹은 패치를 **같은 tick에** 생성까지 태우려면
@@ -248,10 +294,21 @@ function useTemplateImageSession(
 				(candidate) => candidate.config.id === state?.profileId,
 			)
 			const prompt = promptOverride ?? state?.prompt ?? ''
-			if (!state || state.generating || !contract || !validPrompt(prompt, contract)) return
+			if (
+				!state ||
+				requests.current.has(slotId) ||
+				state.generating ||
+				!contract ||
+				!validPrompt(prompt, contract)
+			)
+				return
+			const request = Symbol()
+			requests.current.set(slotId, request)
 			const requestProfileId = contract.config.id
 			updateState(slotId, { generating: true, error: null })
 			const generated = await requestTemplateImageGeneration(prompt, contract)
+			if (requests.current.get(slotId) !== request) return
+			requests.current.delete(slotId)
 			setStates((current) =>
 				applyImageRequestResult(
 					current,
@@ -277,6 +334,8 @@ function useTemplateImageSession(
 	return useMemo(
 		() => ({
 			states,
+			restore,
+			reset,
 			contracts,
 			update,
 			updateFeature,
@@ -284,7 +343,17 @@ function useTemplateImageSession(
 			selectSampleImage,
 			generate,
 		}),
-		[contracts, generate, selectProfile, selectSampleImage, states, update, updateFeature],
+		[
+			contracts,
+			generate,
+			selectProfile,
+			selectSampleImage,
+			states,
+			update,
+			updateFeature,
+			restore,
+			reset,
+		],
 	)
 }
 
@@ -343,20 +412,28 @@ function useTemplateLayerSession(
 	 * 🔴 `undefined`(아직 고른 적 없음)와 `null`(일부러 풀었음)은 다른 상태다. 둘을 합치면
 	 *    고른 묶음을 다시 눌러 푸는 순간 첫 묶음으로 되튄다.
 	 */
-	const [selected, setSelected] = useState<TemplateStudioConfigSlot['kind'] | null | undefined>()
-	// 들어오자마자 만질 것이 보여야 한다(사용자 지시, 2026-09-29) — 아직 안 골랐으면 첫 묶음이다.
-	const initial = listTemplateLayerGroups(all)[0]?.kind ?? null
-	// 🔴 읽을 때 걸러 낸다 — 템플릿을 바꾸면 있는 종류가 달라지고, 그때 남은 선택은 아무 컨트롤도
-	//    못 내면서 「고른 상태」로 보인다. 초기화 effect를 두는 대신 유도한다.
-	const selectedKind =
+	const [selected, setSelected] = useState<string | null | undefined>()
+	const initial =
+		all.find((slot) => slot.kind === listTemplateLayerGroups(all)[0]?.kind)?.id ?? null
+	const selectedId =
 		selected === undefined
 			? initial
-			: selected && all.some((slot) => slot.kind === selected)
-				? selected
+			: all.some((slot) => slot.id === selected)
+				? (selected ?? null)
 				: null
+	const selectedKind = all.find((slot) => slot.id === selectedId)?.kind ?? null
+	const select = useCallback(
+		(id: string | null) =>
+			setSelected(
+				all.find((slot) => slot.id === id)?.id ??
+					all.find((slot) => slot.kind === id)?.id ??
+					null,
+			),
+		[all],
+	)
 	return useMemo(
-		() => ({ visibility, setVisible, selectedKind, select: setSelected }),
-		[selectedKind, setVisible, visibility],
+		() => ({ visibility, setVisible, selectedId, selectedKind, select }),
+		[visibility, setVisible, selectedId, selectedKind, select],
 	)
 }
 
@@ -364,7 +441,11 @@ function useTemplateBackgroundSession(
 	config: TemplateStudioConfig,
 	slot: TemplateBackgroundSlot | undefined,
 	draft: TemplateDraft | null,
-): TemplateStudioValue['background'] {
+): TemplateStudioValue['background'] & {
+	restore: (state: TemplateBackgroundState) => void
+	reset: () => void
+} {
+	const requestId = useRef<symbol | null>(null)
 	const contracts = useMemo(
 		() =>
 			slot
@@ -379,6 +460,33 @@ function useTemplateBackgroundSession(
 	const [state, setState] = useState<TemplateBackgroundState>(
 		() => draft?.background ?? initialBackgroundState(config, slot, contracts),
 	)
+	const restore = useCallback((snapshot: TemplateBackgroundState) => {
+		requestId.current = null
+		setState(snapshot)
+	}, [])
+	const reset = useCallback(() => {
+		requestId.current = null
+		setState((current) => {
+			const initial = initialBackgroundState(
+				config,
+				slot,
+				contracts.filter((item) => item.config.id === current.profileId),
+			)
+			const graphic = config.template.graphicConfigs.find(
+				(item) => item.id === current.graphicConfigId,
+			)
+			return {
+				...initial,
+				type: current.type,
+				image: current.image,
+				imageMode: current.imageMode,
+				graphicConfigId: current.graphicConfigId,
+				graphicValues: graphic
+					? createControllerValues(graphic.controller.groups)
+					: initial.graphicValues,
+			}
+		})
+	}, [config, slot, contracts])
 	const typeDefinition = slot ? findTemplateControl(config, slot.typeControlId) : undefined
 	const colorDefinition = slot ? findTemplateControl(config, slot.colorControlId) : undefined
 	const selectedContract = contracts.find((candidate) => candidate.config.id === state.profileId)
@@ -424,16 +532,15 @@ function useTemplateBackgroundSession(
 			setState((current) => selectBackgroundImageProfile(current, profileId, contracts)),
 		[contracts],
 	)
-	const selectSampleImage = useCallback(
-		(option: SampleImageOption) =>
-			setState((current) => ({
-				...current,
-				generating: false,
-				error: null,
-				image: toAssignedSampleImage(option),
-			})),
-		[],
-	)
+	const selectSampleImage = useCallback((option: SampleImageOption) => {
+		requestId.current = null
+		setState((current) => ({
+			...current,
+			generating: false,
+			error: null,
+			image: toAssignedSampleImage(option),
+		}))
+	}, [])
 	const selectGraphicConfig = useCallback(
 		(configId: string) =>
 			setState((current) =>
@@ -457,9 +564,14 @@ function useTemplateBackgroundSession(
 	const generate = useCallback(async () => {
 		const contract = contracts.find((candidate) => candidate.config.id === state.profileId)
 		const prompt = state.prompt
-		if (state.generating || !contract || !validPrompt(prompt, contract)) return
+		if (requestId.current || state.generating || !contract || !validPrompt(prompt, contract))
+			return
+		const request = Symbol()
+		requestId.current = request
 		setState((current) => ({ ...current, generating: true, error: null }))
 		const generated = await requestTemplateImageGeneration(prompt, contract)
+		if (requestId.current !== request) return
+		requestId.current = null
 		setState((current) => ({
 			...current,
 			generating: false,
@@ -479,6 +591,8 @@ function useTemplateBackgroundSession(
 	return useMemo(
 		() => ({
 			state,
+			restore,
+			reset,
 			contracts,
 			featureBindings,
 			graphicConfigs: config.template.graphicConfigs,
@@ -495,6 +609,8 @@ function useTemplateBackgroundSession(
 		}),
 		[
 			config.template.graphicConfigs,
+			restore,
+			reset,
 			contracts,
 			featureBindings,
 			generate,
@@ -526,8 +642,9 @@ function useTemplateDraftAutosave(
 	userId: string | null | undefined,
 	templateId: string,
 	draft: TemplateDraft,
+	restoreDraft: boolean,
 ): void {
-	const restored = useRef(true)
+	const restored = useRef(restoreDraft)
 	// biome-ignore lint/correctness/useExhaustiveDependencies: draft는 매 렌더 새 객체라 의존성에 둘 수 없다 — 값이 바뀌었는지는 아래 필드들이 말한다
 	useEffect(() => {
 		if (!userId) return
@@ -564,6 +681,7 @@ export function TemplateStudioProvider({
 	categoryTitle,
 	highlightColor = null,
 	userId,
+	restoreDraft = true,
 	children,
 }: {
 	config: TemplateStudioConfig
@@ -576,6 +694,7 @@ export function TemplateStudioProvider({
 	 * 없으면 임시 저장을 아예 하지 않는다 — 주인을 모르는 초안은 남기지 않는다.
 	 */
 	userId?: string | null
+	restoreDraft?: boolean
 	children: ReactNode
 }) {
 	/**
@@ -583,7 +702,7 @@ export function TemplateStudioProvider({
 	 * 한 프레임 보였다가 바뀌고, 그 사이 도는 effect들이 기본값을 기준으로 측정한다.
 	 */
 	const [draft] = useState<TemplateDraft | null>(() =>
-		userId ? readTemplateDraft(userId, String(template.id)) : null,
+		restoreDraft && userId ? readTemplateDraft(userId, String(template.id)) : null,
 	)
 	// 교체 후보 목록은 자산 브라우저가 열릴 때 가져온다 — 페이지는 현재 카테고리 이름 하나만 싣는다.
 	const templateBrowse = useLazyResource(fetchCreateNavigation)
@@ -622,16 +741,154 @@ export function TemplateStudioProvider({
 	const text = useTemplateTextSession(config, textSlots, html, previewRef, draft)
 	const images = useTemplateImageSession(config, imageSlots, draft)
 	const vectors = useTemplateVectorSession(vectorSlots, draft)
-	const layers = useTemplateLayerSession(editableSlots, slots, draft)
+	const layerSession = useTemplateLayerSession(editableSlots, slots, draft)
 	const background = useTemplateBackgroundSession(config, backgroundSlot, draft)
-	useTemplateDraftAutosave(userId, String(template.id), {
-		text: text.values,
-		textColor: text.color,
-		vectorColors: vectors.colors,
-		visibility: layers.visibility,
-		images: images.states,
-		background: background.state,
-	})
+	const [targetId, setTargetId] = useState<string | null>(null)
+	const snapshot = useRef<{
+		id: string
+		images: typeof images.states
+		background: TemplateBackgroundState
+	} | null>(null)
+	const begin = useCallback(
+		(id: string) => {
+			if (
+				snapshot.current ||
+				background.state.generating ||
+				Object.values(images.states).some((state) => state.generating)
+			)
+				return
+			const slot = slots.find((item) => item.id === id)
+			if (
+				!slot ||
+				(slot.kind !== 'background' &&
+					(slot.kind !== 'image' || slot.access !== 'editable'))
+			)
+				return
+			snapshot.current = { id, images: images.states, background: background.state }
+			layerSession.select(id)
+			setTargetId(id)
+		},
+		[slots, images.states, background.state, layerSession.select],
+	)
+	const selectLayer = useCallback(
+		(id: string | null) => {
+			if (!snapshot.current) layerSession.select(id)
+		},
+		[layerSession.select],
+	)
+	const layers = useMemo(
+		() => ({ ...layerSession, select: selectLayer }),
+		[layerSession, selectLayer],
+	)
+	const busy =
+		background.state.generating ||
+		Object.values(images.states).some((state) => state.generating)
+	const target = useMemo<TemplateStudioValue['editing']['target']>(() => {
+		if (!targetId) return null
+		const isBackground = targetId === backgroundSlot?.id
+		const state = isBackground ? background.state : images.states[targetId]
+		const mode = !isBackground
+			? 'image'
+			: background.state.type === 'graphic'
+				? 'graphic'
+				: background.state.type === 'image'
+					? 'image'
+					: 'color'
+		const graphicConfig =
+			mode === 'graphic'
+				? background.graphicConfigs.find(
+						(item) => item.id === background.state.graphicConfigId,
+					)
+				: undefined
+		const profile =
+			mode === 'graphic'
+				? graphicConfig
+				: mode === 'image'
+					? (isBackground ? background.contracts : images.contracts[targetId])?.find(
+							(item) => item.config.id === state?.profileId,
+						)?.config
+					: undefined
+		return {
+			mode,
+			// Figma 525:8777 — Preset은 방식 이름, Generate는 프로파일 이름, 단색 배경은 Solid Color.
+			name:
+				mode === 'color'
+					? 'Solid Color'
+					: mode === 'image' && state?.imageMode === 'preset'
+						? 'Image Preset'
+						: (profile?.name ?? null),
+			subtitle: graphicConfig ? graphicRendererLabel(graphicConfig.type) : undefined,
+			preview:
+				mode === 'image' && state?.image
+					? { url: state.image.url, alt: profile?.name ?? 'Image' }
+					: profile?.previewImage,
+		}
+	}, [
+		targetId,
+		backgroundSlot?.id,
+		background.state,
+		background.contracts,
+		background.graphicConfigs,
+		images.states,
+		images.contracts,
+	])
+	const editing = useMemo<TemplateStudioValue['editing']>(
+		() => ({
+			targetId,
+			target,
+			busy,
+			begin,
+			complete: () => {
+				if (busy) return
+				snapshot.current = null
+				// 편집을 마치면 처음 들어왔을 때의 마스터 레이어(보통 Text)로 돌아간다 — 빈 선택을 두지 않는다.
+				layerSession.select(listTemplateLayerGroups(slots)[0]?.kind ?? null)
+				setTargetId(null)
+			},
+			cancel: () => {
+				const saved = snapshot.current
+				if (!saved) return
+				images.restore(saved.images)
+				background.restore(saved.background)
+				snapshot.current = null
+				// 편집을 마치면 처음 들어왔을 때의 마스터 레이어(보통 Text)로 돌아간다 — 빈 선택을 두지 않는다.
+				layerSession.select(listTemplateLayerGroups(slots)[0]?.kind ?? null)
+				setTargetId(null)
+			},
+			reset: () => {
+				if (!targetId || busy) return
+				if (targetId === backgroundSlot?.id) background.reset()
+				else images.reset(targetId)
+			},
+		}),
+		[
+			targetId,
+			target,
+			busy,
+			begin,
+			layerSession.select,
+			images.restore,
+			images.reset,
+			background.restore,
+			background.reset,
+			backgroundSlot?.id,
+			slots,
+		],
+	)
+
+	useTemplateDraftAutosave(
+		userId,
+		String(template.id),
+		{
+			text: text.values,
+			textColor: text.color,
+			vectorColors: vectors.colors,
+			visibility: layers.visibility,
+			images: images.states,
+			background: background.state,
+		},
+		restoreDraft,
+	)
 	const deferredTextColor = useDeferredValue(text.color)
 	const deferredImageStates = useDeferredValue(images.states)
 	const deferredVectorColors = useDeferredValue(vectors.colors)
@@ -755,6 +1012,7 @@ export function TemplateStudioProvider({
 	const value = useMemo<TemplateStudioValue>(
 		() => ({
 			navigation,
+			editing,
 			sampleImages,
 			config,
 			text,
@@ -776,6 +1034,7 @@ export function TemplateStudioProvider({
 		}),
 		[
 			artifact,
+			editing,
 			background,
 			supportsBackgroundVideo,
 			composedHtml,
@@ -906,6 +1165,8 @@ function updateTemplateImageSlot(
 			...(patch.imageMode === undefined ? {} : { imageMode: patch.imageMode }),
 			...(prompt === undefined ? {} : { prompt }),
 			...(patch.transform === undefined ? {} : { transform: patch.transform }),
+			...(patch.dimmer === undefined ? {} : { dimmer: patch.dimmer }),
+			...(patch.dimmerOpacity === undefined ? {} : { dimmerOpacity: patch.dimmerOpacity }),
 		},
 	}
 }
@@ -918,7 +1179,10 @@ function applyImageRequestResult(
 ) {
 	const previous = current[slotId]
 	if (!previous || previous.profileId !== requestProfileId) return current
-	return { ...current, [slotId]: { ...previous, ...patch } }
+	return {
+		...current,
+		[slotId]: { ...previous, ...patch, ...(patch.image ? { transform: undefined } : {}) },
+	}
 }
 
 /** patch의 모든 키를 반영해야 한다 — 키를 빠뜨리면 컨트롤이 눌려도 상태가 안 바뀐다(2026-08-20 디머 실사고). export는 그 회귀 테스트용. */
@@ -989,7 +1253,7 @@ function selectBackgroundGraphicConfig(
 	}
 }
 
-function updateBackgroundGraphic(
+export function updateBackgroundGraphic(
 	current: TemplateBackgroundState,
 	controlId: string,
 	next: ControllerControlValue,
@@ -998,16 +1262,38 @@ function updateBackgroundGraphic(
 ): TemplateBackgroundState {
 	const config = configs.find((candidate) => candidate.id === current.graphicConfigId)
 	if (!config) return current
-	const definition = config.controller.groups
+	const groups = getGraphicStudioRuntimeGroups(config, current.graphicValues)
+	const definition = groups
 		.flatMap((group) => group.controls)
 		.find((control) => control.id === controlId)
 	const binding = getGraphicStudioRuntimeBindings(config, viewport)[controlId]
 	if (!definition || !acceptsControllerDraftValue(definition, next, binding)) {
 		return current
 	}
+	if (controlId === 'preset')
+		return { ...current, graphicValues: createGraphicPresetValues(config, next) }
+	const graphicValues: ControllerValues = { ...current.graphicValues, [controlId]: next }
+	const previous = new Map(
+		groups.flatMap((group) =>
+			group.controls.map((control) => [control.id, control.defaultValue] as const),
+		),
+	)
+	for (const group of getGraphicStudioRuntimeGroups(config, graphicValues)) {
+		for (const control of group.controls) {
+			if (control.id === controlId) continue
+			if (
+				followsChangedDefault(
+					graphicValues[control.id],
+					previous.get(control.id),
+					control.defaultValue,
+				)
+			)
+				graphicValues[control.id] = control.defaultValue
+		}
+	}
 	return {
 		...current,
-		graphicValues: { ...current.graphicValues, [controlId]: next },
+		graphicValues,
 	}
 }
 

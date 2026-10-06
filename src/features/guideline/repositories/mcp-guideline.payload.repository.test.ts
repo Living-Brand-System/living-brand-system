@@ -29,7 +29,7 @@ describe('MCP guideline Payload repository', () => {
 					slug: 'logo',
 					headerImage: 11,
 					rules: [],
-					blocks: [],
+					sections: [],
 					displayOrder: 2,
 					chapter: 3,
 					ignoredPersistenceField: 'do not expose',
@@ -46,8 +46,7 @@ describe('MCP guideline Payload repository', () => {
 				slug: 'logo',
 				headerImage: 11,
 				rules: [],
-				blocks: [],
-				contentModel: undefined,
+				sections: [],
 				displayOrder: 2,
 				chapter: 3,
 			},
@@ -64,12 +63,10 @@ describe('MCP guideline Payload repository', () => {
 		)
 	})
 
-	it('저장 원본의 활성 모델과 순서를 변경하지 않는다', async () => {
+	it('저장 섹션의 순서를 변경하지 않는다', async () => {
 		const document = {
 			id: 1,
-			contentModel: 'sections',
 			sections: [{ id: 'main' }, { id: 'sub' }],
-			blocks: [{ title: 'retired' }],
 		}
 		const find = vi.fn().mockResolvedValue({ docs: [document] })
 		const result = await listPublishedMcpGuidelineDocuments(
@@ -117,7 +114,7 @@ describe('MCP guideline Payload repository', () => {
 	it('live Guideline global을 접근 제어된 Local API로 읽고 DTO로 변환한다', async () => {
 		const findGlobal = vi.fn().mockResolvedValue({
 			id: 1,
-			companyName: 'PROTO',
+			companyName: 'Company',
 			documentTitle: 'Brand Guideline',
 			issuedLabel: '2026',
 			favicon: 3,
@@ -133,7 +130,7 @@ describe('MCP guideline Payload repository', () => {
 
 		await expect(findPublishedMcpGuideline(req, 'ko')).resolves.toEqual({
 			id: 1,
-			companyName: 'PROTO',
+			companyName: 'Company',
 			documentTitle: 'Brand Guideline',
 			issuedLabel: '2026',
 			favicon: 3,

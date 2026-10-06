@@ -302,7 +302,12 @@ export function findUnavailableAiReferenceCheckKeys(
 }
 
 async function readReferenceAsset(asset: CheckReferenceAsset): Promise<Buffer | null> {
-	const response = await fetch(toAbsoluteUrl(asset.url))
+	// staging은 Vercel 로그인으로 보호돼 자기 자신에게 보내는 요청도 막힌다. 우회 비밀값은
+	// 상대 경로(= 이 앱)로 가는 요청에만 싣는다 — 외부 절대 URL에 실으면 제3자에게 샌다.
+	const bypass = isAbsoluteUrl(asset.url) ? undefined : env.VERCEL_AUTOMATION_BYPASS_SECRET
+	const response = await fetch(toAbsoluteUrl(asset.url), {
+		headers: bypass ? { 'x-vercel-protection-bypass': bypass } : undefined,
+	})
 	if (!response.ok) return null
 	return Buffer.from(await response.arrayBuffer())
 }
@@ -311,8 +316,10 @@ export function aiReferenceAssetKey(asset: CheckReferenceAsset) {
 	return `${asset.url}:${asset.role}`
 }
 
+const isAbsoluteUrl = (url: string) => /^https?:\/\//.test(url)
+
 function toAbsoluteUrl(url: string) {
-	if (/^https?:\/\//.test(url)) return url
+	if (isAbsoluteUrl(url)) return url
 	const origin =
 		env.NEXT_PUBLIC_SITE_URL ||
 		(env.VERCEL_URL ? `https://${env.VERCEL_URL}` : 'http://localhost:3000')

@@ -120,6 +120,13 @@ export type TemplateBackgroundType = 'color' | 'image' | 'graphic'
 /** Admin이 정하는 배경 정책. 목록이 없으면 전부 허용이다 — exportPolicy와 같은 규칙. */
 export type TemplateBackgroundPolicy = {
 	types?: readonly TemplateBackgroundType[]
+	/**
+	 * 스튜디오를 열었을 때 고른 상태로 시작하는 형식. 미지정이거나 `types`에 없으면 허용 형식 중
+	 * 고정 순서(색 → 이미지 → 그래픽)의 첫 번째다(기존 저장분 호환).
+	 * 🔑 Figma에선 이미지로 만들었지만 실제로는 그래픽 배경을 기대하는 템플릿을 표현하는 자리다 —
+	 *    이미지도 허용하되 그래픽으로 시작하게 할 수 있다(2026-10-06).
+	 */
+	defaultType?: TemplateBackgroundType
 	imageConfigIds?: readonly number[]
 	graphicConfigIds?: readonly string[]
 	/** 배경 위 디머 허용 — 다른 키처럼 미지정은 허용이다(기존 저장분 호환). false만 금지다. */
@@ -634,8 +641,12 @@ function buildBackgroundGroup(
 			{
 				id: BACKGROUND_TYPE_CONTROL_ID,
 				kind: 'select',
-				label: 'Type',
-				defaultValue: options[0].value,
+				// Figma 525:8777 — 배경 방식은 드롭다운이 아니라 토글 그룹이다.
+				label: 'Mode',
+				variant: 'segmented',
+				defaultValue:
+					options.find((option) => option.value === policy?.defaultType)?.value ??
+					options[0].value,
 				options,
 				// 고를 것이 하나면 열어 둘 이유가 없다.
 				...(options.length === 1 ? { availability: 'readonly' as const } : {}),
@@ -656,13 +667,13 @@ function buildBackgroundGroup(
 						{
 							id: BACKGROUND_DIMMER_CONTROL_ID,
 							kind: 'toggle',
-							label: 'Dimmer',
+							label: 'Use',
 							defaultValue: false,
 						},
 						{
 							id: BACKGROUND_DIMMER_OPACITY_CONTROL_ID,
 							kind: 'range',
-							label: 'Dimmer Opacity',
+							label: 'Strength',
 							defaultValue: 0.2,
 							min: 0,
 							// 실용 상한 — 1.0은 배경을 완전한 검정으로 덮어 배경을 고른 의미가 없어진다.

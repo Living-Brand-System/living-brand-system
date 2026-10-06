@@ -1,7 +1,6 @@
-import { type CollectionConfig, slugField } from 'payload'
-import { guidelineRulesField } from '@/features/guideline/blocks/fields'
-import { guidelineBlocks } from '@/features/guideline/blocks/registry'
+import { APIError, type CollectionConfig, slugField } from 'payload'
 import { validateGuidelineDocumentSlug } from '@/features/guideline/checks/validate-guideline-document-slug'
+import { guidelineRulesField } from '@/features/guideline/sections/fields'
 import { sectionsField } from '@/features/guideline/sections/schema'
 import { managerManagedAccess } from '@/lib/auth'
 import { guidelineDraftVersions } from './shared'
@@ -43,6 +42,19 @@ export const GuidelineDocuments: CollectionConfig = {
 		preview: (data) => previewURL(data.id),
 	},
 	versions: guidelineDraftVersions,
+	hooks: {
+		beforeValidate: [
+			({ data, context }) => {
+				if (
+					(context.isRestoringVersion && data?.contentModel !== 'sections') ||
+					(data?.contentModel !== undefined && data.contentModel !== 'sections') ||
+					(data && Object.hasOwn(data, 'blocks'))
+				)
+					throw new APIError('기존 본문 형식은 저장하거나 복원할 수 없습니다.', 400)
+				return { ...data, contentModel: 'sections' }
+			},
+		],
+	},
 	defaultSort: 'displayOrder',
 	fields: [
 		// 🔴 챕터는 별도 컬렉션이다(2026-08-26). 계층을 문서 자기참조로 표현하던 시절에는
@@ -63,6 +75,12 @@ export const GuidelineDocuments: CollectionConfig = {
 			type: 'text',
 			required: true,
 			localized: true,
+		},
+		{
+			name: 'description',
+			type: 'textarea',
+			localized: true,
+			admin: { description: '가이드라인 첫 화면의 토픽 카드에서 제목 아래에 표시됩니다.' },
 		},
 		// 🔴 slug는 localized가 아니다(2026-09-04). URL은 언어를 가리지 않는다 — 섹션 앵커와 같은
 		//    이유로, 로케일마다 slug가 갈리면 공유한 링크가 언어를 바꾸는 순간 끊긴다.
@@ -91,31 +109,20 @@ export const GuidelineDocuments: CollectionConfig = {
 			relationTo: 'application-images',
 			admin: {
 				position: 'sidebar',
-				description: '토픽 헤더에 표시할 선택 이미지입니다.',
+				description:
+					'토픽 헤더와 가이드라인 첫 화면의 토픽 카드에 표시할 선택 이미지입니다.',
 			},
 		},
+		// 과거 버전의 복원 형식만 판별합니다. 본문 선택이나 API 응답에 노출하지 않습니다.
 		{
 			name: 'contentModel',
 			type: 'select',
-			label: '본문 형식',
-			defaultValue: 'legacy',
-			options: [
-				{ label: '기존 본문', value: 'legacy' },
-				{ label: '신규 섹션', value: 'sections' },
-			],
-			admin: {
-				description:
-					'신규 계약으로 작성할 문서는 신규 섹션을 선택합니다. 기존 본문은 삭제하지 않습니다.',
-			},
+			hidden: true,
+			access: { read: () => false },
+			options: ['legacy', 'sections'],
+			admin: { hidden: true },
 		},
 		sectionsField,
-		{
-			name: 'blocks',
-			type: 'blocks',
-			label: '본문',
-			blocks: guidelineBlocks,
-			admin: { condition: (data) => data.contentModel !== 'sections' },
-		},
 		guidelineRulesField(),
 		{
 			name: 'displayOrder',

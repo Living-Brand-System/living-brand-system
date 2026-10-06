@@ -693,13 +693,25 @@ describe('composeTemplateHtml canvas background', () => {
 	const childOf = (html: string) =>
 		parse(html).querySelector('[data-node-id="frame-1"]') as HTMLElement
 
-	it('색만 주면 루트 프레임의 배경색만 덮는다', () => {
+	it('색만 주면 루트 프레임의 배경색을 덮고 이미지는 걷는다', () => {
 		const html = composeTemplateHtml(canvasHtml, {}, { canvasBackground: { color: '#ff0000' } })
 
 		expect(rootOf(html).style.backgroundColor).toBe('rgb(255, 0, 0)')
-		expect(rootOf(html).style.backgroundImage).toBe('')
+		expect(rootOf(html).style.backgroundImage).toBe('none')
 		// 자식 프레임은 건드리지 않는다 — 배경의 주소는 캔버스뿐이다.
 		expect(childOf(html).style.backgroundColor).toBe('')
+	})
+
+	it('원본 루트에 사진이 깔려 있어도 색을 고르면 색이 보인다', () => {
+		// 가져온 루트 이미지 fill(SOLID 위 IMAGE) — 색만 덮으면 고른 색이 사진 아래에 깔려 안 보였다.
+		const photoHtml = canvasHtml.replace(
+			'background-color:rgb(0,40,10)',
+			'background-color:rgb(0,0,0);background-image:url(/api/application-images/file/sea.png)',
+		)
+		const html = composeTemplateHtml(photoHtml, {}, { canvasBackground: { color: '#ff0000' } })
+
+		expect(rootOf(html).style.backgroundColor).toBe('rgb(255, 0, 0)')
+		expect(rootOf(html).style.backgroundImage).toBe('none')
 	})
 
 	it('이미지만 주면 cover·center·no-repeat로 루트에 깐다', () => {
@@ -832,6 +844,56 @@ describe('composeTemplateHtml canvas background', () => {
 		const once = composeTemplateHtml(canvasHtml, {}, { canvasBackground: background })
 
 		expect(composeTemplateHtml(once, {}, { canvasBackground: background })).toBe(once)
+	})
+})
+
+describe('composeTemplateHtml image dimmer', () => {
+	const frameHtml =
+		'<div data-node-id="frame-1" data-figma-type="FRAME" style="overflow:hidden">' +
+		'<img data-node-id="img-1" data-image-carrier="" src="/api/application-images/file/ph.png">' +
+		'</div>'
+	const dimmersOf = (html: string) =>
+		new DOMParser().parseFromString(html, 'text/html').querySelectorAll('[data-image-dimmer]')
+
+	it('슬롯 박스의 마지막 자식으로 디머를 깔고, 컬러 치환 결과까지 덮는다', () => {
+		const html = composeTemplateHtml(frameHtml, {
+			'frame-1': {
+				backgroundImage: '/api/generated-images/file/gen.png',
+				imageColorize: { line: '#002c5f' },
+				imageDimmer: 0.4,
+			},
+		})
+		const doc = new DOMParser().parseFromString(html, 'text/html')
+		const frame = doc.querySelector('[data-node-id="frame-1"]') as HTMLElement
+		const dimmer = frame.lastElementChild as HTMLElement
+
+		expect(dimmer.hasAttribute('data-image-dimmer')).toBe(true)
+		expect(dimmer.style.backgroundColor).toBe('rgba(0, 0, 0, 0.4)')
+		expect(dimmer.style.pointerEvents).toBe('none')
+		expect(frame.style.position).toBe('relative')
+		expect(dimmersOf(html)).toHaveLength(1)
+	})
+
+	it('슬롯 자신이 img 캐리어면 컬러 치환이 만든 div에 단다', () => {
+		const html = composeTemplateHtml(frameHtml, {
+			'img-1': { imageColorize: { line: '#002c5f' }, imageDimmer: 0.4 },
+		})
+		const carrier = new DOMParser()
+			.parseFromString(html, 'text/html')
+			.querySelector('[data-node-id="img-1"]') as HTMLElement
+
+		expect(carrier.tagName).toBe('DIV')
+		expect(carrier.lastElementChild?.hasAttribute('data-image-dimmer')).toBe(true)
+	})
+
+	it('재합성해도 디머가 한 겹이고, 0이면 걷어 낸다', () => {
+		const once = composeTemplateHtml(frameHtml, { 'frame-1': { imageDimmer: 0.4 } })
+		expect(
+			dimmersOf(composeTemplateHtml(once, { 'frame-1': { imageDimmer: 0.4 } })),
+		).toHaveLength(1)
+		expect(
+			dimmersOf(composeTemplateHtml(once, { 'frame-1': { imageDimmer: 0 } })),
+		).toHaveLength(0)
 	})
 })
 

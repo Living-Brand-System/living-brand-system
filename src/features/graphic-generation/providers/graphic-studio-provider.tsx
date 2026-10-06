@@ -6,7 +6,10 @@ import {
 	type GraphicStudioValue,
 } from '@/features/graphic-generation/contexts/graphic-studio-context'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
-import { getGraphicStudioRuntimeGroups } from '@/features/graphic-generation/runtime/graphic-studio-runtime'
+import {
+	createGraphicPresetValues,
+	getGraphicStudioRuntimeGroups,
+} from '@/features/graphic-generation/runtime/graphic-studio-runtime'
 import { fetchCanvasStudioConfigs } from '@/features/graphic-generation/services/list-canvas-studio-configs.client'
 import { useLazyResource } from '@/hooks/use-lazy-resource'
 import { getCanvasStudioRoute } from '@/lib/routes'
@@ -131,10 +134,14 @@ export function GraphicStudioProvider({
 			) {
 				return false
 			}
-			setValues((current) => ({ ...current, [controlId]: value }))
+			setValues((current) =>
+				controlId === 'preset'
+					? createGraphicPresetValues(config, value)
+					: { ...current, [controlId]: value },
+			)
 			return true
 		},
-		[definitions],
+		[config, definitions],
 	)
 
 	const registerBindings = useCallback(

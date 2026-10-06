@@ -44,6 +44,14 @@ next-env.d.ts
 .env
 
 /media
+# Blob 토큰이 없을 때 Payload가 업로드를 쓰는 로컬 디스크 경로(staticDir 기본값 = 컬렉션 slug)
+/application-images/
+/brand-icons/
+/brand-logos/
+/brand-typefaces/
+/generated-images/
+/sample-images/
+/template-assets/
 
 # Playwright
 node_modules/

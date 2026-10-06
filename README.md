@@ -60,7 +60,7 @@ flowchart LR
   MCP["MCP"] --> App
   App --> Features["Guideline · Resource · Create · Review"]
   Features --> DB["PostgreSQL"]
-  Features --> Storage["Amazon S3"]
+  Features --> Storage["Vercel Blob"]
   Features --> AI["Anthropic · OpenAI"]
 ```
 
@@ -73,7 +73,7 @@ flowchart LR
 | Application | Next.js 16, React 19, TypeScript |
 | CMS | Payload CMS 3, Lexical |
 | Database | PostgreSQL 17 |
-| Storage | Amazon S3 |
+| Storage | Vercel Blob |
 | AI | Vercel AI SDK, Anthropic, OpenAI |
 | UI | Tailwind CSS 4, shadcn/ui, Radix UI |
 | Testing | Vitest, Playwright |
@@ -106,9 +106,12 @@ PAYLOAD_DB_PUSH=false
 | --- | --- |
 | AI Chat | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, `CHAT_MODEL`, `AGENT_CHAT_TRIAGE_ENABLED` |
 | Image Generation | `OPENAI_API_KEY`, `GEMINI_API_KEY` |
-| Figma Import | `FIGMA_API_TOKEN` |
-| Object Storage | `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, 선택 `S3_ENDPOINT`(S3 호환 저장소) |
+| Object Storage | `BLOB_READ_WRITE_TOKEN` — 없으면 업로드가 리포 루트의 `<컬렉션 slug>/` 디렉터리(로컬 디스크)에 저장됩니다. 공유 DB에 붙어 개발할 때는 그 DB의 Blob 토큰을 함께 넣으세요. 안 넣으면 DB 행만 공유되고 파일은 내 디스크에만 남습니다. |
 | Email | `RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`, `EMAIL_FROM_NAME` |
+
+Figma 가져오기는 서버 공용 토큰 없이, 가져오는 manager가 **내 계정**에서 자기 Figma 개인 API 토큰(`file_content:read`)을 등록해 씁니다.
+
+Vercel 배포에서는 Object Storage 토큰·Email 세 개·`NEXT_PUBLIC_SITE_URL`이 필수입니다. 하나라도 빠지면 `next build`가 실패하고 이전 배포가 그대로 유지됩니다(`src/env.ts`).
 
 ### 2. PostgreSQL 실행
 
@@ -142,9 +145,9 @@ printf 'PAYLOAD_SECRET=%s\n' "$(openssl rand -hex 32)" > .env.docker.local
 docker compose -f compose.preview.yml up -d
 ```
 
-`http://localhost:3102/admin`에서 확인합니다. `.env.docker.local`은 처음 한 번만 만들고 보관합니다. Node 22·PostgreSQL·MinIO를 사용하며 기존 `.env`와 `.env.local`은 컨테이너에 노출하지 않습니다. 시작할 때 커밋된 마이그레이션을 적용하며 자동 스키마 push는 끕니다. DB와 업로드 파일은 `lbs-cms-preview`의 전용 볼륨에만 저장됩니다. 외부 DB·S3·이메일·AI 서비스는 연결하지 않습니다.
+`http://localhost:3102/admin`에서 확인합니다. `.env.docker.local`은 처음 한 번만 만들고 보관합니다. Node 22·PostgreSQL을 사용하며 기존 `.env`와 `.env.local`은 컨테이너에 노출하지 않습니다. 시작할 때 커밋된 마이그레이션을 적용하며 자동 스키마 push는 끕니다. DB는 `lbs-cms-preview`의 전용 볼륨에, 업로드 파일은 리포 루트의 `<컬렉션 slug>/`(gitignore)에 저장됩니다. 외부 DB·Blob·이메일·AI 서비스는 연결하지 않습니다.
 
-`docker compose -f compose.preview.yml down`으로 중지합니다. 데이터는 남습니다. `down -v`는 작성한 DB와 업로드까지 삭제하므로 초기화할 때만 사용합니다. 콘텐츠는 Admin에서 직접 작성합니다.
+`docker compose -f compose.preview.yml down`으로 중지합니다. 데이터는 남습니다. `down -v`는 작성한 DB를 삭제하므로 초기화할 때만 사용합니다. 콘텐츠는 Admin에서 직접 작성합니다.
 
 ### Development Commands
 
@@ -153,14 +156,13 @@ docker compose -f compose.preview.yml up -d
 | `pnpm dev` | 개발 서버 실행 |
 | `pnpm doctor` | 블록 카탈로그와 타입 생성, 자동 수정, 정적·타입 검사 |
 | `pnpm test:int` | 통합 테스트 실행 |
-| `pnpm test:e2e` | E2E 테스트 실행 |
 | `pnpm build` | 프로덕션 빌드 생성 |
 | `pnpm migrate:status` | 데이터베이스 마이그레이션 상태 확인 |
 | `pnpm ci` | 정적 검사, 타입 검사, 통합 테스트, 빌드 실행 |
 
 ## Production Deployment
 
-LBS 애플리케이션은 하나의 Node.js 배포 단위로 운영하며 PostgreSQL 인스턴스에 연결합니다. 업로드 파일을 사용하는 환경에서는 Amazon S3도 준비합니다.
+LBS 애플리케이션은 하나의 Node.js 배포 단위로 운영하며 PostgreSQL 인스턴스에 연결합니다. 업로드 파일을 사용하는 환경에서는 Vercel Blob store도 준비합니다.
 커밋된 마이그레이션을 적용한 뒤 애플리케이션을 빌드하고 실행합니다.
 
 ```sh

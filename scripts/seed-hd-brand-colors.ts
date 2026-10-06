@@ -53,16 +53,15 @@ const ink = (color: HdColor, cmyk: string, pantone?: string): HdColor => ({
 //    색별로 갈랐다 — 전부 같았던 옛 플레이스홀더(`C 0 M 100 Y 90 K 0`·`485 C`)는 지웠다.
 //    🔴 값의 정본은 브랜드 가이드라인이고 우리는 옮기기만 한다. 인쇄 사고가 나면 가이드라인을 고친다
 //       (사용자 지시, 2026-09-09) — 총 잉크량·순수 검정 같은 판단으로 여기 값을 손대지 않는다.
-//    🔴 Mono Color 8단은 아직 옮기지 않았다. 정본 표(#FAFAFA·#E1E1E1·#C8C8C8·#969696·#646464·
-//       #3C3C3C·#1E1E1E·#000000)와 아래 Brightness Variation 11단이 hex도 이름도 다른 별개 체계라,
-//       어느 쪽이 색 문서가 되는지 정해지기 전에 값을 심으면 두 번 심게 된다. BLACK만 hex가 같아 넣었다.
+//    🔴 무채색 정본은 Mono Color 8단이다(사용자 결정, 2026-10-02). 값은 2026-09-30 admin 등록분을 따른다
+//       (정본 표의 첫 단 #FAFAFA 대신 WHITE를 쓴다). 함께 있던 Brightness Variation 11단(SVG-53의
+//       #FFFFFF → #393636 블렌드)은 정본이 아니라 그룹과 그 회색들을 지웠다 — 다시 심지 말 것.
 //    표에 함께 적힌 RGB·HEX는 옮기지 않는다. 확정된 hex와 어긋나기 때문이다
 //    (표의 HEX는 14칸 모두 #F00F0F, DISCOVERY BLUE·grey 4종은 RGB도 같은 플레이스홀더다).
 //    화면의 RGB는 저장값이 아니라 hex에서 파생한다.
 // 🔴 오버뷰 페이지와 배경 예시 페이지의 값이 어긋나는 색이 둘 있다. 오버뷰를 정본으로 채택했다.
 //    HD DISCOVERY BLUE #003087(오버뷰) vs #002F87(배경 예시)
 //    HD LIGHT BLUE     #DCF0F5(오버뷰) vs #DFE4F4(배경 예시)
-// 🔴 MIDDLE GREY가 두 개다. 정본이 그렇게 부른다 — 임의로 구분자를 붙이지 않는다.
 //
 // 색과 그룹은 별개다. 같은 색이 여러 그룹에 속할 수 있고 팔레트 순서는 그룹이 소유하므로,
 // 색 문서에는 그룹 이름을 쓰지 않고 그룹이 색을 순서 있는 관계로 참조한다.
@@ -70,9 +69,6 @@ const ink = (color: HdColor, cmyk: string, pantone?: string): HdColor => ({
 // 색은 여기 한 번만 정의하고 그룹은 참조만 한다. 같은 색이 여러 그룹에 들어가는데
 // 로고 사용 규칙은 배경색에 딸린 것이라, 그룹마다 다시 적으면 값이 갈릴 수 있다.
 //
-// 🔴 Brightness Variation 11단 중 5단(10/30/50/70/90%)은 브랜드팀 팔레트 표에 없다.
-//    SVG-53 아트워크가 `#FFFFFF → #393636` 선형 블렌드로 그려낸 값이라 이름도 퍼센트뿐이다.
-//    나머지 6단은 Mono Color와 같은 색이라 문서를 공유한다(20%=LIGHT GREY, 40%·60%=MIDDLE GREY, 80%=DARK GREY).
 const COLORS = {
 	ecoGreen: ink(logoless('HD ECO GREEN', '#73D75A', 'black'), 'C 55 M 0 Y 90 K 0', '7488 C'),
 	heritageGreen: ink(
@@ -97,15 +93,14 @@ const COLORS = {
 	deepGreen: ink(dark('HD DEEP GREEN', '#00280A'), 'C 80 M 55 Y 80 K 75', '3537 C'),
 	deepBlue: ink(dark('HD DEEP BLUE', '#000A32'), 'C 100 M 70 Y 0 K 80', '2758 C'),
 	white: light('WHITE', '#FFFFFF'),
-	grey10: light('GREY 10%', '#E9E9E9'),
-	lightGrey: light('LIGHT GREY', '#D3D2D2'),
-	grey30: light('GREY 30%', '#BDBCBC'),
-	middleGreyLight: light('MIDDLE GREY', '#A7A6A6'),
-	grey50: light('GREY 50%', '#918F90'),
-	middleGreyDark: dark('MIDDLE GREY', '#7B7979'),
-	grey70: dark('GREY 70%', '#656263'),
-	darkGrey: dark('DARK GREY', '#4F4C4D'),
-	grey90: dark('GREY 90%', '#393636'),
+	// Mono Color 8단의 회색 6단(2026-09-30 admin 등록값). 로고 규칙도 그 값을 옮겼다 —
+	// 밝은 세 단은 검정 단색형만, 어두운 세 단은 WHITE 워드마크·흰 단색형을 허용한다.
+	lightGrey1: logoless('LIGHT GREY 1', '#E1E1E1', 'black'),
+	lightGrey2: logoless('LIGHT GREY 2', '#C8C8C8', 'black'),
+	middleGrey1: logoless('MIDDLE GREY 1', '#969696', 'black'),
+	middleGrey2: dark('MIDDLE GREY 2', '#646464'),
+	darkGrey1: dark('DARK GREY 1', '#3C3C3C'),
+	darkGrey2: dark('DARK GREY 2', '#1E1E1E'),
 	// 🔴 총 잉크량 318%로 CRPC6 상한(300%)을 넘는다. 정본이 그렇게 적혀 있어 그대로 옮긴다 —
 	//    인쇄소가 반려하면 고칠 곳은 이 파일이 아니라 가이드라인이다.
 	black: ink(dark('BLACK', '#000000'), 'C 94 M 77 Y 53 K 94'),
@@ -129,10 +124,12 @@ const GROUPS: { name: string; colors: HdColor[] }[] = [
 		name: 'Mono Color',
 		colors: [
 			COLORS.white,
-			COLORS.lightGrey,
-			COLORS.middleGreyLight,
-			COLORS.middleGreyDark,
-			COLORS.darkGrey,
+			COLORS.lightGrey1,
+			COLORS.lightGrey2,
+			COLORS.middleGrey1,
+			COLORS.middleGrey2,
+			COLORS.darkGrey1,
+			COLORS.darkGrey2,
 			COLORS.black,
 		],
 	},
@@ -157,10 +154,12 @@ const GROUPS: { name: string; colors: HdColor[] }[] = [
 		name: '검정 계열',
 		colors: [
 			COLORS.white,
-			COLORS.lightGrey,
-			COLORS.middleGreyLight,
-			COLORS.middleGreyDark,
-			COLORS.darkGrey,
+			COLORS.lightGrey1,
+			COLORS.lightGrey2,
+			COLORS.middleGrey1,
+			COLORS.middleGrey2,
+			COLORS.darkGrey1,
+			COLORS.darkGrey2,
 			COLORS.black,
 		],
 	},
@@ -178,25 +177,6 @@ const GROUPS: { name: string; colors: HdColor[] }[] = [
 			COLORS.white,
 			COLORS.deepGreen,
 			COLORS.deepBlue,
-			COLORS.black,
-		],
-	},
-	// SVG-53의 흰색→검정 11단. 가이드라인 본문이 이걸 "Brightness Variation"이라고 부른다
-	// (사용 금지 규정 6번: "Brightness Variation중 명도 대비가 낮은 배색을 사용할 수 없습니다").
-	// 로고 전환 경계는 50%/60% — 여기까지가 기본형·검정 단색형, 여기부터가 WHITE 워드마크·흰 단색형이다.
-	{
-		name: 'Brightness Variation',
-		colors: [
-			COLORS.white,
-			COLORS.grey10,
-			COLORS.lightGrey,
-			COLORS.grey30,
-			COLORS.middleGreyLight,
-			COLORS.grey50,
-			COLORS.middleGreyDark,
-			COLORS.grey70,
-			COLORS.darkGrey,
-			COLORS.grey90,
 			COLORS.black,
 		],
 	},

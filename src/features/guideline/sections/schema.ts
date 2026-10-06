@@ -1,7 +1,7 @@
 import type { Field } from 'payload'
-import { anchorField, guidelineRulesField } from '../blocks/fields'
 import { CARD_RATIO_OPTIONS } from '../cards/displays/ratio'
 import { ASSET_SOURCES, displayField } from './display-schema'
+import { anchorField, guidelineRulesField } from './fields'
 import { isGuidelineActionHref } from './model'
 
 const sources = ASSET_SOURCES
@@ -192,6 +192,34 @@ const cards: Field = {
 				},
 			],
 		},
+		{
+			name: 'specGroups',
+			type: 'array',
+			// caption.groups의 긴 버전 조회 별칭이 자식 items와 충돌하므로 카드에 저장합니다.
+			localized: true,
+			dbName: 'specs',
+			label: '캡션 명세 그룹',
+			admin: {
+				condition: (_, sibling) => sibling?.caption?.type === 'specification',
+				description:
+					'그룹을 등록하면 위 항목 대신 표시합니다. 그룹 제목은 생략할 수 있습니다.',
+			},
+			fields: [
+				{ name: 'title', type: 'text', label: '그룹 제목' },
+				{
+					name: 'items',
+					type: 'array',
+					dbName: 'items',
+					label: '명세 항목',
+					required: true,
+					minRows: 1,
+					fields: [
+						{ name: 'label', type: 'text', label: '라벨' },
+						{ name: 'value', type: 'textarea', required: true, label: '값' },
+					],
+				},
+			],
+		},
 	],
 }
 
@@ -201,7 +229,6 @@ export const sectionsField: Field = {
 	label: '섹션',
 	dbName: 'sections',
 	admin: {
-		condition: (data) => data.contentModel === 'sections',
 		description:
 			'섹션과 서브섹션을 같은 목록에서 순서대로 편집합니다. 컨테이너에서 카드 배치를 선택합니다.',
 	},
@@ -270,16 +297,6 @@ export const sectionsField: Field = {
 		},
 		anchorField(),
 		{ name: 'description', type: 'textarea', localized: true },
-		{
-			name: 'align',
-			type: 'select',
-			defaultValue: 'start',
-			options: [
-				{ label: '시작', value: 'start' },
-				{ label: '중앙', value: 'center' },
-			],
-			admin: { condition: (_, sibling) => sibling?.type !== 'incorrect-usages' },
-		},
 		downloadField(true),
 		{
 			name: 'containers',

@@ -16,7 +16,8 @@ type TextSlotInputProps = {
 
 /** 편집 계약(config)의 입력 제약(형식·글자수·줄수)을 적용한 텍스트 슬롯 컨트롤러 행. */
 export function TextSlotInput({ definition, input, value, onChange }: TextSlotInputProps) {
-	if ((definition.availability ?? 'enabled') !== 'enabled') {
+	const availability = definition.availability ?? 'enabled'
+	if (availability === 'readonly')
 		return (
 			<ControllerControlRenderer
 				definition={definition}
@@ -26,52 +27,44 @@ export function TextSlotInput({ definition, input, value, onChange }: TextSlotIn
 				}}
 			/>
 		)
+	const singleLine = input.format !== 'free' || input.maxLines === 1
+	const invalidEmail = input.format === 'email' && value !== '' && !/^\S+@\S+\.\S+$/.test(value)
+	const change = (next: string) => {
+		if (availability !== 'enabled') return
+		if (input.maxLines && next.split('\n').length > input.maxLines) return
+		onChange(next)
 	}
-
-	// 한 줄 제약(maxLines 1)의 자유 텍스트는 여러 줄 입력 UI가 성립하지 않는다 — 단일행 Input으로 렌더.
-	if (input.format !== 'free' || input.maxLines === 1) {
-		const isInvalidEmail =
-			input.format === 'email' && value !== '' && !/^\S+@\S+\.\S+$/.test(value)
-
-		return (
-			<>
-				<Controller.Row label={definition.label}>
-					<Controller.Input
-						type={input.format === 'free' ? 'text' : input.format}
-						maxLength={definition.maxLength}
-						placeholder={definition.placeholder ?? definition.label}
-						value={value}
-						onChange={(event) => onChange(event.target.value)}
-						className="text-right"
-					/>
-				</Controller.Row>
-				{isInvalidEmail && (
-					<Typography role="alert" size="sm" tone="destructive">
-						이메일 형식이 아니에요.
-					</Typography>
-				)}
-			</>
-		)
-	}
-
+	const control = singleLine ? (
+		<Controller.Input
+			type={input.format === 'free' ? 'text' : input.format}
+			aria-label={definition.label}
+			maxLength={definition.maxLength}
+			placeholder={definition.placeholder ?? definition.label}
+			value={value}
+			disabled={availability === 'disabled'}
+			onChange={(event) => change(event.target.value)}
+			className="text-left"
+		/>
+	) : (
+		<Controller.Textarea
+			aria-label={definition.label}
+			maxLength={definition.maxLength}
+			placeholder={definition.placeholder ?? definition.label}
+			rows={2}
+			value={value}
+			disabled={availability === 'disabled'}
+			onChange={(event) => change(event.target.value)}
+		/>
+	)
+	const error = invalidEmail ? (
+		<Typography role="alert" size="sm" tone="destructive">
+			이메일 형식이 아니에요.
+		</Typography>
+	) : null
 	return (
-		<Controller.Field label={definition.label}>
-			<Controller.Textarea
-				maxLength={definition.maxLength}
-				placeholder={definition.placeholder ?? definition.label}
-				rows={2}
-				value={value}
-				onChange={(event) => {
-					const next = event.target.value
-
-					// 명시적 줄 수 제한 — 자동 줄바꿈 초과분은 렌더가 Figma 텍스트 박스 규칙대로 처리한다
-					// (고정 박스는 overflow:hidden clip, 말줄임 설정은 -webkit-line-clamp 「…」).
-					if (input.maxLines && next.split('\n').length > input.maxLines) {
-						return
-					}
-					onChange(next)
-				}}
-			/>
+		<Controller.Field label={definition.label} disabled={availability === 'disabled'}>
+			{control}
+			{error}
 		</Controller.Field>
 	)
 }

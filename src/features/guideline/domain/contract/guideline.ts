@@ -7,7 +7,6 @@ export interface SectionHierarchy {
 	parentSectionId: string | null
 }
 
-export type GuidelineBlocks = GuidelineDocument['blocks']
 export type GuidelineHeaderImage = GuidelineDocument['headerImage']
 
 export interface GuidelineMetadataData {
@@ -15,11 +14,11 @@ export interface GuidelineMetadataData {
 	documentTitle: string
 	faviconHref: string | null
 	issuedLabel: string | null
-	primaryDarkHex: string | null
-	primaryHex: string | null
 }
 
 export interface GuidelineChapterData {
+	/** 가이드라인 첫 화면에서 챕터 제목 아래에 서는 설명. */
+	description: string | null
 	displayOrder: number
 	id: number
 	slug: string
@@ -28,14 +27,17 @@ export interface GuidelineChapterData {
 
 export interface GuidelineNavigationTopicData {
 	chapterId: number | null
+	/** 가이드라인 첫 화면의 토픽 카드 설명. */
+	description: string | null
 	id: number
 	sections: (SectionHierarchy & { anchor: string; title: string })[]
 	slug: string
+	/** 토픽 카드 썸네일 — 문서의 `headerImage`. 없으면 빈 판이다. */
+	thumbnail: { src: string; alt: string } | null
 	title: string
 }
 
-export interface GuidelineTopicData extends Pick<GuidelineDocument, 'contentModel' | 'sections'> {
-	blocks: GuidelineBlocks
+export interface GuidelineTopicData extends Pick<GuidelineDocument, 'sections'> {
 	headerImage: GuidelineHeaderImage
 	id: number
 	title: string

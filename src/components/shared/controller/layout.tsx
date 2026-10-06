@@ -31,7 +31,7 @@ export function ControllerHeader({ className, ...props }: React.ComponentProps<'
 
 /**
  * 컨트롤 그룹이 쌓이는 패널의 유일한 스크롤 영역.
- * 최상단 그룹은 구분선을 갖지 않는다 — 무엇이 맨 위인지는 그룹이 아니라 이 컨테이너만 안다.
+ * 그룹 내부와 그룹 사이 간격은 Group·GroupList가 소유한다.
  */
 export function ControllerContent({ className, ...props }: React.ComponentProps<'div'>) {
 	return (
@@ -43,7 +43,7 @@ export function ControllerContent({ className, ...props }: React.ComponentProps<
 				// 그룹 사이 간격은 이 컨테이너의 gap이 아니라 각 그룹이 펼쳐졌을 때의 자체 하단 패딩이 만든다.
 				// 🔴 `overflow-x-hidden`: 한 컨트롤이 제 폭을 잘못 잡아도 패널 밖으로 번지지 않게 한다
 				//    (스튜디오 패널의 같은 자리와 같은 근거). 넘치는 컨트롤은 자기 안에서 스크롤을 갖는다.
-				'flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden px-4 pb-4 first:pt-4 [&>*:first-child]:border-t-0',
+				'flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden px-4 pb-4 first:pt-4',
 				className,
 			)}
 			{...props}

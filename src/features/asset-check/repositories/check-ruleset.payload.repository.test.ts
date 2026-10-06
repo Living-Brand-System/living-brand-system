@@ -20,7 +20,7 @@ describe('getCheckSourceDocuments', () => {
 						slug: 'brand',
 						displayOrder: 1,
 						chapter: null,
-						blocks: [],
+						sections: [],
 						rules: [],
 					},
 				],
@@ -51,7 +51,7 @@ describe('getCheckSourceDocuments', () => {
 		expect(find).toHaveBeenCalledTimes(1)
 	})
 
-	it('Payload 관계와 Block Rule을 실행 가능한 Check source로 수집한다', async () => {
+	it('Payload 관계와 섹션 Rule을 실행 가능한 Check source로 수집한다', async () => {
 		const checker = {
 			id: 9,
 			name: 'Layout checker',
@@ -73,14 +73,13 @@ describe('getCheckSourceDocuments', () => {
 						displayOrder: 3,
 						chapter: null,
 						rules: [],
-						blocks: [
+						sections: [
 							{
 								id: 'logo-examples',
-								blockName: 'Logo examples',
-								blockType: 'section',
+								type: 'section',
 								anchor: 'logo-examples',
 								title: 'Logo examples',
-								children: [],
+								containers: [],
 								rules: [
 									{
 										id: 91,
@@ -120,7 +119,10 @@ describe('getCheckSourceDocuments', () => {
 						},
 						messages: { pass: '통과' },
 					},
-					source: { documentId: 30 },
+					source: {
+						documentId: 30,
+						section: { anchor: 'logo-examples', title: 'Logo examples', order: 0 },
+					},
 					evidence: { type: 'section', anchor: 'logo-examples', title: 'Logo examples' },
 					referenceAssets: [],
 				},
@@ -138,7 +140,7 @@ describe('getCheckSourceDocuments', () => {
 					displayOrder: 3,
 					chapter: { title: 'Brand', slug: 'brand', displayOrder: 2 },
 					checks: [],
-					blocks: [],
+					sections: [],
 				},
 			],
 		})

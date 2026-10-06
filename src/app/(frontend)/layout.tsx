@@ -24,24 +24,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
 	const guidelineNavigation = await getGuidelineNavigation()
-	const { metadata } = guidelineNavigation
-	const brandColorCss = `${
-		metadata.primaryHex && metadata.primaryForegroundHex
-			? `:root{--primary:${metadata.primaryHex};--primary-foreground:${metadata.primaryForegroundHex}}`
-			: ''
-	}${
-		metadata.primaryDarkHex && metadata.primaryDarkForegroundHex
-			? `.dark{--primary:${metadata.primaryDarkHex};--primary-foreground:${metadata.primaryDarkForegroundHex}}`
-			: ''
-	}`
 
 	return (
 		<html lang="ko" className="scroll-pt-[53px]" suppressHydrationWarning>
-			{brandColorCss && (
-				<head>
-					<style>{brandColorCss}</style>
-				</head>
-			)}
 			<body className="h-svh overflow-hidden bg-background text-foreground">
 				<ThemeProvider
 					attribute="class"

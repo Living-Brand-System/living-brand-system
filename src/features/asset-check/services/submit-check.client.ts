@@ -17,10 +17,14 @@
  *   res : { results: Record<checkKey, CheckResult> }
  *   실패: pendingCheckKeys 전체를 status 'needs_review'(reasonCode 'ai_request_unreachable') 폴백으로 채움.
  *         모델까지 못 간 실패라 서버가 남기는 'ai_request_failed'(모델이 답을 못 준 실패)와 사유를 구분한다.
+ *         429(계정 AI 토큰 한도 초과)는 'ai_token_limit'으로 채운다 — 고장이 아니라 막힌 것이다.
  */
 import type { CheckResult } from '@/features/asset-check/checkers/types'
 import { needsReview } from '@/features/asset-check/domain/needs-review'
 import type { RuntimeCheck } from '@/features/asset-check/domain/runtime-check'
+
+/** 서버가 계정 AI 토큰 한도로 AI 판정을 막았다(429). */
+class AiTokenLimitReachedError extends Error {}
 
 export interface SubmitCheckResult {
 	checkSessionId: number
@@ -48,6 +52,7 @@ export async function submitAiCheck(
 	const form = new FormData()
 	form.append('image', file)
 	const response = await fetch(`/api/check/${checkSessionId}/ai`, { method: 'POST', body: form })
+	if (response.status === 429) throw new AiTokenLimitReachedError()
 	if (!response.ok) throw new Error(`ai check failed: ${response.status}`)
 	const { results } = (await response.json()) as { results: Record<string, CheckResult> }
 	return results
@@ -76,8 +81,11 @@ export async function runFullCheck(
 
 	if (serverResult.pendingCheckKeys.length === 0) return
 
-	const aiResults = await submitAiCheck(file, serverResult.checkSessionId).catch(() =>
-		aiUnreachableResults(serverResult.pendingCheckKeys),
+	const aiResults = await submitAiCheck(file, serverResult.checkSessionId).catch((error) =>
+		aiUnreachableResults(
+			serverResult.pendingCheckKeys,
+			error instanceof AiTokenLimitReachedError ? 'ai_token_limit' : 'ai_request_unreachable',
+		),
 	)
 	onAiResult(serverResult.checkSessionId, aiResults)
 }
@@ -86,8 +94,11 @@ export async function runFullCheck(
  * AI 요청이 응답을 돌려주지 못했을 때 해당 룰들을 "담당자 검토 필요"로 채우는 폴백 결과.
  * 모델은 호출되지 않았으므로 서버의 'ai_request_failed'(모델 호출 후 실패)와 사유를 나눈다.
  */
-function aiUnreachableResults(checkKeys: string[]): Record<string, CheckResult> {
-	const rawResult = needsReview('ai_request_unreachable')
+function aiUnreachableResults(
+	checkKeys: string[],
+	reasonCode: 'ai_request_unreachable' | 'ai_token_limit',
+): Record<string, CheckResult> {
+	const rawResult = needsReview(reasonCode)
 	return Object.fromEntries(
 		checkKeys.map((key) => [
 			key,

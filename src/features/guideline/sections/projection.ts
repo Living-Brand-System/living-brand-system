@@ -1,5 +1,11 @@
-import { compact } from '../utils/block-text'
-import { type CmsCard, type CmsSection, resolveColor, sectionTitle } from './model'
+import { compact } from '../checks/check-source'
+import {
+	type CmsCard,
+	type CmsSection,
+	captionSpecificationGroups,
+	resolveColor,
+	sectionTitle,
+} from './model'
 
 /** 검색·검수용 평문과 근거 스냅샷. Agent 문서 서식과 독립적으로 유지한다. */
 export function projectSection(section: CmsSection) {
@@ -20,7 +26,8 @@ export function projectSection(section: CmsSection) {
 	}
 }
 
-function cardText({ caption, selectionLabel, display, endActions }: CmsCard) {
+function cardText(card: CmsCard) {
+	const { caption, selectionLabel, display, endActions } = card
 	return compact([
 		selectionLabel,
 		...(endActions ?? []).flatMap((action) => [
@@ -33,8 +40,13 @@ function cardText({ caption, selectionLabel, display, endActions }: CmsCard) {
 			: []),
 		caption?.title,
 		caption?.description,
-		...(caption?.type !== 'basic'
-			? (caption?.rows ?? []).flatMap((row) => [row.label, row.value])
-			: []),
+		...(caption?.type === 'specification'
+			? captionSpecificationGroups(card).flatMap((group) => [
+					group.title,
+					...(group.items ?? []).flatMap((row) => [row.label, row.value]),
+				])
+			: caption?.type === 'list'
+				? (caption.rows ?? []).flatMap((row) => [row.label, row.value])
+				: []),
 	])
 }

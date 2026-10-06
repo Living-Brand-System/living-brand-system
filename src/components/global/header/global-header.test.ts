@@ -37,6 +37,7 @@ function renderHeader(updates?: NavigationHeaderUpdates) {
 						id: 1,
 						topics: [],
 						title: 'Foundations',
+						description: null,
 					},
 				],
 				updates,
@@ -68,7 +69,7 @@ describe('GlobalHeader', () => {
 	afterEach(cleanup)
 
 	it('로그인하면 Log in 대신 Account와 Logout 둘이 선다', async () => {
-		sessionUser = { email: 'someone@plus-ex.com' }
+		sessionUser = { email: 'someone@example.com' }
 		renderHeader()
 
 		const desktop = document.querySelector<HTMLElement>(

@@ -21,6 +21,12 @@ import { isPrintPpi, PRINT_PPI_VALUES, type PrintPpi } from './print-policy'
  * 🔴 maxWidth·maxHeight는 가로형 1080p를 가정하므로 세로형 캔버스가 자기 크기를 못 넘긴다 —
  * 캔버스 크기를 아는 runtime은 이 정책을 쓰고 프레임 크기만 자기 값으로 덮는다.
  */
+/**
+ * Graphic의 첫 출력 크기 — Digital 첫 프리셋(Instagram Feed)이다(사용자 지시, 2026-10-01).
+ * 🔴 화면에 그려진 캔버스 크기로 시작하지 않는다. 창 크기에 따라 저장 크기가 달라진다.
+ */
+export const DEFAULT_GRAPHIC_OUTPUT_SIZE = { width: 1080, height: 1350 } as const
+
 export const DEFAULT_RASTER_VIDEO_CAPABILITY = {
 	fps: STUDIO_VIDEO_FPS_VALUES,
 	maxWidth: 1920,

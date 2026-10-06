@@ -1,16 +1,11 @@
 import { cache } from 'react'
 import { findGuidelineMetadataGlobal } from '@/features/guideline/repositories/guideline-view.payload.repository'
-import { getContrastingForeground, isValidHex } from '@/lib/color'
 
 export interface GetGuidelineMetadataOutput {
 	companyName: string
 	documentTitle: string
 	faviconHref: string | null
 	issuedLabel: string | null
-	primaryDarkForegroundHex: string | null
-	primaryDarkHex: string | null
-	primaryForegroundHex: string | null
-	primaryHex: string | null
 }
 
 /**
@@ -20,22 +15,11 @@ export interface GetGuidelineMetadataOutput {
  */
 export const getGuidelineMetadata = cache(async (): Promise<GetGuidelineMetadataOutput> => {
 	const guideline = await findGuidelineMetadataGlobal()
-	const primaryHex = normalizeHex(guideline.primaryHex)
-	const primaryDarkHex = normalizeHex(guideline.primaryDarkHex) ?? primaryHex
 
 	return {
 		companyName: guideline.companyName,
 		documentTitle: guideline.documentTitle,
 		faviconHref: guideline.faviconHref,
 		issuedLabel: guideline.issuedLabel,
-		primaryDarkForegroundHex: primaryDarkHex ? getContrastingForeground(primaryDarkHex) : null,
-		primaryDarkHex,
-		primaryForegroundHex: primaryHex ? getContrastingForeground(primaryHex) : null,
-		primaryHex,
 	}
 })
-
-function normalizeHex(value: string | null): string | null {
-	if (!value || !isValidHex(value)) return null
-	return value.startsWith('#') ? value : `#${value}`
-}

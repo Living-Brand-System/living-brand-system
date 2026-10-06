@@ -162,7 +162,7 @@ flowchart LR
     AgentChatStore["Agent chat session records<br/>(AgentChatSession)"]
     QualityStore["Quality session records<br/>(CheckSession)"]
     BehaviorEventStore["Behavior event logs<br/>(BehaviorEventLog)"]
-    FileStorage["Uploaded file storage<br/>(AWS S3)"]
+    FileStorage["Uploaded file storage<br/>(Vercel Blob)"]
   end
 
   subgraph External["External dependencies"]
@@ -258,7 +258,7 @@ Brand resource records는 메타데이터와 참조만 보관하고, 실제 파�
 ##### 가이드라인 관리
 
 가이드라인 관리는 Payload CMS supported 흐름으로 처리합니다.
-가이드라인 본문, 챕터·토픽, 섹션 블록, Rule 배치, 자원 연결의 편집, draft/publish 상태, 예약 발행, Payload revision, diff/restore는 Payload CMS가 맡습니다.
+가이드라인 본문, 챕터·토픽, 섹션, Rule 배치, 자원 연결의 편집, draft/publish 상태, 예약 발행, Payload revision, diff/restore는 Payload CMS가 맡습니다.
 Rule 정의·Checker 계약·CheckScenario 발행은 Quality rule publishing service가 별도로 맡고, Guideline publishing service와 Brand resource publishing service는 가이드라인 및 자원 publish 결과 후처리를 담당합니다.
 사용자에게 보여주는 화면은 별도 서브도메인이 아니라 Server render route handler가 published guideline과 linked resource를 읽어 만든 결과입니다.
 
@@ -274,7 +274,7 @@ flowchart TB
   GuidelineRequest["Guideline page request"]
 
   subgraph PayloadSupported["Payload CMS supported"]
-    Collections["Collections: guideline / page block / rule / resource"]
+    Collections["Collections: guideline / section / rule / resource"]
     Access["Access control"]
     Hooks["Hooks"]
     Draft["Guideline / resource draft"]
@@ -505,17 +505,20 @@ Plugin은 collection으로 두지 않습니다 — 2026-08-18에 삭제했습니
 | --- | --- | --- |
 | `guideline` global | BrandGuideline | 단일 가이드라인 설정 |
 | `guideline-chapters` | GuidelineChapter | 토픽을 묶는 분류. 제목·slug·순서만 갖고 자기 화면은 없다 |
-| `guideline-documents` | GuidelineDocument | 챕터를 필수로 참조하는 토픽. blocks(섹션 `section` 포함)와 Rule 배치·근거를 소유 |
+| `guideline-documents` | GuidelineDocument | 챕터를 필수로 참조하는 토픽. `sections → containers → cards`와 문서·섹션의 Rule 배치·근거를 소유 |
 | `rules` | Rule | 문서와 독립된 검수 기준, 메시지, RuleChecker 관계를 관리 |
 | `check-scenarios` | CheckScenario | 검수 목적별 이름, 설명과 순서가 있는 CheckKey 목록을 관리 |
 | `rule-checkers` | RuleChecker | executor 유형과 checker 또는 model binding을 1:1로 관리하는 검사 도구 계약 |
 | `brand-logos` | BrandLogo | guideline document와 check basis에서 참조. 향후 asset generation session에도 사용 가능 |
 | `brand-colors` | BrandColor | guideline document, Check, template, plugin에서 참조 |
+| `brand-color-pairs` | BrandColorPair | 듀오 컬러(바탕 + 위 색) 정본. 두 색을 `brand-colors` 관계로 참조하고 hex를 다시 적지 않는다. 스튜디오 공용 색 조합 스와치가 읽는다 |
 | `brand-typefaces` | BrandTypeface | guideline document, Check, template에서 참조 |
 | `application-images` | ApplicationImage | page와 check basis에서 참조. 향후 asset generation session에도 사용 가능 |
 | `image-profiles` | ImageProfile | 이미지 생성 Runtime Manifest에 적용할 published feature·Controller 제한·Export 정책을 관리 |
 | `graphic-profiles` | GraphicProfile | 등록된 Graphic Runtime Manifest에 적용할 published Controller 제한·Export 정책을 관리 |
 | `templates` | Template | 배경 정책(`backgroundPolicy`)·레이어별 `overrides[nodeId]`·Export 정책을 관리하고 page와 plugin에서 참조 |
+
+가이드라인 본문은 CMS와 문서 API에서 `sections` 단일 계약으로 저작합니다. `blocks`와 `contentModel`은 저작 선택으로 노출하지 않으며 비공개 이력 표식은 구형 버전 복원을 막는 내부 값입니다. 옛 SQL 블록 테이블·레거시 관계·legacy 버전은 별도의 파기 마이그레이션으로 삭제하며 현재 문서·신규 버전·업로드 자산은 보존합니다. CheckSession의 동결된 옛 evidence 타입을 읽는 계약은 현재 문서 저작 모델과 독립적으로 보존합니다.
 
 ### 런타임 객체
 

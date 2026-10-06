@@ -15,6 +15,7 @@ import type {
 import {
 	acceptsControllerExecutionValues,
 	applyControllerRestrictions,
+	createControllerValues,
 } from '@/modules/studio-controller/controller-definition'
 
 /**
@@ -69,6 +70,22 @@ export function getGraphicStudioRuntimeGroups(
 		config.controller.groups,
 		clampRestrictionsToBase(config.controller.groups, restrictions),
 	)
+}
+
+/** 프리셋 교체는 이전 편집값을 이어받지 않고 현재 계약의 기본값에서 시작한다. */
+export function createGraphicPresetValues(
+	config: GraphicRuntimeManifest,
+	preset: ControllerValues[string],
+): ControllerValues {
+	return {
+		...createControllerValues(
+			getGraphicStudioRuntimeGroups(config, {
+				...createControllerValues(config.controller.groups),
+				preset,
+			}),
+		),
+		preset,
+	}
 }
 
 /**

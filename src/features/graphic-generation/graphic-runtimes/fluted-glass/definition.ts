@@ -66,7 +66,7 @@ const FLUTED_GLASS_PALETTE_CONTROLS = [
 type FlutedGlassPaletteKey = (typeof FLUTED_GLASS_PALETTE_CONTROLS)[number][0]
 
 /**
- * 색 조합 — 창작자가 왼쪽에서 다루는 큰 축 하나. 고르면 색 칸 일곱이 함께 채워진다.
+ * 색 조합 — 창작자가 Basic에서 다루는 큰 축 하나. 고르면 색 칸 일곱이 함께 채워진다.
  *
  * 🔑 **첫 팔레트가 정본이고, 새 팔레트는 그것의 색조를 통째로 돌린 것이다.**
  *    채도와 명도 계단(3 → 13 → 26 → 52 → 94)은 한 칸도 건드리지 않고 **일곱 칸의 색조를 같은 각도로**
@@ -602,29 +602,11 @@ const flutedGlassRuntimeManifest = defineGraphicRuntime({
 		},
 	},
 	controller: {
+		// 모양은 셰이더 프로그램을 갈아끼운다 — 살아 있는 런타임에 흘려 넣을 수 없다.
+		remountOn: ['shape'],
+		// 패널 컴포지션(docs/10 §3.7) — 무엇을 뜻하나만 선언한다. 자리는 그래픽 패널이 정한다.
 		/**
-		 * 왼쪽 패널에 세울 축 — 색 조합과 형태. 창작자가 실제로 다루는 것은 이 둘뿐이다.
-		 *
-		 * 오른쪽으로 가는 것: 속도·광원 위치와 광선·유리·스윕의 수치들. 사라지는 것은 없다.
-		 * 🔑 `speed`가 마스터 시계이지만(셰이더의 `iTime * uGodraySpeed`) 그래도 오른쪽이다 —
-		 *    영향이 크다는 것과 창작자가 그것을 만지리라는 것은 다른 얘기다.
-		 * 🔴 「스타일」은 가로·세로에만 값이 있다. 스윕·방사에서 고르면 아무것도 바뀌지 않는다 —
-		 *    두 모양에는 원래 프리셋이 없었고, 새로 만드는 것은 새 look을 정하는 일이라 하지 않았다.
-		 */
-		left: [
-			'shape',
-			'preset',
-			'palette',
-			'rayColor1',
-			'rayColor2',
-			'rayColor3',
-			'rayColor4',
-			'rayColor5',
-			'rayBackgroundColor',
-			'bloomColor',
-		],
-		/**
-		 * 오른쪽 패널의 축.
+		 * Adjustment(`tuning`)에 세울 축.
 		 *
 		 * 🔑 **기준은 픽셀차가 아니라 「무엇이 달라지는지 읽히는가」다.** 그리고 읽히려면 축마다
 		 *    **일어나는 일의 종류가 달라야** 한다 — 같은 종류가 둘이면 둘 다 안 읽힌다.
@@ -655,32 +637,80 @@ const flutedGlassRuntimeManifest = defineGraphicRuntime({
 		 * | `glassHighlights` | 0.052 | 체감 불가 |
 		 * | `vignette` | 새 축 | 체감 불가. 판을 고르게 채우려면 manager가 0으로 내린다 |
 		 *
-		 * 픽셀차는 각 축을 최소·최대로 렌더해 잰 평균 절대 픽셀차다(`.scratch/axis-survey/`).
+		 * 픽셀차는 각 축을 최소·최대로 렌더해 잰 평균 절대 픽셀차다.
 		 * 「새 축」 셋은 재서 고른 것이 아니라 **없던 축**이다 — 판을 담는 틀을 창작자가 정할 수
 		 * 없었다. `source`는 사거리를 `FLUTED_GLASS_SOURCE_SPAN`만큼 넓혀 판 밖까지 닿는다.
 		 *
 		 * 🔴 `rayRotation`은 0.217로 여기 든 것 대부분보다 큰데도 뺐다. 세로형을 세로로 만드는 값이
-		 *    바로 그것이라(`rayRotation: -90`) 창작자가 만지면 왼쪽의 「모양」 축과 충돌한다.
+		 *    바로 그것이라(`rayRotation: -90`) 창작자가 만지면 「모양」 축과 충돌한다.
 		 *    모양의 정체를 이루는 값은 모양이 소유한다. 구도를 기울이는 것은 `tilt`가 갖는다 —
 		 *    그쪽은 광원까지 함께 돌려 모양의 정체를 건드리지 않는다.
 		 * 🔴 `rayDensity`(광선 밀도)는 뺐다 — 0.068이면서 무엇이 달라지는지 화면에서 읽히지 않았다.
-		 * 🔴 여기에도 왼쪽에도 없는 축은 창작자 화면에서 내려가고 Payload admin의 「기본값 재정의」로
+		 * 🔴 역할도 묶음도 없는 축은 창작자 화면에서 내려가고 Payload admin의 「기본값 재정의」로
 		 *    manager가 조정한다. 지운 것이 아니다 — 코드에 박으면 배포 없이 못 고친다.
 		 */
-		right: [
-			'rayIntensity',
-			'raySpotty',
-			'rayMidSize',
-			'rayScale',
-			'speed',
-			'glassSize',
-			'glassSpeed',
-			'zoom',
-			'tilt',
-			'source',
+		roles: {
+			rayIntensity: 'tuning',
+			raySpotty: 'tuning',
+			rayMidSize: 'tuning',
+			rayScale: 'tuning',
+			speed: 'tuning',
+			glassSize: 'tuning',
+			glassSpeed: 'tuning',
+			zoom: 'tuning',
+			tilt: 'tuning',
+		},
+		/**
+		 * Basic에 세울 묶음 — 색 조합과 형태(와 위치). 창작자가 실제로 다루는 것은 이것뿐이다.
+		 *
+		 * Adjustment로 가는 것: 속도와 광선·유리·스윕의 수치들. 사라지는 것은 없다.
+		 * 🔑 `speed`가 마스터 시계이지만(셰이더의 `iTime * uGodraySpeed`) 그래도 Adjustment다 —
+		 *    영향이 크다는 것과 창작자가 그것을 만지리라는 것은 다른 얘기다.
+		 * 🔴 「스타일」은 가로·세로에만 값이 있다. 스윕·방사에서 고르면 아무것도 바뀌지 않는다 —
+		 *    두 모양에는 원래 프리셋이 없었고, 새로 만드는 것은 새 look을 정하는 일이라 하지 않았다.
+		 */
+		clusters: [
+			// Style 프리셋은 직선형 모양에만 있다.
+			{
+				id: 'preset',
+				title: 'Style',
+				role: 'preset',
+				widget: 'preset-list',
+				members: { value: 'preset' },
+				visibleWhen: { control: 'shape', in: ['linear', 'vertical'] },
+			},
+			// 전경·배경 한 쌍을 고르면 나머지 광선 색은 그래픽이 펼친다(playgroundGraphicColors).
+			{
+				id: 'color',
+				title: 'Color',
+				role: 'palette',
+				widget: 'color-pair',
+				members: {
+					foreground: 'rayColor3',
+					background: 'rayBackgroundColor',
+					palette: 'palette',
+					ray1: 'rayColor1',
+					ray2: 'rayColor2',
+					ray4: 'rayColor4',
+					ray5: 'rayColor5',
+					bloom: 'bloomColor',
+				},
+			},
+			{
+				id: 'type',
+				title: 'Type',
+				role: 'form',
+				widget: 'compound',
+				members: { value: 'shape' },
+			},
+			{
+				id: 'position',
+				title: 'Position',
+				role: 'placement',
+				widget: 'position',
+				members: { value: 'source' },
+			},
 		],
-		// 모양은 셰이더 프로그램을 갈아끼운다 — 살아 있는 런타임에 흘려 넣을 수 없다.
-		remountOn: ['shape'],
 		groups: [
 			{
 				id: 'shape',

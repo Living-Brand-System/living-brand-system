@@ -1,9 +1,9 @@
 import type { GuidelineDocument, Rule } from '@/payload-types'
-import { formatBlockForAgent } from '../../blocks/projection'
 import { collectGuidelineCheckSources } from '../../checks/collect-guideline-check-sources'
 import {
 	type CmsCard,
 	type CmsContainer,
+	captionSpecificationGroups,
 	cardFiles,
 	isGuidelineActionHref,
 	resolveColor,
@@ -16,7 +16,7 @@ import { type GuidelineReadAction, toReadVisual, visualInteractions } from './re
 
 export type GuidelineSourceDocument = Pick<
 	GuidelineDocument,
-	'id' | 'title' | 'slug' | 'contentModel' | 'sections' | 'blocks' | 'rules' | 'headerImage'
+	'id' | 'title' | 'slug' | 'sections' | 'rules' | 'headerImage'
 > &
 	Partial<Pick<GuidelineDocument, 'chapter' | 'displayOrder'>>
 
@@ -46,16 +46,6 @@ export function toGuidelineReadDocument(
 			title: rule.title,
 		})),
 	}
-	if (sourceDocument.contentModel !== 'sections')
-		return {
-			...shared,
-			contentModel: 'legacy' as const,
-			// 레거시 blocks의 공개 구조는 유지한다. 기존 평문 해석도 이 경계에서 끝낸다.
-			blocks: (sourceDocument.blocks ?? []).map((block) => ({
-				...block,
-				text: formatBlockForAgent(block),
-			})),
-		}
 	return {
 		...shared,
 		contentModel: 'sections' as const,
@@ -67,10 +57,8 @@ export function toGuidelineReadDocument(
 			title: section.title ?? '',
 			description: section.description ?? null,
 			anchor: section.anchor ?? null,
-			align:
-				section.type === 'incorrect-usages'
-					? ('center' as const)
-					: (section.align ?? 'start'),
+			// 섹션 헤더 정렬은 데이터가 아니다 — Incorrect Usages만 중앙이다(2026-10-06 중앙 정렬 필드 제거).
+			align: section.type === 'incorrect-usages' ? ('center' as const) : ('start' as const),
 			rules: readRules(section.rules),
 			actions: sectionDownloadActions(sectionFiles(section)),
 			contentGroups: (section.containers ?? []).map((container, index) => ({
@@ -86,7 +74,7 @@ export function toGuidelineReadDocument(
 						backgroundColor: resolveColor(card.backgroundColor),
 						foregroundColor: resolveColor(card.foregroundColor),
 						visual,
-						caption: readCaption(card.caption),
+						caption: readCaption(card),
 						usageStatus:
 							card.status ??
 							(section.type === 'incorrect-usages'
@@ -102,10 +90,7 @@ export function toGuidelineReadDocument(
 }
 
 export type GuidelineReadDocument = ReturnType<typeof toGuidelineReadDocument>
-export type GuidelineReadSection = Extract<
-	GuidelineReadDocument,
-	{ contentModel: 'sections' }
->['sections'][number]
+export type GuidelineReadSection = GuidelineReadDocument['sections'][number]
 export type GuidelineReadFigure = GuidelineReadSection['contentGroups'][number]['figures'][number]
 
 function readRules(rules: (number | Rule)[] | null | undefined) {
@@ -135,22 +120,35 @@ function readLayout(container: CmsContainer) {
 	}
 }
 
-function readCaption(caption: CmsCard['caption']) {
+function readCaption(card: CmsCard) {
+	const { caption } = card
 	if (!caption) return null
 	const heading = {
 		title: caption.title ?? null,
 		description: caption.description ?? null,
 	}
-	return caption.type === 'basic'
-		? { ...heading, type: 'basic' as const }
-		: {
-				...heading,
-				type: caption.type,
-				rows: (caption.rows ?? []).map((row) => ({
+	if (caption.type === 'specification')
+		return {
+			...heading,
+			type: caption.type,
+			groups: captionSpecificationGroups(card).map((group) => ({
+				title: group.title ?? null,
+				items: (group.items ?? []).map((row) => ({
 					label: row.label ?? null,
 					value: row.value,
 				})),
-			}
+			})),
+		}
+	if (caption.type === 'list')
+		return {
+			...heading,
+			type: caption.type,
+			rows: (caption.rows ?? []).map((row) => ({
+				label: row.label ?? null,
+				value: row.value,
+			})),
+		}
+	return { ...heading, type: 'basic' as const }
 }
 
 function sectionDownloadActions(files: ReturnType<typeof sectionFiles>): GuidelineReadAction[] {

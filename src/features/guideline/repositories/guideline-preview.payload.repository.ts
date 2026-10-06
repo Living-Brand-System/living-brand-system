@@ -3,9 +3,7 @@ import { getPayload } from 'payload'
 import { DEFAULT_LOCALE, FALLBACK_LOCALE } from '@/lib/locale'
 import type { GuidelineDocument, User } from '@/payload-types'
 
-export interface DraftGuidelineDocumentData
-	extends Pick<GuidelineDocument, 'contentModel' | 'sections'> {
-	blocks: GuidelineDocument['blocks']
+export interface DraftGuidelineDocumentData extends Pick<GuidelineDocument, 'sections'> {
 	chapterSlug: string | null
 	displayOrder: number
 	headerImage: GuidelineDocument['headerImage']
@@ -38,8 +36,6 @@ export async function findDraftGuidelineDocumentById(
 
 function toDraftGuidelineDocument(document: GuidelineDocument): DraftGuidelineDocumentData {
 	return {
-		blocks: document.blocks ?? [],
-		contentModel: document.contentModel,
 		sections: document.sections,
 		chapterSlug:
 			typeof document.chapter === 'object' && document.chapter ? document.chapter.slug : null,

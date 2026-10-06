@@ -5,7 +5,14 @@ import type { SectionHierarchy } from '../domain/contract/guideline'
 export type CmsSection = NonNullable<GuidelineDocument['sections']>[number]
 export type CmsContainer = NonNullable<CmsSection['containers']>[number]
 export type CmsCard = NonNullable<CmsContainer['cards']>[number]
-export type CmsBody = Pick<GuidelineDocument, 'contentModel' | 'sections'>
+export type CmsBody = Pick<GuidelineDocument, 'sections'>
+
+/** 그룹이 등록되면 평면 행은 비활성이다. 기존 명세는 제목 없는 한 그룹으로 읽는다. */
+export function captionSpecificationGroups(card: Pick<CmsCard, 'caption' | 'specGroups'>) {
+	return card.specGroups?.length
+		? card.specGroups
+		: [{ title: null, items: card.caption?.rows ?? [] }]
+}
 
 /** CMS 링크는 사이트 경로·앵커·HTTP(S)만 허용합니다. 렌더 경계에서도 같은 검사를 합니다. */
 export function isGuidelineActionHref(value: string | null | undefined): value is string {
@@ -122,16 +129,13 @@ export function sectionFiles(section: CmsSection) {
 }
 
 export function needsPaletteCatalog(body: CmsBody) {
-	return (
-		body.contentModel === 'sections' &&
-		body.sections?.some((section) =>
-			section.containers?.some((container) =>
-				container.cards?.some(({ display }) =>
-					['palette', 'logo-background', 'layout-grid', 'layout-overlay'].includes(
-						display.type,
-					),
+	return body.sections?.some((section) =>
+		section.containers?.some((container) =>
+			container.cards?.some(({ display }) =>
+				['palette', 'logo-background', 'layout-grid', 'layout-overlay'].includes(
+					display.type,
 				),
 			),
-		)
+		),
 	)
 }

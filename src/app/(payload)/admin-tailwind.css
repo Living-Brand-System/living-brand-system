@@ -3,6 +3,8 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities) source(none);
 @import "shadcn/tailwind.css";
+/* 색 토큰은 앱과 같은 파일을 읽는다 — 우리 컴포넌트는 어드민에서도 앱과 같은 색이다(Payload 자체 화면은 Payload 회색). */
+@import "../color-tokens.css";
 
 @source "../../components/admin";
 @source "../../components/ui";
@@ -35,15 +37,16 @@
 	.lbs-kit *,
 	.lbs-kit *::before,
 	.lbs-kit *::after {
-		border-color: var(--color-border);
+		border-color: var(--border);
 	}
 }
 
 /* ── 킷 표면의 스튜디오 지반 복원 (2026-08-20 실측) ──
    Payload root는 13px이라 rem 유틸리티(text·spacing·h-9 등)가 스튜디오(16px root) 대비
    81%로 축소되고, muted·서체도 Payload 값이라 같은 클래스가 다르게 그려진다.
-   킷을 조립하는 표면(.lbs-kit) 하위에서만 스튜디오 스케일·토큰을 변수로 복원한다 —
-   정본 값은 src/app/(frontend)/theme.css. 그쪽이 바뀌면 여기도 따라가야 한다. */
+   킷을 조립하는 표면(.lbs-kit) 하위에서만 스튜디오 스케일을 변수로 복원한다 —
+   정본 값은 src/app/(frontend)/theme.css. 그쪽이 바뀌면 여기도 따라가야 한다.
+   🔑 색은 여기서 복원하지 않는다 — `color-tokens.css`를 앱과 함께 읽으므로 이미 같다. */
 @font-face {
 	font-family: "Pretendard";
 	src: url("/fonts/pretendard/PretendardVariable.woff2") format("woff2");
@@ -68,41 +71,22 @@
 	/* 섹션 헤딩 — 정본(83:1551) 26px/32px Medium. */
 	--text-2xl: 26px;
 	--text-2xl--line-height: 32px;
-	/* 표면 토큰: 정본 실측 값(83:1554·83:1575) — 중립색은 알파 기반이다. */
-	--color-background: oklch(1 0 0);
-	--color-foreground: oklch(0.145 0 0);
-	--color-muted: oklch(0 0 0 / 4%);
-	--color-muted-foreground: oklch(0 0 0 / 60%);
 	--radius-sm: 6px;
 	/* 카드 모서리 — 정본(83:1553) 24px. tailwind 기본 3xl은 rem이라 Payload root에서 줄어든다. */
 	--radius-3xl: 24px;
-	/* 보더 — 정본(83:1553) black 10% 알파. */
-	--color-border: oklch(0 0 0 / 10%);
-	--color-input: oklch(0.922 0 0);
-	--color-ring: oklch(0.708 0 0);
 	font-family: "Pretendard", system-ui, sans-serif;
 	/* 상속 기준(스튜디오 body와 동일) — rem에는 영향 없다. */
 	font-size: 13px;
 }
 
-[data-theme="dark"] .lbs-kit {
-	--color-background: oklch(0.1822 0 0);
-	--color-foreground: oklch(0.985 0 0);
-	--color-muted: oklch(1 0 0 / 8%);
-	--color-muted-foreground: oklch(1 0 0 / 60%);
-	--color-border: oklch(1 0 0 / 10%);
-	--color-input: oklch(1 0 0 / 15%);
-	--color-ring: oklch(0.556 0 0);
-}
-
-/* 그룹 서브헤더(사용할 형식·기본 설정 등) — 정본(83:1557) 16px Medium #737373.
+/* 그룹 서브헤더(사용할 형식·기본 설정 등) — 정본(83:1557) 16px Medium #737373(= muted-foreground, neutral-500).
    킷 Group의 스튜디오 스펙(13px semibold)과 다른 어드민 정본 값이라 표면에서만 덮는다.
    유틸리티 레이어를 이기도록 무레이어. */
 .lbs-kit :where([data-slot="controller-group"]) > :where(header) > :where(span:first-child) {
 	font-size: 16px;
 	line-height: 20px;
 	font-weight: 500;
-	color: #737373;
+	color: var(--muted-foreground);
 }
 
 /* Row가 유틸리티([--controller-row-px:0.75rem])로 심는 셀렉트 트리거 패딩이 Payload root에서
@@ -112,46 +96,8 @@
 }
 @source not inline("table");
 
-/* 대시보드 표면의 브랜드 녹색. Payload 테마에 대응 색이 없어 여기서 연다(정본: Figma HD_LBS_UI 67:2468).
-   deep은 글자색이라 어두운 테마에서 뒤집는다 — 표면 두 색은 알파로 얹히므로 그대로 둔다. */
-:root {
-	--brand: #00ad45;
-	--brand-tint: #73d75a;
-	--brand-deep: #003f08;
-}
-
-[data-theme="dark"] {
-	--brand-deep: #b9ecc6;
-}
-
 @theme inline {
 	--font-sans: var(--font-body);
-	--color-background: var(--theme-bg);
-	--color-foreground: var(--theme-text);
-	--color-primary: var(--theme-text);
-	--color-primary-foreground: var(--theme-bg);
-	--color-secondary: var(--theme-elevation-100);
-	--color-secondary-foreground: var(--theme-text);
-	--color-muted: var(--theme-elevation-100);
-	--color-muted-foreground: var(--theme-elevation-600);
-	--color-accent: var(--theme-elevation-100);
-	--color-accent-foreground: var(--theme-text);
-	--color-card: var(--theme-elevation-50);
-	--color-card-foreground: var(--theme-text);
-	--color-popover: var(--theme-elevation-0);
-	--color-popover-foreground: var(--theme-text);
-	--color-destructive: var(--theme-error-500);
-	--color-highlight: var(--theme-success-100);
-	--color-highlight-foreground: var(--theme-success-700);
-	--color-success: var(--theme-success-700);
-	--color-info: var(--theme-success-600);
-	--color-warning: var(--theme-warning-600);
-	--color-brand: var(--brand);
-	--color-brand-tint: var(--brand-tint);
-	--color-brand-deep: var(--brand-deep);
-	--color-border: var(--theme-elevation-200);
-	--color-input: var(--theme-elevation-200);
-	--color-ring: var(--theme-elevation-400);
 	--radius-sm: 4px;
 	--radius-md: 6px;
 	--radius-lg: 8px;

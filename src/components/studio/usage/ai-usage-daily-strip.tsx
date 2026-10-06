@@ -27,13 +27,13 @@ export function AiUsageDailyStrip({ days }: { days: AiUsageDay[] }) {
 					일자별 사용량
 				</Typography>
 				<Typography as="p" className="text-muted-foreground tabular-nums" size="xs">
-					{first} — {last}
+					{first} ~ {last}
 				</Typography>
 			</div>
 			<div aria-hidden className="flex h-24 items-end gap-1">
 				{shown.map((day) => (
 					<div
-						className="flex-1 rounded-sm bg-chart-1/40"
+						className="flex-1 rounded-sm bg-chart-5"
 						key={day.dayKey}
 						// 0인 날도 흔적을 남긴다 — 사라지면 그날이 없는 것처럼 보인다.
 						style={{ height: `${Math.max(day.share * 100, 2)}%` }}

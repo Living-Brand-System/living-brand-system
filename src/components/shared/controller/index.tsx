@@ -8,9 +8,11 @@ import { ControllerChips } from './chips'
 import { ControllerColorChips } from './color-chips'
 import { ControllerColorRow } from './color-row'
 import { ControllerColorStrip } from './color-strip'
+import { ControllerCompound } from './compound'
 import { ControllerDataGrid } from './data-grid'
 import { ControllerField } from './field'
 import { ControllerGroup } from './group'
+import { ControllerGroupList } from './group-list'
 import { ControllerInput, ControllerTextarea } from './input'
 import { ControllerItem } from './item'
 import { ControllerContent, ControllerFooter, ControllerHeader, ControllerRoot } from './layout'
@@ -18,11 +20,13 @@ import { ControllerListRow } from './list-row'
 import { ControllerPad } from './pad'
 import { ControllerPadPair } from './pad-pair'
 import { ControllerPagination } from './pagination'
+import { ControllerPresence, ControllerReveal } from './presence'
 import { ControllerPreviewChips } from './preview-chips'
 import { ControllerRange } from './range'
 import { ControllerRow } from './row'
 import { ControllerSegmented } from './segmented'
 import { ControllerSelect } from './select'
+import { ControllerStack } from './stack'
 import { ControllerStatus } from './status'
 import { ControllerTabPanel } from './tab-panel'
 
@@ -47,8 +51,11 @@ export const Controller = {
 	Header: ControllerHeader,
 	Content: ControllerContent,
 	Group: ControllerGroup,
+	GroupList: ControllerGroupList,
 	Footer: ControllerFooter,
 	Row: ControllerRow,
+	Stack: ControllerStack,
+	Compound: ControllerCompound,
 	ListRow: ControllerListRow,
 	Field: ControllerField,
 	Card: ControllerCard,
@@ -56,6 +63,8 @@ export const Controller = {
 	Item: ControllerItem,
 	Segmented: ControllerSegmented,
 	TabPanel: ControllerTabPanel,
+	Reveal: ControllerReveal,
+	Presence: ControllerPresence,
 	ColorChips: ControllerColorChips,
 	ColorStrip: ControllerColorStrip,
 	ColorRow: ControllerColorRow,
@@ -88,11 +97,13 @@ export {
 	ControllerColorChips,
 	ControllerColorRow,
 	ControllerColorStrip,
+	ControllerCompound,
 	ControllerContent,
 	ControllerDataGrid,
 	ControllerField,
 	ControllerFooter,
 	ControllerGroup,
+	ControllerGroupList,
 	ControllerHeader,
 	ControllerInput,
 	ControllerItem,
@@ -100,12 +111,15 @@ export {
 	ControllerPad,
 	ControllerPadPair,
 	ControllerPagination,
+	ControllerPresence,
 	ControllerPreviewChips,
 	ControllerRange,
+	ControllerReveal,
 	ControllerRoot,
 	ControllerRow,
 	ControllerSegmented,
 	ControllerSelect,
+	ControllerStack,
 	ControllerStatus,
 	ControllerTabPanel,
 	ControllerTextarea,

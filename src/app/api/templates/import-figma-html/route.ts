@@ -41,7 +41,8 @@ function figmaApiErrorResponse(error: FigmaApiError): Response {
 					: ''
 		message = `Figma 요청 한도에 도달했습니다. ${retry}${plan ? ` 대상 파일 플랜: ${plan}.` : ''}${seat}`
 	} else if (error.status === 401 || error.status === 403) {
-		message = 'Figma 토큰이 만료되었거나 이 파일에 접근할 권한이 없습니다.'
+		message =
+			'Figma 토큰이 만료되었거나 이 파일에 접근할 권한이 없습니다. 내 계정에서 토큰을 다시 등록하거나 파일 권한을 확인하세요.'
 	} else if (error.status === 404) {
 		message = 'Figma 파일 또는 프레임을 찾을 수 없습니다. URL과 node-id를 확인하세요.'
 	} else if (error.status === 400) {
@@ -60,7 +61,7 @@ function figmaApiErrorResponse(error: FigmaApiError): Response {
 
 /**
  * Figma URL을 inline-style HTML로 변환해 돌려주는 adapter. Admin의 Templates 폼 UI 필드가 호출한다.
- * Template 문서는 만들지 않는다. 서버 FIGMA_API_TOKEN을 구동하므로 manager 이상만 허용한다 (docs/07).
+ * Template 문서는 만들지 않는다. 요청한 manager 본인의 Figma 토큰으로 읽는다(계정 화면에서 등록).
  */
 export async function POST(req: Request) {
 	if (isCrossOriginRequest(req)) {
@@ -99,7 +100,7 @@ export async function POST(req: Request) {
 		payload.logger.error({ err: error }, 'template-import.import-html.failed')
 
 		if (error instanceof FigmaConfigurationError) {
-			return Response.json({ message: error.message }, { status: 503 })
+			return Response.json({ message: error.message }, { status: 409 })
 		}
 		if (error instanceof FigmaApiError) {
 			return figmaApiErrorResponse(error)

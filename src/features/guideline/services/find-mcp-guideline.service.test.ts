@@ -62,7 +62,7 @@ describe('MCP guideline read service', () => {
 	})
 
 	it('Guideline global 조회를 Repository에 위임한다', async () => {
-		const guideline = { id: 1, companyName: 'PROTO' }
+		const guideline = { id: 1, companyName: 'Company' }
 		vi.mocked(findPublishedMcpGuideline).mockResolvedValue(guideline as never)
 		const context = {} as never
 

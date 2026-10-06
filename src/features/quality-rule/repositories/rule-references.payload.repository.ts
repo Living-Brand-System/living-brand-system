@@ -20,7 +20,7 @@ export async function listRuleReferenceSources(req: PayloadRequest): Promise<Rul
 	const documents = await req.payload.find({
 		...readOptions,
 		collection: 'guideline-documents',
-		select: { blocks: true, rules: true },
+		select: { sections: { rules: true }, rules: true },
 	})
 	const scenarios = await req.payload.find({
 		...readOptions,
@@ -33,7 +33,7 @@ export async function listRuleReferenceSources(req: PayloadRequest): Promise<Rul
 			id: document.id,
 			ruleIds: [
 				...(document.rules ?? []),
-				...(document.blocks ?? []).flatMap((block) => block.rules ?? []),
+				...(document.sections ?? []).flatMap((section) => section.rules ?? []),
 			].flatMap((rule) => {
 				const id = relationshipId(rule)
 				return id === null ? [] : [id]

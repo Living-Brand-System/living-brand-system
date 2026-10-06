@@ -38,13 +38,15 @@ export function ImageHistoryStrip() {
 	)
 
 	// 아직 아무것도 안 골랐으면 가장 최근 묶음이 자동으로 선택된다(사용자 지시, 2026-09-21).
+	// 🔴 캔버스에만 올리고 세션은 덮지 않는다(2026-10-01 결정) — 목록이 늦게 오면 그 사이 넣은
+	//    프롬프트·참조 이미지가 조용히 사라졌다. 복원은 사용자가 스트립을 눌렀을 때만 한다.
 	const { selectStack } = history
 	const firstStack = stacks[0]
 	const [autoSelected, setAutoSelected] = useState(false)
 	useEffect(() => {
 		if (autoSelected || !firstStack) return
 		setAutoSelected(true)
-		selectStack(firstStack.items)
+		selectStack(firstStack.items, undefined, { restore: false })
 	}, [autoSelected, firstStack, selectStack])
 
 	if (stacks.length === 0) return null
@@ -53,7 +55,12 @@ export function ImageHistoryStrip() {
 		<div
 			data-slot="image-history-strip"
 			data-testid="strip"
-			className="flex shrink-0 items-center gap-2 overflow-x-auto px-2 py-2"
+			className="scrollbar-none flex min-w-0 shrink-0 items-center gap-2 overflow-x-auto px-2 py-2"
+			// 스크롤바를 숨겼으므로 마우스 휠(세로)도 가로로 넘긴다. 트랙패드 가로 입력은 그대로 둔다.
+			onWheel={(event) => {
+				if (Math.abs(event.deltaY) > Math.abs(event.deltaX))
+					event.currentTarget.scrollLeft += event.deltaY
+			}}
 		>
 			{stacks.map((stack, index) => (
 				<Fragment key={stack.key}>

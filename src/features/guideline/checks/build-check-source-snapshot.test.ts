@@ -3,23 +3,20 @@ import type { GuidelineDocument } from '@/payload-types'
 import { buildCheckSourceSnapshot } from './build-check-source-snapshot'
 import { collectGuidelineCheckSources } from './collect-guideline-check-sources'
 
-const lexical = (text: string) =>
-	({ root: { children: [{ type: 'paragraph', children: [{ text }] }] } }) as never
-
 describe('buildCheckSourceSnapshot', () => {
 	it('blockId가 있으면 해당 섹션의 evidence만 반환한다', () => {
 		const page = {
 			title: 'Logo',
-			blocks: [
+			sections: [
 				{
 					id: 'target',
-					blockType: 'section',
+					type: 'section',
 					anchor: 'digital',
 					title: 'Digital',
-					description: lexical('Use 24 px.'),
+					description: 'Use 24 px.',
 					cards: [{ id: 'c', display: [{ id: 'w', blockType: 'iconGridWidget' }] }],
 				},
-				{ id: 'other', blockType: 'section', title: 'Other', cards: [] },
+				{ id: 'other', type: 'section', title: 'Other', cards: [] },
 			],
 		} as unknown as GuidelineDocument
 
@@ -39,15 +36,15 @@ describe('buildCheckSourceSnapshot', () => {
 		const topic = {
 			title: 'Brand Core',
 			headerImage: { id: 3, name: 'Core', alt: 'Core visual' },
-			blocks: [
+			sections: [
 				{
 					id: 'hero',
-					blockType: 'section',
+					type: 'section',
 					cards: [{ id: 'c', display: [{ id: 'w', blockType: 'ciLockupHeroWidget' }] }],
 				},
 				{
 					id: 'sec',
-					blockType: 'section',
+					type: 'section',
 					anchor: 'main-colors',
 					title: 'Main colors',
 					cards: [],
@@ -63,7 +60,7 @@ describe('buildCheckSourceSnapshot', () => {
 						type: 'section',
 						captions: [],
 						anchor: undefined,
-						title: undefined,
+						title: '',
 						description: undefined,
 					},
 					{
@@ -80,32 +77,31 @@ describe('buildCheckSourceSnapshot', () => {
 	})
 
 	it('존재하지 않는 blockId는 기존 snapshot을 지우지 않도록 null을 반환한다', () => {
-		const page = { title: 'Logo', blocks: [] } as unknown as GuidelineDocument
+		const page = { title: 'Logo', sections: [] } as unknown as GuidelineDocument
 		expect(buildCheckSourceSnapshot(page, 'missing')).toBeNull()
 	})
 
-	it('통합 문서로 옮긴 뒤에도 Rule 배치 개수와 evidence를 유지한다', () => {
+	it('문서와 섹션 Rule의 배치와 출처를 보존한다', () => {
 		const rules = [{ id: 1, key: 'logo-size', title: 'Logo size' }]
-		const blocks = [
-			{
-				id: 'usage',
-				blockType: 'section',
-				anchor: 'minimum',
-				title: 'Minimum',
-				description: lexical('Use 24 px.'),
-				cards: [],
-				rules,
-			},
-		]
-		const legacy = { title: 'Primary Logo', blocks, rules } as unknown as GuidelineDocument
-		const unified = { ...legacy, headerImage: null } as never
-
-		const legacySources = collectGuidelineCheckSources(legacy)
-		const unifiedSources = collectGuidelineCheckSources(unified)
-
-		expect(unifiedSources).toHaveLength(legacySources.length)
-		expect(unifiedSources.map(({ rule, evidence }) => ({ key: rule.key, evidence }))).toEqual(
-			legacySources.map(({ rule, evidence }) => ({ key: rule.key, evidence })),
-		)
+		const document = {
+			id: 1,
+			rules,
+			sections: [
+				{
+					id: 'usage',
+					type: 'section',
+					title: 'Minimum',
+					anchor: 'minimum',
+					description: 'Use 24 px.',
+					rules,
+				},
+			],
+		} as unknown as GuidelineDocument
+		const sources = collectGuidelineCheckSources(document)
+		expect(sources).toHaveLength(2)
+		expect(sources[1]).toMatchObject({
+			source: { documentId: 1, section: { anchor: 'minimum', title: 'Minimum', order: 0 } },
+			evidence: { type: 'section', description: 'Use 24 px.' },
+		})
 	})
 })

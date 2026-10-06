@@ -31,6 +31,12 @@ export function GuidelineCardCaption(props: CaptionProps) {
 		<figcaption
 			data-slot="guideline-card-caption"
 			data-type={type}
+			data-grouped={
+				props.type === 'specification' &&
+				(props.groups.length > 1 || props.groups.some((group) => group.title))
+					? true
+					: undefined
+			}
 			className={cn(styles.caption, className)}
 		>
 			{(title || description) && (
@@ -58,8 +64,15 @@ export function GuidelineCardCaption(props: CaptionProps) {
 			)}
 			{props.type === 'specification' &&
 				props.groups.map((group, index) => (
-					// biome-ignore lint/suspicious/noArrayIndexKey: 상태 없는 문서 그룹이며 이름 생략과 중복을 허용합니다.
-					<div key={`${index}-${group.title ?? ''}`} className={styles.specification}>
+					// biome-ignore lint/a11y/useSemanticElements: 명세의 dt/dd 묶음이며 폼 입력용 fieldset이 아닙니다.
+					<div
+						// biome-ignore lint/suspicious/noArrayIndexKey: 상태 없는 문서 그룹이며 이름 생략과 중복을 허용합니다.
+						key={`${index}-${group.title ?? ''}`}
+						data-slot="caption-specification-group"
+						role="group"
+						aria-label={group.title}
+						className={styles.specification}
+					>
 						{group.title && (
 							<Typography className={styles.title}>{group.title}</Typography>
 						)}

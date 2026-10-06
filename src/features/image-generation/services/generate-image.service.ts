@@ -41,6 +41,7 @@ import {
 } from '@/features/image-generation/services/normalize-image-profile-prompt.service'
 import type { AiUsageSource, AiUsageStudio, AiUsageTokens } from '@/modules/ai-usage/ai-usage'
 import { recordAiUsage } from '@/modules/ai-usage/repositories/ai-usage.payload.repository'
+import { assertWithinTokenLimit } from '@/modules/ai-usage/services/token-limit.service'
 import { acceptsControllerExecutionValue } from '@/modules/studio-controller/controller-definition'
 import { IMAGE_REFERENCE_MAX_BYTES } from '../domain/reference-image/contract'
 
@@ -435,6 +436,8 @@ async function runImageGeneration(
 	}
 	if (!getImageModelApiKey(modelPreset)) throw new ImageGenerationUnavailableError()
 
+	// 토큰 한도는 슬롯을 잡기 전에 본다 — 막힐 요청이 동시 실행 자리를 차지하지 않게.
+	await assertWithinTokenLimit(getAuthenticatedUserId(user))
 	const release = acquireImageGenerationSlot(getAuthenticatedUserId(user))
 	try {
 		const { usage, ...generation } = await generateBrandImages({

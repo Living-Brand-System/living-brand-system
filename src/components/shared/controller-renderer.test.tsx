@@ -6,7 +6,7 @@ import { ControllerControlRenderer, ControllerRenderer } from './controller-rend
 afterEach(cleanup)
 
 describe('ControllerRenderer', () => {
-	it('모든 그룹을 접을 수 있고 첫 그룹만 상단 구분선을 제거한다', () => {
+	it('모든 그룹을 접을 수 있고 목록이 그룹 사이 간격을 소유한다', () => {
 		const groups = [
 			{
 				id: 'first',
@@ -31,8 +31,12 @@ describe('ControllerRenderer', () => {
 
 		expect(screen.getByRole('button', { name: 'First' })).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: 'Second' })).toBeInTheDocument()
-		expect(renderedGroups[0]).toHaveClass('border-t-0')
-		expect(renderedGroups[1]).toHaveClass('border-t')
+		// 그룹 사이 간격은 목록이 각 그룹 상자의 위 여백으로 소유한다.
+		const list = container.querySelector('[data-slot="controller-group-list"]')
+		expect(list).toHaveClass('-mt-2')
+		expect(list?.firstElementChild).toHaveClass('pt-3')
+		expect(renderedGroups[0]).not.toHaveClass('border-t')
+		expect(renderedGroups[1]).not.toHaveClass('border-t')
 
 		fireEvent.click(screen.getByRole('button', { name: 'First' }))
 		expect(screen.getByRole('button', { name: 'First' })).toHaveAttribute(

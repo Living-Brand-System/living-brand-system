@@ -598,3 +598,52 @@ describe('unwrapStringifiedResults', () => {
 		expect(unwrapStringifiedResults('완전히 JSON이 아님')).toBe('완전히 JSON이 아님')
 	})
 })
+
+describe('loadAiReferenceFiles', () => {
+	beforeEach(() => {
+		vi.resetModules()
+		vi.stubEnv('DATABASE_URL', 'postgres://user:pass@localhost:5432/test')
+		vi.stubEnv('PAYLOAD_SECRET', 'test-secret')
+		vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://hd-lbs-stage.vercel.app')
+		vi.stubEnv('VERCEL_AUTOMATION_BYPASS_SECRET', 'bypass-secret')
+	})
+	afterEach(() => {
+		vi.unstubAllGlobals()
+		vi.unstubAllEnvs()
+	})
+
+	it('Vercel 보호 우회 비밀값은 이 앱으로 가는 요청에만 싣는다', async () => {
+		const fetchMock = vi.fn().mockResolvedValue({ ok: false })
+		vi.stubGlobal('fetch', fetchMock)
+		const { loadAiReferenceFiles } = await import(
+			'@/features/asset-check/repositories/ai-check.ai.repository'
+		)
+
+		await loadAiReferenceFiles([
+			{
+				...checks[0],
+				referenceAssets: [
+					{
+						name: 'own.png',
+						url: '/api/brand-logos/file/own.png',
+						mimeType: 'image/png',
+						role: 'positive',
+					},
+					{
+						name: 'external.png',
+						url: 'https://example.com/external.png',
+						mimeType: 'image/png',
+						role: 'positive',
+					},
+				],
+			},
+		])
+
+		const headersFor = (url: string) =>
+			fetchMock.mock.calls.find(([calledUrl]) => calledUrl === url)?.[1]?.headers
+		expect(headersFor('https://hd-lbs-stage.vercel.app/api/brand-logos/file/own.png')).toEqual({
+			'x-vercel-protection-bypass': 'bypass-secret',
+		})
+		expect(headersFor('https://example.com/external.png')).toBeUndefined()
+	})
+})

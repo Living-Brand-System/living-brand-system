@@ -25,6 +25,15 @@ const pointSchema = z.strictObject({
 })
 
 export const keyVisualLineInputSchema = z.strictObject({
+	// 새 두 색 UI가 명시적으로 전달할 때만 사용한다. 기존 팔레트 입력은 그대로 유지한다.
+	foregroundColor: z
+		.string()
+		.regex(/^#[0-9a-f]{6}$/i)
+		.optional(),
+	backgroundColor: z
+		.string()
+		.regex(/^#[0-9a-f]{6}$/i)
+		.optional(),
 	colorway: z.enum(colorwayIds),
 	lineCount: z.number().int().min(4).max(24),
 	angleStart: z.number().min(0).max(180),
@@ -60,6 +69,12 @@ function toPath(value: ControllerValues[string]) {
 /** Controller primitive 값(-1~1)을 Key Visual 2D Line 입력(0~1)으로 바꾸고 검증한다. */
 export function toKeyVisualLineInput(values: ControllerValues): KeyVisualLineInput {
 	return keyVisualLineInputSchema.parse({
+		...(values.foregroundColor !== undefined
+			? { foregroundColor: values.foregroundColor }
+			: {}),
+		...(values.backgroundColor !== undefined
+			? { backgroundColor: values.backgroundColor }
+			: {}),
 		colorway: resolveOption(
 			values.colorway,
 			colorwayIds,
@@ -136,8 +151,8 @@ export function createKeyVisualLineScene(
 	return {
 		width: viewport.width,
 		height: viewport.height,
-		backgroundColor: colorway.background,
-		lineColor: colorway.line,
+		backgroundColor: input.backgroundColor ?? colorway.background,
+		lineColor: input.foregroundColor ?? colorway.line,
 		startPoint,
 		endPoint,
 		segments,

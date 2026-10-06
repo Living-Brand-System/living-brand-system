@@ -11,10 +11,12 @@ describe('buildGuidelineNavigationChapters', () => {
 	// 🔴 URL은 breadcrumb이 아니라 챕터 slug + 토픽 slug로 조립한다(2026-08-26).
 	it('챕터별로 토픽을 묶고 앵커 URL을 만든다', () => {
 		const navigation = buildGuidelineNavigationChapters(
-			[{ id: 1, title: 'Brand', slug: 'brand', displayOrder: 0 }],
+			[{ id: 1, title: 'Brand', description: null, slug: 'brand', displayOrder: 0 }],
 			[
 				{
 					chapterId: 1,
+					description: null,
+					thumbnail: null,
 					id: 2,
 					sections: [
 						{
@@ -35,10 +37,13 @@ describe('buildGuidelineNavigationChapters', () => {
 			{
 				id: 1,
 				title: 'Brand',
+				description: null,
 				topics: [
 					{
 						id: 2,
 						title: 'Logo',
+						description: null,
+						thumbnail: null,
 						href: '/guideline/brand/logo',
 						sections: [
 							{
@@ -59,10 +64,12 @@ describe('buildGuidelineNavigationChapters', () => {
 	// chapter는 required지만 초안은 그 검증을 건너뛴다 — 짝 없는 토픽이 트리를 깨면 안 된다.
 	it('어느 챕터에도 속하지 않은 토픽은 목차에 넣지 않는다', () => {
 		const navigation = buildGuidelineNavigationChapters(
-			[{ id: 1, title: 'Brand', slug: 'brand', displayOrder: 0 }],
+			[{ id: 1, title: 'Brand', description: null, slug: 'brand', displayOrder: 0 }],
 			[
 				{
 					chapterId: null,
+					description: null,
+					thumbnail: null,
 					id: 9,
 					sections: [],
 					slug: 'orphan',

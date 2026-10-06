@@ -40,10 +40,7 @@ export function ImageTransformControl({
 	return (
 		<div
 			data-slot="image-transform-control"
-			className={cn(
-				'flex flex-col gap-1 pb-2.5',
-				disabled && 'pointer-events-none opacity-50',
-			)}
+			className={cn('flex flex-col gap-1.5', disabled && 'pointer-events-none opacity-50')}
 		>
 			<Controller.Pad
 				aria-label="이미지 위치"

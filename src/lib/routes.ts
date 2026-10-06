@@ -1,6 +1,7 @@
 export const routes = {
 	account: '/account',
 	accountPassword: '/account/password',
+	accountTokenLimits: '/account/token-limits',
 	admin: '/admin',
 	guideline: '/guideline',
 	home: '/',

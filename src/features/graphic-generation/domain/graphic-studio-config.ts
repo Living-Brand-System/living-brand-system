@@ -26,6 +26,11 @@ export type GraphicRuntimeManifest = StudioControllerConfig<CanvasStudioKind, st
 	type: 'p5' | 'shader'
 }
 
+/** 선택 카드 부제로 쓰는 렌더러 이름(Figma 529:23010·539:30870). */
+export function graphicRendererLabel(type: GraphicRuntimeManifest['type']): string {
+	return type === 'shader' ? 'Shader' : 'P5 Graphic'
+}
+
 /** Published Graphic Profile 정책이 적용된 Effective Config. */
 export type GraphicStudioConfig = GraphicRuntimeManifest & {
 	output: StudioOutputCapability

@@ -29,8 +29,6 @@ export async function findGuidelineMetadataGlobal(): Promise<GuidelineMetadataDa
 			documentTitle: true,
 			favicon: true,
 			issuedLabel: true,
-			primaryColor: true,
-			primaryColorDark: true,
 		},
 	})
 
@@ -39,8 +37,6 @@ export async function findGuidelineMetadataGlobal(): Promise<GuidelineMetadataDa
 		documentTitle: guideline.documentTitle,
 		faviconHref: relationshipString(guideline.favicon, 'url'),
 		issuedLabel: guideline.issuedLabel || null,
-		primaryDarkHex: relationshipString(guideline.primaryColorDark, 'hex'),
-		primaryHex: relationshipString(guideline.primaryColor, 'hex'),
 	}
 }
 
@@ -54,10 +50,11 @@ export async function listGuidelineChapters(): Promise<GuidelineChapterData[]> {
 		limit: 100,
 		locale: LOCALE,
 		sort: 'displayOrder',
-		select: { title: true, slug: true, displayOrder: true },
+		select: { title: true, description: true, slug: true, displayOrder: true },
 	})
 
 	return chapters.docs.map((chapter) => ({
+		description: chapter.description ?? null,
 		displayOrder: chapter.displayOrder,
 		id: chapter.id,
 		slug: chapter.slug,
@@ -69,9 +66,10 @@ export async function listPublishedGuidelineNavigationTopics(): Promise<
 	GuidelineNavigationTopicData[]
 > {
 	const payload = await getPayload({ config })
+	// depth 1 — 카드 썸네일(headerImage)의 URL이 필요하다. 함께 풀리는 chapter는 relationshipId가 정규화한다.
 	const documents = await payload.find({
 		collection: 'guideline-documents',
-		depth: 0,
+		depth: 1,
 		draft: false,
 		fallbackLocale: FALLBACK_LOCALE,
 		limit: 2000,
@@ -79,51 +77,37 @@ export async function listPublishedGuidelineNavigationTopics(): Promise<
 		sort: 'displayOrder',
 		select: {
 			title: true,
+			description: true,
 			slug: true,
 			displayOrder: true,
 			chapter: true,
-			// 🔴 섹션 목차는 `section` 블록에서 나온다. blockType별로 골라 담으면 나머지 블록
-			//    테이블(blk·img·위젯 20종)은 조인 자체가 일어나지 않는다
-			//    (`@payloadcms/drizzle` find/traverseFields.js — 목록에 없는 블록은 빈 select로 접힌다).
-			blocks: { section: { anchor: true, title: true } },
-			contentModel: true,
+			headerImage: true,
 			sections: { id: true, type: true, anchor: true, title: true },
 		},
 	})
 
 	return documents.docs.map((document) => ({
 		chapterId: relationshipId(document.chapter),
+		description: document.description ?? null,
 		id: document.id,
-		sections:
-			document.contentModel === 'sections'
-				? withSectionHierarchy(document.sections ?? []).flatMap((section) =>
-						section.anchor
-							? [
-									{
-										id: section.id,
-										anchor: section.anchor,
-										title: section.title ?? '',
-										headingLevel: section.headingLevel,
-										parentSectionId: section.parentSectionId,
-									},
-								]
-							: [],
-					)
-				: (document.blocks ?? []).flatMap((block) =>
-						// 제목 없는 섹션(히어로)은 앵커도 목차 항목도 없다.
-						block.blockType === 'section' && block.anchor && block.title
-							? [
-									{
-										id: block.id || block.anchor,
-										anchor: block.anchor,
-										title: block.title,
-										headingLevel: 2 as const,
-										parentSectionId: null,
-									},
-								]
-							: [],
-					),
+		sections: withSectionHierarchy(document.sections ?? []).flatMap((section) =>
+			section.anchor
+				? [
+						{
+							id: section.id,
+							anchor: section.anchor,
+							title: section.title ?? '',
+							headingLevel: section.headingLevel,
+							parentSectionId: section.parentSectionId,
+						},
+					]
+				: [],
+		),
 		slug: document.slug,
+		thumbnail:
+			typeof document.headerImage === 'object' && document.headerImage?.url
+				? { src: document.headerImage.url, alt: document.headerImage.alt ?? document.title }
+				: null,
 		title: document.title,
 	}))
 }
@@ -137,12 +121,13 @@ export async function findChapterBySlug(chapterSlug: string): Promise<GuidelineC
 		limit: 1,
 		locale: LOCALE,
 		where: { slug: { equals: chapterSlug } },
-		select: { title: true, slug: true, displayOrder: true },
+		select: { title: true, description: true, slug: true, displayOrder: true },
 	})
 
 	const chapter = chapters.docs[0]
 	return chapter
 		? {
+				description: chapter.description ?? null,
 				displayOrder: chapter.displayOrder,
 				id: chapter.id,
 				slug: chapter.slug,
@@ -156,8 +141,8 @@ export async function findPublishedTopicBySlug(
 	topicSlug: string,
 ): Promise<GuidelineTopicData | null> {
 	const payload = await getPayload({ config })
-	// depth 1: 섹션(section) 블록이 품은 이미지(application-images)·색상(brand-colors) 관계를
-	// populate해야 렌더된다. 섹션 자신의 면(background)도 같은 depth로 hex까지 채워진다.
+	// sections 선택 조회는 깊이 중첩된 다형 관계를 누락하므로 문서 전체를 읽고 반환 필드를 제한합니다.
+	// depth 1에서 카드의 이미지·색상 관계를 populate합니다.
 	const topics = await payload.find({
 		collection: 'guideline-documents',
 		depth: 1,
@@ -168,21 +153,11 @@ export async function findPublishedTopicBySlug(
 		where: {
 			and: [{ slug: { equals: topicSlug } }, { chapter: { equals: chapterId } }],
 		},
-		select: {
-			title: true,
-			slug: true,
-			headerImage: true,
-			blocks: true,
-			contentModel: true,
-			sections: true,
-		},
 	})
 
 	const topic = topics.docs[0]
 	return topic
 		? {
-				blocks: topic.blocks ?? [],
-				contentModel: topic.contentModel,
 				sections: topic.sections,
 				headerImage: topic.headerImage ?? null,
 				id: topic.id,

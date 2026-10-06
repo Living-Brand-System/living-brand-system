@@ -8,7 +8,6 @@ import {
 } from '@/features/agent-chat/utils/derive-agent-message'
 import * as checkSessionService from '@/features/asset-check/services/start-check-session.service'
 import * as mcpGuidelineRepository from '@/features/guideline/repositories/mcp-guideline.payload.repository'
-import { extractTextFromLexical } from '@/features/guideline/utils/lexical-text'
 import * as checkScenarioRepository from '@/features/quality-rule/repositories/check-scenario.payload.repository'
 import type { AgentChatMessage } from '@/modules/agents/agent-chat.agent'
 import { getAgentTools } from '@/modules/agents/agent-chat-tools.agent'
@@ -439,19 +438,6 @@ describe('agent tools', () => {
 		])
 
 		expect(result.success).toBe(false)
-	})
-
-	it('extracts text from lexical rich text nodes', () => {
-		const text = extractTextFromLexical({
-			root: {
-				children: [
-					{ text: 'Logo' },
-					{ type: 'paragraph', children: [{ text: 'minimum size' }] },
-				],
-			},
-		})
-
-		expect(text).toBe('Logo minimum size')
 	})
 
 	it('concatenates assistant text parts', () => {

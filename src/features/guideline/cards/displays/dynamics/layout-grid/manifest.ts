@@ -1,9 +1,4 @@
-import type { GuidelineControllerManifest } from '@/features/guideline/domain/contract/controller'
-import type {
-	ControllerControlDefinition,
-	ControllerControlRestriction,
-	StudioControllerRestrictions,
-} from '@/modules/studio-controller/controller-definition'
+import type { ControllerControlDefinition } from '@/modules/studio-controller/controller-definition'
 
 // Key Layout 정본 규칙 + 그것을 어떤 컨트롤로 조작하는지. 이 파일이 이 블록의 **매니페스트**다.
 //
@@ -49,45 +44,3 @@ export const GUIDES = {
 	label: '그리드',
 	defaultValue: true,
 } as const satisfies ControllerControlDefinition
-
-/**
- * 그룹 경계가 곧 알약의 **구분선**이다(Figma HD_LBS_UI 61:4672) — 마진 ┃ 거터 둘 ┃ 표시 전환.
- * 거터 둘은 같은 성격이라 사이에 선이 없다. 알약은 그룹 `title`을 그리지 않고, 사이드바에
- * 같은 매니페스트를 그리면 그때 제목이 쓰인다.
- */
-export const LAYOUT_GRID_MANIFEST = {
-	id: 'layout-grid',
-	groups: [
-		{ id: 'margin', title: '마진', controls: [MARGIN] },
-		{ id: 'gutter', title: '거터', controls: [GUTTER_X, GUTTER_Y] },
-		{ id: 'guides', title: '표시', controls: [GUIDES] },
-	],
-} as const satisfies GuidelineControllerManifest
-
-/** 저장값과 조절 허용 여부는 이 위젯이 해석한다. */
-export function layoutGridRestrictions(
-	fields: Record<string, unknown>,
-): StudioControllerRestrictions {
-	return {
-		controls: [
-			foldRestriction('marginPct', fields.marginPct, fields.marginAdjustable),
-			foldRestriction('gutterX', fields.gutterX, fields.gutterXAdjustable),
-			foldRestriction('gutterY', fields.gutterY, fields.gutterYAdjustable),
-			foldRestriction('guidesOn', fields.guidesOn, fields.guidesAdjustable),
-		],
-	}
-}
-
-/** 미설정은 허용하고 명시한 false만 readonly로 만든다. */
-function foldRestriction(
-	controlId: string,
-	value: unknown,
-	adjustable: unknown,
-): ControllerControlRestriction {
-	const allowed = (adjustable ?? true) !== false
-	return {
-		controlId,
-		...(typeof value === 'number' || typeof value === 'boolean' ? { defaultValue: value } : {}),
-		...(allowed ? {} : { availability: 'readonly' as const }),
-	}
-}

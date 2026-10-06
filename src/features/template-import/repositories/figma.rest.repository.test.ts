@@ -1,8 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { findFigmaImageUrls, findFigmaNodeTree } from './figma.rest.repository'
 
-vi.mock('@/env', () => ({ env: { FIGMA_API_TOKEN: 'token' } }))
-
 describe('findFigmaImageUrls', () => {
 	afterEach(() => vi.unstubAllGlobals())
 
@@ -13,9 +11,10 @@ describe('findFigmaImageUrls', () => {
 		})
 		vi.stubGlobal('fetch', fetchMock)
 
-		await findFigmaImageUrls('file', ['1:2'], 'svg')
+		await findFigmaImageUrls('user-token', 'file', ['1:2'], 'svg')
 
 		expect(fetchMock.mock.calls[0]?.[0]).toContain('format=svg&use_absolute_bounds=true')
+		expect(fetchMock.mock.calls[0]?.[1]).toEqual({ headers: { 'X-Figma-Token': 'user-token' } })
 	})
 })
 
@@ -36,7 +35,7 @@ describe('findFigmaNodeTree', () => {
 			}),
 		)
 
-		await expect(findFigmaNodeTree('file', '1:2')).rejects.toEqual(
+		await expect(findFigmaNodeTree('token', 'file', '1:2')).rejects.toEqual(
 			expect.objectContaining({
 				name: 'FigmaApiError',
 				planTier: 'starter',
@@ -54,7 +53,7 @@ describe('findFigmaNodeTree', () => {
 			vi.fn().mockResolvedValue({ headers: new Headers(), ok: false, status: 500 }),
 		)
 
-		await expect(findFigmaNodeTree('file', '1:2')).rejects.toEqual(
+		await expect(findFigmaNodeTree('token', 'file', '1:2')).rejects.toEqual(
 			expect.objectContaining({ retryAfter: undefined, status: 500 }),
 		)
 	})
@@ -66,7 +65,7 @@ describe('findFigmaNodeTree', () => {
 		})
 		vi.stubGlobal('fetch', fetchMock)
 
-		await findFigmaNodeTree('file', '1:2')
+		await findFigmaNodeTree('token', 'file', '1:2')
 
 		expect(fetchMock.mock.calls[0]?.[0]).toContain('ids=1%3A2&geometry=paths')
 	})

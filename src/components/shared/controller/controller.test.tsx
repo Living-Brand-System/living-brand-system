@@ -91,25 +91,26 @@ describe('Controller.Group', () => {
 		await waitFor(() => expect(content).toHaveStyle({ height: '0px', opacity: '0' }))
 	})
 
-	it('활성 섹션은 패널 폭 전체로 번지는 면을 갖는다 — 경계가 읽히게', () => {
+	it.each([
+		true,
+		false,
+	] as const)('활성화해도 그룹 표면과 부모 여백은 유지한다 (collapsible=%s)', (collapsible) => {
 		const { container, rerender } = render(
-			<Controller.Group title="Sec" onActivate={() => {}}>
+			<Controller.Group title="Sec" collapsible={collapsible} onActivate={() => {}}>
 				<div>내용물</div>
 			</Controller.Group>,
 		)
 		const group = () => container.querySelector('[data-slot="controller-group"]')
+		const inactiveClass = group()?.className
 		expect(group()).not.toHaveAttribute('data-active')
-
 		rerender(
-			<Controller.Group title="Sec" active onActivate={() => {}}>
+			<Controller.Group title="Sec" collapsible={collapsible} active onActivate={() => {}}>
 				<div>내용물</div>
 			</Controller.Group>,
 		)
 		expect(group()).toHaveAttribute('data-active', 'true')
-		// Content의 px-4를 상쇄해 좌우 끝까지 닿는다.
-		expect(group()).toHaveClass('data-[active]:-mx-4', 'data-[active]:px-4')
-		// 🔴 hover가 bg-muted이므로 활성은 primary로만 칠한다(docs/09 §5).
-		expect(group()).toHaveClass('data-[active]:bg-primary/5')
+		expect(group()?.className).toBe(inactiveClass)
+		expect(group()?.className).not.toMatch(/(?:bg-|(?:^|:)-mx-)/)
 	})
 
 	it('잠금 중에도 사용자의 접힘 상태를 보존한다 — 풀려도 닫힌 채 남는다', async () => {

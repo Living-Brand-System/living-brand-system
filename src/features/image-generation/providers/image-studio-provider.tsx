@@ -18,7 +18,6 @@ import {
 	getImageColorAdjustmentControls,
 	getImageStudioControls,
 	getImageStudioFeature,
-	IMAGE_STUDIO_CONTROL_IDS,
 	type ImageStudioConfig,
 } from '@/features/image-generation/domain/image-studio-config'
 import {
@@ -58,6 +57,9 @@ export function ImageStudioProvider({
 	const [angles, setAngles] = useState({ azimuthDeg: 0, elevationDeg: 0 })
 	// 첨부는 저장하지 않는다 — 이 상태가 사본의 전부이고, 새로고침하면 사라진다.
 	const [attachment, setAttachment] = useState<{ dataUri: string; name: string } | null>(null)
+	const [referenceEnabled, setReferenceEnabled] = useState(true)
+	// 처음에는 꺼져 있고 결과가 생겨도 저절로 켜지지 않는다. 프로파일이 바뀌면 다시 끈다.
+	const [cameraEnabled, setCameraEnabled] = useState(false)
 	const [preparing, setPreparing] = useState(false)
 	const conversion = useRef<AbortController | null>(null)
 	useEffect(() => () => conversion.current?.abort(), [])
@@ -90,8 +92,7 @@ export function ImageStudioProvider({
 	const canRun =
 		acceptsImagePromptExecution(definitions.prompt, prompt) &&
 		!promptError &&
-		!preparing &&
-		!attachmentError
+		(!referenceEnabled || (!preparing && !attachmentError))
 
 	const lineColor = colorDefinitions ? values[colorDefinitions.line.id] : undefined
 	const backgroundColor = colorDefinitions?.background
@@ -180,10 +181,12 @@ export function ImageStudioProvider({
 			const next = (browse.data ?? configs).find((item) => item.id === nextProfileId)
 			if (!next) return
 			clearReference()
+			setReferenceEnabled(true)
+			setCameraEnabled(false)
 			setConfigs((current) =>
 				current.some((item) => item.id === next.id) ? current : [...current, next],
 			)
-			setValues((current) => reconcileProfileValues(next, current))
+			setValues(createControllerValues(next.controller.groups))
 			setProfileId(nextProfileId)
 			// 딥링크와 같은 주소로 맞춘다 — 근거는 Graphic Provider의 같은 자리에 적혀 있다.
 			if (next.image.slug)
@@ -220,6 +223,8 @@ export function ImageStudioProvider({
 			}
 			pendingHistory.current = null
 			clearReference()
+			setReferenceEnabled(true)
+			setCameraEnabled(false)
 			setAngles({ azimuthDeg: 0, elevationDeg: 0 })
 			setConfigs((current) =>
 				current.some((candidate) => candidate.id === next.id)
@@ -237,12 +242,16 @@ export function ImageStudioProvider({
 	 * 🔑 고르기와 덮기는 별개다. 복원 값이 없어도 캔버스에는 올라간다.
 	 */
 	const selectHistoryStack = useCallback(
-		(items: readonly GeneratedImageHistoryItem[], itemId?: number) => {
+		(
+			items: readonly GeneratedImageHistoryItem[],
+			itemId?: number,
+			options?: { restore?: boolean },
+		) => {
 			const picked = items.find((item) => item.id === itemId) ?? items[0]
 			if (!picked) return
 			setHistoryStack(items)
 			setHistorySelectedId(picked.id)
-			restoreFromHistory(picked)
+			if (options?.restore !== false) restoreFromHistory(picked)
 		},
 		[restoreFromHistory],
 	)
@@ -292,7 +301,7 @@ export function ImageStudioProvider({
 				run: () => {
 					if (!canRun) return
 					// 계약이 첨부를 열지 않은 프로파일에서는 들고 있던 첨부도 보내지 않는다.
-					const upload = supportsReference ? attachment : null
+					const upload = supportsReference && referenceEnabled ? attachment : null
 					void generate(
 						{
 							aspectRatio: ratioValue as ImageAspectRatio,
@@ -324,6 +333,11 @@ export function ImageStudioProvider({
 				},
 			},
 			reference: {
+				enabled: supportsReference && referenceEnabled,
+				setEnabled: (enabled: boolean) => {
+					setReferenceEnabled(enabled)
+					if (enabled) setCameraEnabled(false)
+				},
 				value: supportsReference ? (attachment?.dataUri ?? null) : null,
 				name: supportsReference ? (attachment?.name ?? null) : null,
 				error: attachmentError,
@@ -332,6 +346,11 @@ export function ImageStudioProvider({
 				clear: clearReference,
 			},
 			camera: {
+				enabled: supportsCamera && cameraEnabled,
+				setEnabled: (enabled: boolean) => {
+					setCameraEnabled(enabled)
+					if (enabled) setReferenceEnabled(false)
+				},
 				...angles,
 				setAngles,
 				seedImage: cameraSeed?.src ?? null,
@@ -373,6 +392,7 @@ export function ImageStudioProvider({
 			batchValue,
 			bindings,
 			browse,
+			cameraEnabled,
 			cameraSeed,
 			canRun,
 			clearReference,
@@ -390,6 +410,7 @@ export function ImageStudioProvider({
 			prompt,
 			preparing,
 			ratioValue,
+			referenceEnabled,
 			referenceIndex,
 			requested,
 			resolutionValue,
@@ -426,30 +447,6 @@ function restoreHistoryValues(
 	}
 	if (definitions.resolution.options.some((option) => option.value === item.imageSize)) {
 		next[definitions.resolution.id] = item.imageSize
-	}
-	return next
-}
-
-function reconcileProfileValues(
-	config: ImageStudioConfig,
-	current: ControllerValues,
-): ControllerValues {
-	const next = createControllerValues(config.controller.groups)
-	for (const control of config.controller.groups.flatMap((group) => group.controls)) {
-		if ((control.availability ?? 'enabled') !== 'enabled') continue
-		const currentValue = current[control.id]
-		if (control.id === IMAGE_STUDIO_CONTROL_IDS.prompt && typeof currentValue === 'string') {
-			next[control.id] = currentValue
-			continue
-		}
-		if (
-			control.kind === 'select' &&
-			((typeof currentValue === 'string' &&
-				control.options.some((option) => option.value === currentValue)) ||
-				(currentValue === null && control.defaultValue === null))
-		) {
-			next[control.id] = currentValue
-		}
 	}
 	return next
 }

@@ -1,27 +1,13 @@
-import { env } from '@/env'
 import type { FigmaSourceNode } from '@/features/template-import/utils/figma-ir'
-import {
-	FigmaApiError,
-	type FigmaApiStage,
-	FigmaConfigurationError,
-	FigmaImportError,
-} from '@/lib/errors'
+import { FigmaApiError, type FigmaApiStage, FigmaImportError } from '@/lib/errors'
 
 /**
  * Figma REST API 경계. 임포트 파이프라인의 외부 I/O는 모두 이 파일이 소유한다.
- * 토큰은 서버 환경변수(FIGMA_API_TOKEN)에만 존재하고 응답은 가공 없이 돌려준다.
+ * 토큰은 요청한 사용자의 것을 호출자가 넘긴다(서버 공용 토큰 없음). 응답은 가공 없이 돌려준다.
  */
 
 const FIGMA_API_BASE = 'https://api.figma.com/v1'
 const IMAGE_BATCH_SIZE = 100
-
-function getFigmaToken(): string {
-	if (!env.FIGMA_API_TOKEN) {
-		throw new FigmaConfigurationError()
-	}
-
-	return env.FIGMA_API_TOKEN
-}
 
 function throwFigmaApiError(response: Response, stage: FigmaApiStage): never {
 	const retryAfterHeader = response.headers.get('retry-after')
@@ -37,9 +23,13 @@ function throwFigmaApiError(response: Response, stage: FigmaApiStage): never {
 	)
 }
 
-export async function findFigmaNodeTree(fileKey: string, nodeId: string): Promise<FigmaSourceNode> {
+export async function findFigmaNodeTree(
+	token: string,
+	fileKey: string,
+	nodeId: string,
+): Promise<FigmaSourceNode> {
 	const url = `${FIGMA_API_BASE}/files/${fileKey}/nodes?ids=${encodeURIComponent(nodeId)}&geometry=paths`
-	const response = await fetch(url, { headers: { 'X-Figma-Token': getFigmaToken() } })
+	const response = await fetch(url, { headers: { 'X-Figma-Token': token } })
 
 	if (!response.ok) {
 		throwFigmaApiError(response, 'nodes')
@@ -66,11 +56,11 @@ export async function findFigmaNodeTree(fileKey: string, nodeId: string): Promis
  * png는 scale=2(hiDPI), svg는 벡터 보존용으로 벡터 계열 노드에 쓴다.
  */
 export async function findFigmaImageUrls(
+	token: string,
 	fileKey: string,
 	nodeIds: string[],
 	format: 'png' | 'svg',
 ): Promise<Record<string, string>> {
-	const token = getFigmaToken()
 	const imageUrls: Record<string, string> = {}
 	const formatQuery =
 		format === 'svg' ? 'format=svg&use_absolute_bounds=true' : 'format=png&scale=2'
@@ -100,9 +90,12 @@ export async function findFigmaImageUrls(
  * 파일의 IMAGE fill 원본(imageRef → 임시 다운로드 URL) 맵을 돌려준다.
  * 파일 단위 단일 호출이며 nodeId가 아닌 imageRef가 키다. URL은 곧 만료되므로 임포트 중에만 쓴다.
  */
-export async function findFigmaImageFillUrls(fileKey: string): Promise<Record<string, string>> {
+export async function findFigmaImageFillUrls(
+	token: string,
+	fileKey: string,
+): Promise<Record<string, string>> {
 	const url = `${FIGMA_API_BASE}/files/${fileKey}/images`
-	const response = await fetch(url, { headers: { 'X-Figma-Token': getFigmaToken() } })
+	const response = await fetch(url, { headers: { 'X-Figma-Token': token } })
 
 	if (!response.ok) {
 		throwFigmaApiError(response, 'image-fills')

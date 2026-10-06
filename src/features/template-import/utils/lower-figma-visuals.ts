@@ -81,16 +81,22 @@ function findVisibleFills(node: Node): FigmaPaint[] {
 }
 
 /**
- * CSS background-image로 낮출 수 있는 IMAGE fill을 돌려준다 — 조건: 비텍스트 노드 + 보이는 fill이
- * imageRef 있는 IMAGE 하나뿐. plan(에셋 수집)과 lowering(스타일 생성)이 같은 판정을 공유해야
- * "수집했는데 못 그리는" 또는 "그리려는데 수집 안 된" 어긋남이 생기지 않는다.
- * (TEXT의 IMAGE fill은 글리프 색이라 배경으로 표현 불가 → 제외. 다중 fill+IMAGE는 검증기가
+ * CSS background-image로 낮출 수 있는 IMAGE fill을 돌려준다 — 조건: 비텍스트 노드 + 보이는 fill의
+ * **맨 위**가 imageRef 있는 IMAGE이고, 그 아래는 없거나 SOLID 하나뿐. plan(에셋 수집)과
+ * lowering(스타일 생성)이 같은 판정을 공유해야 "수집했는데 못 그리는" 또는 "그리려는데 수집 안 된"
+ * 어긋남이 생기지 않는다.
+ * 🔑 SOLID 아래 + IMAGE 위는 CSS 그대로다(`background-color` 위에 `background-image`). Figma에서 프레임에
+ *    이미지 fill을 얹으면 흔히 이 모양이 되는데, 예전엔 래스터로 보내 **루트면 템플릿 전체가 PNG 한 장**이
+ *    됐다(2026-10-06, hd_lbs_templates Poster_Type3·4 — 텍스트·로고까지 편집 불가).
+ * (TEXT의 IMAGE fill은 글리프 색이라 배경으로 표현 불가 → 제외. 그 밖의 다중 fill+IMAGE는 검증기가
  * background-image에 단일 url만 허용해 표현 불가 → 제외. 둘 다 plan에서 래스터로 남는다.)
  */
 export function findCssLowerableImageFill(node: Node): FigmaPaint | undefined {
 	if (node.type === 'TEXT') return undefined
 	const fills = findVisibleFills(node)
-	const paint = fills.length === 1 ? fills[0] : undefined
+	const under = fills.slice(0, -1)
+	if (under.length > 1 || under.some((paint) => paint.type !== 'SOLID')) return undefined
+	const paint = fills.at(-1)
 	return paint?.type === 'IMAGE' && paint.imageRef ? paint : undefined
 }
 
@@ -122,6 +128,7 @@ function createImageFillStyle(paint: FigmaPaint, url: string): IrCssStyle {
  * - fill 없음 → 레거시 backgroundColor
  * - SOLID/GRADIENT 하나 → background 단일 값 (기존 출력과 동일)
  * - IMAGE 하나(해석된 에셋) → background-image 4종 longhand + 발행 승격용 fillAsset 참조
+ *   (아래에 SOLID가 하나 깔려 있으면 그 색을 background-color로 함께 낸다)
  * - SOLID/GRADIENT 스택 → background 다중 레이어 (fills는 아래→위, CSS는 위→아래라 역순)
  * - 그 외(IMAGE 미해석·PATTERN 등)는 plan이 래스터로 보내므로 여기 도달 시 backgroundColor로 방어
  */
@@ -132,6 +139,20 @@ export function lowerNodeBackground(
 	const fills = findVisibleFills(node)
 	if (fills.length === 0) return { style: { background: formatRgba(node.backgroundColor) } }
 
+	const imageFill = findCssLowerableImageFill(node)
+	const asset = imageFill?.imageRef ? imageFillAssets[imageFill.imageRef] : undefined
+	if (imageFill && asset) {
+		const base =
+			fills.length === 2 ? formatRgba(fills[0]?.color, fills[0]?.opacity ?? 1) : undefined
+		return {
+			style: {
+				...(base ? { 'background-color': base } : {}),
+				...createImageFillStyle(imageFill, asset.url),
+			},
+			fillAsset: asset,
+		}
+	}
+
 	if (fills.length === 1) {
 		const paint = fills[0]
 		if (paint.type === 'SOLID') {
@@ -139,11 +160,6 @@ export function lowerNodeBackground(
 		}
 		if (paint.type.startsWith('GRADIENT')) {
 			return { style: { background: createGradientCss(paint) } }
-		}
-		const imageFill = findCssLowerableImageFill(node)
-		const asset = imageFill?.imageRef ? imageFillAssets[imageFill.imageRef] : undefined
-		if (imageFill && asset) {
-			return { style: createImageFillStyle(imageFill, asset.url), fillAsset: asset }
 		}
 		return { style: { background: formatRgba(node.backgroundColor) } }
 	}

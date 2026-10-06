@@ -40,7 +40,6 @@ const source = (sections: CmsSection[]): GuidelineSourceDocument => ({
 	id: 1,
 	title: 'Guide',
 	slug: 'guide',
-	contentModel: 'sections',
 	sections,
 })
 
@@ -85,7 +84,6 @@ it('위계·배치·명세·자기 섹션 다운로드를 해석하며 원본과
 			{ id: 'incorrect', type: 'incorrect-usages' },
 		),
 	])
-	raw.blocks = [{ blockType: 'section', title: 'INACTIVE' } as never]
 	const before = structuredClone(raw)
 	const read = toGuidelineReadDocument(raw)
 	if (read.contentModel !== 'sections') throw new Error('Expected sections')
@@ -118,9 +116,14 @@ it('위계·배치·명세·자기 섹션 다운로드를 해석하며 원본과
 		type: 'specification',
 		title: null,
 		description: null,
-		rows: [
-			{ label: '두께', value: '1px' },
-			{ label: '빈 값', value: '' },
+		groups: [
+			{
+				title: null,
+				items: [
+					{ label: '두께', value: '1px' },
+					{ label: '빈 값', value: '' },
+				],
+			},
 		],
 	})
 	expect(read.sections[2].contentGroups[0].figures.map((figure) => figure.usageStatus)).toEqual([
@@ -131,6 +134,88 @@ it('위계·배치·명세·자기 섹션 다운로드를 해석하며 원본과
 	expect(formatGuidelineReadDocument(read)).toContain(
 		'Specification (명세):\n- 두께: 1px\n- 빈 값: ',
 	)
+	expect(raw).toEqual(before)
+})
+
+it('명세 그룹·반복 라벨·순서·빈 값은 JSON과 Agent 텍스트에 보존하고 비활성 입력은 제외한다', () => {
+	const raw = source([
+		section([
+			card(
+				{ type: 'image', image },
+				{
+					caption: {
+						type: 'specification',
+						title: 'English',
+						description: '영문',
+						rows: [{ label: 'HIDDEN', value: 'HIDDEN' }],
+					},
+					specGroups: [
+						{
+							title: 'Headings',
+							items: [
+								{ label: 'Weight', value: 'Bold' },
+								{ label: 'Leading', value: '130 – 140%' },
+							],
+						},
+						{
+							title: 'Body',
+							items: [
+								{ label: 'Weight', value: 'Medium' },
+								{ label: '빈 값', value: '' },
+							],
+						},
+					],
+				},
+			),
+			card(
+				{ type: 'image', image },
+				{
+					caption: {
+						type: 'list',
+						rows: [{ value: '목록' }],
+					},
+					specGroups: [{ title: 'HIDDEN', items: [{ value: 'HIDDEN' }] }],
+				},
+			),
+			card(
+				{ type: 'image', image },
+				{
+					caption: {
+						type: 'basic',
+					},
+					specGroups: [{ title: 'HIDDEN', items: [{ value: 'HIDDEN' }] }],
+				},
+			),
+		]),
+	])
+	const before = structuredClone(raw)
+	const read = toGuidelineReadDocument(raw)
+	if (read.contentModel !== 'sections') throw new Error('Expected sections')
+	expect(read.sections[0].contentGroups[0].figures[0].caption).toEqual({
+		type: 'specification',
+		title: 'English',
+		description: '영문',
+		groups: [
+			{
+				title: 'Headings',
+				items: [
+					{ label: 'Weight', value: 'Bold' },
+					{ label: 'Leading', value: '130 – 140%' },
+				],
+			},
+			{
+				title: 'Body',
+				items: [
+					{ label: 'Weight', value: 'Medium' },
+					{ label: '빈 값', value: '' },
+				],
+			},
+		],
+	})
+	expect(formatGuidelineReadDocument(read)).toContain(
+		'Specification (명세):\nSpecification group: Headings\n- Weight: Bold\n- Leading: 130 – 140%\nSpecification group: Body\n- Weight: Medium\n- 빈 값: ',
+	)
+	expect(JSON.stringify(read)).not.toContain('HIDDEN')
 	expect(raw).toEqual(before)
 })
 
@@ -237,23 +322,8 @@ it('읽을 수 없는 관계는 링크·프리셋을 추측하지 않으며 잘�
 	}
 })
 
-it('빈 신규 본문은 레거시로 되돌리지 않고 레거시는 기존 필드와 해석된 평문을 유지한다', () => {
-	const raw = {
-		...source([]),
-		blocks: [
-			{
-				blockType: 'section' as const,
-				title: 'Legacy',
-				anchor: 'legacy',
-				layout: 'grid' as const,
-			},
-		],
-	}
-	expect(toGuidelineReadDocument(raw)).toMatchObject({ contentModel: 'sections', sections: [] })
-	expect(toGuidelineReadDocument(raw)).not.toHaveProperty('blocks')
-	const legacy = toGuidelineReadDocument({ ...raw, contentModel: 'legacy' })
-	expect(legacy).not.toHaveProperty('sections')
-	expect(legacy).toMatchObject({
-		blocks: [{ blockType: 'section', title: 'Legacy', text: 'Legacy\nlegacy' }],
-	})
+it('빈 본문은 섹션 읽기 계약만 반환한다', () => {
+	const read = toGuidelineReadDocument(source([]))
+	expect(read).toMatchObject({ contentModel: 'sections', sections: [] })
+	expect(read).not.toHaveProperty('blocks')
 })

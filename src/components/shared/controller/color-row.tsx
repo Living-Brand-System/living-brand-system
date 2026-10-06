@@ -116,7 +116,7 @@ function ColorPalette({
 					// 색은 데이터라 style로 흐른다(docs/09 §4 예외 — 아래 스와치 input과 같은 근거).
 					style={{ backgroundColor: candidate }}
 					className={cn(
-						'size-5 shrink-0 cursor-pointer appearance-none rounded-sm border border-border outline-none disabled:cursor-not-allowed',
+						'size-5 shrink-0 cursor-pointer appearance-none rounded-sm border border-foreground/15 outline-none disabled:cursor-not-allowed',
 						'checked:ring-2 checked:ring-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30',
 					)}
 				/>
@@ -141,7 +141,7 @@ function ColorSwatchInput({
 			disabled={row?.disabled || undefined}
 			onChange={(event) => onChange?.(event.target.value)}
 			className={cn(
-				'size-5 shrink-0 cursor-pointer appearance-none rounded-sm border border-border bg-transparent p-0 disabled:cursor-not-allowed [&::-webkit-color-swatch]:rounded-[inherit] [&::-webkit-color-swatch]:border-0 [&::-webkit-color-swatch-wrapper]:p-0',
+				'size-5 shrink-0 cursor-pointer appearance-none rounded-sm border border-foreground/15 bg-transparent p-0 disabled:cursor-not-allowed [&::-webkit-color-swatch]:rounded-[inherit] [&::-webkit-color-swatch]:border-0 [&::-webkit-color-swatch-wrapper]:p-0',
 				// 미설정 스와치는 비워 보인다 — 검정을 사칭하지 않기 위해서다.
 				isEmpty && 'opacity-30',
 			)}

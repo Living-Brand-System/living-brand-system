@@ -119,6 +119,15 @@ import * as migration_20260922_005918_add_generated_image_batch_and_best_sample 
 import * as migration_20260922_030641_add_ai_usage_events from './20260922_030641_add_ai_usage_events';
 import * as migration_20260922_044827_add_ai_usage_studio from './20260922_044827_add_ai_usage_studio';
 import * as migration_20260928_080339_nullable_ai_usage_author from './20260928_080339_nullable_ai_usage_author';
+import * as migration_20260930_075334_add_caption_specification_groups from './20260930_075334_add_caption_specification_groups';
+import * as migration_20260930_081548_add_user_figma_token from './20260930_081548_add_user_figma_token';
+import * as migration_20260930_101346_remove_guideline_legacy_access from './20260930_101346_remove_guideline_legacy_access';
+import * as migration_20261001_003924_purge_guideline_legacy_data from './20261001_003924_purge_guideline_legacy_data';
+import * as migration_20261002_005206_add_brand_color_pairs from './20261002_005206_add_brand_color_pairs';
+import * as migration_20261002_070438_add_guideline_descriptions from './20261002_070438_add_guideline_descriptions';
+import * as migration_20261006_030158_add_card_ratio_5_3 from './20261006_030158_add_card_ratio_5_3';
+import * as migration_20261006_042145_remove_section_align from './20261006_042145_remove_section_align';
+import * as migration_20261006_044903_add_ai_token_limits from './20261006_044903_add_ai_token_limits';
 
 export const migrations = [
   {
@@ -724,6 +733,51 @@ export const migrations = [
   {
     up: migration_20260928_080339_nullable_ai_usage_author.up,
     down: migration_20260928_080339_nullable_ai_usage_author.down,
-    name: '20260928_080339_nullable_ai_usage_author'
+    name: '20260928_080339_nullable_ai_usage_author',
+  },
+  {
+    up: migration_20260930_075334_add_caption_specification_groups.up,
+    down: migration_20260930_075334_add_caption_specification_groups.down,
+    name: '20260930_075334_add_caption_specification_groups',
+  },
+  {
+    up: migration_20260930_081548_add_user_figma_token.up,
+    down: migration_20260930_081548_add_user_figma_token.down,
+    name: '20260930_081548_add_user_figma_token',
+  },
+  {
+    up: migration_20260930_101346_remove_guideline_legacy_access.up,
+    down: migration_20260930_101346_remove_guideline_legacy_access.down,
+    name: '20260930_101346_remove_guideline_legacy_access',
+  },
+  {
+    up: migration_20261001_003924_purge_guideline_legacy_data.up,
+    down: migration_20261001_003924_purge_guideline_legacy_data.down,
+    name: '20261001_003924_purge_guideline_legacy_data',
+  },
+  {
+    up: migration_20261002_005206_add_brand_color_pairs.up,
+    down: migration_20261002_005206_add_brand_color_pairs.down,
+    name: '20261002_005206_add_brand_color_pairs',
+  },
+  {
+    up: migration_20261002_070438_add_guideline_descriptions.up,
+    down: migration_20261002_070438_add_guideline_descriptions.down,
+    name: '20261002_070438_add_guideline_descriptions',
+  },
+  {
+    up: migration_20261006_030158_add_card_ratio_5_3.up,
+    down: migration_20261006_030158_add_card_ratio_5_3.down,
+    name: '20261006_030158_add_card_ratio_5_3',
+  },
+  {
+    up: migration_20261006_042145_remove_section_align.up,
+    down: migration_20261006_042145_remove_section_align.down,
+    name: '20261006_042145_remove_section_align',
+  },
+  {
+    up: migration_20261006_044903_add_ai_token_limits.up,
+    down: migration_20261006_044903_add_ai_token_limits.down,
+    name: '20261006_044903_add_ai_token_limits'
   },
 ];

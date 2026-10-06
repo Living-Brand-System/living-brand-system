@@ -11,7 +11,7 @@ vi.mock('@payload-config', () => ({ default: {} }))
 vi.mock('payload', () => ({ getPayload: vi.fn() }))
 
 describe('listPublishedGuidelineNavigationTopics', () => {
-	it('신규 목차는 본문의 부모·제목 단계를 보존하고 레거시 목차는 H2로 유지한다', async () => {
+	it('목차는 섹션의 부모·제목 단계를 보존하고 옛 블록은 읽지 않는다', async () => {
 		const find = vi.fn().mockResolvedValue({
 			docs: [
 				{
@@ -54,15 +54,7 @@ describe('listPublishedGuidelineNavigationTopics', () => {
 					parentSectionId: 'main-id',
 				},
 			],
-			[
-				{
-					id: 'legacy',
-					anchor: 'legacy',
-					title: 'Legacy',
-					headingLevel: 2,
-					parentSectionId: null,
-				},
-			],
+			[],
 		])
 	})
 	it('global 관계 문서를 plain metadata DTO로 변환한다', async () => {
@@ -71,8 +63,6 @@ describe('listPublishedGuidelineNavigationTopics', () => {
 			documentTitle: 'Guideline',
 			favicon: { id: 1, url: '/favicon.png' },
 			issuedLabel: '2026.07',
-			primaryColor: { id: 2, hex: '112233' },
-			primaryColorDark: 3,
 		})
 		vi.mocked(getPayload).mockResolvedValue({ findGlobal } as never)
 
@@ -81,8 +71,6 @@ describe('listPublishedGuidelineNavigationTopics', () => {
 			documentTitle: 'Guideline',
 			faviconHref: '/favicon.png',
 			issuedLabel: '2026.07',
-			primaryHex: '112233',
-			primaryDarkHex: null,
 		})
 	})
 
@@ -125,9 +113,17 @@ describe('listPublishedGuidelineNavigationTopics', () => {
 				{
 					id: 2,
 					title: 'Basics',
+					description: '브랜드의 기본 요소',
 					slug: 'basics',
 					chapter: { id: 1, title: 'Brand' },
+					// depth 1 — 업로드 관계가 문서로 풀려 온다. 카드 썸네일이 그 URL을 쓴다.
+					headerImage: {
+						id: 9,
+						url: '/api/application-images/file/basics.webp',
+						alt: '기본 요소 표지',
+					},
 				},
+				{ id: 3, title: 'Empty', slug: 'empty', chapter: 1, headerImage: 9 },
 			],
 		})
 		vi.mocked(getPayload).mockResolvedValue({ find } as never)
@@ -135,10 +131,25 @@ describe('listPublishedGuidelineNavigationTopics', () => {
 		await expect(listPublishedGuidelineNavigationTopics()).resolves.toEqual([
 			{
 				chapterId: 1,
+				description: '브랜드의 기본 요소',
 				id: 2,
 				sections: [],
 				slug: 'basics',
+				thumbnail: {
+					src: '/api/application-images/file/basics.webp',
+					alt: '기본 요소 표지',
+				},
 				title: 'Basics',
+			},
+			// 풀리지 않은 관계(id)는 썸네일을 만들지 않는다 — 빈 판이다.
+			{
+				chapterId: 1,
+				description: null,
+				id: 3,
+				sections: [],
+				slug: 'empty',
+				thumbnail: null,
+				title: 'Empty',
 			},
 		])
 	})

@@ -78,5 +78,39 @@ export const Users: CollectionConfig = {
 			},
 			admin: { description: 'admin(전체)·manager(계정·기준 관리)·worker(사용)' },
 		},
+		{
+			// Figma 개인 API 토큰의 암호문(`lib/secret-box`). 템플릿 가져오기는 요청한 사람의 토큰으로
+			// Figma를 읽는다 — 서버 공용 토큰은 없다(한 사람 계정에 묶이지 않게).
+			// 🔴 API·Admin 어디로도 내보내지 않는다. 읽기·쓰기는 figma-token repository가 overrideAccess로만 한다.
+			name: 'figmaToken',
+			type: 'text',
+			access: { read: () => false, create: () => false, update: () => false },
+			admin: { hidden: true },
+		},
+		{
+			// 이 계정의 AI 토큰 한도 — 비운 칸은 전역 설정 `ai-token-limits`를 따르고, 「한도 없음」이면 무제한이다.
+			// 🔴 본인이 자기 한도를 풀 수 없게 읽기·쓰기 모두 manager 이상이다(docs/07).
+			name: 'tokenLimits',
+			type: 'group',
+			label: 'AI 토큰 한도',
+			access: { read: managerFieldOnly, create: managerFieldOnly, update: managerFieldOnly },
+			fields: [
+				{ name: 'unlimited', type: 'checkbox', label: '한도 없음', defaultValue: false },
+				{
+					name: 'daily',
+					type: 'number',
+					label: '일 한도 (비우면 기본값)',
+					min: 1,
+					admin: { condition: (_, sibling) => !sibling?.unlimited },
+				},
+				{
+					name: 'monthly',
+					type: 'number',
+					label: '월 한도 (비우면 기본값)',
+					min: 1,
+					admin: { condition: (_, sibling) => !sibling?.unlimited },
+				},
+			],
+		},
 	],
 }

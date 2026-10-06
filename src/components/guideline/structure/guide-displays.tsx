@@ -4,19 +4,19 @@ import type { ComponentProps } from 'react'
 import {
 	type CiLockupFixed,
 	CiLockupView,
-} from '@/features/guideline/cards/deprecated/displays/dynamics/ci-lockup/view'
-import { LayoutGridWidget } from '@/features/guideline/cards/deprecated/displays/dynamics/layout-grid/component'
-import { LayoutGridOverlay } from '@/features/guideline/cards/deprecated/displays/dynamics/layout-grid-overlay/view'
+} from '@/features/guideline/cards/displays/dynamics/ci-lockup/view'
 import {
 	GUTTER_X,
 	GUTTER_Y,
 	MARGIN,
 } from '@/features/guideline/cards/displays/dynamics/layout-grid/manifest'
 import type { LayoutGridSample } from '@/features/guideline/cards/displays/dynamics/layout-grid/samples'
+import { LayoutGridWidget } from '@/features/guideline/cards/displays/dynamics/layout-grid/view'
 import type {
 	ImageSpec,
 	LayoutParams,
 } from '@/features/guideline/cards/displays/dynamics/layout-grid-overlay/geometry'
+import { LayoutGridOverlay } from '@/features/guideline/cards/displays/dynamics/layout-grid-overlay/view'
 import { guideColorOf } from '@/features/guideline/cards/displays/guide-style'
 import {
 	GuidelineCardActions,
@@ -123,7 +123,6 @@ export function GuidelineCiLockupDisplay({
 						],
 					}}
 					diagramVisible={enabled}
-					showDownload={false}
 				/>
 			</div>
 			<GuidelineCardActions center={breadcrumb ?? toggle} end={end} />

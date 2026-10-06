@@ -18,7 +18,7 @@ vi.mock('../repositories/guideline-view.payload.repository', () => ({
 	listPublishedGuidelineNavigationTopics: vi.fn(),
 }))
 
-const chapter = { id: 1, title: 'Brand', slug: 'brand', displayOrder: 0 }
+const chapter = { id: 1, title: 'Brand', description: null, slug: 'brand', displayOrder: 0 }
 
 describe('guideline read service failures', () => {
 	beforeEach(() => {
@@ -28,8 +28,6 @@ describe('guideline read service failures', () => {
 			documentTitle: 'Guideline',
 			faviconHref: null,
 			issuedLabel: null,
-			primaryHex: null,
-			primaryDarkHex: null,
 		})
 		vi.mocked(listGuidelineChapters).mockResolvedValue([])
 		vi.mocked(listPublishedGuidelineNavigationTopics).mockResolvedValue([])

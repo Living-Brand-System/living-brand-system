@@ -38,7 +38,7 @@
 | 32 | Agent 컨텍스트 제한 | Agent는 live 상태의 Official Version과 허용된 제작 맥락만 조회하고, draft/private 기준을 답변 근거로 사용하지 않습니다. |  |
 | 33 | Agent 응답 검증 | Agent 응답은 최종 정책 결정으로 사용하지 않고, 근거 기준과 신뢰도, 사람 검토 필요 여부를 함께 기록합니다. |  |
 | 34 | Server Action 보호 | Server Action은 클라이언트에서 호출되더라도 서버에서 인증, 권한, 입력 스키마를 다시 검증합니다. |  |
-| 35 | 업로드 저장소 격리 | 업로드 파일은 실행 가능한 public path에 직접 저장하지 않고, object storage 또는 Payload upload collection의 권한 검사를 거쳐 제공합니다. |  |
+| 35 | 업로드 저장소 격리 | 업로드 파일은 실행 가능한 public path에 직접 저장하지 않고, object storage 또는 Payload upload collection의 권한 검사를 거쳐 제공합니다. 예외: Payload의 Vercel Blob 어댑터는 public store만 지원하므로 원본 URL(store id + 파일명)을 아는 사람은 권한 검사 없이 파일을 받을 수 있습니다. 그래서 원본 URL을 응답·로그·클라이언트에 노출하지 않고 `/api/<collection>/file/` 경로로만 제공합니다(`disablePayloadAccessControl`·`generateFileURL`을 켜지 않습니다). |  |
 | 36 | 회원가입과 사용자 생성 | 공개 회원가입은 열지 않고, 사용자 생성·초대·가입 완료 과정에는 인증 정보 보호, 역할 고정, 시도 제한, 감사 로그를 적용합니다. |  |
 
 ## 2. 관련 예시
@@ -60,12 +60,14 @@
 - Route Handler와 Server Action은 요청마다 현재 사용자를 확인합니다.
 - Payload Local API를 사용할 때는 가능한 `user`와 `overrideAccess: false`를 전달합니다.
 - `overrideAccess: true`는 migration, seed, 관리성 batch처럼 명확한 예외에서만 사용합니다.
+- 외부 서비스 개인 자격증명(Figma API 토큰)은 사용자별로 `PAYLOAD_SECRET`에서 파생한 키로 암호화해 저장하고, 필드 access로 API·Admin 노출을 전부 닫습니다. 그 필드는 전용 repository만 요청자 본인 id로 `overrideAccess: true` 접근합니다. 서버 공용 토큰으로 대신하지 않습니다.
 
 ### 회원가입과 사용자 생성
 
 - 공개 회원가입은 기본 정책으로 열지 않습니다. 사용자 계정은 manager 이상이 Payload Admin에서 직접 만듭니다. 초대 흐름은 두지 않고, 계정을 만든 사람이 임시 비밀번호를 전달하면 받은 사람이 `/account`에서 바꿉니다.
 - 사용자 생성 endpoint를 추가할 때도 `users` collection의 `create` access를 우회하지 않습니다. Local API를 쓰는 경우 `overrideAccess: false`를 기본값으로 사용합니다.
 - 클라이언트 요청이 `role`, `_verified`, 권한 필드, 세션 필드를 직접 지정할 수 없게 합니다. 최초 역할의 기본값은 `worker`이고, `role`을 쓰려면 manager 이상이어야 합니다. `admin`은 manager가 지정할 수 없습니다.
+- AI 토큰 한도(일: 한국 시간 0시 기준, 월)는 manager 이상이 `/account/token-limits`에서 정합니다. 계정 필드는 본인에게도 읽기·쓰기를 닫아 스스로 한도를 풀 수 없게 합니다. 전역 기본값은 항상 숫자이고(저장한 적이 없으면 LBS 기본값 일 1만·월 10만 토큰), 계정이 칸을 비우면 기본값을, 「한도 없음」이면 무제한을 따릅니다. 이미지 생성·검수 AI 판정·에이전트 챗은 모델을 부르기 전에 서버가 한도를 확인하고, 넘었으면 429로 새 요청을 막습니다.
 - 비밀번호는 Payload auth collection이 관리하게 하고, 앱 코드에서 비밀번호 원문을 저장하거나 로그에 남기지 않습니다.
 - 로그인과 가입 완료는 HTTPS 전송을 전제로 합니다. 이 흐름은 종단간 암호화가 아니라 TLS 전송 암호화, 서버 측 비밀번호 해시, JWT 서명, 보안 쿠키 조합으로 보호합니다.
 - Payload auth token은 `PAYLOAD_SECRET`으로 서명합니다. 운영 `PAYLOAD_SECRET`은 긴 난수로 관리하고, 코드·로그·클라이언트 번들에 노출하지 않습니다.

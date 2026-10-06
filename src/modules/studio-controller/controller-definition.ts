@@ -2,6 +2,14 @@ import {
 	parseStudioArtifactCapabilities,
 	type StudioArtifactCapabilities,
 } from '@/modules/studio-artifact/studio-artifact'
+import {
+	CONTROLLER_ROLES,
+	CONTROLLER_WIDGETS,
+	type ControllerCluster,
+	type ControllerCondition,
+	type ControllerRole,
+	type ControllerWidget,
+} from './controller-composition'
 
 /** Controller Definition에 저장할 수 있는 직렬화 가능한 값. */
 export type ControllerControlValue =
@@ -39,30 +47,6 @@ export type StudioRuntimeManifest = {
 	controller: {
 		groups: readonly ControllerGroupDefinition[]
 		/**
-		 * 왼쪽 패널에 세울 컨트롤 id — 창작자가 **실제로 다루기를 기대하는** 큰 축이다.
-		 * 색 조합과 전반적인 형태가 여기 온다.
-		 *
-		 * 나머지는 사라지지 않고 **오른쪽 패널**로 간다 — 세기·속도처럼 세밀하고 잡다한 값들이고,
-		 * 창작자가 다룰 수는 있으나 다루리라 기대하지는 않는다.
-		 *
-		 * 🔴 **비워 두면 전부 왼쪽이다.** 아직 정하지 않은 런타임은 선언하지 않는다 —
-		 *    빈 배열을 넣으면 왼쪽 패널이 통째로 빈다.
-		 *
-		 * 지금은 코드가 정하지만 나중에 프로파일(manager)로 옮겨진다. `controllerPresentation`이
-		 * 같은 성격으로 이미 그 길을 갔다.
-		 */
-		left?: readonly string[]
-		/**
-		 * 오른쪽 패널에 세울 컨트롤 id — 창작자가 다룰 수는 있으나 다루리라 기대하지 않는 축이다.
-		 *
-		 * 🔑 **여기에도 `left`에도 없는 컨트롤은 창작자 화면에 그려지지 않는다.** 선언은 남아 있어
-		 *    manager가 Payload에서 조정할 수 있다 — 지우는 것이 아니라 후처리 자리로 내리는 것이다.
-		 *
-		 * 🔴 비워 두면 `left`가 아닌 전부가 오른쪽이다. 아직 정하지 않은 런타임의 축이 조용히
-		 *    사라지지 않게 한다 — 빈 배열은 「오른쪽에 아무것도 세우지 않는다」는 뜻이다.
-		 */
-		right?: readonly string[]
-		/**
 		 * 값이 바뀌면 런타임을 **다시 만들어야** 하는 컨트롤 id.
 		 *
 		 * 대부분의 컨트롤은 uniform 하나를 바꾸므로 살아 있는 런타임에 흘려 넣으면 된다. 그런데
@@ -73,6 +57,15 @@ export type StudioRuntimeManifest = {
 		 *    그 값이 프로그램을 바꾸는 축일 때만 넣는다.
 		 */
 		remountOn?: readonly string[]
+		/** 컨트롤 여러 개를 위젯 하나로 세우는 묶음(docs/10 §3.7). 가리킨 컨트롤은 그룹 행으로 다시 그려지지 않는다. */
+		clusters?: readonly ControllerCluster[]
+		/**
+		 * 컨트롤 단위 역할(docs/10 §3.7) — 그룹 역할보다 앞선다. 위치가 아니라 의미다.
+		 * 🔑 역할도 묶음도 없는 컨트롤은 창작자 화면에 서지 않는다. 선언은 남아 manager가 Payload에서
+		 *    조정할 수 있다 — 지우는 것이 아니라 어드민 자리로 내리는 것이다.
+		 * 🔴 `roles`·`clusters`를 하나도 선언하지 않은 런타임은 전부 Basic에 선다(화면이 비지 않게).
+		 */
+		roles?: Readonly<Record<string, ControllerRole>>
 	}
 }
 
@@ -143,6 +136,8 @@ type ControllerControlBase = {
 	id: string
 	label: string
 	availability?: ControllerAvailability
+	/** 노출 조건(docs/10 §3.7) — 거짓이면 그리지 않는다. 숨겨도 값은 지우지 않는다. */
+	visibleWhen?: ControllerCondition
 }
 
 /**
@@ -231,29 +226,10 @@ export type ControllerGroupDefinition = {
 	id: string
 	title: string
 	controls: readonly ControllerControlDefinition[]
-}
-
-/**
- * 창작자에게 **보이는** 축만 남긴다 — 좌·우를 한 자리에 이어 그리는 화면이 쓴다.
- *
- * 🔑 `splitControllerGroups`로 가른 뒤 두 벌을 잇지 **않는다.** 한 그룹의 컨트롤이 좌·우로
- *    갈려 있으면 같은 제목의 섹션이 두 번 그려진다. 여기서는 원래 그룹 순서·컨트롤 순서를
- *    유지하며 걸러내므로 그 일이 없다. 보임 규칙은 `splitControllerGroups`와 같은 것이다.
- */
-export function visibleControllerGroups(
-	groups: readonly ControllerGroupDefinition[],
-	left: readonly string[] | undefined,
-	right?: readonly string[],
-): readonly ControllerGroupDefinition[] {
-	// 선언이 반쪽이면 전부 보인다 — 선언하지 않은 런타임의 화면이 비지 않게 한다.
-	if (!left || !right) return groups
-	const visible = new Set([...left, ...right])
-	return groups
-		.map((group) => ({
-			...group,
-			controls: group.controls.filter((control) => visible.has(control.id)),
-		}))
-		.filter((group) => group.controls.length > 0)
+	/** 이 그룹이 뜻하는 것(docs/10 §3.7) — 패널이 역할로 자리를 정한다. 매니페스트는 위치를 모른다. */
+	role?: ControllerRole
+	/** 노출 조건 — 그룹이 숨으면 멤버도 숨는다. */
+	visibleWhen?: ControllerCondition
 }
 
 /**
@@ -271,42 +247,6 @@ export function controllerRemountKey(
 	values: ControllerValues,
 ): string {
 	return (remountOn ?? []).map((id) => `${id}=${String(values[id])}`).join('&')
-}
-
-/**
- * 그룹을 왼쪽/오른쪽 두 벌로 가른다. 그룹 구조는 양쪽에서 그대로 유지되고,
- * 남는 컨트롤이 없는 그룹은 그 쪽에서 빠진다.
- *
- * 🔑 **어느 쪽에도 없는 컨트롤은 어느 쪽에도 그려지지 않는다** — 선언은 남으므로 manager는
- *    Payload에서 그 값을 조정할 수 있다. 창작자 화면에서만 내려가는 세 번째 층이다.
- *
- * 🔴 `left`가 없으면 전부 왼쪽이다 — 선언하지 않은 런타임의 화면이 비지 않게 한다.
- * 🔴 `right`가 없으면 왼쪽이 아닌 전부가 오른쪽이다. 빈 배열은 그것과 다르다 —
- *    「오른쪽에 아무것도 세우지 않는다」는 뜻이다.
- */
-export function splitControllerGroups(
-	groups: readonly ControllerGroupDefinition[],
-	left: readonly string[] | undefined,
-	right?: readonly string[],
-): { left: readonly ControllerGroupDefinition[]; right: readonly ControllerGroupDefinition[] } {
-	if (!left) return { left: groups, right: [] }
-	const leftIds = new Set(left)
-	const rightIds = right && new Set(right)
-	const pick = (side: 'left' | 'right') =>
-		groups
-			.map((group) => ({
-				...group,
-				controls: group.controls.filter((control) =>
-					side === 'left'
-						? leftIds.has(control.id)
-						: rightIds
-							? rightIds.has(control.id)
-							: !leftIds.has(control.id),
-				),
-			}))
-			.filter((group) => group.controls.length > 0)
-
-	return { left: pick('left'), right: pick('right') }
 }
 
 export type ControllerGroupPresentation = {
@@ -341,7 +281,14 @@ export type ControllerValues = Record<string, ControllerControlValue>
 const STUDIO_KINDS: readonly StudioKind[] = ['template', 'image', 'graphic', 'graph']
 const AVAILABILITIES: readonly ControllerAvailability[] = ['enabled', 'readonly', 'disabled']
 const COLOR_PATTERN = /^#[0-9a-f]{6}$/i
-const CONTROL_BASE_KEYS = ['id', 'kind', 'label', 'defaultValue', 'availability'] as const
+const CONTROL_BASE_KEYS = [
+	'id',
+	'kind',
+	'label',
+	'defaultValue',
+	'availability',
+	'visibleWhen',
+] as const
 type SelectVariant = NonNullable<
 	Extract<ControllerControlDefinition, { kind: 'select' }>['variant']
 >
@@ -368,7 +315,7 @@ export function parseStudioControllerConfig(input: unknown): StudioControllerCon
 	parseStudioArtifactCapabilities(config.artifacts)
 
 	const controller = asRecord(config.controller, 'controller')
-	assertOnlyKeys(controller, ['groups', 'left', 'remountOn', 'right'], 'controller')
+	assertOnlyKeys(controller, ['groups', 'remountOn', 'clusters', 'roles'], 'controller')
 	if (!Array.isArray(controller.groups)) invalid('controller.groups', '배열이어야 합니다.')
 
 	const groupIds = new Set<string>()
@@ -376,7 +323,9 @@ export function parseStudioControllerConfig(input: unknown): StudioControllerCon
 	for (const [groupIndex, groupValue] of controller.groups.entries()) {
 		const groupPath = `controller.groups[${groupIndex}]`
 		const group = asRecord(groupValue, groupPath)
-		assertOnlyKeys(group, ['id', 'title', 'controls'], groupPath)
+		assertOnlyKeys(group, ['id', 'title', 'controls', 'role', 'visibleWhen'], groupPath)
+		if (group.role !== undefined && !CONTROLLER_ROLES.includes(group.role as ControllerRole))
+			invalid(`${groupPath}.role`, '지원하지 않는 역할입니다.')
 		assertNonEmptyString(group.id, `${groupPath}.id`)
 		if (groupIds.has(group.id)) invalid(`${groupPath}.id`, `중복되었습니다: ${group.id}`)
 		groupIds.add(group.id)
@@ -387,12 +336,9 @@ export function parseStudioControllerConfig(input: unknown): StudioControllerCon
 			controlIds.add((controlValue as { id: string }).id)
 		}
 	}
-	if (controller.left !== undefined)
-		validateControlIdList(controller.left, controlIds, 'controller.left')
-	if (controller.right !== undefined)
-		validateControlIdList(controller.right, controlIds, 'controller.right')
 	if (controller.remountOn !== undefined)
 		validateControlIdList(controller.remountOn, controlIds, 'controller.remountOn')
+	validateComposition(controller, controlIds)
 	if (config.controllerPresentation !== undefined) {
 		validateControllerPresentation(config.controllerPresentation, groupIds)
 	}
@@ -902,16 +848,13 @@ function validatePreviewImage(value: unknown) {
 
 /**
  * Payload upload 문서를 표시 계약으로 좁힌다 — 미리보기가 없거나 파일이 아직 없으면 undefined다.
- * 카드가 쓰는 크기는 320×240 thumbnail이므로 있으면 그것을 쓰고, 없으면 원본으로 떨어진다.
+ * 🔴 원본을 쓴다. 320×240 thumbnail은 cover로 잘린 4:3이라 스튜디오 홈이 실제 비율을 못 그린다.
+ * ponytail: 원본이 수 MB인 미리보기가 있다. 무거워지면 비율을 지키는 image size를 추가한다(마이그레이션 동반).
  */
 export function toStudioPreviewImage(value: unknown): StudioPreviewImage | undefined {
 	if (!value || typeof value !== 'object') return undefined
-	const document = value as {
-		url?: unknown
-		alt?: unknown
-		sizes?: { thumbnail?: { url?: unknown } }
-	}
-	const url = document.sizes?.thumbnail?.url ?? document.url
+	const document = value as { url?: unknown; alt?: unknown }
+	const url = document.url
 	if (typeof url !== 'string' || url.length === 0) return undefined
 	return { url, alt: typeof document.alt === 'string' ? document.alt : '' }
 }
@@ -1221,6 +1164,105 @@ function assertJsonValue(value: unknown, path: string, ancestors = new Set<objec
 	ancestors.delete(value)
 }
 
+/**
+ * 컴포지션 선언 검증(docs/10 §3.7) — 노출 조건과 묶음이 실제 컨트롤만 가리키게 한다.
+ * 🔴 미지 id를 조용히 넘기면 조건이 영영 거짓(또는 참)으로 굳어 컨트롤이 소리 없이 사라진다.
+ */
+function validateComposition(controller: Record<string, unknown>, controlIds: ReadonlySet<string>) {
+	const groups = controller.groups as readonly Record<string, unknown>[]
+	const groupIds = new Set(groups.map((group) => group.id))
+	for (const [groupIndex, group] of groups.entries()) {
+		const groupPath = `controller.groups[${groupIndex}]`
+		if (group.visibleWhen !== undefined)
+			validateCondition(group.visibleWhen, controlIds, `${groupPath}.visibleWhen`)
+		for (const [controlIndex, control] of (
+			group.controls as Record<string, unknown>[]
+		).entries()) {
+			if (control.visibleWhen === undefined) continue
+			validateCondition(
+				control.visibleWhen,
+				controlIds,
+				`${groupPath}.controls[${controlIndex}].visibleWhen`,
+				control.id as string,
+			)
+		}
+	}
+	if (controller.roles !== undefined) {
+		const roles = asRecord(controller.roles, 'controller.roles')
+		for (const [id, role] of Object.entries(roles)) {
+			if (!controlIds.has(id))
+				invalid(`controller.roles.${id}`, `알 수 없는 컨트롤입니다: ${id}`)
+			if (!CONTROLLER_ROLES.includes(role as ControllerRole))
+				invalid(`controller.roles.${id}`, '지원하지 않는 역할입니다.')
+		}
+	}
+	if (controller.clusters === undefined) return
+	if (!Array.isArray(controller.clusters)) invalid('controller.clusters', '배열이어야 합니다.')
+	const clusterIds = new Set<string>()
+	const claimed = new Set<string>()
+	for (const [index, value] of controller.clusters.entries()) {
+		const path = `controller.clusters[${index}]`
+		const cluster = asRecord(value, path)
+		assertOnlyKeys(
+			cluster,
+			['id', 'title', 'role', 'widget', 'members', 'visibleWhen', 'group'],
+			path,
+		)
+		assertNonEmptyString(cluster.id, `${path}.id`)
+		if (clusterIds.has(cluster.id)) invalid(`${path}.id`, `중복되었습니다: ${cluster.id}`)
+		clusterIds.add(cluster.id)
+		assertNonEmptyString(cluster.title, `${path}.title`)
+		if (!CONTROLLER_ROLES.includes(cluster.role as ControllerRole))
+			invalid(`${path}.role`, '지원하지 않는 역할입니다.')
+		if (!CONTROLLER_WIDGETS.includes(cluster.widget as ControllerWidget))
+			invalid(`${path}.widget`, '지원하지 않는 위젯입니다.')
+		const members = asRecord(cluster.members, `${path}.members`)
+		if (Object.keys(members).length === 0)
+			invalid(`${path}.members`, '멤버가 하나 이상 필요합니다.')
+		for (const [name, id] of Object.entries(members)) {
+			if (typeof id !== 'string' || !controlIds.has(id))
+				invalid(`${path}.members.${name}`, `알 수 없는 컨트롤입니다: ${String(id)}`)
+			// 한 컨트롤을 두 묶음이 그리면 같은 값이 화면에 두 번 선다.
+			if (claimed.has(id))
+				invalid(`${path}.members.${name}`, `다른 묶음이 이미 가리킵니다: ${id}`)
+			claimed.add(id)
+		}
+		if (cluster.visibleWhen !== undefined)
+			validateCondition(cluster.visibleWhen, controlIds, `${path}.visibleWhen`)
+		if (cluster.group !== undefined && !groupIds.has(cluster.group as string))
+			invalid(`${path}.group`, `알 수 없는 그룹입니다: ${String(cluster.group)}`)
+	}
+}
+
+function validateCondition(
+	value: unknown,
+	controlIds: ReadonlySet<string>,
+	path: string,
+	selfId?: string,
+): void {
+	const condition = asRecord(value, path)
+	if ('all' in condition || 'any' in condition) {
+		const key = 'all' in condition ? 'all' : 'any'
+		assertOnlyKeys(condition, [key], path)
+		const list = condition[key]
+		if (!Array.isArray(list) || list.length === 0)
+			invalid(`${path}.${key}`, '조건이 하나 이상 필요합니다.')
+		for (const [index, item] of list.entries())
+			validateCondition(item, controlIds, `${path}.${key}[${index}]`, selfId)
+		return
+	}
+	const operator = ['equals', 'in', 'not'].find((key) => key in condition)
+	if (!operator) invalid(path, 'equals·in·not·all·any 중 하나여야 합니다.')
+	assertOnlyKeys(condition, ['control', operator], path)
+	if (typeof condition.control !== 'string' || !controlIds.has(condition.control))
+		invalid(`${path}.control`, `알 수 없는 컨트롤입니다: ${String(condition.control)}`)
+	// 자기 값으로 자기를 숨기면 한 번 숨은 뒤 다시 보일 길이 없다.
+	if (condition.control === selfId)
+		invalid(`${path}.control`, '자기 자신을 조건으로 삼을 수 없습니다.')
+	if (operator === 'in' && (!Array.isArray(condition.in) || condition.in.length === 0))
+		invalid(`${path}.in`, '값이 하나 이상 필요합니다.')
+}
+
 function asRecord(value: unknown, path: string): Record<string, unknown> {
 	if (typeof value !== 'object' || value === null || Array.isArray(value)) {
 		invalid(path, '객체여야 합니다.')
@@ -1234,7 +1276,7 @@ function asRecord(value: unknown, path: string): Record<string, unknown> {
  * 🔴 **없는 id를 통과시키면 안 된다.** 오타 하나가 「그 컨트롤이 조용히 고급으로 밀린 것」과
  *    구분되지 않고, 화면에서는 컨트롤 하나가 이유 없이 사라진 것으로만 보인다.
  */
-/** 존재하는 control id만 담은 중복 없는 배열인가 — `left`·`right`·`remountOn`이 같은 규칙을 쓴다. */
+/** 존재하는 control id만 담은 중복 없는 배열인가(`remountOn`). */
 function validateControlIdList(value: unknown, controlIds: ReadonlySet<string>, field: string) {
 	if (!Array.isArray(value)) invalid(field, '배열이어야 합니다.')
 	const seen = new Set<string>()

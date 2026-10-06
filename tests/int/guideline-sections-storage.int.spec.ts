@@ -1,6 +1,6 @@
 // @vitest-environment node
 import assert from 'node:assert/strict'
-import type { Payload } from 'payload'
+import { createLocalReq, type Payload } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { User } from '@/payload-types'
 
@@ -70,7 +70,6 @@ describe.skipIf(!databaseURL)('신규 섹션 저장·미리보기', () => {
 				slug: `icons-${suffix}`,
 				chapter,
 				displayOrder: 0,
-				contentModel: 'sections',
 				_status: 'published',
 				sections: [
 					{ type: 'section', title: 'Line Type', download: { source: 'none' } },
@@ -116,17 +115,35 @@ describe.skipIf(!databaseURL)('신규 섹션 저장·미리보기', () => {
 			'@/features/guideline/repositories/guideline-view.payload.repository'
 		)
 		const published = await findPublishedTopicBySlug(chapter, doc.slug)
-		expect(published?.contentModel).toBe('sections')
 		expect(published?.sections?.[1].containers?.[0].cards?.[0].caption?.rows).toEqual([
 			expect.objectContaining({ label: 'Stroke', value: '1px' }),
 		])
 		const { sectionFiles } = await import('@/features/guideline/sections/model')
 		assert(published?.sections?.[1])
 		expect(sectionFiles(published.sections[1])).toHaveLength(1)
+		const { listPublishedMcpGuidelineDocuments } = await import(
+			'@/features/guideline/repositories/mcp-guideline.payload.repository'
+		)
+		const req = await createLocalReq({ user: { ...manager, collection: 'users' } }, payload)
+		const mcpDocument = (await listPublishedMcpGuidelineDocuments(req, 'ko')).find(
+			(item) => item.id === doc.id,
+		)
+		assert(mcpDocument?.sections?.[1])
+		expect(sectionFiles(mcpDocument.sections[1])).toHaveLength(1)
+		const { findAgentGuidelineDocument } = await import(
+			'@/features/agent-chat/repositories/agent-guideline-context.payload.repository'
+		)
+		const agentDocument = await findAgentGuidelineDocument(manager, {
+			collection: 'guideline-documents',
+			id: String(doc.id),
+		})
+		assert(agentDocument?.document.sections?.[1])
+		expect(sectionFiles(agentDocument.document.sections[1])).toHaveLength(1)
+
 		expect(
 			(await listPublishedGuidelineNavigationTopics()).find((item) => item.id === doc.id)
 				?.sections,
-		).toContainEqual({ anchor: 'icons', title: 'Icons' })
+		).toContainEqual(expect.objectContaining({ anchor: 'icons', title: 'Icons' }))
 		await payload.update({
 			collection: 'guideline-documents',
 			id: doc.id,
@@ -140,7 +157,6 @@ describe.skipIf(!databaseURL)('신규 섹션 저장·미리보기', () => {
 		)
 		expect(await getGuidelineTopicPreview(doc.id, manager)).toMatchObject({
 			title: 'Draft title',
-			contentModel: 'sections',
 		})
 		expect(await findPublishedTopicBySlug(chapter, doc.slug)).toMatchObject({
 			title: 'Iconography CMS',
@@ -156,13 +172,195 @@ describe.skipIf(!databaseURL)('신규 섹션 저장·미리보기', () => {
 		).rejects.toThrow()
 	})
 
+	it('명세 그룹의 로케일·게시본·초안·버전에서 중첩 항목을 유지한다', async () => {
+		const data = {
+			title: 'Grouped specs',
+			slug: `grouped-${suffix}`,
+			chapter,
+			displayOrder: 0,
+			_status: 'published' as const,
+			sections: [
+				{
+					type: 'section' as const,
+					title: 'Typography',
+					download: { source: 'none' as const },
+					containers: [
+						{
+							type: 'sticky' as const,
+							cards: [
+								{
+									ratio: '4:3' as const,
+									download: { source: 'none' as const },
+									display: {
+										type: 'image' as const,
+										image: { relationTo: 'brand-icons' as const, value: image },
+									},
+									caption: {
+										type: 'specification' as const,
+										rows: [{ label: 'Legacy', value: '보존' }],
+									},
+									specGroups: [
+										{
+											title: 'Headings',
+											items: [{ label: 'Weight', value: 'Bold' }],
+										},
+										{
+											title: 'Body',
+											items: [{ label: 'Weight', value: 'Medium' }],
+										},
+									],
+								},
+							],
+						},
+					],
+				},
+			],
+		}
+		const doc = await payload.create({ collection: 'guideline-documents', locale: 'ko', data })
+		const enSections = structuredClone(doc.sections ?? [])
+		const card = enSections[0].containers?.[0].cards?.[0]
+		assert(card)
+		if (card.caption?.rows) {
+			card.caption.rows = card.caption.rows.map(({ label, value }) => ({ label, value }))
+		}
+		card.specGroups = [{ title: 'English specs', items: [{ label: 'Weight', value: 'Light' }] }]
+		await payload.update({
+			collection: 'guideline-documents',
+			id: doc.id,
+			locale: 'en',
+			data: { title: 'Grouped specs', sections: enSections, _status: 'published' },
+		})
+		const ko = await payload.findByID({
+			collection: 'guideline-documents',
+			id: doc.id,
+			locale: 'ko',
+			fallbackLocale: false,
+			draft: false,
+		})
+		const koCard = ko.sections?.[0].containers?.[0].cards?.[0]
+		expect(koCard?.specGroups).toMatchObject([
+			{ title: 'Headings', items: [{ value: 'Bold' }] },
+			{ title: 'Body', items: [{ value: 'Medium' }] },
+		])
+		expect(koCard?.caption?.rows).toMatchObject([{ label: 'Legacy', value: '보존' }])
+		const en = await payload.findByID({
+			collection: 'guideline-documents',
+			id: doc.id,
+			locale: 'en',
+			fallbackLocale: false,
+			draft: false,
+		})
+		expect(en.sections?.[0].containers?.[0].cards?.[0].specGroups).toMatchObject([
+			{ title: 'English specs', items: [{ value: 'Light' }] },
+		])
+		await payload.update({
+			collection: 'guideline-documents',
+			id: doc.id,
+			locale: 'ko',
+			draft: true,
+			autosave: true,
+			data: { title: 'Draft grouped specs', _status: 'draft' },
+		})
+		const draft = await payload.findByID({
+			collection: 'guideline-documents',
+			id: doc.id,
+			locale: 'ko',
+			draft: true,
+		})
+		expect(draft.sections?.[0].containers?.[0].cards?.[0].specGroups).toEqual(
+			koCard?.specGroups,
+		)
+		const versions = await payload.findVersions({
+			collection: 'guideline-documents',
+			where: { parent: { equals: doc.id } },
+			locale: 'ko',
+		})
+		expect(
+			versions.docs[0].version.sections?.[0].containers?.[0].cards?.[0].specGroups,
+		).toEqual(koCard?.specGroups)
+		await expect(
+			payload.create({
+				collection: 'guideline-documents',
+				locale: 'ko',
+				data: {
+					...data,
+					slug: `invalid-grouped-${suffix}`,
+					sections: [
+						{
+							...data.sections[0],
+							containers: [
+								{
+									type: 'grid',
+									cards: [
+										{
+											...data.sections[0].containers[0].cards[0],
+											caption: { type: 'specification' },
+											specGroups: [{ title: 'Empty', items: [] }],
+										},
+									],
+								},
+							],
+						},
+					],
+				},
+			}),
+		).rejects.toThrow()
+	})
+
+	it('API 응답에서 구형 필드를 숨기고 legacy 쓰기와 버전 복원을 거절한다', async () => {
+		const doc = await payload.create({
+			collection: 'guideline-documents',
+			locale: 'ko',
+			data: {
+				title: 'Restore guard',
+				slug: `restore-${suffix}`,
+				chapter,
+				displayOrder: 0,
+				sections: [],
+				_status: 'published',
+			},
+		})
+		expect(doc).not.toHaveProperty('contentModel')
+		expect(doc).not.toHaveProperty('blocks')
+		for (const data of [{ contentModel: 'legacy' as const }, { blocks: [] }]) {
+			await expect(
+				payload.update({ collection: 'guideline-documents', id: doc.id, data }),
+			).rejects.toThrow('기존 본문 형식')
+		}
+		const versions = await payload.findVersions({
+			collection: 'guideline-documents',
+			where: { parent: { equals: doc.id } },
+			showHiddenFields: true,
+		})
+		const version = versions.docs[0]
+		assert(version)
+		// 일회용 테스트 DB의 이력 표식만 바꿔 실제 과거 버전 복원 경로를 재현합니다.
+		for (const contentModel of ['legacy', null] as const) {
+			await payload.db.updateVersion({
+				collection: 'guideline-documents',
+				id: version.id,
+				versionData: { version: { ...version.version, contentModel } },
+			})
+			await expect(
+				payload.restoreVersion({ collection: 'guideline-documents', id: version.id }),
+			).rejects.toThrow('기존 본문 형식')
+		}
+		await payload.db.updateVersion({
+			collection: 'guideline-documents',
+			id: version.id,
+			versionData: { version: { ...version.version, contentModel: 'sections' } },
+		})
+		await expect(
+			payload.restoreVersion({ collection: 'guideline-documents', id: version.id }),
+		).resolves.toMatchObject({ id: doc.id, sections: [] })
+	})
+
 	it('첫 서브섹션과 중복 앵커를 거부한다', async () => {
 		const data = {
 			title: 'Invalid',
 			slug: `invalid-${suffix}`,
 			chapter,
 			displayOrder: 0,
-			contentModel: 'sections' as const,
 			_status: 'published' as const,
 		}
 		await expect(
@@ -207,16 +405,31 @@ describe.skipIf(!databaseURL)('신규 섹션 저장·미리보기', () => {
 			locale: 'ko',
 			data: { name: 'CMS color', hex: '#007A3E', _status: 'published' },
 		})
-		await payload.create({
+		const existingGroups = await payload.find({
 			collection: 'brand-color-groups',
-			locale: 'ko',
-			data: {
-				name: '이름이 바뀌어도 Primary',
-				family: 'primary',
-				colors: [color.id],
-				_status: 'published',
-			},
+			where: { family: { equals: 'primary' } },
+			limit: 1,
 		})
+		const groupData = {
+			name: '이름이 바뀌어도 Primary',
+			family: 'primary' as const,
+			colors: [color.id],
+			_status: 'published' as const,
+		}
+		if (existingGroups.docs[0]) {
+			await payload.update({
+				collection: 'brand-color-groups',
+				id: existingGroups.docs[0].id,
+				locale: 'ko',
+				data: groupData,
+			})
+		} else {
+			await payload.create({
+				collection: 'brand-color-groups',
+				locale: 'ko',
+				data: groupData,
+			})
+		}
 		const layoutImage = await payload.create({
 			collection: 'application-images',
 			locale: 'ko',
@@ -270,7 +483,6 @@ describe.skipIf(!databaseURL)('신규 섹션 저장·미리보기', () => {
 				slug: `dynamic-${suffix}`,
 				chapter,
 				displayOrder: 1,
-				contentModel: 'sections',
 				_status: 'published',
 				sections: [
 					{

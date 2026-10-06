@@ -32,6 +32,13 @@
 	font-size: 14px;
 	line-height: 20px;
 }
+.caption[data-grouped="true"] {
+	gap: 48px;
+}
+.specification {
+	display: grid;
+	gap: 16px;
+}
 .row {
 	display: grid;
 	grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);

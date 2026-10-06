@@ -14,6 +14,8 @@ export const NEEDS_REVIEW_DETAILS = {
 	ai_request_failed: 'AI 평가 실패',
 	/** 모델까지 가지 못한 실패 — 요청이 서버에서 완주하지 못했고, 판정은 시도조차 되지 않았다. */
 	ai_request_unreachable: 'AI 요청 전달 실패',
+	/** 계정의 AI 토큰 한도에 닿아 서버가 모델 호출을 막았다. */
+	ai_token_limit: 'AI 토큰 한도 초과',
 	checker_not_registered: 'Checker 미등록',
 } as const
 

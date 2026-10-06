@@ -152,7 +152,7 @@ function percentile(sorted: number[], q: number): number {
 }
 
 /**
- * 오버레이 마스크를 만든다. 진단 도구(.scratch)가 무엇을 오버레이로 봤는지 그리려고 export한다. `colorIndex[i] >= 0`이면 그 픽셀은 i번째 오버레이 색이다.
+ * 오버레이 마스크를 만든다. 진단 도구가 무엇을 오버레이로 봤는지 그리려고 export한다. `colorIndex[i] >= 0`이면 그 픽셀은 i번째 오버레이 색이다.
  * 평탄 조건은 「세로 이웃 둘이 같음 OR 가로 이웃 둘이 같음」 — 1px 획도 한 축은 평탄하다.
  */
 export function buildOverlayMask(

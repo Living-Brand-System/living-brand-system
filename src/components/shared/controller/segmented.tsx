@@ -1,9 +1,11 @@
 'use client'
 
-import { domAnimation, LazyMotion, useReducedMotion } from 'motion/react'
+import { domAnimation, LazyMotion } from 'motion/react'
 import * as m from 'motion/react-m'
 import * as React from 'react'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { useMotionTransition } from '@/lib/motion'
+import { cn } from '@/lib/utils'
 import type { ControllerOption } from '@/modules/studio-controller/controller-definition'
 import { useRowControl } from './row'
 
@@ -14,6 +16,8 @@ type ControllerSegmentedProps<T extends string> = {
 	'aria-label': string
 	/** 어드민 고정 값 — 포커스·조작이 막힌다. Row 안에서는 행의 disabled를 자동으로 따른다. */
 	disabled?: boolean
+	/** 컴파운드 헤더의 24px 알약형 선택 표시. */
+	compact?: boolean
 }
 
 /**
@@ -31,12 +35,13 @@ export function ControllerSegmented<T extends string>({
 	onChange,
 	'aria-label': ariaLabel,
 	disabled,
+	compact = false,
 }: ControllerSegmentedProps<T>) {
 	const row = useRowControl()
 	const resolvedDisabled = disabled ?? row?.disabled
 	const groupRef = React.useRef<HTMLDivElement>(null)
 	const [pill, setPill] = React.useState<{ left: number; width: number } | null>(null)
-	const reducedMotion = useReducedMotion()
+	const transition = useMotionTransition('indicator')
 
 	// 버튼의 실측 폭을 따라가므로 라벨 길이가 달라도 pill이 정확히 맞는다.
 	React.useLayoutEffect(() => {
@@ -47,7 +52,7 @@ export function ControllerSegmented<T extends string>({
 	return (
 		<div
 			data-slot="controller-segmented"
-			className="-mr-2.5 flex h-9 shrink-0 items-center py-0.5"
+			className={cn('flex h-9 shrink-0 items-center', compact ? 'py-1.5' : '-mr-2.5 py-0.5')}
 		>
 			<LazyMotion features={domAnimation}>
 				<ToggleGroup
@@ -65,14 +70,13 @@ export function ControllerSegmented<T extends string>({
 						<m.div
 							aria-hidden
 							data-slot="controller-segmented-pill"
-							className="pointer-events-none absolute inset-y-0 z-0 rounded-sm bg-foreground/10"
+							className={cn(
+								'pointer-events-none absolute inset-y-0 z-0 bg-foreground/10',
+								compact ? 'rounded-lg' : 'rounded-sm',
+							)}
 							initial={false}
 							animate={pill}
-							transition={
-								reducedMotion
-									? { duration: 0 }
-									: { type: 'spring', visualDuration: 0.2, bounce: 0.15 }
-							}
+							transition={transition}
 						/>
 					)}
 					{options.map((option) => (
@@ -81,7 +85,7 @@ export function ControllerSegmented<T extends string>({
 							data-pill-value={option.value}
 							value={option.value}
 							size="sm"
-							className="relative z-10 h-full rounded-sm bg-transparent px-2 text-muted-foreground text-sm transition-colors hover:bg-transparent aria-pressed:bg-transparent aria-pressed:text-foreground data-[state=on]:bg-transparent data-[state=on]:text-foreground data-[state=on]:hover:bg-transparent data-[state=on]:hover:text-foreground"
+							className="relative z-10 h-full rounded-sm bg-transparent px-2 text-muted-foreground text-sm transition-colors hover:bg-transparent motion-reduce:transition-none aria-pressed:bg-transparent aria-pressed:text-foreground data-[state=on]:bg-transparent data-[state=on]:text-foreground data-[state=on]:hover:bg-transparent data-[state=on]:hover:text-foreground"
 						>
 							{option.label}
 						</ToggleGroupItem>

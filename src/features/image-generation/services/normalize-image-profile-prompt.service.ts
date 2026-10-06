@@ -6,6 +6,8 @@ import {
 } from '@/features/image-generation/domain/image-profile-prompt'
 import { normalizeImagePromptWithAi } from '@/features/image-generation/repositories/image-prompt-normalization.ai.repository'
 import type { AiUsageTokens } from '@/modules/ai-usage/ai-usage'
+import { recordAiUsage } from '@/modules/ai-usage/repositories/ai-usage.payload.repository'
+import { assertWithinTokenLimit } from '@/modules/ai-usage/services/token-limit.service'
 
 /** Provider·정규화 모델 미설정을 route/agent 표면이 일반 생성 실패와 구분하기 위한 서비스 오류. */
 export class ImageGenerationUnavailableError extends Error {
@@ -51,4 +53,25 @@ export async function normalizeImageProfilePrompt({
 			userPromptNormalization.length === 0 ? userPrompt : undefined,
 		),
 	}
+}
+
+/**
+ * 관리자 프로파일 테스트 패널의 정규화 미리보기 — 이미지 생성 밖에서 모델을 단독으로 부르므로
+ * 토큰 한도와 사용량 기록을 여기서 맡는다(이미지 생성 경로는 `generate-image.service`가 맡는다).
+ */
+export async function previewImageProfilePrompt(
+	input: Parameters<typeof normalizeImageProfilePrompt>[0],
+	userId: number,
+) {
+	await assertWithinTokenLimit(userId)
+	const result = await normalizeImageProfilePrompt(input)
+	if (result.usage) {
+		await recordAiUsage({
+			createdBy: userId,
+			feature: 'image-generation',
+			model: result.usage.model,
+			...result.usage.tokens,
+		})
+	}
+	return result
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
 import type { GraphicBrowserArtifacts } from '@/features/graphic-generation/runtime/client/graphic-runtime.client'
 import { getGraphicStudioVectorArtifact } from '@/features/graphic-generation/runtime/graphic-studio-runtime'
@@ -17,7 +17,7 @@ import {
 } from '../print-policy'
 import { createRasterExportRequest } from '../services/create-raster-export-request'
 import { executeArtifactExport } from '../services/export-artifact.client'
-import { acceptsPrintPpi } from '../studio-output'
+import { acceptsPrintPpi, DEFAULT_GRAPHIC_OUTPUT_SIZE } from '../studio-output'
 import { useExport } from './use-export'
 
 type GraphicOutputSize = { width: number; height: number }
@@ -56,12 +56,10 @@ export function useGraphicExport({
 	artifacts,
 	config,
 	values,
-	viewport,
 }: {
 	artifacts: GraphicBrowserArtifacts | null
 	config: GraphicStudioConfig
 	values: ControllerValues
-	viewport: GraphicOutputSize | null
 }) {
 	const basePpiOptions = config.output.print?.ppi ?? PRINT_PPI_VALUES
 	const [ppi, setPpi] = useState<PrintPpi>(() => resolveDefaultPrintPpi(config.output.print?.ppi))
@@ -70,9 +68,7 @@ export function useGraphicExport({
 		draft: createGraphicOutputDraft(config),
 	}))
 	const draft =
-		draftState.profileId === config.id
-			? draftState.draft
-			: createGraphicOutputDraft(config, undefined, viewport)
+		draftState.profileId === config.id ? draftState.draft : createGraphicOutputDraft(config)
 
 	/**
 	 * 고를 수 있는 해상도. **현재 판형에서 실제로 만들 수 있는 것만** 남긴다.
@@ -112,22 +108,20 @@ export function useGraphicExport({
 		},
 		[config],
 	)
-	useEffect(() => {
-		if (!viewport) return
-		setDraft((current) =>
-			current &&
-			current.format !== 'mp4' &&
-			(current.width === null || current.height === null)
-				? { ...current, ...normalizeOutputSize(viewport) }
-				: current,
-		)
-	}, [setDraft, viewport])
 	const setFormat = useCallback(
 		(format: StudioOutputFormat) => {
 			if (!config.output.formats.includes(format)) return
-			setDraft(() => createGraphicOutputDraft(config, format, viewport))
+			setDraft((current) =>
+				createGraphicOutputDraft(
+					config,
+					format,
+					current?.width && current.height
+						? { width: current.width, height: current.height }
+						: undefined,
+				),
+			)
 		},
-		[config, setDraft, viewport],
+		[config, setDraft],
 	)
 	/**
 	 * 크기를 바꾼다. **거부하면 `false`를 돌려준다.**
@@ -252,14 +246,15 @@ function isPrintFormat(format: GraphicOutputDraft['format']): boolean {
 function createGraphicOutputDraft(
 	config: GraphicStudioConfig,
 	requestedFormat?: StudioOutputFormat,
-	viewport?: GraphicOutputSize | null,
+	/** 이어 쓸 현재 크기. 없으면 기본 프리셋 크기로 시작한다. */
+	size: GraphicOutputSize = DEFAULT_GRAPHIC_OUTPUT_SIZE,
 ): GraphicOutputDraft | null {
 	const format =
 		requestedFormat ??
 		config.output.formats.find((candidate) => candidate === 'svg' || candidate === 'mp4') ??
 		config.output.formats[0]
 	if (format === 'svg') {
-		return { format, width: viewport?.width ?? null, height: viewport?.height ?? null }
+		return { format, width: size.width, height: size.height }
 	}
 	if (format === 'mp4') {
 		const video = config.output.video?.mp4
@@ -274,10 +269,10 @@ function createGraphicOutputDraft(
 		}
 	}
 	if (format === 'png' || format === 'jpeg') {
-		return { format, width: viewport?.width ?? null, height: viewport?.height ?? null }
+		return { format, width: size.width, height: size.height }
 	}
 	if (format === 'tiff' || format === 'pdf') {
-		return { format, width: viewport?.width ?? null, height: viewport?.height ?? null }
+		return { format, width: size.width, height: size.height }
 	}
 	return null
 }
@@ -344,11 +339,4 @@ function validOutputSize(size: GraphicOutputSize): boolean {
 		Number.isInteger(size.height) &&
 		size.height > 0
 	)
-}
-
-function normalizeOutputSize(size: GraphicOutputSize): GraphicOutputSize {
-	return {
-		width: Math.max(1, Math.round(size.width)),
-		height: Math.max(1, Math.round(size.height)),
-	}
 }

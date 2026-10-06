@@ -12,11 +12,7 @@ export function formatGuidelineReadDocument(document: GuidelineReadDocument) {
 		document.chapter?.title ? `Chapter: ${document.chapter.title}` : null,
 		`# ${document.title}`,
 		`Document: ${JSON.stringify({ id: metadata.id, slug: metadata.slug, chapter: metadata.chapter, displayOrder: metadata.displayOrder, headerImage: metadata.headerImage, rules: metadata.rules, contentModel })}`,
-		...(document.contentModel === 'sections'
-			? document.sections.map(formatSectionForAgent)
-			: document.blocks.map(
-					({ text, ...block }) => `${text}\nLegacy block: ${JSON.stringify(block)}`,
-				)),
+		...document.sections.map(formatSectionForAgent),
 		checks.length
 			? `Checks:\n${checks.map((check) => `- ${check.key}: ${check.title}`).join('\n')}`
 			: null,
@@ -62,14 +58,28 @@ function formatCaptionForAgent(caption: GuidelineReadFigure['caption']) {
 		labeledText('Title', caption.title),
 		labeledText('Description', caption.description),
 	])
-	const details = ('rows' in caption ? caption.rows : []).map((row, index) => {
-		if (caption.type === 'specification')
-			return `- ${row.label ?? ''}: ${row.value.replace(/\n/g, '\n  ')}`
-		return `${index + 1}. ${textParts([
-			labeledText('Title', row.label),
-			labeledText('Description', row.value),
-		]).join('\n   ')}`
-	})
+	const details =
+		caption.type === 'specification'
+			? caption.groups
+					.map((group) =>
+						textParts([
+							labeledText('Specification group', group.title),
+							...group.items.map(
+								(row) =>
+									`- ${row.label ?? ''}: ${row.value.replace(/\n/g, '\n  ')}`,
+							),
+						]).join('\n'),
+					)
+					.filter(Boolean)
+			: caption.type === 'list'
+				? caption.rows.map(
+						(row, index) =>
+							`${index + 1}. ${textParts([
+								labeledText('Title', row.label),
+								labeledText('Description', row.value),
+							]).join('\n   ')}`,
+					)
+				: []
 	if (!heading.length && !details.length) return null
 	return textParts([
 		'Caption (캡션):',

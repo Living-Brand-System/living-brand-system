@@ -53,8 +53,6 @@ const content = {
 		order: doc.displayOrder ?? 0,
 		headerImage: toPortable(doc.headerImage ?? null),
 		rules: toPortable(doc.rules ?? []),
-		blocks: toPortable(doc.blocks ?? []),
-		contentModel: doc.contentModel ?? 'legacy',
 		sections: toPortable(doc.sections ?? []),
 	})),
 }
@@ -63,10 +61,10 @@ await mkdir(path.dirname(CONTENT_PATH), { recursive: true })
 await writeFile(CONTENT_PATH, `${JSON.stringify(content, null, '\t')}\n`, 'utf8')
 
 console.log(`✅ export 완료 → ${path.relative(process.cwd(), CONTENT_PATH)}`)
-for (const doc of content.documents.filter((d) => d.blocks.length > 0)) {
-	console.log(`  ${doc.slug}: 블록 ${doc.blocks.length}개`)
+for (const doc of content.documents.filter((d) => d.sections.length > 0)) {
+	console.log(`  ${doc.slug}: 섹션 ${doc.sections.length}개`)
 }
 console.log(
-	`  (블록 없는 문서 ${content.documents.filter((d) => d.blocks.length === 0).length}개 포함)`,
+	`  (섹션 없는 문서 ${content.documents.filter((d) => d.sections.length === 0).length}개 포함)`,
 )
 process.exit(0)

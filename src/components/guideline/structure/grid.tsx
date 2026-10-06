@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import type { ComponentProps, CSSProperties, ReactNode } from 'react'
 import { CARD_RATIO_OPTIONS } from '@/features/guideline/cards/displays/ratio'
 import { cn } from '@/lib/utils'
@@ -21,6 +22,8 @@ export type GuidelineCardData = CardColors & {
 	displayAspectRatio?: number
 	display: ReactNode
 	caption?: GuidelineCaption
+	/** 카드 전체가 이 주소로 가는 링크다(가이드라인 첫 화면의 토픽 카드). 판 안의 액션과 함께 두지 않는다. */
+	href?: string
 }
 
 type GridProps = Omit<ComponentProps<'div'>, 'children'> & {
@@ -53,22 +56,35 @@ export function GuidelineGridContainer({
 				} as CSSProperties
 			}
 		>
-			{cards.map((card) => (
-				<GuidelineCard
-					key={card.id}
-					backgroundColor={card.backgroundColor}
-					foregroundColor={card.foregroundColor}
-					style={
-						{
-							'--display-ratio':
-								card.displayAspectRatio ?? card.ratio.replace(':', ' / '),
-						} as CSSProperties
-					}
-				>
-					{card.display}
-					{card.caption && <GuidelineCardCaption {...card.caption} />}
-				</GuidelineCard>
-			))}
+			{cards.map((card) => {
+				const figure = (
+					<GuidelineCard
+						key={card.id}
+						backgroundColor={card.backgroundColor}
+						foregroundColor={card.foregroundColor}
+						style={
+							{
+								'--display-ratio':
+									card.displayAspectRatio ?? card.ratio.replace(':', ' / '),
+							} as CSSProperties
+						}
+					>
+						{card.display}
+						{card.caption && <GuidelineCardCaption {...card.caption} />}
+					</GuidelineCard>
+				)
+				return card.href ? (
+					<Link
+						key={card.id}
+						href={card.href}
+						className={cn(styles.card, styles.cardLink)}
+					>
+						{figure}
+					</Link>
+				) : (
+					figure
+				)
+			})}
 		</div>
 	)
 }
@@ -107,13 +123,20 @@ export function GuidelineDisplayContent({ className, ...props }: ComponentProps<
 	)
 }
 
-/** 이미지와 위젯이 공유하는 판형·배경·잘림 영역입니다. */
+/**
+ * 이미지와 위젯이 공유하는 판형·배경·잘림 영역입니다.
+ *
+ * 🔑 도판은 **브랜드 면**이라 앱 테마를 따르지 않는다 — 항상 라이트 토큰 범위다(docs/11 §8, 2026-10-06).
+ *    표본(브랜드 색 락업·밝은 배경이 구워진 이미지)은 밝은 면을 전제로 설계돼, 다크에서 판이 어두워지면
+ *    안 보이거나 띠가 생겼다. `light`가 판 안의 토큰(배경·글자·액션·위젯 UI)을 라이트 값으로 되돌리고,
+ *    글자색은 계산값으로 상속되므로 `text-foreground`로 다시 잡는다. 카드 밑 캡션(판 밖)은 테마를 따른다.
+ */
 export function GuidelineDisplayFrame({ className, ...props }: ComponentProps<'div'>) {
 	return (
 		<div
 			{...props}
 			data-slot="guideline-card-display"
-			className={cn(styles.display, className)}
+			className={cn('light text-foreground', styles.display, className)}
 		/>
 	)
 }

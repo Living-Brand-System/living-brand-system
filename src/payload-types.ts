@@ -73,6 +73,7 @@ export interface Config {
     'brand-logos': BrandLogo;
     'brand-colors': BrandColor;
     'brand-color-groups': BrandColorGroup;
+    'brand-color-pairs': BrandColorPair;
     'brand-typefaces': BrandTypeface;
     'brand-icons': BrandIcon;
     'application-images': ApplicationImage;
@@ -114,6 +115,7 @@ export interface Config {
     'brand-logos': BrandLogosSelect<false> | BrandLogosSelect<true>;
     'brand-colors': BrandColorsSelect<false> | BrandColorsSelect<true>;
     'brand-color-groups': BrandColorGroupsSelect<false> | BrandColorGroupsSelect<true>;
+    'brand-color-pairs': BrandColorPairsSelect<false> | BrandColorPairsSelect<true>;
     'brand-typefaces': BrandTypefacesSelect<false> | BrandTypefacesSelect<true>;
     'brand-icons': BrandIconsSelect<false> | BrandIconsSelect<true>;
     'application-images': ApplicationImagesSelect<false> | ApplicationImagesSelect<true>;
@@ -149,11 +151,13 @@ export interface Config {
     guideline: Guideline;
     'agent-settings': AgentSetting;
     'better-editor-settings': BetterEditorSetting;
+    'ai-token-limits': AiTokenLimit;
   };
   globalsSelect: {
     guideline: GuidelineSelect<false> | GuidelineSelect<true>;
     'agent-settings': AgentSettingsSelect<false> | AgentSettingsSelect<true>;
     'better-editor-settings': BetterEditorSettingsSelect<false> | BetterEditorSettingsSelect<true>;
+    'ai-token-limits': AiTokenLimitsSelect<false> | AiTokenLimitsSelect<true>;
   };
   locale: 'ko' | 'en';
   widgets: {
@@ -220,6 +224,10 @@ export interface GuidelineChapter {
    */
   title: string;
   /**
+   * 가이드라인 첫 화면에서 챕터 제목 아래에 표시됩니다.
+   */
+  description?: string | null;
+  /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
   generateSlug?: boolean | null;
@@ -250,17 +258,18 @@ export interface GuidelineDocument {
   chapter: number | GuidelineChapter;
   title: string;
   /**
+   * 가이드라인 첫 화면의 토픽 카드에서 제목 아래에 표시됩니다.
+   */
+  description?: string | null;
+  /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
   generateSlug?: boolean | null;
   slug: string;
   /**
-   * 토픽 헤더에 표시할 선택 이미지입니다.
+   * 토픽 헤더와 가이드라인 첫 화면의 토픽 카드에 표시할 선택 이미지입니다.
    */
   headerImage?: (number | null) | ApplicationImage;
-  /**
-   * 신규 계약으로 작성할 문서는 신규 섹션을 선택합니다. 기존 본문은 삭제하지 않습니다.
-   */
   contentModel?: ('legacy' | 'sections') | null;
   /**
    * 섹션과 서브섹션을 같은 목록에서 순서대로 편집합니다. 컨테이너에서 카드 배치를 선택합니다.
@@ -274,7 +283,6 @@ export interface GuidelineDocument {
          */
         anchor?: string | null;
         description?: string | null;
-        align?: ('start' | 'center') | null;
         download: {
           source: 'none' | 'assets' | 'registered';
           /**
@@ -312,7 +320,19 @@ export interface GuidelineDocument {
               stickyMode?: ('switch' | 'individual') | null;
               cards?:
                 | {
-                    ratio: '1:1' | '5:4' | '4:3' | '3:2' | '16:9' | '2:1' | '7:3' | '4:5' | '3:4' | '2:3' | '9:16';
+                    ratio:
+                      | '1:1'
+                      | '5:4'
+                      | '4:3'
+                      | '3:2'
+                      | '5:3'
+                      | '16:9'
+                      | '2:1'
+                      | '7:3'
+                      | '4:5'
+                      | '3:4'
+                      | '2:3'
+                      | '9:16';
                     display: {
                       type:
                         | 'image'
@@ -497,6 +517,20 @@ export interface GuidelineDocument {
                           }[]
                         | null;
                     };
+                    /**
+                     * 그룹을 등록하면 위 항목 대신 표시합니다. 그룹 제목은 생략할 수 있습니다.
+                     */
+                    specGroups?:
+                      | {
+                          title?: string | null;
+                          items: {
+                            label?: string | null;
+                            value: string;
+                            id?: string | null;
+                          }[];
+                          id?: string | null;
+                        }[]
+                      | null;
                     id?: string | null;
                   }[]
                 | null;
@@ -510,7 +544,6 @@ export interface GuidelineDocument {
         id?: string | null;
       }[]
     | null;
-  blocks?: (SectionBlock | BaseBlock | OverviewBlock | ExamplesBlock)[] | null;
   /**
    * 이 문서 단위에 적용할 검수 규칙입니다.
    */
@@ -755,185 +788,6 @@ export interface RuleChecker {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "SectionBlock".
- */
-export interface SectionBlock {
-  /**
-   * 이 섹션의 URL 앵커입니다(예: key-layout). 비우면 제목에서 자동 생성합니다. 토픽 안에서 유일해야 합니다.
-   */
-  anchor?: string | null;
-  title?: string | null;
-  description?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  /**
-   * 카드를 어떻게 놓을지입니다.
-   */
-  layout: 'grid' | 'carousel';
-  /**
-   * 최대 열 수입니다. 좁은 영역에서는 열 수가 줄고, 모바일은 1열입니다.
-   */
-  columns?: ('1' | '2' | '3' | '4') | null;
-  /**
-   * 캐러셀 카드의 높이입니다. 카드 폭은 각 카드의 비율에서 나옵니다.
-   */
-  rowHeight?: ('low' | 'medium' | 'high') | null;
-  /**
-   * 이 블록이 품는 카드입니다. 배치는 블록의 레이아웃이 정합니다.
-   */
-  cards?:
-    | {
-        /**
-         * 카드 비율입니다. Type Language·Type Hierarchy는 5:7, Layout Grid Overlay는 3:2 규격이 우선 적용됩니다. 격자는 열 수로 너비를, 캐러셀은 줄 높이로 높이를 정합니다.
-         */
-        ratio: '1:1' | '5:4' | '4:3' | '3:2' | '16:9' | '2:1' | '7:3' | '4:5' | '3:4' | '2:3' | '9:16';
-        /**
-         * 이 카드에만 붙는 표식입니다. 없음을 선택하면 표시하지 않습니다.
-         */
-        mark?: ('none' | 'do' | 'ok' | 'dont') | null;
-        /**
-         * 판에 무엇을 그릴지입니다. 이미지 하나 또는 위젯 하나.
-         */
-        display?:
-          | (
-              | StaticDisplay
-              | CiLockupHeroWidget
-              | ClearspaceOverlayWidget
-              | LogoBgPickerWidget
-              | LogoDisplayWidget
-              | TypeWeightWidget
-              | TypeSpecimenWidget
-              | LayoutGridOverlayWidget
-              | CiLockupWidget
-              | ClearspaceViewerWidget
-              | LayoutGridWidget
-              | PresetPanelDisplay
-              | HdColorPaletteWidget
-              | IconGridWidget
-              | StemClearSpaceWidget
-              | LogoOnBgWidget
-              | TypeHierarchyWidget
-              | TypeLanguageWidget
-              | TypeScrambleWidget
-              | LogoColorVariantWidget
-            )[]
-          | null;
-        caption?: {
-          placement?: ('below' | 'overlay') | null;
-          title?: string | null;
-          /**
-           * 텍스트 또는 표. 2열 표는 라벨·값 스펙 리스트로 그립니다.
-           */
-          description?: {
-            root: {
-              type: string;
-              children: {
-                type: any;
-                version: number;
-                [k: string]: unknown;
-              }[];
-              direction: ('ltr' | 'rtl') | null;
-              format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-              indent: number;
-              version: number;
-            };
-            [k: string]: unknown;
-          } | null;
-        };
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * 이 블록에 연관 에셋 다운로드를 붙입니다.
-   */
-  assetDownload?: boolean | null;
-  /**
-   * 이 문서 단위에 적용할 검수 규칙입니다.
-   */
-  rules?: (number | Rule)[] | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'section';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "StaticDisplay".
- */
-export interface StaticDisplay {
-  /**
-   * 카드 판을 배경으로 채우는 이미지입니다. 판 비율에 맞춰 잘립니다.
-   */
-  image: number | ApplicationImage;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'staticDisplay';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "CiLockupHeroWidget".
- */
-export interface CiLockupHeroWidget {
-  /**
-   * 무엇이 도는가. 자회사명은 국문, 해외지사 지역명은 영문입니다.
-   */
-  source?: ('subsidiary' | 'branch') | null;
-  /**
-   * 심볼 높이(px). 락업의 모든 치수가 이 값의 배수입니다(60~240).
-   */
-  h?: number | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'ciLockupHeroWidget';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ClearspaceOverlayWidget".
- */
-export interface ClearspaceOverlayWidget {
-  /**
-   * 로고 레이어(logoSpace). 그리드와 같은 canvas로 파싱된 SVG.
-   */
-  logoLayer: number | BrandLogo;
-  /**
-   * 그리드 레이어(clearSpace). 로고와 같은 canvas.
-   */
-  gridLayer: number | BrandLogo;
-  scalePercent?: number | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'clearspaceOverlayWidget';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "LogoBgPickerWidget".
- */
-export interface LogoBgPickerWidget {
-  /**
-   * picker에 올릴 컬러 그룹입니다. 그룹이 가진 순서대로 스와치를 늘어놓습니다.
-   */
-  group?: (number | null) | BrandColorGroup;
-  /**
-   * 기준 로고입니다. 같은 언어·방향의 기본형/WHITE/단색형을 파일명 규약으로 함께 찾습니다.
-   */
-  logo?: (number | null) | BrandLogo;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'logoBgPickerWidget';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "brand-color-groups".
  */
 export interface BrandColorGroup {
@@ -956,743 +810,25 @@ export interface BrandColorGroup {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "LogoDisplayWidget".
+ * via the `definition` "brand-color-pairs".
  */
-export interface LogoDisplayWidget {
+export interface BrandColorPair {
+  id: number;
   /**
-   * 표시할 이미지입니다.
+   * 스와치 이름입니다. 예: Deep Green 위 Light Green
    */
-  logo: number | BrandLogo;
-  width?: number | null;
-  height?: number | null;
+  name: string;
   /**
-   * 이미지 주변 여백(px).
+   * 바탕(면) 색입니다.
    */
-  padding?: number | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'logoDisplayWidget';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TypeWeightWidget".
- */
-export interface TypeWeightWidget {
+  background: number | BrandColor;
   /**
-   * 표본은 컨트롤 없이 고른 굵기 하나만 큰 문구 + 작은 본문으로 보여 줍니다. 원본(Artboard 43)처럼 3종을 늘어놓으려면 이 위젯을 굵기·언어별로 여섯 개 넣고 폭을 삼분으로 둡니다.
+   * 바탕 위에 올리는 선·글자 색입니다.
    */
-  layout?: ('slider' | 'specimen') | null;
-  /**
-   * 표본 문구의 언어입니다. 문구와 행간은 그 언어의 규정을 따라 고정되고, 화면에서는 굵기만 바뀝니다.
-   */
-  language?: ('ko' | 'en' | 'enCaps') | null;
-  /**
-   * 처음 보여줄 굵기입니다. 보는 사람이 컨트롤로 3단 사이를 옮겨 다닐 수 있습니다.
-   */
-  initialWeight?: ('light' | 'medium' | 'bold') | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'typeWeightWidget';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TypeSpecimenWidget".
- */
-export interface TypeSpecimenWidget {
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'typeSpecimenWidget';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "LayoutGridOverlayWidget".
- */
-export interface LayoutGridOverlayWidget {
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'layoutGridOverlayWidget';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "CiLockupWidget".
- */
-export interface CiLockupWidget {
-  /**
-   * 초기값 — H (60~240).
-   */
-  h?: number | null;
-  /**
-   * 초기값 — 자회사.
-   */
-  subsidiaryOn?: boolean | null;
-  /**
-   * 초기값 — 자회사명.
-   */
-  subsidiary?:
-    | (
-        | '현대중공업'
-        | '현대삼호'
-        | '현대마린솔루션'
-        | '현대마린엔진'
-        | '현대이엔티'
-        | '현대오일뱅크'
-        | '현대케미칼'
-        | '현대쉘베이스오일'
-        | '현대오씨아이'
-        | '현대이앤에프'
-        | '현대일렉트릭'
-        | '현대에너지솔루션'
-        | '현대사이트솔루션'
-        | '현대로보틱스'
-        | '현대스포츠'
-        | '하이드로젠'
-        | '건설기계'
-        | '한국조선해양'
-        | '현대테크놀로지'
-      )
-    | null;
-  /**
-   * 초기값 — 해외지사.
-   */
-  branchOn?: boolean | null;
-  /**
-   * 초기값 — 지사명.
-   */
-  branch?:
-    | (
-        | 'EUROPE R&D CENTER'
-        | 'INDIA R&D CENTER'
-        | 'CHINA R&D CENTER'
-        | 'SWITZERLAND R&D CENTER'
-        | 'HUNGARY TECHNOLOGIES CENTER'
-        | 'SINGAPORE SERVICE CENTER'
-        | 'HOUSTON TRAINING CENTER'
-        | 'VIETNAM SHIPYARD'
-        | 'ATLANTA PARTS CENTER'
-        | 'EUROPE'
-        | 'LONDON'
-        | 'ATHENS'
-        | 'OSLO'
-        | 'SINGAPORE'
-        | 'TOKYO'
-        | 'HOUSTON'
-        | 'NEW JERSEY'
-        | 'PANAMA'
-        | 'DUBAI'
-        | 'GERMANY'
-        | 'CHINA'
-        | 'VIETNAM'
-        | 'INDIA'
-        | 'PHILIPPINES'
-        | 'SAUDI ARABIA'
-        | 'ATLANTA'
-        | 'BRAZIL'
-        | 'SOUTH AFRICA'
-      )
-    | null;
-  /**
-   * 초기값 — 꼴.
-   */
-  form?: ('horizontal' | 'horizontalA' | 'horizontalB' | 'vertical') | null;
-  /**
-   * 초기값 — 언어.
-   */
-  language?: ('ko' | 'en' | 'hd') | null;
-  /**
-   * 초기값 — 색상 표현.
-   */
-  colorType?: ('fullColor' | 'whiteWordmark' | 'mono') | null;
-  /**
-   * 초기값 — 단색 색상.
-   */
-  mono?: ('BLACK' | 'WHITE') | null;
-  /**
-   * 초기값 — 클리어스페이스.
-   */
-  clearSpace?: ('off' | 'normal' | 'exception') | null;
-  /**
-   * 초기값 — 치수.
-   */
-  measured?: boolean | null;
-  /**
-   * H를 알약에 노출합니다. 기본은 꺼짐 — H는 독자가 고를 값이 아니라 나란히 놓인 락업들의 비율을 맞추려고 저작자가 정하는 값입니다.
-   */
-  heightControl?: boolean | null;
-  /**
-   * 알약에서 뺄 축. 뺀 축은 위 초기값에 고정됩니다(예: 자회사 토픽에서 해외지사·지사명).
-   */
-  hiddenControls?:
-    | (
-        | 'h'
-        | 'subsidiaryOn'
-        | 'subsidiary'
-        | 'branchOn'
-        | 'branch'
-        | 'form'
-        | 'language'
-        | 'colorType'
-        | 'mono'
-        | 'clearSpace'
-        | 'measured'
-      )[]
-    | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'ciLockupWidget';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ClearspaceViewerWidget".
- */
-export interface ClearspaceViewerWidget {
-  /**
-   * 가로형 로고 레이어(logoSpace).
-   */
-  horizontalLogo: number | BrandLogo;
-  /**
-   * 가로형 그리드 레이어(clearSpace). 같은 canvas.
-   */
-  horizontalGrid?: (number | null) | BrandLogo;
-  /**
-   * 가로형 최소 높이(px). 렌더 높이가 이 값 미만이면 금지(빨강).
-   */
-  horizontalMinHeightPx?: number | null;
-  /**
-   * 세로형 로고 레이어(logoSpace). 없으면 세로 패널 생략.
-   */
-  verticalLogo?: (number | null) | BrandLogo;
-  /**
-   * 세로형 그리드 레이어(clearSpace).
-   */
-  verticalGrid?: (number | null) | BrandLogo;
-  /**
-   * 세로형 최소 높이(px). 미만이면 금지(빨강).
-   */
-  verticalMinHeightPx?: number | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'clearspaceViewerWidget';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "LayoutGridWidget".
- */
-export interface LayoutGridWidget {
-  /**
-   * 코드에 정의된 조합 중 하나입니다.
-   */
-  sample?: ('a' | 'b' | 'c' | 'grid-labels') | null;
-  /**
-   * 판형 아래에 표시할 선택 캡션입니다.
-   */
-  caption?: string | null;
-  /**
-   * 그리드 표시입니다. 같은 페이지의 판형끼리 다르게 두려면 켜짐·꺼짐으로 고정합니다.
-   */
-  guides?: ('shared' | 'on' | 'off') | null;
-  /**
-   * 마진을 이 판형만 고정합니다(3~6). 비우면 패널을 따릅니다.
-   */
-  marginPct?: number | null;
-  /**
-   * 수평 거터를 이 판형만 고정합니다(0~100). 비우면 패널을 따릅니다.
-   */
-  gutterX?: number | null;
-  /**
-   * 수직 거터를 이 판형만 고정합니다(0~100). 비우면 패널을 따릅니다.
-   */
-  gutterY?: number | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'layoutGridWidget';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "PresetPanelDisplay".
- */
-export interface PresetPanelDisplay {
-  /**
-   * 코드로 그리는 위반 예시입니다. 색·그라디언트·투명도 중첩처럼 이미지로 만들면 원본 값이 사라지는 예시에 씁니다.
-   */
-  preset:
-    | 'off-palette'
-    | 'gradient'
-    | 'low-contrast'
-    | 'unpaired-combo'
-    | 'overlay-stack'
-    | 'brightness-opacity'
-    | 'tight-tracking'
-    | 'loose-tracking'
-    | 'wrong-typeface'
-    | 'mixed-size'
-    | 'distorted'
-    | 'slanted';
-  /**
-   * 컬러 패널에 올릴 기준 로고입니다. 같은 언어·방향의 기본형/WHITE/단색형을 파일명 규약으로 함께 찾습니다.
-   */
-  logo?: (number | null) | BrandLogo;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'presetPanelDisplay';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "HdColorPaletteWidget".
- */
-export interface HdColorPaletteWidget {
-  /**
-   * 표시할 컬러 그룹입니다. 고른 순서대로 한 행씩 그립니다. 비우면 모든 그룹을 표시합니다.
-   */
-  groups?: (number | BrandColorGroup)[] | null;
-  /**
-   * 균일: 색 수와 무관하게 모든 칸이 같은 크기입니다 — 계열 분류처럼 그룹 간 우열이 없을 때 씁니다. 위계: 고른 순서대로 행 높이가 줄어듭니다(3그룹이면 3:2:1) — Primary/Secondary/Mono처럼 중요도가 있을 때 씁니다.
-   */
-  layout?: ('uniform' | 'ranked') | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'hdColorPaletteWidget';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "IconGridWidget".
- */
-export interface IconGridWidget {
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'iconGridWidget';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "StemClearSpaceWidget".
- */
-export interface StemClearSpaceWidget {
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'stemClearSpaceWidget';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "LogoOnBgWidget".
- */
-export interface LogoOnBgWidget {
-  /**
-   * 배경으로 쌓을 컬러 그룹입니다. 그룹이 가진 순서대로 위에서부터 쌓습니다.
-   */
-  group?: (number | null) | BrandColorGroup;
-  /**
-   * 기준 로고입니다. 같은 언어·방향의 기본형/WHITE/단색형을 파일명 규약으로 함께 찾습니다.
-   */
-  logo?: (number | null) | BrandLogo;
-  /**
-   * 이 위젯이 보여줄 로고 계열입니다. 기본형 계열은 배경에 따라 파일이 바뀌고, 단색형은 색만 바뀝니다.
-   */
-  column?: ('fullColor' | 'mono') | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'logoOnBgWidget';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TypeHierarchyWidget".
- */
-export interface TypeHierarchyWidget {
-  /**
-   * 행간 규정과 예시 문구가 언어마다 다릅니다. 화면에는 컨트롤로 노출되지 않습니다.
-   */
-  language?: ('ko' | 'en' | 'enCaps') | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'typeHierarchyWidget';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TypeLanguageWidget".
- */
-export interface TypeLanguageWidget {
-  /**
-   * 처음 보여줄 언어입니다. 독자가 화면에서 바꿀 수 있습니다.
-   */
-  initialLanguage?: ('ko' | 'en' | 'enCaps') | null;
-  /**
-   * 비교를 고르면 언어별 카드로 나누고, 각 카드에 해당 언어의 명세를 표시합니다.
-   */
-  layout?: ('single' | 'compare') | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'typeLanguageWidget';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TypeScrambleWidget".
- */
-export interface TypeScrambleWidget {
-  /**
-   * 표시할 문구입니다. 줄바꿈을 그대로 살려 한 덩어리로 보여줍니다. 비우면 기본 표본을 씁니다.
-   */
-  text?: string | null;
-  /**
-   * 글자 크기(px)입니다. 줄 수와 판 높이에 맞춰 정합니다.
-   */
-  fontSize?: number | null;
-  panelHeight?: number | null;
-  /**
-   * 글자 색입니다. 비우면 기본 전경색을 씁니다.
-   */
-  color?: (number | null) | BrandColor;
-  /**
-   * 판 배경색입니다. 비우면 배경 없이 글자만 보입니다.
-   */
-  background?: (number | null) | BrandColor;
-  /**
-   * 표시 굵기입니다. 배포된 서체 파일에 없는 굵기를 고르면 브라우저 합성이라는 안내가 함께 나옵니다.
-   */
-  weight?: ('light' | 'medium' | 'bold') | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'typeScrambleWidget';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "LogoColorVariantWidget".
- */
-export interface LogoColorVariantWidget {
-  /**
-   * 기본형(풀컬러) 로고입니다. WHITE·단색은 여기서 파생됩니다.
-   */
-  logo: number | BrandLogo;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'logoColorVariantWidget';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "BaseBlock".
- */
-export interface BaseBlock {
-  title?: string | null;
-  description?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  /**
-   * 카드를 어떻게 놓을지입니다.
-   */
-  layout: 'grid' | 'carousel';
-  /**
-   * 최대 열 수입니다. 좁은 영역에서는 열 수가 줄고, 모바일은 1열입니다.
-   */
-  columns?: ('1' | '2' | '3' | '4') | null;
-  /**
-   * 캐러셀 카드의 높이입니다. 카드 폭은 각 카드의 비율에서 나옵니다.
-   */
-  rowHeight?: ('low' | 'medium' | 'high') | null;
-  /**
-   * 이 블록이 품는 카드입니다. 배치는 블록의 레이아웃이 정합니다.
-   */
-  cards?:
-    | {
-        /**
-         * 카드 비율입니다. Type Language·Type Hierarchy는 5:7, Layout Grid Overlay는 3:2 규격이 우선 적용됩니다. 격자는 열 수로 너비를, 캐러셀은 줄 높이로 높이를 정합니다.
-         */
-        ratio: '1:1' | '5:4' | '4:3' | '3:2' | '16:9' | '2:1' | '7:3' | '4:5' | '3:4' | '2:3' | '9:16';
-        /**
-         * 이 카드에만 붙는 표식입니다. 없음을 선택하면 표시하지 않습니다.
-         */
-        mark?: ('none' | 'do' | 'ok' | 'dont') | null;
-        /**
-         * 판에 무엇을 그릴지입니다. 이미지 하나 또는 위젯 하나.
-         */
-        display?:
-          | (
-              | StaticDisplay
-              | CiLockupHeroWidget
-              | ClearspaceOverlayWidget
-              | LogoBgPickerWidget
-              | LogoDisplayWidget
-              | TypeWeightWidget
-              | TypeSpecimenWidget
-              | LayoutGridOverlayWidget
-              | CiLockupWidget
-              | ClearspaceViewerWidget
-              | LayoutGridWidget
-              | PresetPanelDisplay
-              | HdColorPaletteWidget
-              | IconGridWidget
-              | StemClearSpaceWidget
-              | LogoOnBgWidget
-              | TypeHierarchyWidget
-              | TypeLanguageWidget
-              | TypeScrambleWidget
-              | LogoColorVariantWidget
-            )[]
-          | null;
-        caption?: {
-          placement?: ('below' | 'overlay') | null;
-          title?: string | null;
-          /**
-           * 텍스트 또는 표. 2열 표는 라벨·값 스펙 리스트로 그립니다.
-           */
-          description?: {
-            root: {
-              type: string;
-              children: {
-                type: any;
-                version: number;
-                [k: string]: unknown;
-              }[];
-              direction: ('ltr' | 'rtl') | null;
-              format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-              indent: number;
-              version: number;
-            };
-            [k: string]: unknown;
-          } | null;
-        };
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * 이 블록에 연관 에셋 다운로드를 붙입니다.
-   */
-  assetDownload?: boolean | null;
-  /**
-   * 이 문서 단위에 적용할 검수 규칙입니다.
-   */
-  rules?: (number | Rule)[] | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'base';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "OverviewBlock".
- */
-export interface OverviewBlock {
-  title?: string | null;
-  description?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  /**
-   * 카드를 어떻게 놓을지입니다.
-   */
-  layout: 'grid' | 'carousel';
-  /**
-   * 최대 열 수입니다. 좁은 영역에서는 열 수가 줄고, 모바일은 1열입니다.
-   */
-  columns?: ('1' | '2' | '3' | '4') | null;
-  /**
-   * 캐러셀 카드의 높이입니다. 카드 폭은 각 카드의 비율에서 나옵니다.
-   */
-  rowHeight?: ('low' | 'medium' | 'high') | null;
-  /**
-   * 이 블록이 품는 카드입니다. 배치는 블록의 레이아웃이 정합니다.
-   */
-  cards?:
-    | {
-        /**
-         * 카드 비율입니다. Type Language·Type Hierarchy는 5:7, Layout Grid Overlay는 3:2 규격이 우선 적용됩니다. 격자는 열 수로 너비를, 캐러셀은 줄 높이로 높이를 정합니다.
-         */
-        ratio: '1:1' | '5:4' | '4:3' | '3:2' | '16:9' | '2:1' | '7:3' | '4:5' | '3:4' | '2:3' | '9:16';
-        /**
-         * 이 카드에만 붙는 표식입니다. 없음을 선택하면 표시하지 않습니다.
-         */
-        mark?: ('none' | 'do' | 'ok' | 'dont') | null;
-        /**
-         * 판에 무엇을 그릴지입니다. 이미지 하나 또는 위젯 하나.
-         */
-        display?:
-          | (
-              | StaticDisplay
-              | CiLockupHeroWidget
-              | ClearspaceOverlayWidget
-              | LogoBgPickerWidget
-              | LogoDisplayWidget
-              | TypeWeightWidget
-              | TypeSpecimenWidget
-              | LayoutGridOverlayWidget
-              | CiLockupWidget
-              | ClearspaceViewerWidget
-              | LayoutGridWidget
-              | PresetPanelDisplay
-              | HdColorPaletteWidget
-              | IconGridWidget
-              | StemClearSpaceWidget
-              | LogoOnBgWidget
-              | TypeHierarchyWidget
-              | TypeLanguageWidget
-              | TypeScrambleWidget
-              | LogoColorVariantWidget
-            )[]
-          | null;
-        caption?: {
-          placement?: ('below' | 'overlay') | null;
-          title?: string | null;
-          /**
-           * 텍스트 또는 표. 2열 표는 라벨·값 스펙 리스트로 그립니다.
-           */
-          description?: {
-            root: {
-              type: string;
-              children: {
-                type: any;
-                version: number;
-                [k: string]: unknown;
-              }[];
-              direction: ('ltr' | 'rtl') | null;
-              format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-              indent: number;
-              version: number;
-            };
-            [k: string]: unknown;
-          } | null;
-        };
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * 이 블록에 연관 에셋 다운로드를 붙입니다.
-   */
-  assetDownload?: boolean | null;
-  /**
-   * 이 문서 단위에 적용할 검수 규칙입니다.
-   */
-  rules?: (number | Rule)[] | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'overview';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ExamplesBlock".
- */
-export interface ExamplesBlock {
-  title?: string | null;
-  description?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  /**
-   * 카드를 어떻게 놓을지입니다.
-   */
-  layout: 'grid' | 'carousel';
-  /**
-   * 최대 열 수입니다. 좁은 영역에서는 열 수가 줄고, 모바일은 1열입니다.
-   */
-  columns?: ('1' | '2' | '3' | '4') | null;
-  /**
-   * 캐러셀 카드의 높이입니다. 카드 폭은 각 카드의 비율에서 나옵니다.
-   */
-  rowHeight?: ('low' | 'medium' | 'high') | null;
-  /**
-   * 이 블록이 품는 카드입니다. 배치는 블록의 레이아웃이 정합니다.
-   */
-  cards?:
-    | {
-        /**
-         * 카드 비율입니다. Type Language·Type Hierarchy는 5:7, Layout Grid Overlay는 3:2 규격이 우선 적용됩니다. 격자는 열 수로 너비를, 캐러셀은 줄 높이로 높이를 정합니다.
-         */
-        ratio: '1:1' | '5:4' | '4:3' | '3:2' | '16:9' | '2:1' | '7:3' | '4:5' | '3:4' | '2:3' | '9:16';
-        /**
-         * 이 카드에만 붙는 표식입니다. 없음을 선택하면 표시하지 않습니다.
-         */
-        mark?: ('none' | 'do' | 'ok' | 'dont') | null;
-        /**
-         * 판에 무엇을 그릴지입니다. 이미지 하나 또는 위젯 하나.
-         */
-        display?:
-          | (
-              | StaticDisplay
-              | CiLockupHeroWidget
-              | ClearspaceOverlayWidget
-              | LogoBgPickerWidget
-              | LogoDisplayWidget
-              | TypeWeightWidget
-              | TypeSpecimenWidget
-              | LayoutGridOverlayWidget
-              | CiLockupWidget
-              | ClearspaceViewerWidget
-              | LayoutGridWidget
-              | PresetPanelDisplay
-              | HdColorPaletteWidget
-              | IconGridWidget
-              | StemClearSpaceWidget
-              | LogoOnBgWidget
-              | TypeHierarchyWidget
-              | TypeLanguageWidget
-              | TypeScrambleWidget
-              | LogoColorVariantWidget
-            )[]
-          | null;
-        caption?: {
-          placement?: ('below' | 'overlay') | null;
-          title?: string | null;
-          /**
-           * 텍스트 또는 표. 2열 표는 라벨·값 스펙 리스트로 그립니다.
-           */
-          description?: {
-            root: {
-              type: string;
-              children: {
-                type: any;
-                version: number;
-                [k: string]: unknown;
-              }[];
-              direction: ('ltr' | 'rtl') | null;
-              format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-              indent: number;
-              version: number;
-            };
-            [k: string]: unknown;
-          } | null;
-        };
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * 이 블록에 연관 에셋 다운로드를 붙입니다.
-   */
-  assetDownload?: boolean | null;
-  /**
-   * 이 문서 단위에 적용할 검수 규칙입니다.
-   */
-  rules?: (number | Rule)[] | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'examples';
+  foreground: number | BrandColor;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2125,6 +1261,12 @@ export interface User {
    * admin(전체)·manager(계정·기준 관리)·worker(사용)
    */
   role: 'admin' | 'manager' | 'worker';
+  figmaToken?: string | null;
+  tokenLimits?: {
+    unlimited?: boolean | null;
+    daily?: number | null;
+    monthly?: number | null;
+  };
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -2699,7 +1841,7 @@ export interface PayloadMcpApiKey {
   description?: string | null;
   'payload-mcp-tool'?: {
     /**
-     * Find published guideline read documents. The active contentModel returns ordered sections or legacy blocks. sections include id, headingLevel and parentSectionId; contentGroups describe layout; figures combine visual, caption, author-assigned usageStatus, controls and actions. Caption types: basic title/description, list rows pairing label/value as item title/description, specification rows pairing property/value (including original units). Defaults and accessible asset/palette relationships are already resolved. Preserve all orders and figure-caption associations. usageStatus is not a check result. controls describe display changes with options/defaultValue/effect; actions describe download, link, copy or reset, not executable MCP tools or current user state. Legacy blocks retain their compatibility fields and resolved text. Do not infer unavailable assets from null values.
+     * Find published guideline read documents. Documents return ordered sections. sections include id, headingLevel and parentSectionId; contentGroups describe layout; figures combine visual, caption, author-assigned usageStatus, controls and actions. Caption types: basic title/description, list rows pairing label/value as item title/description, specification groups with optional titles and ordered items pairing property/value (including original units); legacy flat specification rows resolve to one untitled group. Defaults and accessible asset/palette relationships are already resolved. Preserve all orders and figure-caption associations. usageStatus is not a check result. controls describe display changes with options/defaultValue/effect; actions describe download, link, copy or reset, not executable MCP tools or current user state. Do not infer unavailable assets from null values.
      */
     findGuidelineDocuments?: boolean | null;
     /**
@@ -2879,6 +2021,10 @@ export interface PayloadLockedDocument {
         value: number | BrandColorGroup;
       } | null)
     | ({
+        relationTo: 'brand-color-pairs';
+        value: number | BrandColorPair;
+      } | null)
+    | ({
         relationTo: 'brand-typefaces';
         value: number | BrandTypeface;
       } | null)
@@ -3020,6 +2166,7 @@ export interface PayloadMigration {
  */
 export interface GuidelineChaptersSelect<T extends boolean = true> {
   title?: T;
+  description?: T;
   generateSlug?: T;
   slug?: T;
   topics?: T;
@@ -3034,6 +2181,7 @@ export interface GuidelineChaptersSelect<T extends boolean = true> {
 export interface GuidelineDocumentsSelect<T extends boolean = true> {
   chapter?: T;
   title?: T;
+  description?: T;
   generateSlug?: T;
   slug?: T;
   headerImage?: T;
@@ -3045,7 +2193,6 @@ export interface GuidelineDocumentsSelect<T extends boolean = true> {
         title?: T;
         anchor?: T;
         description?: T;
-        align?: T;
         download?:
           | T
           | {
@@ -3137,6 +2284,19 @@ export interface GuidelineDocumentsSelect<T extends boolean = true> {
                                 id?: T;
                               };
                         };
+                    specGroups?:
+                      | T
+                      | {
+                          title?: T;
+                          items?:
+                            | T
+                            | {
+                                label?: T;
+                                value?: T;
+                                id?: T;
+                              };
+                          id?: T;
+                        };
                     id?: T;
                   };
               id?: T;
@@ -3144,449 +2304,11 @@ export interface GuidelineDocumentsSelect<T extends boolean = true> {
         rules?: T;
         id?: T;
       };
-  blocks?:
-    | T
-    | {
-        section?: T | SectionBlockSelect<T>;
-        base?: T | BaseBlockSelect<T>;
-        overview?: T | OverviewBlockSelect<T>;
-        examples?: T | ExamplesBlockSelect<T>;
-      };
   rules?: T;
   displayOrder?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "SectionBlock_select".
- */
-export interface SectionBlockSelect<T extends boolean = true> {
-  anchor?: T;
-  title?: T;
-  description?: T;
-  layout?: T;
-  columns?: T;
-  rowHeight?: T;
-  cards?:
-    | T
-    | {
-        ratio?: T;
-        mark?: T;
-        display?:
-          | T
-          | {
-              staticDisplay?: T | StaticDisplaySelect<T>;
-              ciLockupHeroWidget?: T | CiLockupHeroWidgetSelect<T>;
-              clearspaceOverlayWidget?: T | ClearspaceOverlayWidgetSelect<T>;
-              logoBgPickerWidget?: T | LogoBgPickerWidgetSelect<T>;
-              logoDisplayWidget?: T | LogoDisplayWidgetSelect<T>;
-              typeWeightWidget?: T | TypeWeightWidgetSelect<T>;
-              typeSpecimenWidget?: T | TypeSpecimenWidgetSelect<T>;
-              layoutGridOverlayWidget?: T | LayoutGridOverlayWidgetSelect<T>;
-              ciLockupWidget?: T | CiLockupWidgetSelect<T>;
-              clearspaceViewerWidget?: T | ClearspaceViewerWidgetSelect<T>;
-              layoutGridWidget?: T | LayoutGridWidgetSelect<T>;
-              presetPanelDisplay?: T | PresetPanelDisplaySelect<T>;
-              hdColorPaletteWidget?: T | HdColorPaletteWidgetSelect<T>;
-              iconGridWidget?: T | IconGridWidgetSelect<T>;
-              stemClearSpaceWidget?: T | StemClearSpaceWidgetSelect<T>;
-              logoOnBgWidget?: T | LogoOnBgWidgetSelect<T>;
-              typeHierarchyWidget?: T | TypeHierarchyWidgetSelect<T>;
-              typeLanguageWidget?: T | TypeLanguageWidgetSelect<T>;
-              typeScrambleWidget?: T | TypeScrambleWidgetSelect<T>;
-              logoColorVariantWidget?: T | LogoColorVariantWidgetSelect<T>;
-            };
-        caption?:
-          | T
-          | {
-              placement?: T;
-              title?: T;
-              description?: T;
-            };
-        id?: T;
-      };
-  assetDownload?: T;
-  rules?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "StaticDisplay_select".
- */
-export interface StaticDisplaySelect<T extends boolean = true> {
-  image?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "CiLockupHeroWidget_select".
- */
-export interface CiLockupHeroWidgetSelect<T extends boolean = true> {
-  source?: T;
-  h?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ClearspaceOverlayWidget_select".
- */
-export interface ClearspaceOverlayWidgetSelect<T extends boolean = true> {
-  logoLayer?: T;
-  gridLayer?: T;
-  scalePercent?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "LogoBgPickerWidget_select".
- */
-export interface LogoBgPickerWidgetSelect<T extends boolean = true> {
-  group?: T;
-  logo?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "LogoDisplayWidget_select".
- */
-export interface LogoDisplayWidgetSelect<T extends boolean = true> {
-  logo?: T;
-  width?: T;
-  height?: T;
-  padding?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TypeWeightWidget_select".
- */
-export interface TypeWeightWidgetSelect<T extends boolean = true> {
-  layout?: T;
-  language?: T;
-  initialWeight?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TypeSpecimenWidget_select".
- */
-export interface TypeSpecimenWidgetSelect<T extends boolean = true> {
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "LayoutGridOverlayWidget_select".
- */
-export interface LayoutGridOverlayWidgetSelect<T extends boolean = true> {
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "CiLockupWidget_select".
- */
-export interface CiLockupWidgetSelect<T extends boolean = true> {
-  h?: T;
-  subsidiaryOn?: T;
-  subsidiary?: T;
-  branchOn?: T;
-  branch?: T;
-  form?: T;
-  language?: T;
-  colorType?: T;
-  mono?: T;
-  clearSpace?: T;
-  measured?: T;
-  heightControl?: T;
-  hiddenControls?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ClearspaceViewerWidget_select".
- */
-export interface ClearspaceViewerWidgetSelect<T extends boolean = true> {
-  horizontalLogo?: T;
-  horizontalGrid?: T;
-  horizontalMinHeightPx?: T;
-  verticalLogo?: T;
-  verticalGrid?: T;
-  verticalMinHeightPx?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "LayoutGridWidget_select".
- */
-export interface LayoutGridWidgetSelect<T extends boolean = true> {
-  sample?: T;
-  caption?: T;
-  guides?: T;
-  marginPct?: T;
-  gutterX?: T;
-  gutterY?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "PresetPanelDisplay_select".
- */
-export interface PresetPanelDisplaySelect<T extends boolean = true> {
-  preset?: T;
-  logo?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "HdColorPaletteWidget_select".
- */
-export interface HdColorPaletteWidgetSelect<T extends boolean = true> {
-  groups?: T;
-  layout?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "IconGridWidget_select".
- */
-export interface IconGridWidgetSelect<T extends boolean = true> {
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "StemClearSpaceWidget_select".
- */
-export interface StemClearSpaceWidgetSelect<T extends boolean = true> {
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "LogoOnBgWidget_select".
- */
-export interface LogoOnBgWidgetSelect<T extends boolean = true> {
-  group?: T;
-  logo?: T;
-  column?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TypeHierarchyWidget_select".
- */
-export interface TypeHierarchyWidgetSelect<T extends boolean = true> {
-  language?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TypeLanguageWidget_select".
- */
-export interface TypeLanguageWidgetSelect<T extends boolean = true> {
-  initialLanguage?: T;
-  layout?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TypeScrambleWidget_select".
- */
-export interface TypeScrambleWidgetSelect<T extends boolean = true> {
-  text?: T;
-  fontSize?: T;
-  panelHeight?: T;
-  color?: T;
-  background?: T;
-  weight?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "LogoColorVariantWidget_select".
- */
-export interface LogoColorVariantWidgetSelect<T extends boolean = true> {
-  logo?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "BaseBlock_select".
- */
-export interface BaseBlockSelect<T extends boolean = true> {
-  title?: T;
-  description?: T;
-  layout?: T;
-  columns?: T;
-  rowHeight?: T;
-  cards?:
-    | T
-    | {
-        ratio?: T;
-        mark?: T;
-        display?:
-          | T
-          | {
-              staticDisplay?: T | StaticDisplaySelect<T>;
-              ciLockupHeroWidget?: T | CiLockupHeroWidgetSelect<T>;
-              clearspaceOverlayWidget?: T | ClearspaceOverlayWidgetSelect<T>;
-              logoBgPickerWidget?: T | LogoBgPickerWidgetSelect<T>;
-              logoDisplayWidget?: T | LogoDisplayWidgetSelect<T>;
-              typeWeightWidget?: T | TypeWeightWidgetSelect<T>;
-              typeSpecimenWidget?: T | TypeSpecimenWidgetSelect<T>;
-              layoutGridOverlayWidget?: T | LayoutGridOverlayWidgetSelect<T>;
-              ciLockupWidget?: T | CiLockupWidgetSelect<T>;
-              clearspaceViewerWidget?: T | ClearspaceViewerWidgetSelect<T>;
-              layoutGridWidget?: T | LayoutGridWidgetSelect<T>;
-              presetPanelDisplay?: T | PresetPanelDisplaySelect<T>;
-              hdColorPaletteWidget?: T | HdColorPaletteWidgetSelect<T>;
-              iconGridWidget?: T | IconGridWidgetSelect<T>;
-              stemClearSpaceWidget?: T | StemClearSpaceWidgetSelect<T>;
-              logoOnBgWidget?: T | LogoOnBgWidgetSelect<T>;
-              typeHierarchyWidget?: T | TypeHierarchyWidgetSelect<T>;
-              typeLanguageWidget?: T | TypeLanguageWidgetSelect<T>;
-              typeScrambleWidget?: T | TypeScrambleWidgetSelect<T>;
-              logoColorVariantWidget?: T | LogoColorVariantWidgetSelect<T>;
-            };
-        caption?:
-          | T
-          | {
-              placement?: T;
-              title?: T;
-              description?: T;
-            };
-        id?: T;
-      };
-  assetDownload?: T;
-  rules?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "OverviewBlock_select".
- */
-export interface OverviewBlockSelect<T extends boolean = true> {
-  title?: T;
-  description?: T;
-  layout?: T;
-  columns?: T;
-  rowHeight?: T;
-  cards?:
-    | T
-    | {
-        ratio?: T;
-        mark?: T;
-        display?:
-          | T
-          | {
-              staticDisplay?: T | StaticDisplaySelect<T>;
-              ciLockupHeroWidget?: T | CiLockupHeroWidgetSelect<T>;
-              clearspaceOverlayWidget?: T | ClearspaceOverlayWidgetSelect<T>;
-              logoBgPickerWidget?: T | LogoBgPickerWidgetSelect<T>;
-              logoDisplayWidget?: T | LogoDisplayWidgetSelect<T>;
-              typeWeightWidget?: T | TypeWeightWidgetSelect<T>;
-              typeSpecimenWidget?: T | TypeSpecimenWidgetSelect<T>;
-              layoutGridOverlayWidget?: T | LayoutGridOverlayWidgetSelect<T>;
-              ciLockupWidget?: T | CiLockupWidgetSelect<T>;
-              clearspaceViewerWidget?: T | ClearspaceViewerWidgetSelect<T>;
-              layoutGridWidget?: T | LayoutGridWidgetSelect<T>;
-              presetPanelDisplay?: T | PresetPanelDisplaySelect<T>;
-              hdColorPaletteWidget?: T | HdColorPaletteWidgetSelect<T>;
-              iconGridWidget?: T | IconGridWidgetSelect<T>;
-              stemClearSpaceWidget?: T | StemClearSpaceWidgetSelect<T>;
-              logoOnBgWidget?: T | LogoOnBgWidgetSelect<T>;
-              typeHierarchyWidget?: T | TypeHierarchyWidgetSelect<T>;
-              typeLanguageWidget?: T | TypeLanguageWidgetSelect<T>;
-              typeScrambleWidget?: T | TypeScrambleWidgetSelect<T>;
-              logoColorVariantWidget?: T | LogoColorVariantWidgetSelect<T>;
-            };
-        caption?:
-          | T
-          | {
-              placement?: T;
-              title?: T;
-              description?: T;
-            };
-        id?: T;
-      };
-  assetDownload?: T;
-  rules?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ExamplesBlock_select".
- */
-export interface ExamplesBlockSelect<T extends boolean = true> {
-  title?: T;
-  description?: T;
-  layout?: T;
-  columns?: T;
-  rowHeight?: T;
-  cards?:
-    | T
-    | {
-        ratio?: T;
-        mark?: T;
-        display?:
-          | T
-          | {
-              staticDisplay?: T | StaticDisplaySelect<T>;
-              ciLockupHeroWidget?: T | CiLockupHeroWidgetSelect<T>;
-              clearspaceOverlayWidget?: T | ClearspaceOverlayWidgetSelect<T>;
-              logoBgPickerWidget?: T | LogoBgPickerWidgetSelect<T>;
-              logoDisplayWidget?: T | LogoDisplayWidgetSelect<T>;
-              typeWeightWidget?: T | TypeWeightWidgetSelect<T>;
-              typeSpecimenWidget?: T | TypeSpecimenWidgetSelect<T>;
-              layoutGridOverlayWidget?: T | LayoutGridOverlayWidgetSelect<T>;
-              ciLockupWidget?: T | CiLockupWidgetSelect<T>;
-              clearspaceViewerWidget?: T | ClearspaceViewerWidgetSelect<T>;
-              layoutGridWidget?: T | LayoutGridWidgetSelect<T>;
-              presetPanelDisplay?: T | PresetPanelDisplaySelect<T>;
-              hdColorPaletteWidget?: T | HdColorPaletteWidgetSelect<T>;
-              iconGridWidget?: T | IconGridWidgetSelect<T>;
-              stemClearSpaceWidget?: T | StemClearSpaceWidgetSelect<T>;
-              logoOnBgWidget?: T | LogoOnBgWidgetSelect<T>;
-              typeHierarchyWidget?: T | TypeHierarchyWidgetSelect<T>;
-              typeLanguageWidget?: T | TypeLanguageWidgetSelect<T>;
-              typeScrambleWidget?: T | TypeScrambleWidgetSelect<T>;
-              logoColorVariantWidget?: T | LogoColorVariantWidgetSelect<T>;
-            };
-        caption?:
-          | T
-          | {
-              placement?: T;
-              title?: T;
-              description?: T;
-            };
-        id?: T;
-      };
-  assetDownload?: T;
-  rules?: T;
-  id?: T;
-  blockName?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -3649,6 +2371,18 @@ export interface BrandColorGroupsSelect<T extends boolean = true> {
   name?: T;
   family?: T;
   colors?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "brand-color-pairs_select".
+ */
+export interface BrandColorPairsSelect<T extends boolean = true> {
+  name?: T;
+  background?: T;
+  foreground?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -4234,6 +2968,14 @@ export interface AgentSkillsSelect<T extends boolean = true> {
  */
 export interface UsersSelect<T extends boolean = true> {
   role?: T;
+  figmaToken?: T;
+  tokenLimits?:
+    | T
+    | {
+        unlimited?: T;
+        daily?: T;
+        monthly?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -4459,6 +3201,17 @@ export interface BetterEditorSetting {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ai-token-limits".
+ */
+export interface AiTokenLimit {
+  id: number;
+  daily: number;
+  monthly: number;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "guideline_select".
  */
 export interface GuidelineSelect<T extends boolean = true> {
@@ -4508,6 +3261,17 @@ export interface BetterEditorSettingsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ai-token-limits_select".
+ */
+export interface AiTokenLimitsSelect<T extends boolean = true> {
+  daily?: T;
+  monthly?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "collections_widget".
  */
 export interface CollectionsWidget {
@@ -4540,6 +3304,10 @@ export interface TaskSchedulePublish {
       | ({
           relationTo: 'brand-color-groups';
           value: number | BrandColorGroup;
+        } | null)
+      | ({
+          relationTo: 'brand-color-pairs';
+          value: number | BrandColorPair;
         } | null)
       | ({
           relationTo: 'brand-typefaces';

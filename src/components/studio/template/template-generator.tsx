@@ -1,11 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
-import { StudioWorkspace } from '@/components/studio/shared/studio-workspace'
-import { useProfilePreview } from '@/components/studio/shared/use-profile-preview'
-import { TemplateLeftPanel } from '@/components/studio/sidebar/template-left-panel'
-import { TemplateSidebar } from '@/components/studio/sidebar/template-sidebar'
-import { useTemplateExport } from '@/features/studio-export/hooks/use-template-export'
+import { useEffect, useState } from 'react'
 import { applyTemplateSessionPatch } from '@/features/template-customization/domain/apply-template-session-patch'
 import type {
 	PublishedTemplateView,
@@ -14,9 +9,10 @@ import type {
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import { useTemplateAuthoringHandoff } from '@/features/template-customization/providers/template-authoring-handoff'
 import { TemplateStudioProvider } from '@/features/template-customization/providers/template-studio-provider'
-import { TemplateCanvas } from './template-canvas'
+import { TemplateWorkspace } from './template-workspace'
 
 type TemplateGeneratorProps = {
+	onTemplateChange?: (slug: string) => void
 	config: TemplateStudioConfig
 	/** 식별 카드의 부제 — 교체 후보 목록은 자산 브라우저가 열릴 때 따로 가져온다. */
 	categoryTitle: string | null
@@ -44,60 +40,40 @@ export function TemplateGenerator({
 	template,
 	highlightColor = null,
 	userId = null,
+	onTemplateChange,
 }: TemplateGeneratorProps) {
+	const [revision, setRevision] = useState(0)
 	return (
 		<TemplateStudioProvider
+			key={revision}
+			restoreDraft={revision === 0}
 			config={config}
 			template={template}
 			categoryTitle={categoryTitle}
 			highlightColor={highlightColor}
 			userId={userId}
 		>
-			<TemplateWorkspace template={template} />
+			<TemplateSession
+				template={template}
+				onChange={onTemplateChange}
+				onReset={() => setRevision((value) => value + 1)}
+			/>
 		</TemplateStudioProvider>
 	)
 }
 
-function TemplateWorkspace({ template }: { template: PublishedTemplateView }) {
+function TemplateSession({
+	template,
+	onChange,
+	onReset,
+}: {
+	template: PublishedTemplateView
+	onChange?: (slug: string) => void
+	onReset: () => void
+}) {
 	const session = useTemplateStudio()
-	const { canvas, config, execution } = session
 	useTemplateAuthoringPatch(template.id, session)
-	const exporting = useTemplateExport({
-		artifact: canvas.artifact,
-		vectorArtifact: canvas.vectorArtifact,
-		videoArtifact: canvas.videoArtifact,
-		capability: config.output,
-		metadata: {
-			fileName: template.name,
-			width: config.template.exportOption.canvas.width,
-			height: config.template.exportOption.canvas.height,
-			maxScale: config.template.exportOption.maxScale,
-			canvasPpi: config.template.exportOption.canvasPpi,
-			controller: {
-				groups: config.controller.groups,
-				values: execution.controllerValues,
-			},
-		},
-	})
-
-	// 크기는 화면 뷰포트가 아니라 템플릿이 선언한 export 캔버스 규격을 쓴다 — 템플릿은 지면 크기가
-	// 계약이라 미리보기도 그 비율이어야 한다.
-	const preview = useProfilePreview({
-		studio: 'template',
-		profileId: config.id,
-		artifact: canvas.artifact,
-		viewport: config.template.exportOption.canvas,
-		onUpdated: session.navigation.browse.reload,
-	})
-
-	return (
-		<StudioWorkspace
-			leftPanel={<TemplateLeftPanel preview={preview} />}
-			sidebar={<TemplateSidebar exporting={exporting} />}
-		>
-			<TemplateCanvas />
-		</StudioWorkspace>
-	)
+	return <TemplateWorkspace onChange={onChange} onReset={onReset} />
 }
 
 /**

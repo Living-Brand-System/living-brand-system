@@ -360,7 +360,7 @@ async function bakedImage(
 
 /**
  * 굽는 배율. 🔴 인쇄 목표 해상도를 모른 채 굽는다 —
- * ponytail: 그 문제는 「인쇄 치수 계약」(farnext §1-2)이 소유한다. 여기서 정하지 않는다.
+ * ponytail: 인쇄 목표 해상도를 정한 계약이 아직 없다. 여기서 정하지 않는다.
  */
 const FLATTEN_SCALE = 3
 
