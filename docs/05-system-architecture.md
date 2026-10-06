@@ -162,7 +162,7 @@ flowchart LR
     AgentChatStore["Agent chat session records<br/>(AgentChatSession)"]
     QualityStore["Quality session records<br/>(CheckSession)"]
     BehaviorEventStore["Behavior event logs<br/>(BehaviorEventLog)"]
-    FileStorage["Uploaded file storage<br/>(AWS S3)"]
+    FileStorage["Uploaded file storage<br/>(Vercel Blob)"]
   end
 
   subgraph External["External dependencies"]

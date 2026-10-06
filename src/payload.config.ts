@@ -5,7 +5,7 @@ import { resendAdapter } from '@payloadcms/email-resend'
 import { type MCPAccessSettings, mcpPlugin } from '@payloadcms/plugin-mcp'
 import { searchPlugin } from '@payloadcms/plugin-search'
 import { EXPERIMENTAL_TableFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
-import { s3Storage } from '@payloadcms/storage-s3'
+import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 import { ko } from '@payloadcms/translations/languages/ko'
 import { attachDatabasePool } from '@vercel/functions'
 import {
@@ -107,13 +107,13 @@ const collections = [
 ]
 
 /**
- * upload를 갖는 컬렉션은 전부 S3에 저장한다.
+ * upload를 갖는 컬렉션은 전부 Vercel Blob에 저장한다.
  *
  * 🔴 손으로 나열하지 않는다. 등록에서 빠진 업로드 컬렉션은 Payload 기본 동작인 로컬 디스크 쓰기로
  * 떨어진다. 로컬 개발에서는 조용히 성공하고, 읽기 전용 파일시스템인 Vercel에서만 500이 난다
  * (sample-images가 실제로 그렇게 새어 나갔다). 파생으로 두면 그 어긋남이 생길 수 없다.
  */
-const s3UploadCollections = Object.fromEntries(
+const blobUploadCollections = Object.fromEntries(
 	collections.flatMap((collection) => (collection.upload ? [[collection.slug, true]] : [])),
 )
 
@@ -267,18 +267,11 @@ export default buildConfig({
 				],
 			},
 		}),
-		s3Storage({
-			collections: s3UploadCollections,
-			bucket: env.S3_BUCKET || '',
-			config: {
-				region: env.S3_REGION || '',
-				endpoint: env.S3_ENDPOINT,
-				forcePathStyle: Boolean(env.S3_ENDPOINT),
-				credentials: {
-					accessKeyId: env.S3_ACCESS_KEY_ID || '',
-					secretAccessKey: env.S3_SECRET_ACCESS_KEY || '',
-				},
-			},
+		// 토큰이 없으면(로컬·CI·Docker 프리뷰) 어댑터가 꺼지고 로컬 디스크로 떨어진다.
+		// Vercel에서는 env.ts가 토큰을 필수로 막아 서버리스 임시 디스크에 쓰는 일이 없다.
+		vercelBlobStorage({
+			collections: blobUploadCollections,
+			token: env.BLOB_READ_WRITE_TOKEN,
 		}),
 	],
 	i18n: {
