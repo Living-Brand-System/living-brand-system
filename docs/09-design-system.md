@@ -41,6 +41,7 @@ Payload Admin 기본 화면은 이 문서의 대상이 아닙니다. Payload가 
 | L1 shadcn 세트 | `:root`(라이트)·`.dark`/`[data-theme="dark"]`(다크)의 shadcn 표준 슬롯(background·primary·muted·border·chart-1~5·sidebar-* 등). 값은 L0 참조만. **앱과 어드민이 같은 파일을 import한다** | `src/app/color-tokens.css` |
 | color 유틸 매핑 | L1·L2 → `@theme inline`의 `--color-*` 유틸 토큰 | `src/app/color-tokens.css` |
 | inverted | 반전 표면과 그 전경의 짝 `--inverted`/`--inverted-foreground` | `src/app/color-tokens.css` |
+| overlay | 모달(dialog·sheet) 뒤를 가리는 막. 테마와 무관하게 검정이고 알파는 쓰는 쪽이 붙인다(`bg-overlay/80`) | `src/app/color-tokens.css` |
 | action-hover-foreground | 액션의 호버·포커스 전경색. 눌림은 기존 `foreground`를 사용 | `src/app/color-tokens.css` |
 | chart-1~5 | HD 초록 다섯 단(prosperity·heritage·eco·deep·light, 다크는 4·5 교대). 번호가 계약 — 사용량 막대·일자 스트립·카메라 궤도 축·어드민 대시보드가 번호로 집는다 | `src/app/color-tokens.css` |
 | 상태색 | 판정·상태 표시 전용 `--success`/`--info`/`--warning`(실패는 기존 `--destructive`, 해당 없음은 `--muted`) | `src/app/color-tokens.css` |
@@ -109,7 +110,7 @@ rg -n '#[0-9a-fA-F]{3,8}\b|(?:bg|text|border|ring|fill|from|to|via)-(?:(?:red|or
 - **L1·L2 값은 L0 참조만** 씁니다(`--muted: var(--color-neutral-100)`). oklch·hex 리터럴을 적지 않습니다 — 숫자를 베끼면 L0와의 관계가 안 보이고, 그 틈으로 단계 밖 값(옛 다크 배경 `#121212`)이 섞였습니다. 예외는 작품 그라디언트(`--highlight-background`)뿐입니다.
 - **중립색은 Tailwind neutral 단계만** 씁니다. shadcn 다크 기본값의 흰색 알파 테두리도 neutral 단계(border 800·input 700)로 바꿨습니다.
 - **L1은 shadcn 슬롯을 그대로 유지**합니다. 쓰지 않는 슬롯(`secondary`·`sidebar-primary`)도 지우지 않습니다 — shadcn 컴포넌트를 새로 받을 때 그 이름을 전제합니다. 같은 값을 가진 슬롯이 여럿인 것(`muted`=`secondary`=`accent`)도 shadcn neutral 기본 구성입니다.
-- **L2 확장은 shadcn 규약**(같은 파일, `@theme inline` 등록)을 따릅니다: `inverted`·`action-hover-foreground`·상태색·`highlight`·`studio-rail-idle-foreground`.
+- **L2 확장은 shadcn 규약**(같은 파일, `@theme inline` 등록)을 따릅니다: `inverted`·`overlay`·`action-hover-foreground`·상태색·`highlight`·`studio-rail-idle-foreground`.
 - **브랜드 색은 shadcn 슬롯으로만 들어옵니다.** `primary`는 브랜드 색이 아니라 neutral-900입니다(시안의 기본 버튼이 검정). HD 색은 L0 `--color-hd-*`에 등록하고 `chart-1~5`가 받습니다. 값의 정본은 `scripts/seed-hd-brand-colors.ts`이고 `color-tokens.css`는 그 사본입니다. 🔴 Figma 변수의 hex는 seed와 대조한 뒤 옮깁니다 — 둘이 갈라진 전례가 있습니다(HD LIGHT BLUE).
 - 예전에는 가이드라인 설정(`primaryColor`)이 `layout.tsx`에서 `--primary`를 덮었습니다. HD 전용이 되며 걷었습니다 — admin에서 색 하나를 바꾸면 버튼 40여 곳이 함께 바뀌는 통로였습니다. 필드는 MCP가 아직 읽으므로 남아 있습니다.
 
