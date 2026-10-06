@@ -103,6 +103,28 @@ describe('deriveTemplateStudioConfig', () => {
 		).toBeUndefined()
 	})
 
+	it('defaultType이 허용 형식 안에 있으면 그 형식으로 시작한다 — 이미지도 열되 그래픽으로', () => {
+		const manifest = getTemplateRuntimeManifest({
+			...template,
+			backgroundPolicy: { types: ['image', 'graphic'], defaultType: 'graphic' },
+		})
+
+		expect(findManifestControl(manifest, 'background.type')).toMatchObject({
+			defaultValue: 'graphic',
+		})
+	})
+
+	it('defaultType이 허용 형식 밖이면 무시하고 첫 허용 형식으로 시작한다', () => {
+		const manifest = getTemplateRuntimeManifest({
+			...template,
+			backgroundPolicy: { types: ['color', 'image'], defaultType: 'graphic' },
+		})
+
+		expect(findManifestControl(manifest, 'background.type')).toMatchObject({
+			defaultValue: 'color',
+		})
+	})
+
 	it('색을 형식에서 막아도 background.color 컨트롤은 남는다', () => {
 		const manifest = getTemplateRuntimeManifest({
 			...template,
