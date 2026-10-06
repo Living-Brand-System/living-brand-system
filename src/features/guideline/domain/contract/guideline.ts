@@ -14,8 +14,6 @@ export interface GuidelineMetadataData {
 	documentTitle: string
 	faviconHref: string | null
 	issuedLabel: string | null
-	primaryDarkHex: string | null
-	primaryHex: string | null
 }
 
 export interface GuidelineChapterData {

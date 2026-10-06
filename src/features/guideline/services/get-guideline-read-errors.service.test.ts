@@ -28,8 +28,6 @@ describe('guideline read service failures', () => {
 			documentTitle: 'Guideline',
 			faviconHref: null,
 			issuedLabel: null,
-			primaryHex: null,
-			primaryDarkHex: null,
 		})
 		vi.mocked(listGuidelineChapters).mockResolvedValue([])
 		vi.mocked(listPublishedGuidelineNavigationTopics).mockResolvedValue([])
