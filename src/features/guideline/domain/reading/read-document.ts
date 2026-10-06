@@ -57,10 +57,8 @@ export function toGuidelineReadDocument(
 			title: section.title ?? '',
 			description: section.description ?? null,
 			anchor: section.anchor ?? null,
-			align:
-				section.type === 'incorrect-usages'
-					? ('center' as const)
-					: (section.align ?? 'start'),
+			// 섹션 헤더 정렬은 데이터가 아니다 — Incorrect Usages만 중앙이다(2026-10-06 중앙 정렬 필드 제거).
+			align: section.type === 'incorrect-usages' ? ('center' as const) : ('start' as const),
 			rules: readRules(section.rules),
 			actions: sectionDownloadActions(sectionFiles(section)),
 			contentGroups: (section.containers ?? []).map((container, index) => ({
