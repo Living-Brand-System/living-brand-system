@@ -27,10 +27,13 @@ export function AccountCard({
 	email,
 	createdAt,
 	role,
+	canManageTokenLimits = false,
 }: {
 	email: string
 	createdAt?: string
 	role: User['role']
+	/** manager 이상이면 토큰 한도 화면 입구를 세운다 — 판단은 호출부가 역할로 한다. */
+	canManageTokenLimits?: boolean
 }) {
 	const joinedAt = createdAt ? JOINED_AT_FORMAT.format(new Date(createdAt)) : null
 
@@ -72,6 +75,18 @@ export function AccountCard({
 						<ArrowRight aria-hidden size={16} />
 					</Link>
 				</Controller.Row>
+				{/* 🔑 토큰 한도는 계정 운영이라 manager 이상에게만 선다. */}
+				{canManageTokenLimits && (
+					<Controller.Row readonly label="AI 토큰 한도">
+						<Link
+							className="inline-flex items-center gap-1 text-muted-foreground text-sm transition-colors hover:text-foreground"
+							href={routes.accountTokenLimits}
+						>
+							설정
+							<ArrowRight aria-hidden size={16} />
+						</Link>
+					</Controller.Row>
+				)}
 			</div>
 
 			<LogoutButton />

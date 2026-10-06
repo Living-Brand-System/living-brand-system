@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 import { parseAgentChatRequest } from '@/app/api/agent-chat/parse-agent-chat-request'
 
+// 한도 판정은 이 테스트의 대상이 아니다 — Payload 설정·DB를 끌어오지 않게 막아 둔다.
+vi.mock('@/modules/ai-usage/services/token-limit.service', () => ({
+	assertWithinTokenLimit: vi.fn(async () => {}),
+	TokenLimitExceededError: class TokenLimitExceededError extends Error {},
+}))
+
 describe('agent chat route request parsing', () => {
 	it('rejects malformed JSON', async () => {
 		const request = new Request('http://localhost/api/agent-chat', {

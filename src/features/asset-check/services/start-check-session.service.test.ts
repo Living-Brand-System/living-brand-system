@@ -30,6 +30,12 @@ import {
 	startCheckSession,
 } from './start-check-session.service'
 
+// 한도 판정은 이 테스트의 대상이 아니다 — Payload 설정·DB를 끌어오지 않게 막아 둔다.
+vi.mock('@/modules/ai-usage/services/token-limit.service', () => ({
+	assertWithinTokenLimit: vi.fn(async () => {}),
+	TokenLimitExceededError: class TokenLimitExceededError extends Error {},
+}))
+
 vi.mock('@/features/asset-check/repositories/check-session.payload.repository', () => ({
 	completeRunningCheckSessionRecord: vi.fn(),
 	createCheckSessionRecord: vi.fn(),

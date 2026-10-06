@@ -30,6 +30,7 @@ import { listAvailableImageProfiles } from '@/features/image-generation/services
 import { type CheckScenario, getCheckScenario } from '@/features/quality-rule/check-scenario'
 import { findPublishedCheckScenarios } from '@/features/quality-rule/repositories/check-scenario.payload.repository'
 import { AgentConfigurationError } from '@/lib/errors'
+import { TokenLimitExceededError } from '@/modules/ai-usage/services/token-limit.service'
 import type { User } from '@/payload-types'
 
 const guidelineToolContextSchema = z.object({
@@ -188,6 +189,9 @@ export function getAgentTools() {
 					})
 				} catch (error) {
 					// 한도 초과는 크래시 대신 기존 실패 계약({status, message})으로 모델에 알린다.
+					if (error instanceof TokenLimitExceededError) {
+						return { status: 'failed', message: error.message }
+					}
 					if (error instanceof ImageGenerationLimitError) {
 						return {
 							status: 'failed',
@@ -238,15 +242,24 @@ export function getAgentTools() {
 					}
 				}
 
-				const result = await startCheckSession({
-					agentChatSessionId: context.agentChatSessionId,
-					buffer: image.buffer,
-					imageName: image.name,
-					scenario,
-					scenarioKey: scenario.key,
-					source: 'chat',
-					user: context.user as User,
-				})
+				let result: Awaited<ReturnType<typeof startCheckSession>>
+				try {
+					result = await startCheckSession({
+						agentChatSessionId: context.agentChatSessionId,
+						buffer: image.buffer,
+						imageName: image.name,
+						scenario,
+						scenarioKey: scenario.key,
+						source: 'chat',
+						user: context.user as User,
+					})
+				} catch (error) {
+					// 한도 초과는 크래시 대신 실패 계약({status, message})으로 모델에 알린다.
+					if (error instanceof TokenLimitExceededError) {
+						return { status: 'failed', message: error.message }
+					}
+					throw error
+				}
 
 				return formatCheckToolResult(result, scenario.title)
 			},

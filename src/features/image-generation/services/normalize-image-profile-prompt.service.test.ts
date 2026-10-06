@@ -2,6 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
 	normalizeImagePromptWithAi: vi.fn(),
+	assertWithinTokenLimit: vi.fn(),
+	recordAiUsage: vi.fn(),
+}))
+
+vi.mock('@/modules/ai-usage/services/token-limit.service', () => ({
+	assertWithinTokenLimit: mocks.assertWithinTokenLimit,
+}))
+vi.mock('@/modules/ai-usage/repositories/ai-usage.payload.repository', () => ({
+	recordAiUsage: mocks.recordAiUsage,
 }))
 
 vi.mock(
@@ -11,7 +20,10 @@ vi.mock(
 	}),
 )
 
-import { normalizeImageProfilePrompt } from './normalize-image-profile-prompt.service'
+import {
+	normalizeImageProfilePrompt,
+	previewImageProfilePrompt,
+} from './normalize-image-profile-prompt.service'
 
 describe('normalizeImageProfilePrompt', () => {
 	beforeEach(() => {
@@ -58,6 +70,45 @@ describe('normalizeImageProfilePrompt', () => {
 				style: 'editorial photography',
 				mood: 'organic',
 			},
+		})
+	})
+})
+
+describe('previewImageProfilePrompt', () => {
+	const input = {
+		profilePrompt: [],
+		userPromptNormalization: [{ key: 'mood', candidates: [{ value: 'organic' }] }],
+		userPrompt: '숲',
+	}
+
+	beforeEach(() => {
+		vi.clearAllMocks()
+	})
+
+	it('한도에 닿았으면 모델을 부르지 않는다', async () => {
+		mocks.assertWithinTokenLimit.mockRejectedValueOnce(new Error('limit'))
+
+		await expect(previewImageProfilePrompt(input, 7)).rejects.toThrow('limit')
+		expect(mocks.normalizeImagePromptWithAi).not.toHaveBeenCalled()
+		expect(mocks.recordAiUsage).not.toHaveBeenCalled()
+	})
+
+	it('모델을 부른 토큰을 그 계정의 사용량으로 남긴다', async () => {
+		mocks.normalizeImagePromptWithAi.mockResolvedValue({
+			prompt: { mood: 'organic' },
+			model: 'claude-haiku-4-5',
+			usage: { inputTokens: 120, outputTokens: 8, totalTokens: 128 },
+		})
+
+		await previewImageProfilePrompt(input, 7)
+		expect(mocks.assertWithinTokenLimit).toHaveBeenCalledWith(7)
+		expect(mocks.recordAiUsage).toHaveBeenCalledWith({
+			createdBy: 7,
+			feature: 'image-generation',
+			model: 'claude-haiku-4-5',
+			inputTokens: 120,
+			outputTokens: 8,
+			totalTokens: 128,
 		})
 	})
 })

@@ -6,6 +6,7 @@ import {
 import { completeCheckSessionAiCheck } from '@/features/asset-check/services/start-check-session.service'
 import { isPayloadUser } from '@/lib/auth'
 import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
+import { TokenLimitExceededError } from '@/modules/ai-usage/services/token-limit.service'
 import { readCheckImage } from '../../read-check-image'
 
 // 관측 4건 배치 1회 호출이 20~25초다. 30초는 업로드·리사이즈·저장을 태울 여유가 없어
@@ -47,6 +48,9 @@ export async function POST(
 
 		return Response.json(result)
 	} catch (error) {
+		if (error instanceof TokenLimitExceededError) {
+			return Response.json({ message: error.message }, { status: 429 })
+		}
 		if (error instanceof CheckSessionNotFoundError) {
 			return Response.json({ message: 'Check session not found.' }, { status: 404 })
 		}

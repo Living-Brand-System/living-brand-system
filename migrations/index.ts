@@ -127,6 +127,7 @@ import * as migration_20261002_005206_add_brand_color_pairs from './20261002_005
 import * as migration_20261002_070438_add_guideline_descriptions from './20261002_070438_add_guideline_descriptions';
 import * as migration_20261006_030158_add_card_ratio_5_3 from './20261006_030158_add_card_ratio_5_3';
 import * as migration_20261006_042145_remove_section_align from './20261006_042145_remove_section_align';
+import * as migration_20261006_044903_add_ai_token_limits from './20261006_044903_add_ai_token_limits';
 
 export const migrations = [
   {
@@ -772,6 +773,11 @@ export const migrations = [
   {
     up: migration_20261006_042145_remove_section_align.up,
     down: migration_20261006_042145_remove_section_align.down,
-    name: '20261006_042145_remove_section_align'
+    name: '20261006_042145_remove_section_align',
+  },
+  {
+    up: migration_20261006_044903_add_ai_token_limits.up,
+    down: migration_20261006_044903_add_ai_token_limits.down,
+    name: '20261006_044903_add_ai_token_limits'
   },
 ];

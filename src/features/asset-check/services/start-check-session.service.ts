@@ -36,6 +36,7 @@ import {
 import { detectCheckImageMediaType } from '@/features/asset-check/utils/image-format'
 import { type CheckScenario, getCheckScenario } from '@/features/quality-rule/check-scenario'
 import { findPublishedCheckScenarios } from '@/features/quality-rule/repositories/check-scenario.payload.repository'
+import { assertWithinTokenLimit } from '@/modules/ai-usage/services/token-limit.service'
 import type { AgentChatSession, User } from '@/payload-types'
 import { recordCheckAiUsage } from './record-check-ai-usage'
 
@@ -114,6 +115,8 @@ export async function startCheckSession(input: StartCheckSessionInput) {
 			input.deferHeuristic === 'always' ||
 			(input.deferHeuristic === 'when-showable' && Object.keys(immediate.results).length > 0)
 		if (!defer && session.pendingCheckKeys.length > 0) {
+			// AI 판정 직전에만 한도를 본다 — 즉시 판정은 모델을 안 부르므로 한도와 무관하다.
+			await assertWithinTokenLimit(input.user.id)
 			const aiCheck = await runHeuristicCheck(
 				input.buffer,
 				session.pendingCheckKeys,
@@ -153,6 +156,7 @@ export async function completeCheckSessionAiCheck(input: CompleteCheckSessionAiC
 	}
 
 	try {
+		await assertWithinTokenLimit(input.user.id)
 		const aiCheck = await runHeuristicCheck(
 			input.buffer,
 			session.pendingCheckKeys,

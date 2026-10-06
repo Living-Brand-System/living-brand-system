@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+// 한도 판정은 이 테스트의 대상이 아니다 — Payload 설정·DB를 끌어오지 않게 막아 둔다.
+vi.mock('@/modules/ai-usage/services/token-limit.service', () => ({
+	assertWithinTokenLimit: vi.fn(async () => {}),
+	TokenLimitExceededError: class TokenLimitExceededError extends Error {},
+}))
+
 const mocks = vi.hoisted(() => ({
 	env: {
 		GEMINI_API_KEY: undefined as string | undefined,

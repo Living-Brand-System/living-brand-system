@@ -151,11 +151,13 @@ export interface Config {
     guideline: Guideline;
     'agent-settings': AgentSetting;
     'better-editor-settings': BetterEditorSetting;
+    'ai-token-limits': AiTokenLimit;
   };
   globalsSelect: {
     guideline: GuidelineSelect<false> | GuidelineSelect<true>;
     'agent-settings': AgentSettingsSelect<false> | AgentSettingsSelect<true>;
     'better-editor-settings': BetterEditorSettingsSelect<false> | BetterEditorSettingsSelect<true>;
+    'ai-token-limits': AiTokenLimitsSelect<false> | AiTokenLimitsSelect<true>;
   };
   locale: 'ko' | 'en';
   widgets: {
@@ -1260,6 +1262,11 @@ export interface User {
    */
   role: 'admin' | 'manager' | 'worker';
   figmaToken?: string | null;
+  tokenLimits?: {
+    unlimited?: boolean | null;
+    daily?: number | null;
+    monthly?: number | null;
+  };
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -2962,6 +2969,13 @@ export interface AgentSkillsSelect<T extends boolean = true> {
 export interface UsersSelect<T extends boolean = true> {
   role?: T;
   figmaToken?: T;
+  tokenLimits?:
+    | T
+    | {
+        unlimited?: T;
+        daily?: T;
+        monthly?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -3187,6 +3201,17 @@ export interface BetterEditorSetting {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ai-token-limits".
+ */
+export interface AiTokenLimit {
+  id: number;
+  daily: number;
+  monthly: number;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "guideline_select".
  */
 export interface GuidelineSelect<T extends boolean = true> {
@@ -3230,6 +3255,17 @@ export interface BetterEditorSettingsSelect<T extends boolean = true> {
   hoverOutlineWidth?: T;
   showHoverToolbar?: T;
   hoverToolbarPosition?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ai-token-limits_select".
+ */
+export interface AiTokenLimitsSelect<T extends boolean = true> {
+  daily?: T;
+  monthly?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
