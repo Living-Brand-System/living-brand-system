@@ -693,13 +693,25 @@ describe('composeTemplateHtml canvas background', () => {
 	const childOf = (html: string) =>
 		parse(html).querySelector('[data-node-id="frame-1"]') as HTMLElement
 
-	it('색만 주면 루트 프레임의 배경색만 덮는다', () => {
+	it('색만 주면 루트 프레임의 배경색을 덮고 이미지는 걷는다', () => {
 		const html = composeTemplateHtml(canvasHtml, {}, { canvasBackground: { color: '#ff0000' } })
 
 		expect(rootOf(html).style.backgroundColor).toBe('rgb(255, 0, 0)')
-		expect(rootOf(html).style.backgroundImage).toBe('')
+		expect(rootOf(html).style.backgroundImage).toBe('none')
 		// 자식 프레임은 건드리지 않는다 — 배경의 주소는 캔버스뿐이다.
 		expect(childOf(html).style.backgroundColor).toBe('')
+	})
+
+	it('원본 루트에 사진이 깔려 있어도 색을 고르면 색이 보인다', () => {
+		// 가져온 루트 이미지 fill(SOLID 위 IMAGE) — 색만 덮으면 고른 색이 사진 아래에 깔려 안 보였다.
+		const photoHtml = canvasHtml.replace(
+			'background-color:rgb(0,40,10)',
+			'background-color:rgb(0,0,0);background-image:url(/api/application-images/file/sea.png)',
+		)
+		const html = composeTemplateHtml(photoHtml, {}, { canvasBackground: { color: '#ff0000' } })
+
+		expect(rootOf(html).style.backgroundColor).toBe('rgb(255, 0, 0)')
+		expect(rootOf(html).style.backgroundImage).toBe('none')
 	})
 
 	it('이미지만 주면 cover·center·no-repeat로 루트에 깐다', () => {

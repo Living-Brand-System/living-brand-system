@@ -507,6 +507,49 @@ describe('convertFigmaNodeToHtml — 박스 속성', () => {
 		expect(html).toContain('data-asset-id="21"')
 	})
 
+	// hd_lbs_templates Poster_Type3·4 — 프레임에 이미지 fill을 얹으면 검정 SOLID 위에 IMAGE가 쌓인다.
+	const posterFills = [
+		{ type: 'SOLID', color: { r: 0, g: 0, b: 0, a: 1 } },
+		{ type: 'IMAGE', imageRef: 'ref-9', scaleMode: 'FILL' },
+	]
+
+	it('SOLID 위 IMAGE fill을 background-color와 background-image로 낮춘다', () => {
+		const { html } = convertFigmaNodeToHtml(
+			boxNode({ fills: posterFills }),
+			{},
+			{
+				'ref-9': {
+					collection: 'application-images',
+					id: 21,
+					url: '/api/application-images/file/fill.png',
+				},
+			},
+		)
+		const s = rootStyle(html)
+		expect(s).toContain('background-color:rgb(0,0,0)')
+		expect(s).toContain('background-image:url(/api/application-images/file/fill.png)')
+		expect(s).toContain('background-size:cover')
+		expect(html).toContain('data-asset-id="21"')
+	})
+
+	it('SOLID 위 IMAGE fill 루트는 래스터로 굽지 않는다 — 자식 텍스트가 편집 가능하게 남는다', () => {
+		const plan = planFigmaAssets(
+			boxNode({
+				fills: posterFills,
+				children: [{ id: '1:2', name: 'title', type: 'TEXT', characters: 'H1 2026' }],
+			}),
+		)
+		expect(plan.renders).toEqual([])
+		expect(plan.diagnostics).toEqual([])
+		expect(plan.imageFills).toEqual([{ imageRef: 'ref-9', name: 'box' }])
+	})
+
+	it('IMAGE 위를 SOLID가 덮으면 CSS로 표현할 수 없어 여전히 래스터다', () => {
+		const plan = planFigmaAssets(boxNode({ fills: [...posterFills].reverse() }))
+		expect(plan.renders).toEqual([{ nodeId: '1:1', name: 'box', format: 'png' }])
+		expect(plan.diagnostics[0]?.reason).toBe('다른 fill과 겹친 IMAGE fill')
+	})
+
 	it('해석되지 않은 IMAGE fill은 배경 없이 구조만 유지한다', () => {
 		const { html } = convertFigmaNodeToHtml(
 			boxNode({ fills: [{ type: 'IMAGE', imageRef: 'ref-9' }] }),
