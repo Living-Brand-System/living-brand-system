@@ -3,12 +3,11 @@ import { AccountCard } from '@/components/auth/account-card'
 import { FigmaTokenCard } from '@/components/auth/figma-token-card'
 import { PayloadEntryLink } from '@/components/auth/payload-entry-link'
 import { McpKeyIssuer } from '@/components/studio/mcp/mcp-key-issuer'
-import { AiUsageCard } from '@/components/studio/usage/ai-usage-card'
+import { MyAiUsageCard } from '@/components/studio/usage/my-ai-usage-card'
 import { hasFigmaToken } from '@/features/template-import/services/figma-token.service'
 import { isManager, isPayloadUser } from '@/lib/auth'
 import { requireUser } from '@/lib/request-auth'
 import { loginHref, routes } from '@/lib/routes'
-import { parseAiUsageQuery } from '@/modules/ai-usage/ai-usage-query'
 import { getAiUsageBreakdown } from '@/modules/ai-usage/services/get-ai-usage-breakdown.service'
 
 // 렌더링: 매 요청. 로그인 계정을 읽으므로 캐시하지 않는다(docs/05).
@@ -20,17 +19,12 @@ export const dynamic = 'force-dynamic'
  * 🔑 비로그인이면 `requireUser`가 로그인으로 보내고 돌아온다. 그래서 헤더는 로그인 여부를 몰라도
  *    되고, `/`와 `/guideline`의 정적 렌더가 깨지지 않는다.
  */
-export default async function AccountPage({
-	searchParams,
-}: {
-	searchParams: Promise<Record<string, string | string[] | undefined>>
-}) {
+export default async function AccountPage() {
 	const { payload, user } = await requireUser(routes.account)
 	// MCP API 키 세션으로는 열 수 없다 — 계정 화면은 사람 계정의 것이므로 로그인으로 돌려보낸다.
 	if (!isPayloadUser(user)) redirect(loginHref(routes.account))
 
-	// 범위 제한은 repository가 소유한다 — manager가 아니면 쿼리 자체가 본인 행으로 좁혀진다.
-	const query = parseAiUsageQuery(await searchParams)
+	// 계정 화면은 본인 사용량만 보인다 — 전체 계정 보기는 매니저 화면이 맡는다.
 	const { rows, todayKey } = await getAiUsageBreakdown(user)
 	// Figma 가져오기는 manager 이상만 쓴다 — 쓸 수 없는 사람에게 토큰 칸을 보이지 않는다.
 	const figmaConnected = isManager(user) ? await hasFigmaToken(payload, user) : false
@@ -59,12 +53,8 @@ export default async function AccountPage({
 					{isManager(user) && <PayloadEntryLink />}
 				</div>
 				{/* 사용량은 계정에 매달린 **기록**이다 — 설정과 성격이 달라 자기 열을 갖는다. */}
-				<AiUsageCard
-					canSeeEveryone={isManager(user)}
-					query={query}
-					rows={rows}
-					todayKey={todayKey}
-				/>
+				{/* ponytail: 토큰 한도는 옆 팀 작업이 들어오면 tokenLimit으로 넘긴다 — 그전엔 분모가 없다. */}
+				<MyAiUsageCard rows={rows} todayKey={todayKey} userId={user.id} />
 			</div>
 		</main>
 	)
