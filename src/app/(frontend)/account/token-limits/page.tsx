@@ -7,6 +7,7 @@ import { isManager, isPayloadUser } from '@/lib/auth'
 import { requireUser } from '@/lib/request-auth'
 import { loginHref, routes } from '@/lib/routes'
 import { getTokenUsage } from '@/modules/ai-usage/services/token-limit.service'
+import { resolveDefaultTokenLimits } from '@/modules/ai-usage/token-limit'
 
 // 렌더링: 매 요청. 로그인 계정과 지금 사용량을 읽으므로 캐시하지 않는다(docs/05).
 export const dynamic = 'force-dynamic'
@@ -49,14 +50,15 @@ export default async function AccountTokenLimitsPage() {
 					</Typography>
 				</Link>
 				<TokenLimitsEditor
-					defaults={{ daily: defaults.daily ?? {}, monthly: defaults.monthly ?? {} }}
+					defaults={resolveDefaultTokenLimits(defaults)}
 					accounts={users.docs.map((doc) => ({
 						id: doc.id,
 						email: doc.email,
 						role: doc.role,
 						limits: {
-							daily: doc.tokenLimits?.daily ?? {},
-							monthly: doc.tokenLimits?.monthly ?? {},
+							unlimited: doc.tokenLimits?.unlimited ?? false,
+							daily: doc.tokenLimits?.daily ?? null,
+							monthly: doc.tokenLimits?.monthly ?? null,
 						},
 						usage: usage.get(doc.id) ?? { daily: 0, monthly: 0 },
 					}))}

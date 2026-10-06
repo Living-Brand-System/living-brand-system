@@ -3,20 +3,29 @@
  *
  * 🔑 한도는 두 기간을 따로 센다 — 일(한국 시간 0시~다음 날 0시)과 월(한국 시간 달력 월).
  *    둘 중 하나라도 닿으면 새 AI 요청을 막는다(사용자 결정 2026-10-06).
- * 🔑 값은 두 층이다 — 전체 기본값(전역 설정)과 계정별 설정. 계정이 「기본값 따름」이면 기본값을 쓴다.
- *    어느 층이든 「제한 없음」을 고를 수 있다.
+ * 🔑 값은 세 층이다(사용자 결정 2026-10-06).
+ *    - LBS 기본값(`DEFAULT_TOKEN_LIMITS`): 전역 설정을 한 번도 저장하지 않았을 때도 걸리는 값.
+ *    - 전체 기본값(전역 설정): 일·월 토큰 수. 항상 한도가 있다 — 「제한 없음」이 없다.
+ *    - 계정 설정: 비워 두면 기본값을 따르고, 숫자를 넣으면 그 값이다. 「한도 없음」을 켜면 두 기간 모두 무제한이다.
  */
 export const TOKEN_LIMIT_PERIODS = ['daily', 'monthly'] as const
 
 export type TokenLimitPeriod = (typeof TOKEN_LIMIT_PERIODS)[number]
 
-/** 전체 기본값 한 기간 — 제한 없음이거나 토큰 수다. */
-export type DefaultTokenLimit = { mode?: 'unlimited' | 'limit' | null; tokens?: number | null }
+/**
+ * LBS 자체의 기본값 — 전역 설정이 비어 있어도 한도는 항상 있다. 전역 설정 필드의 기본값도 이것을 읽는다.
+ */
+export const DEFAULT_TOKEN_LIMITS: Record<TokenLimitPeriod, number> = {
+	daily: 100_000,
+	monthly: 1_000_000,
+}
 
-/** 계정 설정 한 기간 — 기본값을 따르거나, 제한 없음이거나, 토큰 수다. */
-export type AccountTokenLimit = {
-	mode?: 'default' | 'unlimited' | 'limit' | null
-	tokens?: number | null
+/** 전체 기본값 — 아직 한 번도 저장하지 않았으면 비어 있을 수 있다(그때는 `DEFAULT_TOKEN_LIMITS`). */
+export type DefaultTokenLimits = Partial<Record<TokenLimitPeriod, number | null>>
+
+/** 계정 설정 — 비운 기간은 기본값을 따른다. */
+export type AccountTokenLimits = Partial<Record<TokenLimitPeriod, number | null>> & {
+	unlimited?: boolean | null
 }
 
 export type TokenUsage = Record<TokenLimitPeriod, number>
@@ -29,28 +38,29 @@ export const TOKEN_LIMIT_PERIOD_LABELS: Record<TokenLimitPeriod, string> = {
 	monthly: '이번 달',
 }
 
-/**
- * 한 기간의 유효 한도. 계정이 정하지 않았으면(또는 「기본값 따름」이면) 기본값을 쓴다.
- * 🔴 「한도 지정」인데 숫자가 없으면 제한 없음으로 읽는다 — 저장 검증이 막지만, 막기 전에 들어간 값이
- *    모든 요청을 막아 버리는 쪽보다 안전하다.
- */
-export function resolveTokenLimit(
-	account: AccountTokenLimit | null | undefined,
-	fallback: DefaultTokenLimit | null | undefined,
-): number | null {
-	const setting = !account?.mode || account.mode === 'default' ? fallback : account
-	return setting?.mode === 'limit' && typeof setting.tokens === 'number' && setting.tokens > 0
-		? setting.tokens
-		: null
+const positive = (value: number | null | undefined) =>
+	typeof value === 'number' && value > 0 ? value : null
+
+/** 지금 걸리는 전체 기본값 — 저장된 전역 설정, 없으면 LBS 기본값. */
+export function resolveDefaultTokenLimits(
+	defaults: DefaultTokenLimits | null | undefined,
+): Record<TokenLimitPeriod, number> {
+	return {
+		daily: positive(defaults?.daily) ?? DEFAULT_TOKEN_LIMITS.daily,
+		monthly: positive(defaults?.monthly) ?? DEFAULT_TOKEN_LIMITS.monthly,
+	}
 }
 
+/** 계정의 유효 한도. 「한도 없음」이면 두 기간 모두 무제한이고, 아니면 계정 값 → 기본값 순으로 쓴다. */
 export function resolveTokenLimits(
-	account: Partial<Record<TokenLimitPeriod, AccountTokenLimit | null>> | null | undefined,
-	fallback: Partial<Record<TokenLimitPeriod, DefaultTokenLimit | null>> | null | undefined,
+	account: AccountTokenLimits | null | undefined,
+	defaults: DefaultTokenLimits | null | undefined,
 ): TokenLimits {
+	if (account?.unlimited) return { daily: null, monthly: null }
+	const fallback = resolveDefaultTokenLimits(defaults)
 	return {
-		daily: resolveTokenLimit(account?.daily, fallback?.daily),
-		monthly: resolveTokenLimit(account?.monthly, fallback?.monthly),
+		daily: positive(account?.daily) ?? fallback.daily,
+		monthly: positive(account?.monthly) ?? fallback.monthly,
 	}
 }
 
@@ -66,4 +76,19 @@ export function exceededTokenPeriod(
 	if (reached('monthly')) return 'monthly'
 	if (reached('daily')) return 'daily'
 	return null
+}
+
+/** 사용 비율(0~1). 무제한이면 `null`이다 — 그래프를 그리지 않는다. */
+export function tokenUsageRatio(used: number, limit: number | null): number | null {
+	return limit === null ? null : Math.min(used / limit, 1)
+}
+
+/**
+ * 한도 입력칸의 글자를 토큰 수로 읽는다 — 빈칸은 `null`(기본값을 따름), 1 이상의 정수는 그 수다.
+ * 콤마·앞뒤 공백은 허용한다. 그 밖(0, 음수, 소수, 글자 섞임)은 `undefined` — 반영하지 않고 직전 값으로 돌린다.
+ */
+export function parseTokenInput(text: string): number | null | undefined {
+	const raw = text.replaceAll(',', '').trim()
+	if (raw === '') return null
+	return /^[1-9]\d*$/.test(raw) ? Number(raw) : undefined
 }

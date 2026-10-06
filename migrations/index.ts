@@ -125,7 +125,7 @@ import * as migration_20260930_101346_remove_guideline_legacy_access from './202
 import * as migration_20261001_003924_purge_guideline_legacy_data from './20261001_003924_purge_guideline_legacy_data';
 import * as migration_20261002_005206_add_brand_color_pairs from './20261002_005206_add_brand_color_pairs';
 import * as migration_20261002_070438_add_guideline_descriptions from './20261002_070438_add_guideline_descriptions';
-import * as migration_20261006_022527_add_ai_token_limits from './20261006_022527_add_ai_token_limits';
+import * as migration_20261006_025511_add_ai_token_limits from './20261006_025511_add_ai_token_limits';
 
 export const migrations = [
   {
@@ -764,8 +764,8 @@ export const migrations = [
     name: '20261002_070438_add_guideline_descriptions',
   },
   {
-    up: migration_20261006_022527_add_ai_token_limits.up,
-    down: migration_20261006_022527_add_ai_token_limits.down,
-    name: '20261006_022527_add_ai_token_limits'
+    up: migration_20261006_025511_add_ai_token_limits.up,
+    down: migration_20261006_025511_add_ai_token_limits.down,
+    name: '20261006_025511_add_ai_token_limits'
   },
 ];

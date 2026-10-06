@@ -1252,20 +1252,9 @@ export interface User {
   role: 'admin' | 'manager' | 'worker';
   figmaToken?: string | null;
   tokenLimits?: {
-    daily?: {
-      mode?: ('default' | 'unlimited' | 'limit') | null;
-      /**
-       * 이 기간에 쓸 수 있는 합계 토큰 수입니다.
-       */
-      tokens?: number | null;
-    };
-    monthly?: {
-      mode?: ('default' | 'unlimited' | 'limit') | null;
-      /**
-       * 이 기간에 쓸 수 있는 합계 토큰 수입니다.
-       */
-      tokens?: number | null;
-    };
+    unlimited?: boolean | null;
+    daily?: number | null;
+    monthly?: number | null;
   };
   updatedAt: string;
   createdAt: string;
@@ -2973,18 +2962,9 @@ export interface UsersSelect<T extends boolean = true> {
   tokenLimits?:
     | T
     | {
-        daily?:
-          | T
-          | {
-              mode?: T;
-              tokens?: T;
-            };
-        monthly?:
-          | T
-          | {
-              mode?: T;
-              tokens?: T;
-            };
+        unlimited?: T;
+        daily?: T;
+        monthly?: T;
       };
   updatedAt?: T;
   createdAt?: T;
@@ -3215,20 +3195,8 @@ export interface BetterEditorSetting {
  */
 export interface AiTokenLimit {
   id: number;
-  daily?: {
-    mode?: ('unlimited' | 'limit') | null;
-    /**
-     * 이 기간에 쓸 수 있는 합계 토큰 수입니다.
-     */
-    tokens?: number | null;
-  };
-  monthly?: {
-    mode?: ('unlimited' | 'limit') | null;
-    /**
-     * 이 기간에 쓸 수 있는 합계 토큰 수입니다.
-     */
-    tokens?: number | null;
-  };
+  daily: number;
+  monthly: number;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -3286,18 +3254,8 @@ export interface BetterEditorSettingsSelect<T extends boolean = true> {
  * via the `definition` "ai-token-limits_select".
  */
 export interface AiTokenLimitsSelect<T extends boolean = true> {
-  daily?:
-    | T
-    | {
-        mode?: T;
-        tokens?: T;
-      };
-  monthly?:
-    | T
-    | {
-        mode?: T;
-        tokens?: T;
-      };
+  daily?: T;
+  monthly?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

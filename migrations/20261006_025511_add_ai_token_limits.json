@@ -18701,30 +18701,21 @@
           "primaryKey": false,
           "notNull": false
         },
-        "token_limits_daily_mode": {
-          "name": "token_limits_daily_mode",
-          "type": "enum_users_token_limits_daily_mode",
-          "typeSchema": "public",
+        "token_limits_unlimited": {
+          "name": "token_limits_unlimited",
+          "type": "boolean",
           "primaryKey": false,
           "notNull": false,
-          "default": "'default'"
+          "default": false
         },
-        "token_limits_daily_tokens": {
-          "name": "token_limits_daily_tokens",
+        "token_limits_daily": {
+          "name": "token_limits_daily",
           "type": "numeric",
           "primaryKey": false,
           "notNull": false
         },
-        "token_limits_monthly_mode": {
-          "name": "token_limits_monthly_mode",
-          "type": "enum_users_token_limits_monthly_mode",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'default'"
-        },
-        "token_limits_monthly_tokens": {
-          "name": "token_limits_monthly_tokens",
+        "token_limits_monthly": {
+          "name": "token_limits_monthly",
           "type": "numeric",
           "primaryKey": false,
           "notNull": false
@@ -21922,33 +21913,19 @@
           "primaryKey": true,
           "notNull": true
         },
-        "daily_mode": {
-          "name": "daily_mode",
-          "type": "enum_ai_token_limits_daily_mode",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'unlimited'"
-        },
-        "daily_tokens": {
-          "name": "daily_tokens",
+        "daily": {
+          "name": "daily",
           "type": "numeric",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": 100000
         },
-        "monthly_mode": {
-          "name": "monthly_mode",
-          "type": "enum_ai_token_limits_monthly_mode",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'unlimited'"
-        },
-        "monthly_tokens": {
-          "name": "monthly_tokens",
+        "monthly": {
+          "name": "monthly",
           "type": "numeric",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": 1000000
         },
         "updated_at": {
           "name": "updated_at",
@@ -23239,24 +23216,6 @@
         "worker"
       ]
     },
-    "public.enum_users_token_limits_daily_mode": {
-      "name": "enum_users_token_limits_daily_mode",
-      "schema": "public",
-      "values": [
-        "default",
-        "unlimited",
-        "limit"
-      ]
-    },
-    "public.enum_users_token_limits_monthly_mode": {
-      "name": "enum_users_token_limits_monthly_mode",
-      "schema": "public",
-      "values": [
-        "default",
-        "unlimited",
-        "limit"
-      ]
-    },
     "public.enum_payload_jobs_log_task_slug": {
       "name": "enum_payload_jobs_log_task_slug",
       "schema": "public",
@@ -23322,22 +23281,6 @@
         "bottom-right",
         "bottom-left"
       ]
-    },
-    "public.enum_ai_token_limits_daily_mode": {
-      "name": "enum_ai_token_limits_daily_mode",
-      "schema": "public",
-      "values": [
-        "unlimited",
-        "limit"
-      ]
-    },
-    "public.enum_ai_token_limits_monthly_mode": {
-      "name": "enum_ai_token_limits_monthly_mode",
-      "schema": "public",
-      "values": [
-        "unlimited",
-        "limit"
-      ]
     }
   },
   "schemas": {},
@@ -23350,6 +23293,6 @@
     "tables": {},
     "columns": {}
   },
-  "id": "df747541-e5fb-4586-af1b-764f3ccf2029",
+  "id": "bb036865-e788-400f-8270-060887e47b59",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }
