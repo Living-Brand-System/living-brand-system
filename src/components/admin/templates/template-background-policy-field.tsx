@@ -91,6 +91,9 @@ export function TemplateBackgroundPolicyField({ path }: Props) {
 
 	const types = policy.types ?? TYPE_ROWS.map((row) => row.value)
 	const allows = (type: TemplateBackgroundType) => types.includes(type)
+	// 스튜디오가 실제로 시작하는 형식 — 지정값이 허용 밖이면 첫 허용 형식이다(buildBackgroundGroup과 같은 규칙).
+	const defaultType =
+		policy.defaultType && allows(policy.defaultType) ? policy.defaultType : types[0]
 
 	function patch(next: Partial<TemplateBackgroundPolicy>) {
 		setValue({ ...policy, ...next })
@@ -123,10 +126,28 @@ export function TemplateBackgroundPolicyField({ path }: Props) {
 									next.includes(type),
 								)
 								if (ordered.length === 0) return
-								patch({ types: ordered })
+								// 기본 형식을 끄면 지정값도 걷는다 — 허용 밖의 기본값을 저장해 두지 않는다.
+								patch({
+									types: ordered,
+									...(policy.defaultType && !ordered.includes(policy.defaultType)
+										? { defaultType: undefined }
+										: {}),
+								})
 							}}
 						/>
 					</Controller.Row>
+					{/* 고를 형식이 하나면 기본값도 그것뿐이라 묻지 않는다. */}
+					{types.length > 1 ? (
+						<Controller.Row label="기본 형식">
+							<Controller.Segmented
+								aria-label="기본 형식"
+								options={TYPE_ROWS.filter((row) => allows(row.value))}
+								disabled={disabled}
+								value={defaultType}
+								onChange={(next) => patch({ defaultType: next })}
+							/>
+						</Controller.Row>
+					) : null}
 				</Controller.Group>
 
 				{/* 형식과 같은 정책 언어 — 미지정은 허용, false만 금지(기존 저장분 호환). */}
