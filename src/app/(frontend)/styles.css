@@ -3,6 +3,7 @@
 @import "tw-animate-css";
 @import "./typeset.css";
 @import "./theme.css";
+@import "../color-tokens.css";
 
 @utility scrollbar-none {
 	scrollbar-width: none;

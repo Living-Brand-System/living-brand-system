@@ -37,16 +37,16 @@ Payload Admin 기본 화면은 이 문서의 대상이 아닙니다. Payload가 
 
 | 토큰군 | 의미 | 소유 파일(SoT) |
 | --- | --- | --- |
-| L0 원시 팔레트 | Tailwind 기본 팔레트(neutral 50~950·white·black·상태색 계열) + HD 팔레트(`--color-hd-*`, `@theme` 등록). 컴포넌트는 직접 쓰지 않는다 | `tailwindcss/theme.css`, `src/app/(frontend)/theme.css` |
-| L1 shadcn 세트 | `:root`(라이트)·`.dark`(다크)의 shadcn 표준 슬롯(background·primary·muted·border·chart-1~5·sidebar-* 등). 값은 L0 참조만 | `src/app/(frontend)/theme.css`, `src/app/(payload)/admin-tailwind.css` |
-| color 유틸 매핑 | L1·L2 → `@theme inline`의 `--color-*` 유틸 토큰 | `src/app/(frontend)/theme.css`, `src/app/(payload)/admin-tailwind.css` |
-| inverted | 반전 표면과 그 전경의 짝 `--inverted`/`--inverted-foreground` | `src/app/(frontend)/theme.css` |
-| action-hover-foreground | 액션의 호버·포커스 전경색. 눌림은 기존 `foreground`를 사용 | `src/app/(frontend)/theme.css` |
-| chart-1~5 | HD 초록 다섯 단(prosperity·heritage·eco·deep·light, 다크는 4·5 교대). 번호가 계약 — 사용량 막대·일자 스트립·카메라 궤도 축이 번호로 집는다 | `src/app/(frontend)/theme.css` |
-| 상태색 | 판정·상태 표시 전용 `--success`/`--info`/`--warning`(실패는 기존 `--destructive`, 해당 없음은 `--muted`). Admin 확장은 같은 이름을 Payload 테마에 매핑 | `src/app/(frontend)/theme.css`, `src/app/(payload)/admin-tailwind.css` |
-| highlight | 강조 배경과 전경 토큰, `bg-highlight` 유틸. Frontend는 gradient, Admin은 Payload success 색에 매핑 | `src/app/(frontend)/theme.css`, `src/app/(payload)/admin-tailwind.css` |
+| L0 원시 팔레트 | Tailwind 기본 팔레트(neutral 50~950·white·black·상태색 계열) + HD 팔레트(`--color-hd-*`, `@theme` 등록). 컴포넌트는 직접 쓰지 않는다 | `tailwindcss/theme.css`, `src/app/color-tokens.css` |
+| L1 shadcn 세트 | `:root`(라이트)·`.dark`/`[data-theme="dark"]`(다크)의 shadcn 표준 슬롯(background·primary·muted·border·chart-1~5·sidebar-* 등). 값은 L0 참조만. **앱과 어드민이 같은 파일을 import한다** | `src/app/color-tokens.css` |
+| color 유틸 매핑 | L1·L2 → `@theme inline`의 `--color-*` 유틸 토큰 | `src/app/color-tokens.css` |
+| inverted | 반전 표면과 그 전경의 짝 `--inverted`/`--inverted-foreground` | `src/app/color-tokens.css` |
+| action-hover-foreground | 액션의 호버·포커스 전경색. 눌림은 기존 `foreground`를 사용 | `src/app/color-tokens.css` |
+| chart-1~5 | HD 초록 다섯 단(prosperity·heritage·eco·deep·light, 다크는 4·5 교대). 번호가 계약 — 사용량 막대·일자 스트립·카메라 궤도 축·어드민 대시보드가 번호로 집는다 | `src/app/color-tokens.css` |
+| 상태색 | 판정·상태 표시 전용 `--success`/`--info`/`--warning`(실패는 기존 `--destructive`, 해당 없음은 `--muted`) | `src/app/color-tokens.css` |
+| highlight | 강조 배경(그라디언트)과 전경 토큰, `.bg-highlight` 클래스. 앱·어드민 공통 | `src/app/color-tokens.css` |
 | radius | `--radius` 뿌리 1개에서 `--radius-sm/md/lg/xl/2xl/3xl` 6단 파생(`lg`는 뿌리값, 나머지는 calc) | `src/app/(frontend)/theme.css`, `src/app/(payload)/admin-tailwind.css` |
-| studio-rail-idle-foreground | StudioRail의 Idle 아이콘 전경색 | `src/app/(frontend)/theme.css` |
+| studio-rail-idle-foreground | StudioRail의 Idle 아이콘 전경색 | `src/app/color-tokens.css` |
 | controller-pad radius | Position 컴파운드 내부 패드의 `--radius-controller-pad` 파생 토큰 | `src/app/(frontend)/theme.css` |
 | 폰트 패밀리 | `--font-body`(Pretendard), `--font-title`(**미정 — Pretendard로 폴백.** 토큰과 `.font-title`은 자리를 지키고 있으니 서체가 정해지면 값만 바꿉니다), `HD`(CI 락업 워드마크 전용 @font-face) | `src/app/(frontend)/theme.css` |
 | 루트 크기 | 모든 화면에서 고정된 16px `rem` 기준 크기 | `src/app/(frontend)/styles.css`의 `html` |
@@ -55,7 +55,7 @@ Payload Admin 기본 화면은 이 문서의 대상이 아닙니다. Payload가 
 
 `--radius`는 뿌리 토큰 하나이고 나머지 6단은 그것을 기준으로 파생합니다(`--radius-lg`는 뿌리값 그대로, 나머지는 `calc()`; `theme.css`). radius를 조정할 때는 파생값이 아니라 뿌리 하나만 바꿉니다.
 
-Frontend의 `highlight`는 Figma 강조 스타일을 옮긴 그라디언트입니다. `bg-highlight`가 가로 밴드를 2배로 늘려 왼쪽에서 오른쪽으로 반복 이동시키고, 모션 감소 설정에서는 정지합니다. Admin은 같은 유틸 이름을 Payload success 색에 매핑합니다. Badge와 Button은 `bg-highlight`와 `text-highlight-foreground`를 함께 사용하며, 개별 컴포넌트에서 색이나 gradient stop을 다시 선언하지 않습니다.
+Frontend의 `highlight`는 Figma 강조 스타일을 옮긴 그라디언트입니다. `bg-highlight`가 가로 밴드를 2배로 늘려 왼쪽에서 오른쪽으로 반복 이동시키고, 모션 감소 설정에서는 정지합니다. 어드민도 같은 클래스를 씁니다(2026-10-06 전까지는 Payload success 색에 매핑돼 있었습니다). Badge와 Button은 `bg-highlight`와 `text-highlight-foreground`를 함께 사용하며, 개별 컴포넌트에서 색이나 gradient stop을 다시 선언하지 않습니다.
 
 ## 4. 닫힌 토큰 규칙
 
@@ -66,9 +66,10 @@ Frontend의 `highlight`는 Figma 강조 스타일을 옮긴 그라디언트입�
 토큰은 2단 인디렉션을 거칩니다.
 
 ```text
-원시 oklch (theme.css :root / .dark)
-  → @theme inline --color-* (theme.css)
-    → Tailwind 유틸 (bg-primary, text-foreground, ...)
+L0 원시 팔레트 (tailwindcss/theme.css, color-tokens.css의 --color-hd-*)
+  → L1·L2 슬롯 (color-tokens.css :root / .dark·[data-theme="dark"])
+    → @theme inline --color-* (color-tokens.css)
+      → Tailwind 유틸 (bg-primary, text-foreground, ...)
 ```
 
 `className`/`style` 리터럴에서 다음은 금지합니다.
@@ -77,7 +78,7 @@ Frontend의 `highlight`는 Figma 강조 스타일을 옮긴 그라디언트입�
 - 생 Tailwind 팔레트 + 숫자 — 무채색(`neutral`/`gray`/`zinc`/`slate`/`stone`)만이 아니라 **유채색 전체**(`emerald`, `sky`, `amber`, `orange` 등)를 포함합니다. 🔴 숫자가 없는 `white`·`black`도 같습니다 — 탐지 grep이 숫자만 보고 있어 `bg-white`가 실제로 통과한 적이 있습니다(2026-08-12, shadcn slider). `bg-emerald-500/15`처럼 유채 팔레트로 상태를 칠하는 것도 위반입니다.
 - `.tsx` 안의 `oklch(...)` 리터럴
 
-성공/정보/경고/실패 같은 **판정·상태 표시는 상태 토큰만** 사용합니다: `--success`/`--info`/`--warning`/`--destructive`(해당 없음은 `muted`). 사용 형태는 destructive 선례를 따릅니다 — pill은 `bg-success/15 text-success`, dot은 `bg-success`. 상태 토큰으로 표현할 수 없는 새 상태가 생기면 팔레트로 우회하지 말고 이 문서와 `theme.css`에 토큰을 추가합니다.
+성공/정보/경고/실패 같은 **판정·상태 표시는 상태 토큰만** 사용합니다: `--success`/`--info`/`--warning`/`--destructive`(해당 없음은 `muted`). 사용 형태는 destructive 선례를 따릅니다 — pill은 `bg-success/15 text-success`, dot은 `bg-success`. 상태 토큰으로 표현할 수 없는 새 상태가 생기면 팔레트로 우회하지 말고 이 문서와 `color-tokens.css`에 토큰을 추가합니다.
 
 **예외:** 색 자체를 데이터로 다루는 컴포넌트(`ColorSwatch`, `ColorPalette` 등)가 props나 CMS로 받는 hex는 스타일이 아니라 **데이터**이므로 허용합니다. 이때 hex는 코드에 고정되지 않고 주입됩니다.
 
@@ -91,7 +92,7 @@ rg -n '#[0-9a-fA-F]{3,8}\b|(?:bg|text|border|ring|fill|from|to|via)-(?:(?:red|or
 
 ## 5. 다크 모드와 브랜드 오버라이드
 
-다크 모드는 `.dark` **클래스** 방식입니다. `prefers-color-scheme` 미디어 쿼리가 아니라, `@custom-variant dark (&:where(.dark, .dark *))`(`theme.css`)로 정의하고, `next-themes`의 `ThemeProvider`를 `attribute="class"` + `defaultTheme="system"` + `enableSystem`(`layout.tsx`)으로 구동합니다. 시스템 설정은 `next-themes`가 읽어 `.dark` 클래스로 변환하므로, 원시값은 라이트가 `:root, .light`(`theme.css`), 다크가 `.dark`(`theme.css`) 한 곳에서만 갈립니다.
+다크 모드는 `.dark` **클래스** 방식입니다. `prefers-color-scheme` 미디어 쿼리가 아니라, `@custom-variant dark (&:where(.dark, .dark *))`(`theme.css`)로 정의하고, `next-themes`의 `ThemeProvider`를 `attribute="class"` + `defaultTheme="system"` + `enableSystem`(`layout.tsx`)으로 구동합니다. 시스템 설정은 `next-themes`가 읽어 `.dark` 클래스로 변환하므로, 원시값은 라이트가 `:root, .light`, 다크가 `.dark, [data-theme="dark"]`(둘 다 `color-tokens.css`) 한 곳에서만 갈립니다. `[data-theme="dark"]`는 Payload 어드민의 다크 스위치입니다.
 
 `:root`가 `.light`와 블록을 공유하는 것은 **부분 트리에 라이트 토큰을 다시 선언할 수 있게** 하기 위한 것입니다. 값을 복제하지 않고 선택자만 늘렸습니다.
 
@@ -103,18 +104,18 @@ rg -n '#[0-9a-fA-F]{3,8}\b|(?:bg|text|border|ring|fill|from|to|via)-(?:(?:red|or
 
 🔴 이 스코프 전환은 토큰만 되돌립니다. `dark:` 유틸은 `.dark *` **후손** 선택자라 다크 페이지 안의 밝은 섬에서도 여전히 걸립니다. §4가 컴포넌트에서 `dark:` 팔레트 클래스를 금지하는 이유가 여기서 한 번 더 성립합니다.
 
-**색 토큰은 3층입니다(2026-10-06).** L0 원시 팔레트 → L1 shadcn 세트 → L2 확장. 구조와 규칙은 `theme.css` 머리 주석이 소유합니다. 요점만:
+**색 토큰은 3층입니다(2026-10-06).** L0 원시 팔레트 → L1 shadcn 세트 → L2 확장. 구조와 규칙은 `color-tokens.css` 머리 주석이 소유합니다. 요점만:
 
 - **L1·L2 값은 L0 참조만** 씁니다(`--muted: var(--color-neutral-100)`). oklch·hex 리터럴을 적지 않습니다 — 숫자를 베끼면 L0와의 관계가 안 보이고, 그 틈으로 단계 밖 값(옛 다크 배경 `#121212`)이 섞였습니다. 예외는 작품 그라디언트(`--highlight-background`)뿐입니다.
 - **중립색은 Tailwind neutral 단계만** 씁니다. shadcn 다크 기본값의 흰색 알파 테두리도 neutral 단계(border 800·input 700)로 바꿨습니다.
 - **L1은 shadcn 슬롯을 그대로 유지**합니다. 쓰지 않는 슬롯(`secondary`·`sidebar-primary`)도 지우지 않습니다 — shadcn 컴포넌트를 새로 받을 때 그 이름을 전제합니다. 같은 값을 가진 슬롯이 여럿인 것(`muted`=`secondary`=`accent`)도 shadcn neutral 기본 구성입니다.
 - **L2 확장은 shadcn 규약**(같은 파일, `@theme inline` 등록)을 따릅니다: `inverted`·`action-hover-foreground`·상태색·`highlight`·`studio-rail-idle-foreground`.
-- **브랜드 색은 shadcn 슬롯으로만 들어옵니다.** `primary`는 브랜드 색이 아니라 neutral-900입니다(시안의 기본 버튼이 검정). HD 색은 L0 `--color-hd-*`에 등록하고 `chart-1~5`가 받습니다. 값의 정본은 `scripts/seed-hd-brand-colors.ts`이고 `theme.css`는 그 사본입니다. 🔴 Figma 변수의 hex는 seed와 대조한 뒤 옮깁니다 — 둘이 갈라진 전례가 있습니다(HD LIGHT BLUE).
+- **브랜드 색은 shadcn 슬롯으로만 들어옵니다.** `primary`는 브랜드 색이 아니라 neutral-900입니다(시안의 기본 버튼이 검정). HD 색은 L0 `--color-hd-*`에 등록하고 `chart-1~5`가 받습니다. 값의 정본은 `scripts/seed-hd-brand-colors.ts`이고 `color-tokens.css`는 그 사본입니다. 🔴 Figma 변수의 hex는 seed와 대조한 뒤 옮깁니다 — 둘이 갈라진 전례가 있습니다(HD LIGHT BLUE).
 - 예전에는 가이드라인 설정(`primaryColor`)이 `layout.tsx`에서 `--primary`를 덮었습니다. HD 전용이 되며 걷었습니다 — admin에서 색 하나를 바꾸면 버튼 40여 곳이 함께 바뀌는 통로였습니다. 필드는 MCP가 아직 읽으므로 남아 있습니다.
 
 `accent`, `secondary`, `ring`은 중립 단계로 고정되어 있습니다(🔴 `--accent`는 `--muted`와 **같은 값**입니다 — hover가 `bg-muted`이므로 `accent`로 선택 상태를 칠하면 선택과 hover가 구별되지 않습니다. 채워진 상태는 `primary` 짝을 씁니다).
 
-🔴 Payload 어드민(`admin-tailwind.css`)은 아직 이 구조 밖입니다 — shadcn 세트를 Payload 테마 변수(`--theme-elevation-*`)에 매핑하고, `.lbs-kit`은 어드민 정본(83:1554)의 알파 중립색을 따로 씁니다. 통합은 별도 단계입니다.
+**어드민도 같은 토큰을 읽습니다(2026-10-06).** `admin-tailwind.css`가 `color-tokens.css`를 import해, 어드민에 올린 우리 컴포넌트(대시보드·필드·컨트롤러 킷·`components/ui`)는 앱과 같은 색입니다. Payload 자체 화면(목록·폼 크롬)은 여전히 Payload 회색(`--theme-elevation-*`)이라 둘 사이에 미세한 회색 차이가 있습니다 — 의도한 경계입니다. 예전 구조의 함정 하나: 어드민의 `@theme inline`이 Payload 변수로 **값을 직접** 컴파일했기 때문에, `.lbs-kit`에서 `--color-*`를 덮어쓴 것은 유틸에 아무 효과가 없었습니다(`@theme inline`은 변수 이름이 아니라 값을 유틸에 박는다).
 
 ## 6. 타이포그래피와 프리미티브 소재
 
@@ -242,7 +243,7 @@ CMS `section`·`base`·`overview`·`examples`는 `CardBlock` 어댑터가 같은
 | 층 | 채택 | 비고 |
 | --- | --- | --- |
 | 프레임워크 | Next.js (App Router) | 라우트별 렌더링 방식은 **선언**합니다(`docs/05` 「렌더링 캐시 무효화」) |
-| 스타일 엔진 | Tailwind CSS v4 — **CSS-first** | `tailwind.config`가 없습니다. 토큰은 `theme.css`의 `@theme inline` |
+| 스타일 엔진 | Tailwind CSS v4 — **CSS-first** | `tailwind.config`가 없습니다. 토큰은 `color-tokens.css`(색)·`theme.css`(그 밖)의 `@theme inline` |
 | 컴포넌트 | **shadcn/ui** (`base: radix`) | 라이브러리가 아니라 **소스 복사본**입니다. `src/components/ui`를 우리가 소유 |
 | 동작·접근성 | **Radix** | shadcn 아래층. WAI-ARIA APG 패턴 구현체 |
 | variant | `class-variance-authority` | 원형은 `docs/10` §3 |
@@ -304,7 +305,8 @@ look은 언젠가 전부 바뀝니다. 그러므로 **겉모습이 어설픈 것
 | 표본 면(테마 면·브랜드 면) | `features/guideline/cards/displays/dynamics/surface.ts` |
 | 수치·캡션 줄 | `features/guideline/cards/displays/dynamics/readout.ts` |
 | hairline 격자 | `features/guideline/cards/displays/dynamics/hairline.ts` |
-| 색·간격·radius·타입 원시값 | `app/(frontend)/theme.css` |
+| 색 원시값 | `app/color-tokens.css` |
+| 간격·radius·타입 원시값 | `app/(frontend)/theme.css` |
 
 🔴 이 목록이 늘어나는 것은 정상이고, **같은 요소가 두 자리에 생기는 것은 결함입니다.** `features/guideline/cards/displays/dynamics/visual-vocabulary.test.ts`가 `features/guideline` 전체(블록·카드·컴포넌트·위젯)를 훑어 색에 대해서만 이것을 지킵니다 — 다른 축은 아직 사람이 봅니다.
 

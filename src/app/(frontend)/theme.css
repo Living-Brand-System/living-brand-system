@@ -118,26 +118,8 @@
 	}
 }
 
-/*
- * 색 토큰은 3층이다(docs/09 §4).
- *   L0 원시 팔레트 — Tailwind 기본 팔레트(neutral 50~950·white·black·상태색) + 아래 HD 팔레트.
- *   L1 shadcn 세트 — 이름과 구성은 shadcn 그대로(안 쓰는 슬롯도 지운다고 얻는 게 없다). 값은 L0 참조만.
- *   L2 확장 — shadcn 규약(같은 파일, @theme inline 등록)을 따르는 것만 더한다.
- * 🔴 L1·L2에 oklch·hex 리터럴을 적지 않는다. 숫자를 베끼면 L0와의 관계가 안 보이고, 그 틈으로
- *    단계 밖 값(옛 다크 배경 #121212)이 섞여 들어왔다.
- * 🔴 컴포넌트는 L0을 직접 쓰지 않는다(`bg-neutral-100`·`bg-hd-*` 금지) — L1·L2 이름만 쓴다.
- */
-
-/* HD 팔레트 — 제품이 HD 전용이 되어(2026-10-06) Tailwind 팔레트처럼 L0에 등록한다.
-   값의 정본은 `scripts/seed-hd-brand-colors.ts`이고 여기는 그 사본이다 — 한쪽을 고치면 다른 쪽도 고친다.
-   쓰는 색만 등록한다. 새 색이 필요하면 seed와 대조해 더한다(Figma 변수는 정본과 갈라진 전례가 있다). */
-@theme {
-	--color-hd-prosperity-green: #007332;
-	--color-hd-heritage-green: #00af41;
-	--color-hd-eco-green: #73d75a;
-	--color-hd-light-green: #dcf5d2;
-	--color-hd-deep-green: #00280a;
-}
+/* 색 토큰(L0 HD 팔레트·L1 shadcn 세트·L2 확장·highlight)은 `src/app/color-tokens.css`가 소유한다 —
+   어드민과 함께 쓰기 위해 이 파일 밖으로 뺐다. 여기는 색이 아닌 테마 값(서체·크기·radius·기하)만 갖는다. */
 
 @theme inline {
 	--font-body: "Pretendard", system-ui, sans-serif;
@@ -148,46 +130,6 @@
 	/* 본문·컨트롤의 기준 크기. Tailwind 기본은 14px이고 이 제품은 13px을 쓴다.
 	   line-height는 기본 비율(calc(1.25 / 0.875) ≈ 1.43)을 그대로 두어 크기에 따라 함께 줄어든다. */
 	--text-sm: 0.8125rem;
-	--color-background: var(--background);
-	--color-foreground: var(--foreground);
-	--color-action-hover-foreground: var(--action-hover-foreground);
-	--color-inverted: var(--inverted);
-	--color-inverted-foreground: var(--inverted-foreground);
-	--color-card: var(--card);
-	--color-card-foreground: var(--card-foreground);
-	--color-popover: var(--popover);
-	--color-popover-foreground: var(--popover-foreground);
-	--color-primary: var(--primary);
-	--color-primary-foreground: var(--primary-foreground);
-	--color-highlight-foreground: var(--highlight-foreground);
-	--color-secondary: var(--secondary);
-	--color-secondary-foreground: var(--secondary-foreground);
-	--color-muted: var(--muted);
-	--color-muted-foreground: var(--muted-foreground);
-	--color-studio-rail-idle-foreground: var(--studio-rail-idle-foreground);
-	--color-accent: var(--accent);
-	--color-accent-foreground: var(--accent-foreground);
-	--color-destructive: var(--destructive);
-	--color-success: var(--success);
-	--color-info: var(--info);
-	--color-warning: var(--warning);
-	--color-border: var(--border);
-	--color-input: var(--input);
-	--color-ring: var(--ring);
-	--color-chart-1: var(--chart-1);
-	--color-chart-2: var(--chart-2);
-	--color-chart-3: var(--chart-3);
-	--color-chart-4: var(--chart-4);
-	--color-chart-5: var(--chart-5);
-	--color-sidebar: var(--sidebar);
-	--color-sidebar-foreground: var(--sidebar-foreground);
-	--color-sidebar-primary: var(--sidebar-primary);
-	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-	--color-sidebar-accent: var(--sidebar-accent);
-	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-	--color-sidebar-border: var(--sidebar-border);
-	--color-sidebar-ring: var(--sidebar-ring);
-
 	--radius-controller-pad: calc(var(--radius) - 6px);
 	--radius-sm: calc(var(--radius) - 8px);
 	--radius-md: calc(var(--radius) - 4px);
@@ -209,8 +151,6 @@
 	   feedback: 누름·호버처럼 손에 바로 붙는 반응, layout: 미리보기 크기처럼 화면 배치가 바뀌는 것. */
 	--motion-feedback: 150ms;
 	--motion-layout: 200ms;
-	/* StudioRail Idle 아이콘 — Figma Neutral/400. */
-	--studio-rail-idle-foreground: var(--color-neutral-400);
 	/* 앱 셸 데스크톱 헤더 높이 — GlobalHeader가 이 값을 소비한다. */
 	--global-header-height: 3.75rem;
 	/* 셸 우하단에 떠 있는 컨트롤(테마 전환)의 기하. 푸터가 높이를 `inset*2 + height`로 잡아,
@@ -220,102 +160,6 @@
 	   0.5rem + 테두리 2px = 2.625rem)을 바꾸면 이 두 줄도 같이 고쳐야 한다. */
 	--floating-control-height: 2.625rem;
 	--floating-control-inset: 1rem;
-	--background: var(--color-white);
-	--foreground: var(--color-neutral-950);
-	--action-hover-foreground: var(--color-neutral-700);
-	--inverted: var(--foreground);
-	--inverted-foreground: var(--background);
-	--card: var(--color-white);
-	--card-foreground: var(--color-neutral-950);
-	--popover: var(--color-white);
-	--popover-foreground: var(--color-neutral-950);
-	/* 🔑 primary는 브랜드 색이 아니라 neutral-900이다 — 시안의 기본 버튼이 검정이다. 브랜드 색은
-	   chart 슬롯으로만 들어온다. 예전에는 DB(가이드라인 설정)가 이 값을 덮었지만 HD 전용이 되며
-	   걷었다(2026-10-06) — admin에서 색 하나를 바꾸면 버튼 40여 곳이 함께 바뀌는 통로였다. */
-	--primary: var(--color-neutral-900);
-	--primary-foreground: var(--color-neutral-50);
-	/* 작품 그라디언트라 L0 참조 규칙의 예외다 — 단계가 아니라 그림이다. */
-	--highlight-background: linear-gradient(
-		270deg,
-		#00ff66 0%,
-		#00c8ff 25%,
-		#b0fffb 50%,
-		#b0fffa 75%,
-		#00ff66 100%
-	);
-	--highlight-foreground: var(--color-neutral-950);
-	--secondary: var(--color-neutral-100);
-	--secondary-foreground: var(--color-neutral-900);
-	--muted: var(--color-neutral-100);
-	--muted-foreground: var(--color-neutral-500);
-	--accent: var(--color-neutral-100);
-	--accent-foreground: var(--color-neutral-900);
-	--destructive: var(--color-red-600);
-	/* 판정·상태 표시 전용(성공/정보/경고). destructive와 같은 단일 값 계약 —
-	   텍스트 대비를 우선해 라이트는 700, 다크는 400 계열이다. */
-	--success: var(--color-emerald-700);
-	--info: var(--color-sky-700);
-	--warning: var(--color-amber-700);
-	--border: var(--color-neutral-200);
-	--input: var(--color-neutral-200);
-	--ring: var(--color-neutral-400);
-	/* HD 초록 다섯 단. 🔴 순서가 계약이다 — 사용량 막대(1~3)·일자 스트립(5)·카메라 궤도 축(2·3·4)이
-	   번호로 집는다. 다크는 4·5를 맞바꾼다(어두운 면 위에서 deep green이 사라지므로). */
-	--chart-1: var(--color-hd-prosperity-green);
-	--chart-2: var(--color-hd-heritage-green);
-	--chart-3: var(--color-hd-eco-green);
-	--chart-4: var(--color-hd-deep-green);
-	--chart-5: var(--color-hd-light-green);
-	--sidebar: transparent;
-	--sidebar-foreground: var(--color-neutral-950);
-	--sidebar-primary: var(--color-neutral-900);
-	--sidebar-primary-foreground: var(--color-neutral-50);
-	--sidebar-accent: var(--color-neutral-100);
-	--sidebar-accent-foreground: var(--color-neutral-900);
-	--sidebar-border: var(--color-neutral-200);
-	--sidebar-ring: var(--color-neutral-400);
-}
-
-.dark {
-	/* 순흑(#000) 이미지와 구분되도록 순흑이 아닌 neutral-950을 쓴다. */
-	--background: var(--color-neutral-950);
-	--foreground: var(--color-neutral-50);
-	--action-hover-foreground: var(--color-neutral-300);
-	--inverted: var(--foreground);
-	--inverted-foreground: var(--background);
-	--card: var(--color-neutral-950);
-	--card-foreground: var(--color-neutral-50);
-	--popover: var(--color-neutral-950);
-	--popover-foreground: var(--color-neutral-50);
-	--primary: var(--color-neutral-200);
-	--primary-foreground: var(--color-neutral-900);
-	--secondary: var(--color-neutral-800);
-	--secondary-foreground: var(--color-neutral-50);
-	--muted: var(--color-neutral-800);
-	--muted-foreground: var(--color-neutral-400);
-	--accent: var(--color-neutral-800);
-	--accent-foreground: var(--color-neutral-50);
-	--destructive: var(--color-red-400);
-	--success: var(--color-emerald-400);
-	--info: var(--color-sky-400);
-	--warning: var(--color-amber-400);
-	/* 🔑 shadcn 기본은 흰색 10%·15% 알파지만 중립색은 neutral 단계만 쓴다(2026-10-06 결정). */
-	--border: var(--color-neutral-800);
-	--input: var(--color-neutral-700);
-	--ring: var(--color-neutral-500);
-	--chart-1: var(--color-hd-prosperity-green);
-	--chart-2: var(--color-hd-heritage-green);
-	--chart-3: var(--color-hd-eco-green);
-	--chart-4: var(--color-hd-light-green);
-	--chart-5: var(--color-hd-deep-green);
-	--sidebar: var(--color-neutral-900);
-	--sidebar-foreground: var(--color-neutral-50);
-	--sidebar-primary: var(--color-blue-700);
-	--sidebar-primary-foreground: var(--color-neutral-50);
-	--sidebar-accent: var(--color-neutral-800);
-	--sidebar-accent-foreground: var(--color-neutral-50);
-	--sidebar-border: var(--color-neutral-800);
-	--sidebar-ring: var(--color-neutral-500);
 }
 
 .typeset-lbs {
@@ -328,32 +172,4 @@
 
 .font-title {
 	font-family: var(--font-title);
-}
-
-.bg-highlight {
-	background-image: var(--highlight-background);
-	background-size: 300% 100%;
-	animation: highlight-flow 16s linear infinite;
-}
-
-/* 레이어 밖 선언이라 utilities 레이어의 disabled: variant가 못 이긴다 — 비활성 처리도 여기서 소유한다. */
-.bg-highlight:disabled {
-	background-image: none;
-	animation: none;
-}
-
-@keyframes highlight-flow {
-	from {
-		background-position: 300% 0%;
-	}
-
-	to {
-		background-position: 0% 0%;
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.bg-highlight {
-		animation: none;
-	}
 }
