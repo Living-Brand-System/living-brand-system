@@ -22,7 +22,7 @@ import { SettingsBanner as SettingsBanner_d26de2934fab2f5e50b16fb3e402473a } fro
 import { AdminIcon as AdminIcon_4f65402b63e32c200eaebfffc82692d5 } from '../../../components/admin/shell/admin-icon'
 import { AdminLogo as AdminLogo_b128a563ad49bc8ad325bf59906df38b } from '../../../components/admin/shell/admin-logo'
 import { AdminDialKitProvider as AdminDialKitProvider_2809bec1466a2967300927dd21f321ee } from '../../../components/admin/shell/admin-dialkit-provider'
-import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
+import { VercelBlobClientUploadHandler as VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e } from '@payloadcms/storage-vercel-blob/client'
 import { AdminDashboard as AdminDashboard_adf1a76d71cf28463d12de604eddd5a4 } from '../../../components/admin/shell/admin-dashboard'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
@@ -52,7 +52,7 @@ export const importMap = {
   "/components/admin/shell/admin-icon#AdminIcon": AdminIcon_4f65402b63e32c200eaebfffc82692d5,
   "/components/admin/shell/admin-logo#AdminLogo": AdminLogo_b128a563ad49bc8ad325bf59906df38b,
   "/components/admin/shell/admin-dialkit-provider#AdminDialKitProvider": AdminDialKitProvider_2809bec1466a2967300927dd21f321ee,
-  "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24,
+  "@payloadcms/storage-vercel-blob/client#VercelBlobClientUploadHandler": VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e,
   "/components/admin/shell/admin-dashboard#AdminDashboard": AdminDashboard_adf1a76d71cf28463d12de604eddd5a4,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }

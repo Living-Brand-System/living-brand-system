@@ -38,7 +38,7 @@
 | 32 | Agent 컨텍스트 제한 | Agent는 live 상태의 Official Version과 허용된 제작 맥락만 조회하고, draft/private 기준을 답변 근거로 사용하지 않습니다. |  |
 | 33 | Agent 응답 검증 | Agent 응답은 최종 정책 결정으로 사용하지 않고, 근거 기준과 신뢰도, 사람 검토 필요 여부를 함께 기록합니다. |  |
 | 34 | Server Action 보호 | Server Action은 클라이언트에서 호출되더라도 서버에서 인증, 권한, 입력 스키마를 다시 검증합니다. |  |
-| 35 | 업로드 저장소 격리 | 업로드 파일은 실행 가능한 public path에 직접 저장하지 않고, object storage 또는 Payload upload collection의 권한 검사를 거쳐 제공합니다. |  |
+| 35 | 업로드 저장소 격리 | 업로드 파일은 실행 가능한 public path에 직접 저장하지 않고, object storage 또는 Payload upload collection의 권한 검사를 거쳐 제공합니다. 예외: Payload의 Vercel Blob 어댑터는 public store만 지원하므로 원본 URL(store id + 파일명)을 아는 사람은 권한 검사 없이 파일을 받을 수 있습니다. 그래서 원본 URL을 응답·로그·클라이언트에 노출하지 않고 `/api/<collection>/file/` 경로로만 제공합니다(`disablePayloadAccessControl`·`generateFileURL`을 켜지 않습니다). |  |
 | 36 | 회원가입과 사용자 생성 | 공개 회원가입은 열지 않고, 사용자 생성·초대·가입 완료 과정에는 인증 정보 보호, 역할 고정, 시도 제한, 감사 로그를 적용합니다. |  |
 
 ## 2. 관련 예시
