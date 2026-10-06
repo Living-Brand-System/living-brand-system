@@ -319,7 +319,19 @@ export interface GuidelineDocument {
               stickyMode?: ('switch' | 'individual') | null;
               cards?:
                 | {
-                    ratio: '1:1' | '5:4' | '4:3' | '3:2' | '16:9' | '2:1' | '7:3' | '4:5' | '3:4' | '2:3' | '9:16';
+                    ratio:
+                      | '1:1'
+                      | '5:4'
+                      | '4:3'
+                      | '3:2'
+                      | '5:3'
+                      | '16:9'
+                      | '2:1'
+                      | '7:3'
+                      | '4:5'
+                      | '3:4'
+                      | '2:3'
+                      | '9:16';
                     display: {
                       type:
                         | 'image'

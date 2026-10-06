@@ -5,6 +5,8 @@ export const IMAGE_RATIO_OPTIONS = [
 	{ label: '5:4', value: '5:4' },
 	{ label: '4:3', value: '4:3' },
 	{ label: '3:2', value: '3:2' },
+	// Incorrect Usages 도판(약 1.65:1)이 3:2·16:9 어느 쪽에도 맞지 않아 더했다(2026-10-06 사용자 허가).
+	{ label: '5:3', value: '5:3' },
 	{ label: '16:9', value: '16:9' },
 	{ label: '2:1', value: '2:1' },
 	{ label: '7:3', value: '7:3' },
@@ -23,6 +25,7 @@ export const IMAGE_RATIO_CLASS_NAMES = {
 	'5:4': 'aspect-[5/4]',
 	'4:3': 'aspect-4/3',
 	'3:2': 'aspect-[3/2]',
+	'5:3': 'aspect-[5/3]',
 	'16:9': 'aspect-video',
 	'2:1': 'aspect-[2/1]',
 	'7:3': 'aspect-[7/3]',
