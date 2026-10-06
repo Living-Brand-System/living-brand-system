@@ -41,6 +41,7 @@ Payload Admin 기본 화면은 이 문서의 대상이 아닙니다. Payload가 
 | L1 shadcn 세트 | `:root`(라이트)·`.dark`/`[data-theme="dark"]`(다크)의 shadcn 표준 슬롯(background·primary·muted·border·chart-1~5·sidebar-* 등). 값은 L0 참조만. **앱과 어드민이 같은 파일을 import한다** | `src/app/color-tokens.css` |
 | color 유틸 매핑 | L1·L2 → `@theme inline`의 `--color-*` 유틸 토큰 | `src/app/color-tokens.css` |
 | inverted | 반전 표면과 그 전경의 짝 `--inverted`/`--inverted-foreground` | `src/app/color-tokens.css` |
+| overlay | 모달(dialog·sheet) 뒤를 가리는 막. 테마와 무관하게 검정이고 알파는 쓰는 쪽이 붙인다(`bg-overlay/80`) | `src/app/color-tokens.css` |
 | action-hover-foreground | 액션의 호버·포커스 전경색. 눌림은 기존 `foreground`를 사용 | `src/app/color-tokens.css` |
 | chart-1~5 | HD 초록 다섯 단(prosperity·heritage·eco·deep·light, 다크는 4·5 교대). 번호가 계약 — 사용량 막대·일자 스트립·카메라 궤도 축·어드민 대시보드가 번호로 집는다 | `src/app/color-tokens.css` |
 | 상태색 | 판정·상태 표시 전용 `--success`/`--info`/`--warning`(실패는 기존 `--destructive`, 해당 없음은 `--muted`) | `src/app/color-tokens.css` |
@@ -109,7 +110,7 @@ rg -n '#[0-9a-fA-F]{3,8}\b|(?:bg|text|border|ring|fill|from|to|via)-(?:(?:red|or
 - **L1·L2 값은 L0 참조만** 씁니다(`--muted: var(--color-neutral-100)`). oklch·hex 리터럴을 적지 않습니다 — 숫자를 베끼면 L0와의 관계가 안 보이고, 그 틈으로 단계 밖 값(옛 다크 배경 `#121212`)이 섞였습니다. 예외는 작품 그라디언트(`--highlight-background`)뿐입니다.
 - **중립색은 Tailwind neutral 단계만** 씁니다. shadcn 다크 기본값의 흰색 알파 테두리도 neutral 단계(border 800·input 700)로 바꿨습니다.
 - **L1은 shadcn 슬롯을 그대로 유지**합니다. 쓰지 않는 슬롯(`secondary`·`sidebar-primary`)도 지우지 않습니다 — shadcn 컴포넌트를 새로 받을 때 그 이름을 전제합니다. 같은 값을 가진 슬롯이 여럿인 것(`muted`=`secondary`=`accent`)도 shadcn neutral 기본 구성입니다.
-- **L2 확장은 shadcn 규약**(같은 파일, `@theme inline` 등록)을 따릅니다: `inverted`·`action-hover-foreground`·상태색·`highlight`·`studio-rail-idle-foreground`.
+- **L2 확장은 shadcn 규약**(같은 파일, `@theme inline` 등록)을 따릅니다: `inverted`·`overlay`·`action-hover-foreground`·상태색·`highlight`·`studio-rail-idle-foreground`.
 - **브랜드 색은 shadcn 슬롯으로만 들어옵니다.** `primary`는 브랜드 색이 아니라 neutral-900입니다(시안의 기본 버튼이 검정). HD 색은 L0 `--color-hd-*`에 등록하고 `chart-1~5`가 받습니다. 값의 정본은 `scripts/seed-hd-brand-colors.ts`이고 `color-tokens.css`는 그 사본입니다. 🔴 Figma 변수의 hex는 seed와 대조한 뒤 옮깁니다 — 둘이 갈라진 전례가 있습니다(HD LIGHT BLUE).
 - 예전에는 가이드라인 설정(`primaryColor`)이 `layout.tsx`에서 `--primary`를 덮었습니다. HD 전용이 되며 걷었습니다 — admin에서 색 하나를 바꾸면 버튼 40여 곳이 함께 바뀌는 통로였습니다. 필드는 MCP가 아직 읽으므로 남아 있습니다.
 
@@ -128,30 +129,32 @@ rg -n '#[0-9a-fA-F]{3,8}\b|(?:bg|text|border|ring|fill|from|to|via)-(?:(?:red|or
 | Badge·비필수 메타·캡션 | `text-xs` |
 | 본문·입력·일반 버튼·메뉴 | `text-sm` |
 | 큰 버튼·카드 제목 | `text-base` |
-| H1 설명·lead·가이드라인 카드 캡션 | `text-xl` |
+| H1 설명·lead | `text-xl` |
 | 섹션·로컬 페이지 제목 | `text-2xl` |
 | 페이지·챕터 제목 | `text-5xl` |
 | 최상위 H1 | `text-6xl` |
 
 14px 텍스트와 함께 쓰는 아이콘은 `size-4`, 16px 텍스트와 함께 쓰는 아이콘은 `size-5`를 기본으로 합니다. 일반 컴포넌트에는 `clamp()`·`vw`·반응형 `text-*`·임의 글자 크기를 선언하지 않습니다.
 
-가이드라인의 역할별 크기·굵기·행간·자간은 `components/guideline/typography/guideline-typography.ts`가 소유합니다. 토픽 제목은 `text-6xl`, 동급 블록 제목은 `text-5xl`, 블록 설명·하단 캡션은 `text-xl`, 오버레이 캡션은 `text-base`, 스펙 라벨·값은 `text-sm`을 소비합니다. 이 역할 매핑은 가이드라인 본문에만 적용하고 일반 화면의 제목·컨트롤에는 적용하지 않습니다. `text-sm`처럼 제품에서 재정의한 유틸리티의 실제 크기는 Tailwind 기본값이 아닌 `theme.css`에서 확인합니다.
+가이드라인 구조(`components/guideline/structure/`)는 이 유틸리티 스케일을 쓰지 않습니다. 역할별 크기·행간·자간은 그 폴더의 CSS 모듈이 px로 소유하고(`structure.module.css`·`caption.module.css`), `Typography`는 요소(`as`)와 굵기만 정합니다 — 모듈 클래스가 `Typography`의 기본 크기를 덮습니다. 이 스케일은 가이드라인 본문과 첫 화면 블록에만 적용하고 일반 화면의 제목·컨트롤에는 적용하지 않습니다. `text-sm`처럼 제품에서 재정의한 유틸리티의 실제 크기(13px)는 Tailwind 기본값이 아닌 `theme.css`에서 확인합니다.
 
-카드 캡션 제목·설명은 같은 크기와 Medium, 행간 155%를 사용합니다(사용자 지정 2026-09-08). 블록 설명과 스펙 값은 Regular로 구분합니다. 캡션 설명과 스펙 값은 `text-muted-foreground`, 서체는 `font-body`입니다. 하단 캡션의 배치·폭·여백은 계속 `cards/caption/component.tsx`가 소유합니다. 섹션·블록 설명은 `SectionHeadings`에서 최대 폭 767px로 제한하며, 좁은 화면에서는 부모 영역에 맞춰 줄어듭니다. 기존 설명의 오른쪽 32px 패딩은 이 최대 폭 안에 포함됩니다.
+| 역할 | 컴포넌트 | 소유 |
+| --- | --- | --- |
+| 표시 제목·부제 | `GuidelineDisplayTitle` | `structure.module.css` |
+| 블록 제목(main·sub)·블록 설명(16/24, 최대 폭 480px) | `GuidelineSectionHeading` | `structure.module.css` |
+| 카드 캡션 — 제목·설명 16/24, 목록·명세 14/20 | `GuidelineCardCaption` | `caption.module.css`(수치의 정본은 `docs/10` 공통 캡션) |
 
-HTML 의미와 시각 역할은 분리합니다. `GuidelineHeader`가 h1/h2를 정하고 캡션은 문단, 스펙은 dt/dd를 유지합니다. `Typography`와 richText는 `components/ui/typography-variants.ts`의 같은 스타일 생성기를 사용합니다. 도판 속 브랜드 서체 표본·치수 라벨·컨트롤 값은 이 산문 스케일에 포함하지 않습니다.
+HTML 의미와 시각 역할은 분리합니다. 표시 제목은 h1, 블록 제목은 `hierarchy`에 따라 h2/h3이고, 캡션은 figcaption, 명세는 dt/dd를 유지합니다. `Typography`와 richText는 `components/ui/typography-variants.ts`의 같은 스타일 생성기를 사용합니다. 도판 속 브랜드 서체 표본·치수 라벨·컨트롤 값은 이 산문 스케일에 포함하지 않습니다.
 
-캡션 배치는 `below`(기본, 카드 아래)와 `overlay`(판 안쪽 하단) 중 고릅니다. 오버레이는 Figma 136:231의 `text-base` 크기와 여백을 따르며, 제목·설명의 Medium·행간 155%는 공유합니다. 그라데이션은 판 폭을 채우고 텍스트 폭은 제한합니다. `dark` 토큰 스코프로 밝은 글자와 어두운 그라데이션의 대비를 유지하며, 긴 내용은 키보드로 접근할 수 있는 캡션 영역 안에서 스크롤합니다. 제목·설명·2열 스펙 표는 두 배치가 같은 렌더러를 사용합니다. 배치가 없는 기존 콘텐츠는 카드 아래에 표시합니다.
-
-첫 화면(메인·가이드라인·스튜디오) 히어로의 `HD │ 제목` 락업(`LandingLockup`)은 CI 높이(32px)와 짝을 이루는 고정 크기(34px)이고, 문서·스튜디오 띠의 표시 제목(`GuidelineDisplayTitle`)은 화면 비율에 맞춘 `clamp()` 크기를 씁니다 — 둘이 viewport 반응형·임의 크기의 예외입니다. 템플릿 캔버스와 `TypeScale`·`TypeSpecimen`이 데이터로 받은 글자 크기도 UI 타이포그래피가 아니므로 예외입니다. 그 밖의 `TypeSpecimen` 같은 대형 표본은 viewport 계산식 대신 `text-9xl` 같은 고정 유틸리티를 사용합니다. 클래스 주입이 불가능한 `.typeset` 내부 생성 HTML은 `typeset.css`에서 같은 고정 단계만 직접 선언합니다.
+첫 화면(메인·가이드라인·스튜디오) 히어로의 `HD │ 제목` 락업(`LandingLockup`)은 CI 높이(32px)와 짝을 이루는 고정 크기(34px)이고, 문서·스튜디오 띠의 표시 제목(`GuidelineDisplayTitle`)과 main 블록 제목(`GuidelineSectionHeading hierarchy="main"`)은 화면 비율에 맞춘 `clamp()` 크기를 씁니다 — 이 셋이 viewport 반응형·임의 크기의 예외입니다. 템플릿 캔버스와 `TypeScale`·`TypeSpecimen`이 데이터로 받은 글자 크기도 UI 타이포그래피가 아니므로 예외입니다. 그 밖의 `TypeSpecimen` 같은 대형 표본은 viewport 계산식 대신 `text-9xl` 같은 고정 유틸리티를 사용합니다. 클래스 주입이 불가능한 `.typeset` 내부 생성 HTML은 `typeset.css`에서 같은 고정 단계만 직접 선언합니다.
 
 현재 상태를 정직하게 기술합니다.
 
 | 사실 | 근거 |
 | --- | --- |
 | `--font-body`(Pretendard)는 `body`에 배선되어 기본 폰트로 동작 | `src/app/(frontend)/theme.css`, `src/app/(frontend)/styles.css` |
-| `--font-title`은 값이 정해지지 않아 Pretendard로 폴백하며, `.font-title` 클래스는 정의되어 있으나 상위 guideline 헤더에 미배선 | `src/app/(frontend)/theme.css` |
-| 그래서 `GuidelineHeader`의 모든 variant는 `font-title` 없이 렌더되어 기본 body 폰트로 폴백 | `guideline-header.tsx` |
+| `--font-title`은 값이 정해지지 않아 Pretendard로 폴백하며, `.font-title` 클래스는 정의되어 있으나 가이드라인 제목에 미배선 | `src/app/(frontend)/theme.css` |
+| 그래서 가이드라인 제목(`GuidelineDisplayTitle`·`GuidelineSectionHeading`)은 `font-title` 없이 렌더되어 기본 body 폰트로 폴백 | `structure/components.tsx` |
 | `--font-heading`/`--font-mono`는 어디에도 정의되지 않아 `.typeset`의 `code`/`pre`는 브라우저 monospace로 폴백 | `src/app/(frontend)/typeset.css` (참조만, 정의 없음) |
 
 `font-title`을 헤더에 붙이거나 `--font-mono`를 정의하는 것은 파운데이션 변경(09)이지 컴포넌트 작업이 아닙니다. 상세한 텍스트 저작 규칙은 `docs/10`이 소유합니다.
@@ -187,30 +190,7 @@ CMS 섹션은 평면 섹션 구조를 사용합니다. Subsection은 직전 Sect
 
 신규 경로는 `ContentFrame`을 사용하지 않습니다. Section이 가용 폭과 좌우 여백을 제공하고, Heading·Sticky는 최대 1415px에서 중앙 배치합니다. Grid는 목표 카드 너비×열 수+가로 간격으로 최대 폭을 계산하고 Carousel은 가용 폭을 사용합니다. 카드 간격은 Grid 좌우 12px·상하 24px, Carousel 좌우 12px, Sticky 세로 24px입니다. 컴포넌트 API는 [10의 신규 문서 구조 계약](10-component-authoring.md#가이드라인-문서-구조-api-2026-09-23)을 따릅니다.
 
-### 레거시 문서 (`contentModel=legacy`)
-
-아래 규칙은 `deprecated/`와 기존 blocks 렌더링에만 적용합니다. 신규 Section에 옮겨 적용하지 않습니다.
-
-
-| 컴포넌트 | 소유 책임 |
-| --- | --- |
-| `GuidelineTitleDisplay` | 토픽 대표 이미지와 h1 배치 |
-| `GuidelineSections` | 섹션 순서와 섹션 사이 `gap-72`, Better Editor ID |
-| `GuidelineSection` | 앵커, 제목/콘텐츠 사이 `gap-12`, 캐러셀의 섹션 끝 clipping |
-| `SectionHeadings` | `ContentFrame` heading 여백과 최대 폭 1540px·중앙 배치, 제목/설명 `gap-8`, 설명 최대 폭 767px |
-| `SectionContents` | 공용 `ContentFrame`의 padded 폭·여백과 배치 방식 선택 |
-| `GridContainer` | 동일 너비·첫 열부터 배치·카드 간격, 콘텐츠 폭에 따른 열 수 제한 |
-| `CarouselContainer` | 가로 넘김·스냅·카드 간격 |
-| `GuidelineCard` | 비율·프레임과 Display·Mark·Actions·Caption 조합, 카드별 조작 스코프 |
-| `GuidelineFooter` | 본문 다음의 빈 footer 위치. 높이·콘텐츠 미지정 |
-
-모바일(md 미만)에서는 카드가 부모 폭을 채우며, 격자는 한 열로 쌓이고 캐러셀은 한 카드씩 넘깁니다. 그리드 영역은 `ContentFrame` 안에 중앙 배치하고, 카드는 `justify-content: flex-start`로 마지막 행까지 첫 열부터 채웁니다. 설명의 오른쪽 32px 패딩은 최대 폭 767px 안에 포함됩니다.
-
-`blocks/rhythm.ts`는 제거했습니다. 각 배치 컴포넌트가 자기 간격을 소유하고, 캐러셀에서 사용하는 행 높이만 `src/components/guideline/sections/row-height.ts`의 `CARD_ROW_HEIGHT`로 공유합니다. 폭·가로 여백의 기본값은 공용 `ContentFrame`을 재사용합니다. 페이지에 중복 패딩을 추가하지 않습니다.
-
-CMS `section`·`base`·`overview`·`examples`는 `CardBlock` 어댑터가 같은 `GuidelineSection`으로 연결합니다. `prepareCards`는 저장 데이터를 바꾸지 않고 언어 비교를 독립 카드로 펼칩니다. 컨트롤러와 프리뷰 상태는 화면 구성과 별도이며 푸터에 넣지 않습니다. 하단 캡션은 카드 폭 안에서 제한하고 왼쪽에 붙입니다.
-
-헤딩 계층은 `GuidelineHeader`가 `variant`(`topic` h1 / `section` h2)로 분기해 소유합니다(`guideline-header.tsx`). 토픽 안의 `section`·`base`·`overview`·`examples`는 동급 블록이므로 같은 h2를 사용하며 h3 단계는 없습니다. 가이드라인 첫 화면(Figma 458:16373)의 h1은 히어로 락업이, 챕터는 문서와 같은 `GuidelineSection`·`GuidelineSectionHeading`(h2)이, 토픽은 링크 가이드라인 카드(`GuidelineGridContainer`의 `href`)가 그립니다. 스튜디오 첫 화면(`StudioHome`)도 같은 섹션 블록에 프로파일 카드를 담습니다. 랜드마크는 셸이 `main`을(`section-layout.tsx`), 토픽 화면이 `article` 하나를(`pages/guideline-topic.tsx`) 갖고, 블록 프레임과 섹션 안쪽은 랜드마크를 만들지 않습니다.
+헤딩 계층은 토픽의 h1을 `GuidelineDisplayTitle`이, 섹션 제목을 `GuidelineSectionHeading`(`hierarchy` main h2 / sub h3)이 소유합니다. 가이드라인 첫 화면(Figma 458:16373)의 h1은 히어로 락업이, 챕터는 문서와 같은 `GuidelineSection`·`GuidelineSectionHeading`(h2)이, 토픽은 링크 가이드라인 카드(`GuidelineGridContainer`의 `href`)가 그립니다. 스튜디오 첫 화면(`StudioHome`)도 같은 섹션 블록에 프로파일 카드를 담습니다. 랜드마크는 셸이 `main`을(`section-layout.tsx`), 토픽 화면이 `article` 하나를(`pages/guideline-topic.tsx`) 갖고, 블록 프레임과 섹션 안쪽은 랜드마크를 만들지 않습니다.
 
 ### 가이드라인 계층 이름은 Figma 정본과 다릅니다
 
@@ -300,7 +280,7 @@ look은 언젠가 전부 바뀝니다. 그러므로 **겉모습이 어설픈 것
 | 슬라이더 | `components/ui/slider.tsx` |
 | 선택 컨트롤(토글·세그먼트) | `components/ui/toggle.tsx` (`toggle-group`이 공유) |
 | on/off 스위치 | `components/ui/switch.tsx` |
-| 패널 카드·알약 칩(어드민 대시보드·가이드라인 메인) | `components/shared/panel-card.tsx` — 두 표면(Payload 13px root ↔ frontend 16px root)에서 동일하게 그려져야 해서 수치를 px로 고정한 예외 |
+| 패널 카드·알약 칩(어드민 대시보드) | `components/shared/panel-card.tsx` — Payload 어드민의 root가 13px이라 rem 유틸리티가 프런트(16px)와 다르게 그려지므로 수치를 px로 고정한 예외 |
 | 페이지 히어로 배너(shader 배경 + 락업) | `components/shared/page-hero.tsx` |
 | 표본 면(테마 면·브랜드 면) | `features/guideline/cards/displays/dynamics/surface.ts` |
 | 수치·캡션 줄 | `features/guideline/cards/displays/dynamics/readout.ts` |

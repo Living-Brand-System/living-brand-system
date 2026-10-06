@@ -297,16 +297,6 @@ export const sectionsField: Field = {
 		},
 		anchorField(),
 		{ name: 'description', type: 'textarea', localized: true },
-		{
-			name: 'align',
-			type: 'select',
-			defaultValue: 'start',
-			options: [
-				{ label: '시작', value: 'start' },
-				{ label: '중앙', value: 'center' },
-			],
-			admin: { condition: (_, sibling) => sibling?.type !== 'incorrect-usages' },
-		},
 		downloadField(true),
 		{
 			name: 'containers',

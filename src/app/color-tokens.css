@@ -32,6 +32,7 @@
 	--color-foreground: var(--foreground);
 	--color-action-hover-foreground: var(--action-hover-foreground);
 	--color-inverted: var(--inverted);
+	--color-overlay: var(--overlay);
 	--color-inverted-foreground: var(--inverted-foreground);
 	--color-card: var(--card);
 	--color-card-foreground: var(--card-foreground);
@@ -79,6 +80,8 @@
 	--action-hover-foreground: var(--color-neutral-700);
 	--inverted: var(--foreground);
 	--inverted-foreground: var(--background);
+	/* 모달 뒤를 가리는 막(dialog·sheet). 테마와 무관하게 검정이라 다크에서 다시 선언하지 않는다 — 알파는 쓰는 쪽이 붙인다. */
+	--overlay: var(--color-black);
 	--card: var(--color-white);
 	--card-foreground: var(--color-neutral-950);
 	--popover: var(--color-white);
