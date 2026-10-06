@@ -63,8 +63,6 @@ describe('listPublishedGuidelineNavigationTopics', () => {
 			documentTitle: 'Guideline',
 			favicon: { id: 1, url: '/favicon.png' },
 			issuedLabel: '2026.07',
-			primaryColor: { id: 2, hex: '112233' },
-			primaryColorDark: 3,
 		})
 		vi.mocked(getPayload).mockResolvedValue({ findGlobal } as never)
 
@@ -73,8 +71,6 @@ describe('listPublishedGuidelineNavigationTopics', () => {
 			documentTitle: 'Guideline',
 			faviconHref: '/favicon.png',
 			issuedLabel: '2026.07',
-			primaryHex: '112233',
-			primaryDarkHex: null,
 		})
 	})
 

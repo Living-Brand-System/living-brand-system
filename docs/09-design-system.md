@@ -16,7 +16,7 @@
 
 Payload Admin 기본 화면은 이 문서의 대상이 아닙니다. Payload가 제공하는 기본 스타일과 접근성을 우선하며, `docs/08-accessibility-i18n.md`의 적용 범위와 동일하게 프로젝트가 직접 추가한 Admin 확장 화면에만 이 문서를 참고합니다.
 
-브랜드 색·폰트·로고는 스타일 규칙이 아니라 **데이터**입니다. 그 소유와 주입 경로는 `docs/05-system-architecture.md`가 정의하며, 이 문서는 데이터가 토큰에 들어오는 지점만 기술합니다.
+가이드라인 **콘텐츠**가 그리는 브랜드 색·폰트·로고(스와치·팔레트·로고 카드)는 스타일 규칙이 아니라 **데이터**입니다. 그 소유와 주입 경로는 `docs/05-system-architecture.md`가 정의합니다. 앱 UI 자체의 색은 데이터가 아니라 §3의 토큰입니다 — 제품이 HD 전용이 되어(2026-10-06) 런타임 브랜드 주입을 걷었습니다.
 
 접근성·다국어 경계는 `docs/08-accessibility-i18n.md`, 소스 위치·네이밍·`use client` 경계는 `docs/06-project-structure.md`가 소유합니다. 이 문서는 두 문서를 링크만 하고 규칙을 복제하지 않습니다.
 
@@ -26,7 +26,7 @@ Payload Admin 기본 화면은 이 문서의 대상이 아닙니다. Payload가 
 
 | 층 | 대상 | 변경 빈도 | 소유 문서 |
 | --- | --- | --- | --- |
-| (A) 불변 파운데이션 | 색, 타이포, radius, 다크 모드, 런타임 브랜드 오버라이드, 셸/프레임 골격 | 값이 실제로 바뀔 때만 | 09 (이 문서) |
+| (A) 불변 파운데이션 | 색, 타이포, radius, 다크 모드, 셸/프레임 골격 | 값이 실제로 바뀔 때만 | 09 (이 문서) |
 | (B) 컴포넌트별 UI | 매번 추가되는 블록·프리미티브 조합, variant, 저작 규칙 | 상시 (슬롭 위험 큼) | `docs/10` |
 
 컴포넌트를 새로 추가할 때 09를 손대지 않습니다. 새 블록은 (A)가 정한 토큰과 프레임을 소비할 뿐, 파운데이션을 바꾸지 않습니다. 파운데이션을 건드려야 하는 변경이라면 그것은 컴포넌트 작업이 아니라 09 개정입니다.
@@ -37,10 +37,12 @@ Payload Admin 기본 화면은 이 문서의 대상이 아닙니다. Payload가 
 
 | 토큰군 | 의미 | 소유 파일(SoT) |
 | --- | --- | --- |
-| color 원시값 | `:root`(라이트), `.dark`(다크)의 원시 색 정의 | `src/app/(frontend)/theme.css`, `src/app/(payload)/admin-tailwind.css` |
-| color 유틸 매핑 | 원시값 → `@theme inline`의 `--color-*` 유틸 토큰 | `src/app/(frontend)/theme.css`, `src/app/(payload)/admin-tailwind.css` |
+| L0 원시 팔레트 | Tailwind 기본 팔레트(neutral 50~950·white·black·상태색 계열) + HD 팔레트(`--color-hd-*`, `@theme` 등록). 컴포넌트는 직접 쓰지 않는다 | `tailwindcss/theme.css`, `src/app/(frontend)/theme.css` |
+| L1 shadcn 세트 | `:root`(라이트)·`.dark`(다크)의 shadcn 표준 슬롯(background·primary·muted·border·chart-1~5·sidebar-* 등). 값은 L0 참조만 | `src/app/(frontend)/theme.css`, `src/app/(payload)/admin-tailwind.css` |
+| color 유틸 매핑 | L1·L2 → `@theme inline`의 `--color-*` 유틸 토큰 | `src/app/(frontend)/theme.css`, `src/app/(payload)/admin-tailwind.css` |
 | inverted | 반전 표면과 그 전경의 짝 `--inverted`/`--inverted-foreground` | `src/app/(frontend)/theme.css` |
 | action-hover-foreground | 액션의 호버·포커스 전경색. 눌림은 기존 `foreground`를 사용 | `src/app/(frontend)/theme.css` |
+| chart-1~5 | HD 초록 다섯 단(prosperity·heritage·eco·deep·light, 다크는 4·5 교대). 번호가 계약 — 사용량 막대·일자 스트립·카메라 궤도 축이 번호로 집는다 | `src/app/(frontend)/theme.css` |
 | 상태색 | 판정·상태 표시 전용 `--success`/`--info`/`--warning`(실패는 기존 `--destructive`, 해당 없음은 `--muted`). Admin 확장은 같은 이름을 Payload 테마에 매핑 | `src/app/(frontend)/theme.css`, `src/app/(payload)/admin-tailwind.css` |
 | highlight | 강조 배경과 전경 토큰, `bg-highlight` 유틸. Frontend는 gradient, Admin은 Payload success 색에 매핑 | `src/app/(frontend)/theme.css`, `src/app/(payload)/admin-tailwind.css` |
 | radius | `--radius` 뿌리 1개에서 `--radius-sm/md/lg/xl/2xl/3xl` 6단 파생(`lg`는 뿌리값, 나머지는 calc) | `src/app/(frontend)/theme.css`, `src/app/(payload)/admin-tailwind.css` |
@@ -101,9 +103,18 @@ rg -n '#[0-9a-fA-F]{3,8}\b|(?:bg|text|border|ring|fill|from|to|via)-(?:(?:red|or
 
 🔴 이 스코프 전환은 토큰만 되돌립니다. `dark:` 유틸은 `.dark *` **후손** 선택자라 다크 페이지 안의 밝은 섬에서도 여전히 걸립니다. §4가 컴포넌트에서 `dark:` 팔레트 클래스를 금지하는 이유가 여기서 한 번 더 성립합니다.
 
-런타임 브랜드 색은 CMS 메타데이터에서 옵니다. `layout.tsx`가 `metadata.primaryHex` 등으로 문자열을 만들고 `layout.tsx`가 `<style>`로 주입해 `--primary`와 `--primary-foreground` **2개 토큰만** 오버라이드합니다(라이트는 `:root`, 다크는 `.dark`). 코드에는 브랜드 색이 없고 데이터만 흐르므로 브랜드 어그노스틱이 유지됩니다.
+**색 토큰은 3층입니다(2026-10-06).** L0 원시 팔레트 → L1 shadcn 세트 → L2 확장. 구조와 규칙은 `theme.css` 머리 주석이 소유합니다. 요점만:
 
-주입 대상이 `--primary` 계열 2개뿐이라는 것은 현실의 제약을 만듭니다. `accent`, `secondary`, `ring`은 채도(chroma) 0의 뉴트럴로 고정되어 있고(🔴 `--accent`는 지금 `--muted`와 **같은 값**입니다 — hover가 `bg-muted`이므로 `accent`로 선택 상태를 칠하면 선택과 hover가 구별되지 않습니다. 채워진 상태는 `primary` 짝을 씁니다), `chart-1`~`chart-5`는 0이 아닌 채도의 고정된 다색 팔레트를 갖습니다(둘 다 `theme.css` 원시값). 어느 쪽도 브랜드 주입을 받지 않으므로, 브랜드 강조색은 `primary`를 쓰는 표면(예: `bg-primary`, `text-primary`)에만 반영되고 그 밖의 강조 토큰은 원래 값으로 남습니다.
+- **L1·L2 값은 L0 참조만** 씁니다(`--muted: var(--color-neutral-100)`). oklch·hex 리터럴을 적지 않습니다 — 숫자를 베끼면 L0와의 관계가 안 보이고, 그 틈으로 단계 밖 값(옛 다크 배경 `#121212`)이 섞였습니다. 예외는 작품 그라디언트(`--highlight-background`)뿐입니다.
+- **중립색은 Tailwind neutral 단계만** 씁니다. shadcn 다크 기본값의 흰색 알파 테두리도 neutral 단계(border 800·input 700)로 바꿨습니다.
+- **L1은 shadcn 슬롯을 그대로 유지**합니다. 쓰지 않는 슬롯(`secondary`·`sidebar-primary`)도 지우지 않습니다 — shadcn 컴포넌트를 새로 받을 때 그 이름을 전제합니다. 같은 값을 가진 슬롯이 여럿인 것(`muted`=`secondary`=`accent`)도 shadcn neutral 기본 구성입니다.
+- **L2 확장은 shadcn 규약**(같은 파일, `@theme inline` 등록)을 따릅니다: `inverted`·`action-hover-foreground`·상태색·`highlight`·`studio-rail-idle-foreground`.
+- **브랜드 색은 shadcn 슬롯으로만 들어옵니다.** `primary`는 브랜드 색이 아니라 neutral-900입니다(시안의 기본 버튼이 검정). HD 색은 L0 `--color-hd-*`에 등록하고 `chart-1~5`가 받습니다. 값의 정본은 `scripts/seed-hd-brand-colors.ts`이고 `theme.css`는 그 사본입니다. 🔴 Figma 변수의 hex는 seed와 대조한 뒤 옮깁니다 — 둘이 갈라진 전례가 있습니다(HD LIGHT BLUE).
+- 예전에는 가이드라인 설정(`primaryColor`)이 `layout.tsx`에서 `--primary`를 덮었습니다. HD 전용이 되며 걷었습니다 — admin에서 색 하나를 바꾸면 버튼 40여 곳이 함께 바뀌는 통로였습니다. 필드는 MCP가 아직 읽으므로 남아 있습니다.
+
+`accent`, `secondary`, `ring`은 중립 단계로 고정되어 있습니다(🔴 `--accent`는 `--muted`와 **같은 값**입니다 — hover가 `bg-muted`이므로 `accent`로 선택 상태를 칠하면 선택과 hover가 구별되지 않습니다. 채워진 상태는 `primary` 짝을 씁니다).
+
+🔴 Payload 어드민(`admin-tailwind.css`)은 아직 이 구조 밖입니다 — shadcn 세트를 Payload 테마 변수(`--theme-elevation-*`)에 매핑하고, `.lbs-kit`은 어드민 정본(83:1554)의 알파 중립색을 따로 씁니다. 통합은 별도 단계입니다.
 
 ## 6. 타이포그래피와 프리미티브 소재
 
@@ -220,7 +231,7 @@ CMS `section`·`base`·`overview`·`examples`는 `CardBlock` 어댑터가 같은
 | --- | --- | --- |
 | 접근성·다국어 | `docs/08-accessibility-i18n.md` | 색만으로 상태를 구분하지 않는 규칙 등은 08이 소유 |
 | 소스 위치·네이밍·`use client` 경계 | `docs/06-project-structure.md` | 컴포넌트 배치와 명명은 06 기준 |
-| 보안 | `docs/07-security.md` | 런타임 브랜드 hex는 `<style>`로 미새니타이즈 주입(`layout.tsx`)되므로 입력 신뢰 경계는 07이 다룸 |
+| 보안 | `docs/07-security.md` | 입력 신뢰 경계는 07이 다룸(런타임 `<style>` 브랜드 주입은 2026-10-06에 걷혔다) |
 | 브랜드 자산 데이터 모델 | `docs/05-system-architecture.md` | 색·폰트·로고가 데이터로 흐르는 소유 구조는 05가 정의 |
 | 위젯 시각 어휘 | `docs/11-widget-authoring.md` | 가이드라인 위젯이 쓰는 표본 면·판독·캡션 어휘는 11이 소유 |
 
