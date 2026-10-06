@@ -25,6 +25,8 @@ export const env = createEnv({
 		PAYLOAD_RUN_MIGRATIONS_ON_STARTUP: z.enum(['true', 'false']).optional(),
 		PAYLOAD_SECRET: z.string().min(1),
 		RESEND_API_KEY: z.string().min(1).optional(),
+		// Deployment Protection의 Protection Bypass for Automation을 켜면 Vercel이 넣는 시스템 변수.
+		VERCEL_AUTOMATION_BYPASS_SECRET: z.string().min(1).optional(),
 		VERCEL_URL: z.string().min(1).optional(),
 	},
 	client: {
@@ -47,6 +49,7 @@ export const env = createEnv({
 		PAYLOAD_RUN_MIGRATIONS_ON_STARTUP: process.env.PAYLOAD_RUN_MIGRATIONS_ON_STARTUP,
 		PAYLOAD_SECRET: process.env.PAYLOAD_SECRET,
 		RESEND_API_KEY: process.env.RESEND_API_KEY,
+		VERCEL_AUTOMATION_BYPASS_SECRET: process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
 		VERCEL_URL: process.env.VERCEL_URL,
 	},
 	isServer: typeof window === 'undefined' || process.env.VITEST === 'true',
