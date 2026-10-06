@@ -3,12 +3,12 @@ import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
 /**
- * 어드민 대시보드와 가이드라인 메인이 공유하는 패널 어휘(정본: Figma 67:2468 · 89:1969).
+ * 어드민 대시보드의 패널 어휘(정본: Figma 67:2468 · 89:1969).
  * 카드 구조(rounded-24 · 26px 제목 · 알약 칩)를 여기 한 자리가 소유하고,
- * 표면 톤(어드민의 브랜드 틴트, 가이드라인의 그림자)은 소비자가 className으로 얹는다.
+ * 표면 톤(브랜드 틴트)은 소비자가 className으로 얹는다.
  *
- * 수치는 px로 고정한다: Payload admin은 root가 13px이라 rem 유틸리티가 표면마다
- * 다르게 그려지므로, 두 표면이 공유하는 컴포넌트는 px만 동일하게 렌더된다.
+ * 수치는 px로 고정한다: Payload admin은 root가 13px이라 rem 유틸리티가
+ * 프런트(16px)와 다르게 그려진다.
  */
 
 type PanelCardProps = React.ComponentProps<'section'> & {
