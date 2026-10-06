@@ -51,7 +51,8 @@ function AllowedProfileRows<T extends string | number>({
 }) {
 	const all = items.map((item) => item.id)
 	return (
-		<>
+		// 행을 컴포넌트로 묶으면 그룹의 Presence가 안쪽을 못 봐 행 사이 6px이 사라진다 — Reveal이 행마다 다시 준다.
+		<Controller.Reveal>
 			{items.map((item) => {
 				const on = (selectedIds ?? all).includes(item.id)
 				return (
@@ -65,7 +66,7 @@ function AllowedProfileRows<T extends string | number>({
 					</Controller.Row>
 				)
 			})}
-		</>
+		</Controller.Reveal>
 	)
 }
 
