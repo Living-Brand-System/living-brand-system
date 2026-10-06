@@ -18,8 +18,27 @@ import { cn } from '@/lib/utils'
  */
 export function McpKeyIssuer() {
 	const { copyMessage, copyText, credential, error, issueKey, loading } = useMcpKeyIssuance()
+	/*
+	 * 🔑 Codex는 키를 **설정 파일에 헤더째** 넣는다 — Claude처럼 한 번 붙여 넣으면 끝난다.
+	 *    `codex mcp add`에는 헤더 옵션이 없고 `--bearer-token-env-var`(환경변수 이름)뿐이라, 예전 명령은
+	 *    `export`가 살아 있는 그 터미널에서만 연결됐다(새 창·Codex 앱·IDE에서는 끊김). config.toml의
+	 *    `http_headers`는 CLI·앱·IDE가 함께 읽는다(openai/codex `McpServerTransportConfig::StreamableHttp`).
+	 * 🔴 붙이기 전에 기존 표(하위 표 포함)를 awk로 걷는다 — 재발급 때 같은 표가 두 번 쌓이면 TOML이
+	 *    깨져 **Codex가 아예 뜨지 않는다.** `codex mcp remove`에 맡기지 않는 이유: 데스크톱 앱만 쓰면
+	 *    터미널에 codex가 없고, 실패가 조용해 중복이 그대로 쌓였다(2026-10-06 임시 HOME 실측).
+	 *    키는 UUID라 TOML 문자열에 그대로 넣어도 안전하다.
+	 */
 	const codexCommand = credential
-		? `export LBS_MCP_API_KEY='${credential.apiKey}'\ncodex mcp add living-brand-system --url '${credential.endpoint}' --bearer-token-env-var LBS_MCP_API_KEY`
+		? [
+				'f=~/.codex/config.toml; mkdir -p ~/.codex; touch "$f"',
+				`awk '/^\\[mcp_servers\\."?living-brand-system"?[].]/{s=1;next} /^\\[/{s=0} !s' "$f" > "$f.tmp" && mv "$f.tmp" "$f"`,
+				`cat >> "$f" <<'EOF'`,
+				'',
+				'[mcp_servers.living-brand-system]',
+				`url = "${credential.endpoint}"`,
+				`http_headers = { Authorization = "Bearer ${credential.apiKey}" }`,
+				'EOF',
+			].join('\n')
 		: ''
 	const claudeCommand = credential
 		? `claude mcp add --transport http living-brand-system --scope user '${credential.endpoint}' --header "Authorization: Bearer ${credential.apiKey}"`
