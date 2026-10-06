@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { averagePixelColor } from './studio-home-card'
+import { averagePixelColor } from './average-color'
 
 const pixels = (...rgba: number[]) => new Uint8ClampedArray(rgba)
 

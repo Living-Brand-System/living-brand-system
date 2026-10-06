@@ -5,6 +5,7 @@ import {
 	type StudioProfileCard,
 	StudioProfileCards,
 } from '@/components/studio/shared/studio-profile-cards'
+import { graphicRendererLabel } from '@/features/graphic-generation/domain/graphic-studio-config'
 import { useGraphicStudio } from '@/features/graphic-generation/hooks/use-graphic-studio'
 import type { StudioPreviewImage } from '@/modules/studio-controller/controller-definition'
 
@@ -27,15 +28,15 @@ export function GraphicProfilePicker() {
 	)
 }
 
-/** 그래픽 카드의 배지는 렌더러 종류다. 템플릿 배경의 그래픽 변경도 같은 카드를 쓴다. */
+/** 그래픽 카드의 배지는 렌더러 종류다(편집 화면 카드의 부제와 같은 말). 템플릿 배경의 그래픽 변경도 같은 카드를 쓴다. */
 export const graphicProfileCard = (option: {
 	id: string
 	name: string
-	type: string
+	type: Parameters<typeof graphicRendererLabel>[0]
 	previewImage?: StudioPreviewImage
 }): StudioProfileCard => ({
 	id: option.id,
 	name: option.name,
 	image: option.previewImage,
-	badges: [option.type.toUpperCase()],
+	badges: [graphicRendererLabel(option.type)],
 })

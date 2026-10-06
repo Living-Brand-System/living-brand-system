@@ -2,18 +2,22 @@
 
 import { useCallback, useState } from 'react'
 import {
+	captureProfilePreview,
 	type StudioPreviewKind,
-	updateProfilePreview,
+	uploadProfilePreview,
 } from '@/features/studio-preview/services/update-profile-preview.client'
 import type {
 	RasterArtifact,
 	StudioArtifactProducer,
 } from '@/modules/studio-artifact/studio-artifact'
 import type { StudioPreviewImage } from '@/modules/studio-controller/controller-definition'
+import type { SquareFrameMode } from './square-frame'
 import { useStudioCapabilities } from './studio-capabilities'
 
 /**
  * 「현재 화면을 이 프로파일의 미리보기로」의 상태 기계 — 세 스튜디오가 공유한다.
+ * 캡처(`refresh`) → 사람이 정사각 틀을 맞춤(`draft`) → 저장(`save`) 순이다. 카드가 전부 정사각이라
+ * 썸네일도 정사각으로 저장한다.
  *
  * 🔴 `features/`가 아니라 여기 사는 이유: 권한 컨텍스트(`useStudioCapabilities`)를 읽는데
  * features는 components를 import할 수 없다(`tests/int/layer-boundaries.int.spec.ts`).
@@ -42,8 +46,22 @@ export function useProfilePreview({
 	const [error, setError] = useState<string | null>(null)
 	// 갱신 직후 카드가 새 그림을 바로 보여준다 — 서버 config는 다음 요청에나 새로 온다.
 	const [image, setImage] = useState<StudioPreviewImage | undefined>(undefined)
+	// 캡처한 판 그림의 object URL — 있으면 정사각 틀 대화상자가 열려 있다.
+	const [draft, setDraft] = useState<string | null>(null)
 
 	const ready = Boolean(artifact && viewport)
+	const fail = useCallback(
+		(cause: unknown) =>
+			setError(cause instanceof Error ? cause.message : '미리보기를 갱신하지 못했습니다.'),
+		[],
+	)
+	const closeDraft = useCallback(() => {
+		setDraft((current) => {
+			if (current) URL.revokeObjectURL(current)
+			return null
+		})
+	}, [])
+
 	const refresh = useCallback(() => {
 		if (!artifact || !viewport || refreshing) return
 		setRefreshing(true)
@@ -53,21 +71,31 @@ export function useProfilePreview({
 		//    스피너가 영구히 돌고 문구도 안 뜬다(재현으로 확인).
 		void Promise.resolve()
 			.then(() => (typeof artifact === 'function' ? artifact() : artifact))
-			.then((resolved) =>
-				updateProfilePreview({ studio, profileId, artifact: resolved, viewport }),
-			)
-			.then((next) => {
-				setImage(next)
-				// 카드만 고치면 「Change」 목록의 썸네일이 옛 그림으로 남는다.
-				onUpdated?.()
-			})
-			.catch((cause: unknown) =>
-				setError(
-					cause instanceof Error ? cause.message : '미리보기를 갱신하지 못했습니다.',
-				),
-			)
+			.then((resolved) => captureProfilePreview(resolved, viewport))
+			.then((blob) => setDraft(URL.createObjectURL(blob)))
+			.catch(fail)
 			.finally(() => setRefreshing(false))
-	}, [artifact, onUpdated, profileId, refreshing, studio, viewport])
+	}, [artifact, fail, refreshing, viewport])
+
+	const save = useCallback(
+		(file: Blob) => {
+			if (refreshing) return
+			setRefreshing(true)
+			setError(null)
+			void uploadProfilePreview({ studio, profileId, file })
+				.then((next) => {
+					setImage(next)
+					closeDraft()
+					// 카드만 고치면 「Change」 목록의 썸네일이 옛 그림으로 남는다.
+					onUpdated?.()
+				})
+				.catch(fail)
+				.finally(() => setRefreshing(false))
+		},
+		[closeDraft, fail, onUpdated, profileId, refreshing, studio],
+	)
+
+	const mode: SquareFrameMode = studio === 'template' ? 'inset' : 'crop'
 
 	return {
 		canRefresh: canManageProfiles && ready,
@@ -75,5 +103,9 @@ export function useProfilePreview({
 		error,
 		image,
 		refresh,
+		draft,
+		mode,
+		save,
+		cancel: closeDraft,
 	}
 }

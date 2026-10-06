@@ -41,7 +41,6 @@ export default async function GenerateImagePage() {
 					),
 				},
 			]}
-			cardFit="cover"
 			empty={{
 				title: '발행된 이미지 프로파일이 없습니다',
 				description: '프로파일이 발행되면 이 화면에서 바로 생성할 수 있습니다.',

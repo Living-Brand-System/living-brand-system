@@ -1,4 +1,5 @@
 import { StudioHome } from '@/components/studio/shared/studio-home'
+import { graphicRendererLabel } from '@/features/graphic-generation/domain/graphic-studio-config'
 import { listGraphicStudioConfigs } from '@/features/graphic-generation/services/list-graphic-studio-configs.service'
 import { requireUser } from '@/lib/request-auth'
 import { getStudioGraphicRoute, routes } from '@/lib/routes'
@@ -29,12 +30,11 @@ export default async function GenerateGraphicPage() {
 					.map((config) => ({
 						key: config.id,
 						name: config.name,
-						subtitle: `${config.type.toUpperCase()} Graphic`,
+						subtitle: graphicRendererLabel(config.type),
 						href: getStudioGraphicRoute(config.id),
 						previewImage: config.previewImage,
 					})),
 			}))}
-			cardFit="cover"
 			empty={{
 				title: '발행된 그래픽 프로파일이 없습니다',
 				description: '프로파일이 발행되면 이 화면에서 바로 만들고 내보낼 수 있습니다.',
