@@ -15,6 +15,8 @@ const IMAGE_GENERATION_ERROR_TABLE = {
 			),
 		}),
 	},
+	// 문구는 오류가 갖는다(오늘/이번 달·한도 숫자) — 표는 상태 코드만 정한다.
+	TokenLimitExceededError: { status: 429, message: null },
 	ImageGenerationUnavailableError: {
 		status: 503,
 		message: 'Image generation is unavailable.',
@@ -43,7 +45,7 @@ export function imageGenerationErrorResponse(
 	const entry = IMAGE_GENERATION_ERROR_TABLE[name]
 	if (!entry) return null
 	return Response.json(
-		{ message: messageOverrides?.[name] ?? entry.message },
+		{ message: messageOverrides?.[name] ?? entry.message ?? error.message },
 		{ status: entry.status, ...('headers' in entry ? { headers: entry.headers(error) } : {}) },
 	)
 }

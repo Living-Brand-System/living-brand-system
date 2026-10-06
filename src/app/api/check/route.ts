@@ -1,6 +1,7 @@
 import { startCheckSession } from '@/features/asset-check/services/start-check-session.service'
 import { isPayloadUser } from '@/lib/auth'
 import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
+import { TokenLimitExceededError } from '@/modules/ai-usage/services/token-limit.service'
 import { readCheckImage } from './read-check-image'
 
 // 즉시 판정이 0건인 시나리오에서는 이 라우트가 AI 판정까지 이어서 돌린다(중복 업로드 제거).
@@ -41,6 +42,9 @@ export async function POST(req: Request) {
 
 		return Response.json(result)
 	} catch (error) {
+		if (error instanceof TokenLimitExceededError) {
+			return Response.json({ message: error.message }, { status: 429 })
+		}
 		payload.logger.error({ err: error }, 'asset-check.failed')
 
 		return Response.json({ message: 'Check failed.' }, { status: 500 })

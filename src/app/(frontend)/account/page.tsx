@@ -50,7 +50,12 @@ export default async function AccountPage({
 			 */}
 			<div className="grid w-full max-w-7xl items-start gap-4 py-6 lg:grid-cols-[28rem_minmax(0,1fr)]">
 				<div className="flex flex-col gap-4">
-					<AccountCard createdAt={user.createdAt} email={user.email} role={user.role} />
+					<AccountCard
+						canManageTokenLimits={isManager(user)}
+						createdAt={user.createdAt}
+						email={user.email}
+						role={user.role}
+					/>
 					{/* MCP 키는 계정당 하나다 — 스튜디오 도구가 아니라 이 계정의 설정이라 여기 선다. */}
 					<McpKeyIssuer />
 					{/* Figma 토큰도 이 계정의 외부 연결 설정이라 MCP 옆에 선다. */}

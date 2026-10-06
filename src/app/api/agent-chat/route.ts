@@ -9,6 +9,10 @@ import {
 	assertAgentChatProviderConfigured,
 } from '@/modules/agents/agent-chat.agent'
 import { validateAgentChatMessages } from '@/modules/agents/validate-agent-chat-messages.agent'
+import {
+	assertWithinTokenLimit,
+	TokenLimitExceededError,
+} from '@/modules/ai-usage/services/token-limit.service'
 
 export const maxDuration = 30
 
@@ -42,6 +46,16 @@ export async function POST(req: Request) {
 
 	if (!validatedMessages.success) {
 		return Response.json({ message: 'Invalid request.' }, { status: 400 })
+	}
+
+	// 모델을 부르기 전에 한도를 본다 — 세션도 만들지 않는다.
+	try {
+		await assertWithinTokenLimit(user.id)
+	} catch (error) {
+		if (error instanceof TokenLimitExceededError) {
+			return Response.json({ message: error.message }, { status: 429 })
+		}
+		throw error
 	}
 
 	const requestId = crypto.randomUUID()

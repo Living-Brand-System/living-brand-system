@@ -1,5 +1,6 @@
 import type { CollectionBeforeDeleteHook, CollectionConfig } from 'payload'
 import { Forbidden } from 'payload'
+import { tokenLimitPeriodFields } from '@/collections/fields/token-limit-fields'
 import {
 	isAdmin,
 	isManager,
@@ -86,6 +87,15 @@ export const Users: CollectionConfig = {
 			type: 'text',
 			access: { read: () => false, create: () => false, update: () => false },
 			admin: { hidden: true },
+		},
+		{
+			// 이 계정의 AI 토큰 한도 — 「기본값 따름」이면 전역 설정 `ai-token-limits`를 쓴다.
+			// 🔴 본인이 자기 한도를 풀 수 없게 읽기·쓰기 모두 manager 이상이다(docs/07).
+			name: 'tokenLimits',
+			type: 'group',
+			label: 'AI 토큰 한도',
+			access: { read: managerFieldOnly, create: managerFieldOnly, update: managerFieldOnly },
+			fields: tokenLimitPeriodFields('account'),
 		},
 	],
 }
