@@ -13,7 +13,10 @@ const mocks = vi.hoisted(() => ({
 	startCheckSession: vi.fn(),
 }))
 
-vi.mock('@/lib/auth', () => ({ isPayloadUser: () => true }))
+vi.mock('@/lib/auth', async (importOriginal) => ({
+	...(await importOriginal<typeof import('@/lib/auth')>()),
+	isPayloadUser: () => true,
+}))
 vi.mock('@/lib/request-auth', () => ({
 	authenticateRequest: mocks.authenticateRequest,
 	isCrossOriginRequest: mocks.isCrossOriginRequest,
@@ -33,7 +36,7 @@ describe('POST /api/check', () => {
 		mocks.isCrossOriginRequest.mockReturnValue(false)
 		mocks.authenticateRequest.mockResolvedValue({
 			payload: { logger: { error: vi.fn() } },
-			user: { id: 7 },
+			user: { id: 7, role: 'admin' },
 		})
 		mocks.readCheckImage.mockResolvedValue({
 			buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
@@ -56,5 +59,17 @@ describe('POST /api/check', () => {
 		expect(mocks.startCheckSession).toHaveBeenCalledWith(
 			expect.objectContaining({ source: 'review-page' }),
 		)
+	})
+
+	it('미개발 표면이라 admin이 아니면 403이고 검수를 돌리지 않는다', async () => {
+		mocks.authenticateRequest.mockResolvedValue({
+			payload: { logger: { error: vi.fn() } },
+			user: { id: 8, role: 'manager' },
+		})
+
+		const response = await POST({} as Request)
+
+		expect(response.status).toBe(403)
+		expect(mocks.startCheckSession).not.toHaveBeenCalled()
 	})
 })

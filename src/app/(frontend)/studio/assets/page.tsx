@@ -1,3 +1,5 @@
+import { notFound } from 'next/navigation'
+import { isAdmin } from '@/lib/auth'
 import { requireUser } from '@/lib/request-auth'
 import { routes } from '@/lib/routes'
 
@@ -5,6 +7,8 @@ import { routes } from '@/lib/routes'
 export const dynamic = 'force-dynamic'
 
 export default async function StudioAssetsPage() {
-	await requireUser(routes.studio.assets)
+	const { user } = await requireUser(routes.studio.assets)
+	// ponytail: 미개발 표면 — admin 밖에는 이 주소가 없다(404). 개발이 끝나면 이 줄을 지운다.
+	if (!isAdmin(user)) notFound()
 	return null
 }

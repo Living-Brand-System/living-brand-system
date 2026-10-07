@@ -1,15 +1,19 @@
+import { notFound } from 'next/navigation'
 import { ReviewCanvas } from '@/components/studio/review/review-canvas'
 import { StudioWorkspace, StudioWorkspacePage } from '@/components/studio/shared/studio-workspace'
 import { ReviewSidebar } from '@/components/studio/sidebar/review-sidebar'
 import { StudioLeftPanel } from '@/components/studio/sidebar/studio-left-panel'
 import { getCheckRuleset } from '@/features/asset-check/services/get-check-ruleset.service'
+import { isAdmin } from '@/lib/auth'
 import { requireUser } from '@/lib/request-auth'
 import { routes } from '@/lib/routes'
 
 // 검수 표면: 대상 미리보기는 캔버스가, 결과는 오른쪽 컨트롤러가 소유한다.
 // 편집 세션(업로드·선택·검수 실행)은 layout.tsx의 CheckImageProvider가 갖는다.
 export default async function ReviewPage() {
-	await requireUser(routes.studio.review)
+	const { user } = await requireUser(routes.studio.review)
+	// ponytail: 미개발 표면 — admin 밖에는 이 주소가 없다(404). 개발이 끝나면 이 줄을 지운다.
+	if (!isAdmin(user)) notFound()
 	const sections = await getCheckRuleset()
 
 	return (
