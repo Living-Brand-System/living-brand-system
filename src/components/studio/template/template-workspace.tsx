@@ -7,6 +7,10 @@ import { StudioSelectionChange } from '@/components/studio/shared/studio-selecti
 import { StudioShell } from '@/components/studio/shared/studio-shell'
 import { useProfilePreview } from '@/components/studio/shared/use-profile-preview'
 import { TemplateCanvas } from '@/components/studio/template/template-canvas'
+import {
+	TemplateDefaultsButton,
+	useTemplateDefaults,
+} from '@/components/studio/template/template-defaults-button'
 import { TemplateEditingPanel } from '@/components/studio/template/template-editing-panel'
 import { TemplateOutputControls } from '@/components/studio/template/template-output-controls'
 import { useTemplatePanel } from '@/components/studio/template/template-panel'
@@ -53,6 +57,7 @@ export function TemplateWorkspace({
 		viewport: config.template.exportOption.canvas,
 		onUpdated: navigation.browse.reload,
 	})
+	const defaults = useTemplateDefaults()
 
 	const size = exporting.sizeMm ?? exporting.outputSize ?? config.template.exportOption.canvas
 	const dimension = (value: number) =>
@@ -70,14 +75,15 @@ export function TemplateWorkspace({
 							actions: (
 								<>
 									<PreviewRefreshButton preview={preview} />
+									<TemplateDefaultsButton defaults={defaults} />
 									<StudioSelectionChange label="템플릿 변경" tabs={['Templates']}>
 										<TemplateProfilePicker onSelect={onChange} />
 									</StudioSelectionChange>
 								</>
 							),
-							children: preview.error && (
+							children: (preview.error || defaults.message) && (
 								<Typography role="alert" size="xs">
-									{preview.error}
+									{preview.error ?? defaults.message}
 								</Typography>
 							),
 						},

@@ -154,20 +154,38 @@ export async function createTemplateVideoArtifact({
  */
 export function composeTemplateStudioHtml({
 	html,
-	textSlots,
-	textValues,
-	textColor,
-	imageStates,
-	imageSlots,
-	imageContracts,
-	vectorSlots,
-	vectorColors,
-	layerVisibility,
 	background,
-	width,
-	height,
-}: {
+	...session
+}: TemplateSessionOverridesInput & {
 	html: string
+	background: {
+		type: TemplateBackgroundType
+		color: string | null
+		image?: { url: string }
+		/** 배경 위 디머 — 배경 형식과 무관하게 적용한다(색 배경도 창작자가 더 누를 수 있다). */
+		dimmer: boolean
+		dimmerOpacity: number
+	}
+}): string {
+	const canvasBackground = !isTemplateBackgroundVisible(session.layerVisibility)
+		? { clear: true }
+		: {
+				...(background.type === 'graphic' ? { clear: true } : {}),
+				...(background.type === 'color' && background.color
+					? { color: background.color }
+					: {}),
+				...(background.type === 'image' && background.image
+					? { imageUrl: background.image.url }
+					: {}),
+				// 꺼져 있으면 키를 빼서 조기 반환을 살린다 — 합성은 매번 불변 base HTML에서 다시 시작한다.
+				...(background.dimmer && background.dimmerOpacity > 0
+					? { dimmer: background.dimmerOpacity }
+					: {}),
+			}
+	return composeTemplateHtml(html, buildTemplateSessionOverrides(session), { canvasBackground })
+}
+
+export type TemplateSessionOverridesInput = {
 	textSlots: readonly TemplateTextSlot[]
 	textValues: Readonly<Record<string, string>>
 	textColor: string | null
@@ -190,17 +208,27 @@ export function composeTemplateStudioHtml({
 	vectorSlots: readonly TemplateVectorSlot[]
 	vectorColors: Readonly<Record<string, string | undefined>>
 	layerVisibility: Readonly<Record<string, boolean>>
-	background: {
-		type: TemplateBackgroundType
-		color: string | null
-		image?: { url: string }
-		/** 배경 위 디머 — 배경 형식과 무관하게 적용한다(색 배경도 창작자가 더 누를 수 있다). */
-		dimmer: boolean
-		dimmerOpacity: number
-	}
 	width: number
 	height: number
-}): string {
+}
+
+/**
+ * 세션 값 → 노드 설정 map. 화면 합성(`composeTemplateStudioHtml`)과 「기본값으로 저장」이 같은
+ * 변환을 읽는다 — 둘이 갈라지면 저장한 기본값이 화면과 다른 그림이 된다.
+ */
+export function buildTemplateSessionOverrides({
+	textSlots,
+	textValues,
+	textColor,
+	imageStates,
+	imageSlots,
+	imageContracts,
+	vectorSlots,
+	vectorColors,
+	layerVisibility,
+	width,
+	height,
+}: TemplateSessionOverridesInput): TemplateNodeConfigMap {
 	const textOverrides = Object.fromEntries(
 		textSlots.flatMap((slot) => {
 			const override: { text?: string; color?: string } = {}
@@ -265,25 +293,11 @@ export function composeTemplateStudioHtml({
 	const visibilityOverrides = Object.fromEntries(
 		Object.entries(layerVisibility).map(([slotId, visible]) => [slotId, { visible }]),
 	)
-	const canvasBackground = !isTemplateBackgroundVisible(layerVisibility)
-		? { clear: true }
-		: {
-				...(background.type === 'graphic' ? { clear: true } : {}),
-				...(background.type === 'color' && background.color
-					? { color: background.color }
-					: {}),
-				...(background.type === 'image' && background.image
-					? { imageUrl: background.image.url }
-					: {}),
-				// 꺼져 있으면 키를 빼서 조기 반환을 살린다 — 합성은 매번 불변 base HTML에서 다시 시작한다.
-				...(background.dimmer && background.dimmerOpacity > 0
-					? { dimmer: background.dimmerOpacity }
-					: {}),
-			}
-	return composeTemplateHtml(
-		html,
-		mergeTemplateOverrides(textOverrides, imageOverrides, vectorOverrides, visibilityOverrides),
-		{ canvasBackground },
+	return mergeTemplateOverrides(
+		textOverrides,
+		imageOverrides,
+		vectorOverrides,
+		visibilityOverrides,
 	)
 }
 
