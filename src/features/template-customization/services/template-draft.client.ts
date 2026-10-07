@@ -38,8 +38,11 @@ type StoredDraft = {
 	draft: TemplateDraft
 }
 
-/** 휘발 상태를 벗겨 저장 가능한 모양으로. 복원할 때 이 자리들은 초기값으로 되살아난다. */
-function withoutTransientFields(draft: TemplateDraft): TemplateDraft {
+/**
+ * 휘발 상태를 벗겨 저장 가능한 모양으로. 복원할 때 이 자리들은 초기값으로 되살아난다.
+ * 템플릿 「기본 화면」(`defaultSession`)도 같은 모양으로 저장한다.
+ */
+export function withoutTransientFields(draft: TemplateDraft): TemplateDraft {
 	return {
 		...draft,
 		images: Object.fromEntries(
@@ -78,13 +81,21 @@ export function readTemplateDraft(userId: string, templateId: string): TemplateD
 		if (stored.userId !== userId || stored.templateId !== templateId) return null
 		if (typeof stored.savedAt !== 'number') return null
 		if (Date.now() - stored.savedAt > TEMPLATE_DRAFT_TTL_MS) return null
-		const draft = stored.draft
-		if (!draft || typeof draft !== 'object' || !draft.background) return null
-		return draft
+		return toTemplateDraft(stored.draft)
 	} catch {
 		// 손상된 JSON은 없는 것과 같다.
 		return null
 	}
+}
+
+/**
+ * 저장된 값이 초안 모양인지만 본다(임시 초안과 템플릿 기본 화면 공용).
+ * 🔴 값이 지금 계약에 맞는지는 세션이 판단한다 — 슬롯이 사라졌으면 `pickKnownSlots`가 거른다.
+ */
+export function toTemplateDraft(value: unknown): TemplateDraft | null {
+	if (!value || typeof value !== 'object') return null
+	const draft = value as Partial<TemplateDraft>
+	return draft.background ? (draft as TemplateDraft) : null
 }
 
 /**

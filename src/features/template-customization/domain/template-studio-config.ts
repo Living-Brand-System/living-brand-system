@@ -161,6 +161,8 @@ export type PublishedHtmlTemplate = {
 	exportPolicy?: unknown
 	backgroundPolicy?: TemplateBackgroundPolicy
 	previewImage?: StudioPreviewImage
+	/** manager가 스튜디오에서 「기본값으로 저장」한 화면 상태. 모양은 스튜디오 임시 초안과 같다. */
+	defaultSession?: unknown
 }
 
 /**
@@ -170,7 +172,7 @@ export type PublishedHtmlTemplate = {
  */
 export type PublishedTemplateView = Pick<
 	PublishedHtmlTemplate,
-	'id' | 'name' | 'html' | 'width' | 'height'
+	'id' | 'name' | 'html' | 'width' | 'height' | 'defaultSession'
 >
 
 /**

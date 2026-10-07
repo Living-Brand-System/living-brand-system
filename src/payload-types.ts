@@ -1350,6 +1350,15 @@ export interface Template {
     | number
     | boolean
     | null;
+  defaultSession?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   /**
    * 스튜디오에서 이 항목을 고를 때 카드에 표시할 이미지입니다.
    */
@@ -2715,6 +2724,7 @@ export interface TemplatesSelect<T extends boolean = true> {
   sourceUrl?: T;
   baseHtml?: T;
   overrides?: T;
+  defaultSession?: T;
   previewImage?: T;
   width?: T;
   height?: T;
