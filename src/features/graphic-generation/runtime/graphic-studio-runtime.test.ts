@@ -241,6 +241,28 @@ describe('런타임 기본값과 프로파일 좁힘이 부딪힐 때', () => {
 		expect(maxWeightOf({ preset: 'flatDiagonal' }, narrowed)).toBe(4)
 	})
 
+	// Formation은 면 색에 따라 선 색을 스스로 좁힌다 — admin이 선 색을 또 좁히면 렌더 중에 던져 화면이 죽었다.
+	it('런타임이 스스로 좁히는 선택지를 admin이 또 좁혀도 교집합으로 살아 있다', () => {
+		const config = deriveGraphicStudioConfig({
+			id: 1,
+			name: 'Formation',
+			runtime: 'key-visual-formation',
+			controllerRestrictions: {
+				controls: [{ controlId: 'lineColor', optionValues: ['prosperity'] }],
+			},
+		})
+		const lineColorOf = () =>
+			getGraphicStudioRuntimeGroups(config, createControllerValues(config.controller.groups))
+				.flatMap((group) => group.controls)
+				.find((control) => control.id === 'lineColor')
+
+		expect(lineColorOf).not.toThrow()
+		const options = (lineColorOf() as unknown as { options: { value: string }[] }).options.map(
+			(option) => option.value,
+		)
+		expect(options).toEqual(['prosperity'])
+	})
+
 	// 기본 프리셋까지 범위 밖이면 창작자가 아무것도 누르지 않아도 첫 렌더에서 죽었다.
 	it('기본 프리셋이 범위 밖이어도 첫 렌더가 살아 있다', () => {
 		const narrowed = { controls: [{ controlId: 'maxWeight', max: 8, defaultValue: 8 }] }
