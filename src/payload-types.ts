@@ -931,9 +931,6 @@ export interface ImageProfile {
     value: string;
     id?: string | null;
   }[];
-  /**
-   * 선택사항입니다. 행이 있으면 AI가 후보 중 하나로 정규화하고 유저 인풋 원문은 최종 프롬프트에서 제외합니다. 비어 있으면 원문을 subject로 사용합니다.
-   */
   userPromptNormalization?:
     | {
         key: string;
