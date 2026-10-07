@@ -66,7 +66,8 @@ export function studioExportPolicyField({
 		type: 'group',
 		label: '출력 설정',
 		admin: {
-			description: '비우면 Exporter가 지원하는 형식을 모두 허용합니다.',
+			description:
+				'형식 칩을 전부 켜면 지원하는 형식을 모두 허용합니다. 전부 끌 수는 없습니다.',
 			// 그룹 전체를 정본(76:4) 카드로 그린다 — 하위 필드는 스키마·저장 계약만 소유하고
 			// 렌더는 이 컴포넌트가 useField(하위 path)로 직접 잇는다.
 			components: {
@@ -83,6 +84,12 @@ export function studioExportPolicyField({
 				hasMany: true,
 				options: [...STUDIO_OUTPUT_FORMAT_OPTIONS],
 				label: '허용 형식',
+				// 다 끈 목록은 받지 않는다 — 스튜디오에 내보낼 형식이 없어진다(사용자 결정 2026-10-07).
+				// 「전부 허용」은 빈 목록이 아니라 값 없음(undefined)으로 저장된다.
+				validate: (value: unknown) =>
+					Array.isArray(value) && value.length === 0
+						? '출력 형식을 하나 이상 고르세요.'
+						: true,
 			},
 			{
 				name: 'print',
