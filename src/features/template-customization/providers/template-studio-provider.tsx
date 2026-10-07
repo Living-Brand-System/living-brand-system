@@ -37,6 +37,7 @@ import {
 } from '@/features/template-customization/contexts/template-studio-context'
 import {
 	findTemplateControl,
+	isTemplateBackgroundVisible,
 	listCompatibleTemplateImageConfigs,
 	listTemplateLayerGroups,
 	mapTemplateNodeLayers,
@@ -383,30 +384,26 @@ function useTemplateVectorSession(
 }
 
 /**
- * 🔴 목록이 둘인 이유: 표시/숨김은 **편집 가능한 레이어 하나하나**를 갖고(배경은 정책이 없다),
- *    선택은 배경까지 포함한 **종류**를 대상으로 한다 — 배경도 레이어 패널의 한 줄이다.
+ * 표시/숨김은 편집 권한과 무관하게 **모든 슬롯**(배경 포함)을 사용자가 정한다. 없는 키는 보인다.
  */
 function useTemplateLayerSession(
-	editable: readonly (TemplateTextSlot | TemplateImageConfigSlot | TemplateVectorSlot)[],
 	all: readonly TemplateStudioConfigSlot[],
 	draft: TemplateDraft | null,
 ): TemplateStudioValue['layers'] {
-	const [visibility, setVisibility] = useState<Record<string, boolean>>(() => ({
-		...Object.fromEntries(editable.map((slot) => [slot.id, slot.visibility.defaultVisible])),
-		...pickKnownSlots(
+	const [visibility, setVisibility] = useState<Record<string, boolean>>(() =>
+		pickKnownSlots(
 			draft?.visibility,
-			editable.map((slot) => slot.id),
+			all.map((slot) => slot.id),
 		),
-	}))
+	)
 	const setVisible = useCallback(
 		(slotId: string, visible: boolean) =>
-			setVisibility((current) => {
-				const slot = editable.find((candidate) => candidate.id === slotId)
-				return slot?.access === 'editable' && slot.visibility.allowToggle
+			setVisibility((current) =>
+				all.some((slot) => slot.id === slotId)
 					? { ...current, [slotId]: visible }
-					: current
-			}),
-		[editable],
+					: current,
+			),
+		[all],
 	)
 	/**
 	 * 🔴 `undefined`(아직 고른 적 없음)와 `null`(일부러 풀었음)은 다른 상태다. 둘을 합치면
@@ -734,14 +731,10 @@ export function TemplateStudioProvider({
 	const imageSlots = partitionedSlots.image
 	const vectorSlots = partitionedSlots.vector
 	const backgroundSlot = partitionedSlots.background
-	const editableSlots = useMemo(
-		() => [...textSlots, ...imageSlots, ...vectorSlots],
-		[imageSlots, textSlots, vectorSlots],
-	)
 	const text = useTemplateTextSession(config, textSlots, html, previewRef, draft)
 	const images = useTemplateImageSession(config, imageSlots, draft)
 	const vectors = useTemplateVectorSession(vectorSlots, draft)
-	const layerSession = useTemplateLayerSession(editableSlots, slots, draft)
+	const layerSession = useTemplateLayerSession(slots, draft)
 	const background = useTemplateBackgroundSession(config, backgroundSlot, draft)
 	const [targetId, setTargetId] = useState<string | null>(null)
 	const snapshot = useRef<{
@@ -947,8 +940,10 @@ export function TemplateStudioProvider({
 	 * 🔑 정지 이미지 계열(png·jpeg·tiff·pdf·svg)이 이걸 공유한다. MP4만 프레임마다 셰이더를 다시
 	 *    그려야 하므로 `videoArtifact`가 따로 합성한다.
 	 */
+	const graphicBackground =
+		background.state.type === 'graphic' && isTemplateBackgroundVisible(deferredLayerVisibility)
 	const exportHtml = useCallback((): string => {
-		if (background.state.type !== 'graphic') return composedHtml
+		if (!graphicBackground) return composedHtml
 		// 🔴 **내보내기는 미리보기와 같은 조건으로 판단한다.** 캔버스는 고른 그래픽 설정이 있을 때만
 		//    셰이더를 그리므로(`template-canvas`의 `graphicConfig &&`), 목록이 비었거나 id가 안 맞으면
 		//    화면에도 그래픽이 없다. 그때 아래 가드가 걸리면 **모든 형식의 내보내기가 영구 차단된다** —
@@ -969,7 +964,7 @@ export function TemplateStudioProvider({
 			{},
 			{ canvasBackground: { imageUrl: graphicFrame } },
 		)
-	}, [background.graphicConfigs, background.state, composedHtml])
+	}, [background.graphicConfigs, background.state, composedHtml, graphicBackground])
 	const artifact = useCallback(
 		(): TemplateRasterArtifact =>
 			createTemplateRasterArtifact({ height, html: exportHtml(), width }),
@@ -989,7 +984,7 @@ export function TemplateStudioProvider({
 	// 배경이 graphic이어도 video artifact를 내지 않는 runtime이 있다(forward-straight는 vector·raster뿐).
 	// 타입만 보고 MP4를 Video 경로로 돌리면 producer가 던진다 — 선언을 보고 정적 MP4로 떨어뜨린다.
 	const supportsBackgroundVideo =
-		background.state.type === 'graphic' &&
+		graphicBackground &&
 		Boolean(
 			background.graphicConfigs.find(
 				(candidate) => candidate.id === background.state.graphicConfigId,

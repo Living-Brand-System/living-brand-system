@@ -58,7 +58,7 @@ const TEMPLATE_LAYER_ROWS = [
 	{ kind: 'background', label: 'Background', Icon: ColorPalette },
 ] as const
 
-/** 묶음 선택은 첫 슬롯 ID로 기존 세션에 연결하고, 표시 변경은 허용된 슬롯에만 적용한다. */
+/** 묶음 선택은 첫 슬롯 ID로 기존 세션에 연결하고, 표시 변경은 편집 권한과 무관하게 묶음 전체에 적용한다. */
 export function TemplateLayerGroups() {
 	const { config, layers, focus, editing } = useTemplateStudio()
 	const selectedKind = config.template.slots.find((slot) => slot.id === layers.selectedId)?.kind
@@ -76,12 +76,6 @@ export function TemplateLayerGroups() {
 			{TEMPLATE_LAYER_ROWS.map(({ kind, label, Icon }) => {
 				const slots = config.template.slots.filter((slot) => slot.kind === kind)
 				const selected = selectedKind === kind
-				const editable = slots.filter(
-					(slot) =>
-						slot.kind !== 'background' &&
-						slot.access === 'editable' &&
-						slot.visibility.allowToggle,
-				)
 				return (
 					<div
 						key={kind}
@@ -127,14 +121,14 @@ export function TemplateLayerGroups() {
 								className="rounded-sm hover:bg-foreground/5 aria-pressed:bg-foreground/10 dark:hover:bg-foreground/5"
 								aria-label={`${label} ${action}`}
 								aria-pressed={
-									editable.length > 0 &&
-									editable.every(
+									slots.length > 0 &&
+									slots.every(
 										(slot) => (layers.visibility[slot.id] ?? true) === visible,
 									)
 								}
-								disabled={!editable.length}
+								disabled={!slots.length}
 								onClick={() => {
-									for (const slot of editable) layers.setVisible(slot.id, visible)
+									for (const slot of slots) layers.setVisible(slot.id, visible)
 								}}
 							>
 								<Eye aria-hidden="true" />

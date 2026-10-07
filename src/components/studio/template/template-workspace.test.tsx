@@ -108,18 +108,18 @@ it('실제 합성 캔버스·출력에 연결하고 Reset은 텍스트·색·출
 	expect(screen.getByRole('combobox', { name: 'Format' })).toHaveTextContent('PNG')
 })
 
-it('네 가지 묶음만 표시하고 눈 아이콘은 허용된 텍스트들을 함께 숨기고 복원한다', async () => {
+it('네 가지 묶음만 표시하고 눈 아이콘은 편집 권한과 무관하게 묶음 전체를 숨기고 복원한다', async () => {
 	const { container } = renderTemplate(
 		studio(1, {
 			html: '<div><p data-node-id="title">제목 원본</p><p data-node-id="subtitle">부제 원본</p><p data-node-id="fixed">고정 문구</p></div>',
 			nodeConfigs: {
 				title: {
 					input: { label: '제목', placeholder: '서포트 설명', maxLines: 1 },
-					creator: { access: 'editable', visibility: { allowToggle: true } },
+					creator: { access: 'editable' },
 				},
 				subtitle: {
 					input: { label: '부제', maxLines: 1 },
-					creator: { access: 'editable', visibility: { allowToggle: true } },
+					creator: { access: 'editable' },
 				},
 				fixed: { input: { label: '고정' }, creator: { access: 'readonly' } },
 			},
@@ -134,17 +134,25 @@ it('네 가지 묶음만 표시하고 눈 아이콘은 허용된 텍스트들을
 	)
 	expect(within(panel).getByRole('button', { name: /^Image$/ })).toBeDisabled()
 	expect(within(panel).getByRole('button', { name: /^Symbol$/ })).toBeDisabled()
-	expect(within(panel).getByRole('button', { name: 'Background 숨김' })).toBeDisabled()
+	expect(within(panel).getByRole('button', { name: 'Symbol 숨김' })).toBeDisabled()
 	expect(screen.queryByText('서포트 설명')).not.toBeInTheDocument()
 	expect(screen.queryByRole('group', { name: '제목 표시' })).not.toBeInTheDocument()
 	const preview = container.querySelector('[data-slot="template-preview"]')
 	fireEvent.click(within(panel).getByRole('button', { name: 'Text 숨김' }))
 	expect(preview?.querySelector('[data-node-id="title"]')).not.toBeVisible()
 	expect(preview?.querySelector('[data-node-id="subtitle"]')).not.toBeVisible()
-	expect(preview?.querySelector('[data-node-id="fixed"]')).toBeVisible()
+	// 읽기 전용도 사용자가 끌 수 있다 — 표시 여부는 편집 권한이 아니다.
+	expect(preview?.querySelector('[data-node-id="fixed"]')).not.toBeVisible()
 	fireEvent.click(within(panel).getByRole('button', { name: 'Text 표시' }))
 	expect(preview?.querySelector('[data-node-id="title"]')).toBeVisible()
-	expect(preview?.querySelector('[data-node-id="subtitle"]')).toBeVisible()
+	expect(preview?.querySelector('[data-node-id="fixed"]')).toBeVisible()
+	// 배경을 끄면 판(템플릿 루트)이 투명해진다.
+	const canvasRoot = () =>
+		preview?.querySelector('[data-node-id="title"]')?.parentElement as HTMLElement
+	fireEvent.click(within(panel).getByRole('button', { name: 'Background 숨김' }))
+	await waitFor(() => expect(canvasRoot().style.background).toBe('transparent'))
+	fireEvent.click(within(panel).getByRole('button', { name: 'Background 표시' }))
+	await waitFor(() => expect(canvasRoot().style.background).not.toBe('transparent'))
 	fireEvent.click(within(panel).getByRole('button', { name: /^Background$/ }))
 	expect(screen.queryByRole('textbox', { name: '제목' })).not.toBeInTheDocument()
 	fireEvent.click(screen.getByRole('button', { name: '완료' }))

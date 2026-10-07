@@ -9,7 +9,6 @@ import {
 const editablePolicy = {
 	policy: {
 		access: 'editable' as const,
-		visibility: { defaultVisible: true, allowToggle: false },
 	},
 }
 
@@ -212,10 +211,7 @@ describe('Template 공통 Creator 레이어 정책', () => {
 		expect(
 			collectTemplateVectorSlots(html, {
 				'3:1': {
-					creator: {
-						access: 'editable',
-						visibility: { defaultVisible: false, allowToggle: true },
-					},
+					creator: { access: 'editable' },
 					vectorColor: '#112233',
 				},
 			}),
@@ -224,10 +220,7 @@ describe('Template 공통 Creator 레이어 정책', () => {
 				nodeId: '3:1',
 				name: 'Vector',
 				color: '#112233',
-				policy: {
-					access: 'editable',
-					visibility: { defaultVisible: false, allowToggle: true },
-				},
+				policy: { access: 'editable' },
 			},
 		])
 	})

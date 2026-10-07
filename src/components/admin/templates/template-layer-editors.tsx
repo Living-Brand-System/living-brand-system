@@ -61,9 +61,6 @@ function CreatorLayerPolicyEditor({
 	fallbackName: string
 	onChange: (patch: TemplateNodeConfig) => void
 }) {
-	const visibility = config.creator?.visibility
-	const patchVisibility = (part: { defaultVisible?: boolean; allowToggle?: boolean }) =>
-		onChange({ creator: { access, visibility: { ...visibility, ...part } } })
 	return (
 		<Controller.Group title="기본 설정" collapsible={false}>
 			{/* 🔑 이름은 `data-name` 한 자리로 들어가 **스튜디오 레이어 패널 · 이 목록 · 인쇄 PDF의
@@ -81,38 +78,14 @@ function CreatorLayerPolicyEditor({
 					options={[
 						{ value: 'editable', label: '편집 가능' },
 						{ value: 'readonly', label: '읽기 전용' },
-						{ value: 'hidden', label: '숨김' },
 					]}
+					// 🔑 미설정 레이어는 `hidden`(스튜디오에 노출 안 함)이라 어느 칸도 눌려 있지 않다.
+					//    표시 여부는 정책이 아니다 — 스튜디오 사용자가 Layers 패널에서 정한다.
 					value={access}
-					onChange={(next) =>
-						onChange({
-							creator: {
-								access: next,
-								...(next === 'editable' && visibility ? { visibility } : {}),
-							},
-						})
-					}
+					// 예전의 visibility 값은 여기서 걷힌다 — 읽는 곳이 없다.
+					onChange={(next) => onChange({ creator: { access: next } })}
 				/>
 			</Controller.Row>
-			{/* 표시 정책은 편집 가능일 때만 의미가 있다 — 정본대로 행은 항상 그리고 잠근다. */}
-			<div className="grid grid-cols-1 gap-1 md:grid-cols-2">
-				<Controller.Row label="기본 표시" disabled={access !== 'editable'}>
-					<Controller.Segmented
-						aria-label="기본 표시"
-						options={ON_OFF}
-						value={(visibility?.defaultVisible ?? true) ? 'on' : 'off'}
-						onChange={(next) => patchVisibility({ defaultVisible: next === 'on' })}
-					/>
-				</Controller.Row>
-				<Controller.Row label="숨김 가능" disabled={access !== 'editable'}>
-					<Controller.Segmented
-						aria-label="숨김 가능"
-						options={ON_OFF}
-						value={(visibility?.allowToggle ?? false) ? 'on' : 'off'}
-						onChange={(next) => patchVisibility({ allowToggle: next === 'on' })}
-					/>
-				</Controller.Row>
-			</div>
 		</Controller.Group>
 	)
 }
