@@ -1356,7 +1356,7 @@ export interface Template {
   /**
    * 스튜디오에서 이 항목을 고를 때 카드에 표시할 이미지입니다.
    */
-  previewImage: number | ApplicationImage;
+  previewImage?: (number | null) | ApplicationImage;
   /**
    * 가져오기가 채웁니다.
    */

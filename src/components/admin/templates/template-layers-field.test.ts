@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { createElement, type ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -9,7 +11,7 @@ import {
 	pruneCarrierChildImageKeys,
 	toggleAllowedId,
 } from './template-layers'
-import { TemplateLayersField } from './template-layers-field'
+import { buildPreviewDocument, TemplateLayersField } from './template-layers-field'
 
 const payloadForm = vi.hoisted(() => ({
 	dispatchFields: vi.fn(),
@@ -55,6 +57,25 @@ beforeEach(() => {
 afterEach(() => {
 	cleanup()
 	vi.unstubAllGlobals()
+})
+
+// 미리보기 iframe은 부모 CSS를 못 물려받으므로 HD 웹폰트를 따로 싣는다 — theme.css와 같아야 한다.
+describe('buildPreviewDocument — HD 웹폰트', () => {
+	it('theme.css의 "HD OTF" @font-face를 전부 싣고 같은 출처의 폰트 로드를 허용한다', () => {
+		const strip = (css: string) => css.replace(/\s+/g, '')
+		const themeCss = readFileSync(
+			path.join(process.cwd(), 'src/app/(frontend)/theme.css'),
+			'utf8',
+		)
+		const hdFaces = [...themeCss.matchAll(/@font-face\s*\{[^}]*\}/g)]
+			.map((m) => m[0])
+			.filter((face) => face.includes('"HD OTF"'))
+		const doc = buildPreviewDocument('<div></div>', 'https://lbs.test')
+
+		expect(hdFaces).toHaveLength(6)
+		for (const face of hdFaces) expect(strip(doc)).toContain(strip(face))
+		expect(doc).toContain('font-src https://lbs.test data:')
+	})
 })
 
 describe('parseLayers', () => {

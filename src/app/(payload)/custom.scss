@@ -34,3 +34,26 @@
 		margin-top: 25px;
 	}
 }
+
+/* 어드민 아이콘·로고(admin-icon.tsx·admin-logo.tsx). 3색을 지켜야 해서 mask가 아니라 이미지로 그리고,
+   어두운 테마에서는 워드마크 글자가 흰 판으로 바뀐다. */
+.admin-hd-logo {
+	aspect-ratio: 234.88 / 100;
+	background: url("/brand/hd/hd-horizontal-default.svg") center / contain no-repeat;
+	display: inline-block;
+	vertical-align: top;
+}
+
+[data-theme="dark"] .admin-hd-logo {
+	background-image: url("/brand/hd/hd-horizontal-white.svg");
+}
+
+/* Payload가 홈 링크를 18×18 정사각으로 고정한다 — 가로형이 들어가도록 폭만 풀고,
+   아이콘을 감싸는 높이 없는 span에 링크 높이를 잇는다. */
+.step-nav__home {
+	width: auto;
+
+	> span {
+		height: 100%;
+	}
+}

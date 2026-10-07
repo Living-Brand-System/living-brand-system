@@ -126,7 +126,7 @@ export const Templates: CollectionConfig = {
 		},
 
 		// ── 사이드바 (렌더 순서 = 배열 순서) ──
-		previewImageField(),
+		previewImageField({ required: false }),
 		// Figma 판 크기(px) — 가져오기가 채우는 디자인 좌표계라 평소엔 볼 일이 없어 접어 둔다. 판형은 아래 「판형 크기」가 정한다.
 		{
 			type: 'collapsible',
