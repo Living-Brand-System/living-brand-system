@@ -1,7 +1,6 @@
 import type { ApplicationImage, GuidelineDocument, Rule } from '@/payload-types'
 import { sectionTitle } from '../sections/model'
 import { projectSection } from '../sections/projection'
-import { relationshipId } from '../utils/block-text'
 import {
 	buildCheckSourceSnapshot,
 	type GuidelineCheckDocument,
@@ -30,7 +29,8 @@ export interface GuidelineCheckSource {
 export function collectGuidelineCheckSources(
 	document: GuidelineCheckDocument,
 ): GuidelineCheckSource[] {
-	const assets = collectApplicationImages(document)
+	// 가이드라인은 검수 참조 자산을 내지 않는다 — 섹션은 referenceAssets: [], 헤더 이미지는 카드 썸네일이다.
+	const assets = new Map<number, ApplicationImage>()
 	const documentSnapshot = buildCheckSourceSnapshot(document)
 	const documentSources = toSources(
 		document.rules,
@@ -80,20 +80,4 @@ function toSources(
 			},
 		]
 	})
-}
-
-function collectApplicationImages(document: GuidelineCheckDocument): Map<number, ApplicationImage> {
-	const values: unknown[] = []
-	if ('headerImage' in document) values.push(document.headerImage)
-
-	// 카드 이미지는 검수 참조 자산이 아니다. 문서 헤더 이미지만 수집한다.
-
-	return new Map(
-		values.flatMap((value): [number, ApplicationImage][] => {
-			const id = relationshipId(value)
-			return id != null && typeof value === 'object' && value !== null
-				? [[id, value as ApplicationImage]]
-				: []
-		}),
-	)
 }

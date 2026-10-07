@@ -134,7 +134,7 @@ CMS 저장·UI 계약은 `containers → cards → display`를 유지합니다. 
 
 - Page는 `components/guideline/pages/guideline-topic.tsx`에서 토픽 헤딩 → `CmsGuidelineSections` → 푸터를 조합합니다. 구형 렌더 분기는 없습니다.
 - Admin은 `sections/schema.ts`·`display-schema.ts`와 공통 `fields.ts`의 저장·검증 계약을 사용합니다.
-- 검색·검수는 `sections/projection.ts`가 섹션 제목·설명·앵커·카드 캡션을 투영합니다. 카드 이미지는 자동 검수 근거가 아니며 `referenceAssets: []`를 유지합니다.
+- 검색·검수는 `sections/projection.ts`가 섹션 제목·설명·앵커·카드 캡션을 투영합니다. 카드 이미지는 자동 검수 근거가 아니며 `referenceAssets: []`를 유지합니다. 토픽의 `headerImage`도 가이드라인 첫 화면 카드 썸네일이라 검수 참조 자산으로 싣지 않습니다.
 - 목차는 챕터·토픽·메인 섹션까지만 표시합니다. Subsection은 본문·공통 읽기 위계에만 유지합니다.
 
 ## 4. 의존
