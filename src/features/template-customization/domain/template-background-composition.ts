@@ -1,3 +1,4 @@
+import type { ControllerCluster } from '@/modules/studio-controller/controller-composition'
 import type { ControllerGroupDefinition } from '@/modules/studio-controller/controller-definition'
 import {
 	findTemplateControl,
@@ -21,7 +22,7 @@ export const TEMPLATE_BACKGROUND_IMAGE_MODE_ID = 'background.imageMode'
  */
 export function deriveTemplateBackgroundComposition(
 	config: TemplateStudioConfig,
-): { groups: ControllerGroupDefinition[] } | null {
+): { groups: ControllerGroupDefinition[]; clusters: ControllerCluster[] } | null {
 	const slot = partitionTemplateSlots(config.template.slots).background
 	if (!slot) return null
 	const type = findTemplateControl(config, slot.typeControlId)
@@ -30,6 +31,7 @@ export function deriveTemplateBackgroundComposition(
 	const dimmer = findTemplateControl(config, slot.dimmerControlId)
 	const strength = findTemplateControl(config, slot.dimmerOpacityControlId)
 	const image = type.options.some((option) => option.value === 'image')
+	const colorVisible = { control: type.id, equals: 'color' }
 	return {
 		groups: [
 			{
@@ -62,7 +64,7 @@ export function deriveTemplateBackgroundComposition(
 							id: 'background-color',
 							title: 'Background',
 							role: 'palette' as const,
-							visibleWhen: { control: type.id, equals: 'color' },
+							visibleWhen: colorVisible,
 							controls: [color],
 						},
 					]
@@ -82,5 +84,20 @@ export function deriveTemplateBackgroundComposition(
 					]
 				: []),
 		],
+		// 텍스트·심볼 색과 같은 스와치로 그린다 — 브랜드 색만 고르고 Custom은 잠근다.
+		// 「Background」 그룹 안에 세워 그룹의 제목·섹션 활성화(도화지 포커스)를 그대로 쓴다.
+		clusters: color
+			? [
+					{
+						id: 'background-color-swatches',
+						title: 'Background',
+						role: 'palette',
+						widget: 'swatches',
+						members: { value: color.id },
+						visibleWhen: colorVisible,
+						group: 'background-color',
+					},
+				]
+			: [],
 	}
 }
