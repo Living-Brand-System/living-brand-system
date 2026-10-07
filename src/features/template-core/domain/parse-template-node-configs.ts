@@ -68,7 +68,11 @@ const templateNodeConfigMapSchema = z.record(
 		imageColorize: templateImageColorizeSchema.optional(),
 		input: templateSlotSpecSchema.optional(),
 		imageInput: z
-			.object({ profileId: z.number().int().positive().optional() })
+			.object({
+				profileId: z.number().int().positive().optional(),
+				allowedProfileIds: z.array(z.number().int().positive()).optional(),
+				transform: z.object({ enabled: z.boolean() }).strict().optional(),
+			})
 			.strict()
 			.optional(),
 		vectorAsset: z
