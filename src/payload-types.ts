@@ -966,7 +966,7 @@ export interface ImageProfile {
     | boolean
     | null;
   /**
-   * 비우면 Exporter가 지원하는 형식을 모두 허용합니다.
+   * 형식 칩을 전부 켜면 지원하는 형식을 모두 허용합니다. 전부 끌 수는 없습니다.
    */
   exportPolicy?: {
     allowedFormats?: ('png' | 'jpeg' | 'tiff' | 'pdf' | 'svg' | 'mp4')[] | null;
@@ -1087,7 +1087,7 @@ export interface GraphicProfile {
     | boolean
     | null;
   /**
-   * 비우면 Exporter가 지원하는 형식을 모두 허용합니다.
+   * 형식 칩을 전부 켜면 지원하는 형식을 모두 허용합니다. 전부 끌 수는 없습니다.
    */
   exportPolicy?: {
     allowedFormats?: ('png' | 'jpeg' | 'tiff' | 'pdf' | 'svg' | 'mp4')[] | null;
@@ -1161,7 +1161,7 @@ export interface GraphProfile {
     | boolean
     | null;
   /**
-   * 비우면 Exporter가 지원하는 형식을 모두 허용합니다.
+   * 형식 칩을 전부 켜면 지원하는 형식을 모두 허용합니다. 전부 끌 수는 없습니다.
    */
   exportPolicy?: {
     allowedFormats?: ('png' | 'jpeg' | 'tiff' | 'pdf' | 'svg' | 'mp4')[] | null;
@@ -1309,7 +1309,7 @@ export interface Template {
     | boolean
     | null;
   /**
-   * 비우면 Exporter가 지원하는 형식을 모두 허용합니다.
+   * 형식 칩을 전부 켜면 지원하는 형식을 모두 허용합니다. 전부 끌 수는 없습니다.
    */
   exportPolicy?: {
     allowedFormats?: ('png' | 'jpeg' | 'tiff' | 'pdf' | 'svg' | 'mp4')[] | null;

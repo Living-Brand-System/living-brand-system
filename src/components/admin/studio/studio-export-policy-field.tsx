@@ -143,7 +143,9 @@ export function StudioExportPolicyField({
 		: []
 	const output = manifest ? resolveStudioOutputCapability(manifest.artifacts) : null
 
-	const restricted = Array.isArray(formatsField.value)
+	// 🔴 빈 목록은 「전부 허용」이다. 칩을 전부 켜면 값 없음으로 저장되는데 Payload는 그것을 `[]`로 돌려준다.
+	//    전부 끄기는 마지막 칩 잠금으로 막으므로 `[]`가 「전부 꺼짐」일 수는 없다.
+	const restricted = Array.isArray(formatsField.value) && formatsField.value.length > 0
 	const selectedFormats = new Set(restricted ? formatsField.value : supportedFormats)
 	const supportedKey = supportedFormats.join(',')
 	const { setValue: setFormats, value: formatsValue } = formatsField
