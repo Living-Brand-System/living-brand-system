@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { listGraphStudioConfigs } from '@/features/graph-generation/services/list-graph-studio-configs.service'
+import { isAdmin } from '@/lib/auth'
 import { requireUser } from '@/lib/request-auth'
 import { getStudioGraphRoute, routes } from '@/lib/routes'
 
@@ -12,6 +13,8 @@ export const dynamic = 'force-dynamic'
  */
 export default async function GenerateGraphPage() {
 	const { user } = await requireUser(routes.studio.graph)
+	// ponytail: worker에게 아직 열지 않은 스튜디오 — admin 밖에는 이 주소가 없다(404). 열 때 이 줄을 지운다.
+	if (!isAdmin(user)) notFound()
 	const [config] = await listGraphStudioConfigs(user)
 	if (!config) notFound()
 

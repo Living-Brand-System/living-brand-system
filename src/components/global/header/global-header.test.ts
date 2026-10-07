@@ -128,6 +128,7 @@ describe('GlobalHeader', () => {
 		// 🔴 미개발 스튜디오는 admin에게만 보인다 — 페이지가 그 밖에는 404다.
 		expect(links.queryByRole('link', { name: 'Review' })).toBeNull()
 		expect(links.queryByRole('link', { name: 'Assets' })).toBeNull()
+		expect(links.queryByRole('link', { name: 'Graph' })).toBeNull()
 		expect(links.getByRole('link', { name: 'Graphic' })).toHaveAttribute('aria-current', 'page')
 		expect(
 			within(links.getByRole('link', { name: /Guideline/ })).getByText('Update'),
@@ -168,7 +169,7 @@ describe('GlobalHeader', () => {
 		expect(chatTrigger).toHaveAttribute('aria-expanded', 'true')
 	})
 
-	it('admin은 Review·Assets를 보고, Assets 경로에서는 Assets만 current로 표시한다', async () => {
+	it('admin은 Graph·Review·Assets를 보고, Assets 경로에서는 Assets만 current로 표시한다', async () => {
 		sessionUser = { email: 'admin@example.com', role: 'admin' }
 		pathname = '/studio/assets'
 		renderHeader()
@@ -183,6 +184,10 @@ describe('GlobalHeader', () => {
 		expect(
 			within(desktop as HTMLElement).getByRole('link', { name: 'Review' }),
 		).toHaveAttribute('href', '/studio/review')
+		expect(within(desktop as HTMLElement).getByRole('link', { name: 'Graph' })).toHaveAttribute(
+			'href',
+			'/studio/graph',
+		)
 		expect(
 			within(desktop as HTMLElement).getByRole('link', { name: 'Graphic' }),
 		).not.toHaveAttribute('aria-current')
