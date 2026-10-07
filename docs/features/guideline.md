@@ -22,6 +22,8 @@
 | 카드 | ratio·도판 색상·status·download·endActions·caption |
 | 디스플레이 | 선택한 표현의 콘텐츠와 입력값 |
 
+문서·섹션의 `rules`(검수 규칙 참조)는 스키마와 읽는 쪽(검수 근거·AI 채팅·MCP·검색)은 그대로 두고 **어드민에서만 숨깁니다**(2026-10-07). 검수가 admin 전용으로 물러났고 연결된 규칙이 없어서입니다. 다시 열려면 `guidelineRulesField()`의 `hidden`을 걷습니다.
+
 ### 2.3 사용 상태
 
 `none`·`allowed`·`prohibited`는 저작자가 지정한 사례 상태입니다. 자동 검수 결과가 아닙니다. 생략하면 Incorrect Usages는 금지, 나머지는 없음이며 카드의 명시적인 없음이 우선합니다.
