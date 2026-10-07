@@ -8,6 +8,9 @@ export function guidelineRulesField(): Field {
 		relationTo: 'rules',
 		hasMany: true,
 		admin: {
+			// 🔴 어드민에서 숨긴다(2026-10-07) — 검수가 admin 전용으로 물러났고 연결된 규칙이 0건이다.
+			//    읽는 쪽(검수 근거·AI 채팅·MCP·검색)은 그대로 두어 스키마·마이그레이션 없이 되돌릴 수 있다.
+			hidden: true,
 			allowCreate: true,
 			allowEdit: true,
 			appearance: 'drawer',
