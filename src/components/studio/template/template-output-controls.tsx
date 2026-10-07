@@ -39,11 +39,18 @@ export function TemplateOutputControls({
 				mode: exporting.sizeMm ? 'print' : 'digital',
 				width: size.width,
 				height: size.height,
-				ppi: exporting.ppi,
+				ppi: exporting.ppi ?? 0,
 				count: '',
 				ratio: '',
 				resolution: '',
-				notice: exporting.vectorWarnings.join(' · '),
+				notice: [
+					...(exporting.printTooLarge
+						? [
+								'이 판형은 너무 커서 이미지 파일로 낼 수 없어요. SVG·PDF로 저장해 주세요.',
+							]
+						: []),
+					...exporting.vectorWarnings,
+				].join(' · '),
 			}}
 			onChange={() => {}}
 			format={exporting.format ?? ''}
@@ -84,14 +91,17 @@ export function TemplateOutputControls({
 			{/* 🔴 svg도 포함한다 — SVG의 물리 크기(mm)도 ppi가 정한다. 빼 두면 SVG에는
 							    행이 안 뜨는데 값은 살아 있어, 직전에 PDF를 만졌는지에 따라 같은 SVG가
 							    53mm 또는 222mm로 나간다. */}
-			{(exporting.format === 'tiff' ||
-				exporting.format === 'pdf' ||
-				exporting.format === 'svg') &&
-				exporting.ppiApplies &&
-				config.output.print && (
+			{/* 인쇄판은 PNG·JPG·TIFF의 px를 정하는 해상도라 형식과 상관없이 뜬다(ppiApplies가 벡터·MP4를 거른다). */}
+			{exporting.ppiApplies &&
+				exporting.ppi !== null &&
+				exporting.ppiOptions.length > 0 &&
+				(exporting.sizeMm ||
+					exporting.format === 'tiff' ||
+					exporting.format === 'pdf' ||
+					exporting.format === 'svg') && (
 					<PrintControls
 						ppi={exporting.ppi}
-						options={config.output.print.ppi}
+						options={exporting.ppiOptions}
 						onChange={exporting.setPpi}
 					/>
 				)}

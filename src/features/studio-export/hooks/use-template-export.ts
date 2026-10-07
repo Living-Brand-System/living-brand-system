@@ -15,9 +15,12 @@ import type { ExportRequest, StudioOutputFormat, VideoExportSpec } from '../expo
 import { exportFileName } from '../export-file-name'
 import {
 	isPrintPpi,
+	MAX_PRINT_PIXELS,
+	MAX_PRINT_SIDE_PIXELS,
 	maxPrintSize,
+	millimetersToPixels,
+	PRINT_PPI_VALUES,
 	type PrintPpi,
-	pixelsToMillimeters,
 	resolveDefaultPrintPpi,
 } from '../print-policy'
 import { createRasterExportRequest } from '../services/create-raster-export-request'
@@ -35,8 +38,10 @@ export type TemplateExportMetadata = {
 	height: number
 	/** 캔버스 좌표계 대비 허용 최대 출력 배율. MP4 인코딩 한도에서 나온 값이라 MP4에만 적용한다. */
 	maxScale: number
-	/** 템플릿이 선언한 판형 해상도. 있으면 인쇄판이라 물리 크기가 고정이고 창작자가 고르지 않는다. */
-	canvasPpi?: PrintPpi
+	/** 인쇄 판형(mm). 있으면 인쇄판이라 mm가 정본이고, 파일 px는 창작자가 고른 ppi로 계산된다. */
+	printSizeMm?: { width: number; height: number }
+	/** 디지털판의 판형 크기(px). 있으면 PNG·JPG·MP4가 이 크기로 나가고 배율을 고르지 않는다. */
+	digitalSizePx?: { width: number; height: number }
 	controller: {
 		groups: readonly ControllerGroupDefinition[]
 		values: Readonly<ControllerValues>
@@ -72,6 +77,19 @@ function printScaleCeiling(metadata: TemplateExportMetadata): number {
 }
 type TemplateExportRequest = Extract<ExportRequest, { artifact: 'raster' | 'video' | 'vector' }>
 
+const MILLIMETERS_PER_INCH = 25.4
+
+/** 판형(mm)을 이 ppi로 채운 크기를 브라우저 캔버스가 그릴 수 있는지. */
+function fitsPrintCanvas(sizeMm: { width: number; height: number }, ppi: PrintPpi): boolean {
+	const width = millimetersToPixels(sizeMm.width, ppi)
+	const height = millimetersToPixels(sizeMm.height, ppi)
+	return (
+		width <= MAX_PRINT_SIDE_PIXELS &&
+		height <= MAX_PRINT_SIDE_PIXELS &&
+		width * height <= MAX_PRINT_PIXELS
+	)
+}
+
 /** Template Raster Artifact를 공통 ExportRequest와 Artifact executor에 연결한다. */
 export function useTemplateExport({
 	artifact,
@@ -101,11 +119,30 @@ export function useTemplateExport({
 	const [vectorDiagnostics, setVectorDiagnostics] = useState<
 		TemplateVectorArtifactResult['diagnostics'] | null
 	>(null)
-	// 🔑 판형이 선언된 인쇄판은 해상도가 판의 성질이라 창작자가 고르지 않는다.
-	const declaredPpi = isPrintPpi(metadata?.canvasPpi) ? metadata.canvasPpi : null
-	const effectivePpi =
-		declaredPpi ??
-		(acceptsPrintPpi(capability, ppi) ? ppi : resolveDefaultPrintPpi(capability.print?.ppi))
+	// 🔑 인쇄판은 mm가 정본이다. 창작자가 고른 ppi로 파일 px를 계산하고(mm × ppi), 브라우저가 그릴 수
+	//    없는 크기가 되는 ppi는 선택지에서 뺀다 — 한 변 16,384px를 넘으면 캔버스가 조용히 줄여 버린다.
+	const printSize = metadata?.printSizeMm ?? null
+	const printPpiOptions = printSize
+		? (capability.print?.ppi ?? PRINT_PPI_VALUES).filter((candidate) =>
+				fitsPrintCanvas(printSize, candidate),
+			)
+		: (capability.print?.ppi ?? [])
+	const effectivePpi = printSize
+		? printPpiOptions.includes(ppi)
+			? ppi
+			: printPpiOptions.length
+				? resolveDefaultPrintPpi(printPpiOptions)
+				: null
+		: acceptsPrintPpi(capability, ppi)
+			? ppi
+			: resolveDefaultPrintPpi(capability.print?.ppi)
+	const printPixels =
+		printSize && effectivePpi
+			? {
+					width: millimetersToPixels(printSize.width, effectivePpi),
+					height: millimetersToPixels(printSize.height, effectivePpi),
+				}
+			: null
 	const effectiveFps =
 		fps && capability.video?.mp4.fps.includes(fps) ? fps : capability.video?.mp4.fps[0]
 	const effectiveDuration = Math.min(
@@ -134,9 +171,17 @@ export function useTemplateExport({
 	const scaleOptions = Array.from({ length: maxScale }, (_, index) => index + 1)
 	// fps를 올려 지금 배율이 예산을 넘으면 1로 떨어뜨리지 않고 갈 수 있는 최대로 붙인다.
 	const selectedScale = Math.min(Math.max(1, Math.floor(scale)), maxScale)
-	// 🔴 인쇄판은 px도 mm도 선언으로 고정이다 — 배율을 곱하면 선언한 물리 크기가 깨진다.
-	// ponytail: 밀도 손잡이는 두지 않는다. 필요해지면 ppi × 배율을 요청에 함께 실을 것.
-	const effectiveScale = usesVector || declaredPpi ? 1 : selectedScale
+	// 🔑 인쇄판의 래스터는 배율을 고르지 않는다 — mm × ppi로 나온 px를 판(px)으로 나눈 값이 배율이다.
+	const digitalSize = printSize ? null : (metadata?.digitalSizePx ?? null)
+	const effectiveScale = usesVector
+		? 1
+		: printSize
+			? printPixels && metadata && format !== 'mp4'
+				? printPixels.width / metadata.width
+				: 1
+			: digitalSize && metadata
+				? digitalSize.width / metadata.width
+				: selectedScale
 	const createRequest = useCallback(
 		(candidate: StudioOutputFormat | null): TemplateExportRequest | null => {
 			// 🔑 PDF는 벡터가 있으면 벡터로 간다 — 판 전체를 굽는 래스터 PDF보다 글자·도형이 선명하고,
@@ -153,8 +198,12 @@ export function useTemplateExport({
 					// 글자는 굽기 단계가 이미 윤곽선으로 바꾼다 — 여기서 다시 요청하지 않는다.
 					outlineText: false,
 				}
+				// 인쇄판 벡터는 페이지가 판형 mm 그대로여야 한다 — 판(px)을 mm로 옮기는 환산값이다(사람이 고르지 않음).
+				const vectorPpi = printSize
+					? (metadata.width * MILLIMETERS_PER_INCH) / printSize.width
+					: effectivePpi
 				if (candidate === 'svg') {
-					if (!isPrintPpi(effectivePpi)) return null
+					if (!isPrintPpi(vectorPpi)) return null
 					return {
 						artifact: 'vector',
 						format: 'svg',
@@ -162,12 +211,12 @@ export function useTemplateExport({
 							space: 'rgb',
 							icc: capability.colorProfiles?.rgb?.[0] ?? 'srgb',
 						},
-						options: { ...options, ppi: effectivePpi },
+						options: { ...options, ppi: vectorPpi },
 					}
 				}
 				// 🔴 인쇄용 벡터 PDF는 해상도 없이 만들 수 없다 — 페이지 치수가 거기서 나오고,
 				//    없는 채로 내보내면 판이 조용히 72ppi 크기로 나간다.
-				if (!isPrintPpi(effectivePpi)) return null
+				if (!isPrintPpi(vectorPpi)) return null
 				return {
 					artifact: 'vector',
 					format: 'pdf',
@@ -175,16 +224,18 @@ export function useTemplateExport({
 						space: 'cmyk',
 						icc: capability.colorProfiles?.cmyk?.[0] ?? 'cgats21-crpc6',
 					},
-					options: { ...options, ppi: effectivePpi },
+					options: { ...options, ppi: vectorPpi },
 				}
 			}
+			// 인쇄판인데 그릴 수 있는 ppi가 하나도 없으면(판형이 너무 큼) 래스터를 내지 않는다.
+			if (printSize && !effectivePpi && candidate !== 'mp4') return null
 			const request =
 				candidate && metadata
 					? createRasterExportRequest(candidate, capability, {
 							width: metadata.width,
 							height: metadata.height,
 							scale: effectiveScale,
-							ppi: effectivePpi,
+							ppi: effectivePpi ?? undefined,
 							fps: effectiveFps,
 							durationSeconds: effectiveDuration,
 						})
@@ -203,6 +254,7 @@ export function useTemplateExport({
 			metadata,
 			vectorArtifact,
 			videoArtifact,
+			printSize,
 		],
 	)
 	const execute = useCallback(
@@ -267,8 +319,10 @@ export function useTemplateExport({
 			if (formats.includes(next)) setSelectedFormat(next)
 		},
 		ppi: effectivePpi,
+		/** 창작자가 고를 수 있는 해상도. 인쇄판은 브라우저가 그릴 수 있는 것만 남는다. */
+		ppiOptions: printPpiOptions,
 		setPpi: (next: PrintPpi) => {
-			if (acceptsPrintPpi(capability, next)) setPpi(next)
+			if (printPpiOptions.includes(next)) setPpi(next)
 		},
 		fps: effectiveFps ?? null,
 		setFps: (next: VideoExportSpec['fps']) => {
@@ -285,16 +339,16 @@ export function useTemplateExport({
 		 * 이번 요청이 배율을 실제로 쓰는지 — 안 쓰면 사이드바가 Scale 행을 감춘다.
 		 * 🔑 TIFF·PDF 래스터도 이제 배율을 쓴다. 벡터만 판 크기를 그대로 실어 배율이 들어갈 자리가 없다.
 		 */
-		scaleApplies: !usesVector && !declaredPpi,
-		/** 창작자가 해상도를 고를 수 있는지 — 판형이 선언된 인쇄판은 고르지 않는다. */
-		ppiApplies: declaredPpi === null,
-		/** 실제로 나갈 물리 크기(mm). 판형을 선언한 인쇄판에서만 값이 있다. */
-		sizeMm: declaredPpi
-			? {
-					width: pixelsToMillimeters(metadata?.width ?? 0, declaredPpi),
-					height: pixelsToMillimeters(metadata?.height ?? 0, declaredPpi),
-				}
-			: null,
+		scaleApplies: !usesVector && !printSize && !digitalSize,
+		/**
+		 * 해상도 선택이 이번 요청에 쓰이는지. 인쇄판은 래스터(PNG·JPG·TIFF)의 px를 정하고, 벡터는 mm 그대로라
+		 * 쓰지 않는다. 디지털판은 인쇄 형식(TIFF·PDF·SVG)의 물리 크기를 정한다.
+		 */
+		ppiApplies: printSize ? !usesVector && format !== 'mp4' : true,
+		/** 인쇄판인데 판형이 너무 커서 이미지 파일로 낼 수 없는지. 벡터(SVG·PDF)로만 낼 수 있다. */
+		printTooLarge: Boolean(printSize && printPpiOptions.length === 0),
+		/** 실제로 나갈 물리 크기(mm). 인쇄판에서만 값이 있다. */
+		sizeMm: printSize,
 		setScale: (next: number) => {
 			if (scaleOptions.includes(next)) setScale(next)
 		},
@@ -302,7 +356,12 @@ export function useTemplateExport({
 		 * 실제로 나올 픽셀 크기. MP4는 짝수 내림까지 거친 요청 값을 그대로 쓴다 —
 		 * 캔버스에 배율만 곱해 보여 주면 홀수 변에서 1px 어긋난 값을 안내하게 된다.
 		 */
-		outputSize: resolveOutputSize(request, metadata, effectiveScale),
+		outputSize:
+			printPixels && !usesVector && format !== 'mp4'
+				? printPixels
+				: digitalSize && format !== 'mp4'
+					? digitalSize
+					: resolveOutputSize(request, metadata, effectiveScale),
 		canExport: Boolean(request && output.canExport(request)),
 		run: () => {
 			if (request) void output.run(request)

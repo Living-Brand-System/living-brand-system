@@ -275,22 +275,24 @@ describe('deriveTemplateStudioConfig', () => {
 	})
 
 	it('output은 Raster Exporter capability를 따르고 canvas만 Template 도메인 정보로 남긴다', () => {
+		// 🔑 템플릿은 디지털과 인쇄 중 하나만이다 — 디지털은 PNG·JPG·MP4, 인쇄는 PDF·TIFF·SVG.
 		expect(deriveTemplateStudioConfig(template)).toMatchObject({
-			// svg는 인쇄용 벡터 내보내기가 열었다 — Template artifacts가 vector를 선언한다.
-			output: { formats: ['png', 'jpeg', 'tiff', 'pdf', 'svg', 'mp4'] },
+			output: { formats: ['png', 'jpeg', 'mp4'] },
 			template: {
 				exportOption: {
 					canvas: { width: 800, height: 600 },
 				},
 			},
 		})
-		// 🔑 출력 형식은 admin 칩대로만 낸다 — 벡터(svg·pdf)도 다른 스튜디오처럼 켠 칩에서만(사용자 결정 2026-10-07).
+		const print = { ...template, printSizeMm: { width: 200, height: 150 } }
+		expect(deriveTemplateStudioConfig(print).output.formats).toEqual(['tiff', 'pdf', 'svg'])
+		// 출력 형식 칩은 그 종류 안에서만 좁힌다 — 디지털판에 PDF를 켜 둬도 나가지 않는다.
 		expect(
 			deriveTemplateStudioConfig({
 				...template,
-				exportPolicy: { allowedFormats: ['png', 'jpeg', 'mp4'] },
+				exportPolicy: { allowedFormats: ['png', 'pdf'] },
 			}).output.formats,
-		).toEqual(['png', 'jpeg', 'mp4'])
+		).toEqual(['png'])
 		expect(
 			deriveTemplateStudioConfig({
 				...template,

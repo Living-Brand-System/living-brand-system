@@ -1,5 +1,5 @@
 import { APIError, type CollectionConfig } from 'payload'
-import { isPrintPpi, MAX_PRINT_PPI, MIN_PRINT_PPI } from '@/features/studio-export/print-policy'
+import { MAX_PRINT_SIDE_PIXELS } from '@/features/studio-export/print-policy'
 import { prepareTemplateSave } from '@/features/template-import/services/prepare-template-save.service'
 import { isManager, managerManagedPublishedAccess } from '@/lib/auth'
 import { previewImageField } from './fields/preview-image-field'
@@ -7,6 +7,46 @@ import { studioExportPolicyField } from './fields/studio-controller-field'
 import { templateBackgroundPolicyField } from './fields/template-policy-field'
 import { urlSlugField } from './fields/url-slug-field'
 import { draftVersions, keepPublishedOnRestore } from './shared'
+
+const TEMPLATE_SIZE_UNIT = '/components/admin/templates/template-size-unit#TemplateSizeUnit'
+
+type TemplateSizeData = {
+	outputKind?: 'digital' | 'print' | null
+	width?: number | null
+	height?: number | null
+	size?: { width?: number | null; height?: number | null } | null
+}
+
+/** 디지털판의 판형 크기를 비워 두면 Figma 판 크기(px)로 채운다. 인쇄판(mm)은 사람이 적는다. */
+function fillDigitalSize(side: 'width' | 'height') {
+	return ({ value, data }: { value?: unknown; data?: Partial<TemplateSizeData> }) =>
+		value == null && data?.outputKind !== 'print' ? (data?.[side] ?? value) : value
+}
+
+/**
+ * 판형 크기는 1 이상의 정수이고 Figma 판과 가로세로 비율이 같아야 한다(1% 안). 디지털 px는 브라우저 캔버스가
+ * 그릴 수 있는 한 변 16,384px까지다.
+ */
+function validateTemplateSize(side: 'width' | 'height') {
+	return (value: unknown, { data }: { data: Partial<TemplateSizeData> }) => {
+		const unit = data.outputKind === 'print' ? 'mm' : 'px'
+		if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
+			return `판형 크기는 1 이상의 정수(${unit})로 적어야 합니다.`
+		}
+		if (unit === 'px' && value > MAX_PRINT_SIDE_PIXELS) {
+			return `디지털 판형은 한 변 ${MAX_PRINT_SIDE_PIXELS.toLocaleString('ko-KR')}px까지입니다.`
+		}
+		const width = data.size?.width
+		// 비율은 한 칸에서만 본다 — 두 칸에 같은 오류가 겹쳐 뜨지 않게.
+		if (side === 'height' && typeof width === 'number' && data.width && data.height) {
+			const drift = Math.abs(width / value / (data.width / data.height) - 1)
+			if (drift > 0.01) {
+				return `가로세로 비율이 Figma 판(${data.width}×${data.height}px)과 다릅니다. 같은 비율로 적으세요.`
+			}
+		}
+		return true
+	}
+}
 
 export const Templates: CollectionConfig = {
 	slug: 'templates',
@@ -87,41 +127,90 @@ export const Templates: CollectionConfig = {
 
 		// ── 사이드바 (렌더 순서 = 배열 순서) ──
 		previewImageField(),
+		// Figma 판 크기(px) — 가져오기가 채우는 디자인 좌표계라 평소엔 볼 일이 없어 접어 둔다. 판형은 아래 「판형 크기」가 정한다.
 		{
-			type: 'row',
-			admin: { position: 'sidebar' },
+			type: 'collapsible',
+			label: 'Figma 판 크기',
+			admin: { position: 'sidebar', initCollapsed: true },
 			fields: [
 				{
-					name: 'width',
-					type: 'number',
-					admin: { width: '50%', description: 'Figma 너비(px). 가져오기가 채웁니다.' },
-				},
-				{
-					name: 'height',
-					type: 'number',
-					admin: { width: '50%', description: 'Figma 높이(px). 가져오기가 채웁니다.' },
+					type: 'row',
+					fields: [
+						{
+							name: 'width',
+							type: 'number',
+							label: '너비(px)',
+							admin: { width: '50%', description: '가져오기가 채웁니다.' },
+						},
+						{
+							name: 'height',
+							type: 'number',
+							label: '높이(px)',
+							admin: { width: '50%', description: '가져오기가 채웁니다.' },
+						},
+					],
 				},
 			],
 		},
-		// 🔴 재import는 baseHtml·html·overrides·width·height·sourceUrl만 덮는다 — 이 값은 사람만 정한다.
-		//    이름을 printPpi로 하지 말 것: 그 컬럼은 옛 enum 정책 필드였고 exportPolicy.print.allowedPpi와도 헷갈린다.
+		// 🔴 재import는 baseHtml·html·overrides·width·height·sourceUrl만 덮는다 — 판형은 사람만 정한다.
+		// 🔑 템플릿은 디지털(px)과 인쇄(mm) 중 하나만이다(사용자 결정 2026-10-07). 디지털을 mm로 인쇄하는
+		//    길은 없다. 인쇄판은 mm가 정본이고 dpi는 창작자가 「출력 설정 → 인쇄」의 목록에서 고르며,
+		//    파일 px는 mm × dpi로 계산된다. 판(px)은 인쇄판에선 디자인 좌표계일 뿐이다.
+		{
+			name: 'outputKind',
+			type: 'radio',
+			label: '판형 종류',
+			required: true,
+			defaultValue: 'digital',
+			options: [
+				{ label: '디지털 (px · PNG·JPG·MP4)', value: 'digital' },
+				{ label: '인쇄 (mm · PDF·TIFF·SVG)', value: 'print' },
+			],
+			admin: { position: 'sidebar', layout: 'horizontal' },
+		},
+		{
+			name: 'size',
+			type: 'group',
+			label: '판형 크기',
+			admin: {
+				position: 'sidebar',
+				description: '디지털은 px, 인쇄는 mm입니다.',
+			},
+			fields: [
+				{
+					type: 'row',
+					fields: [
+						{
+							name: 'width',
+							type: 'number',
+							label: '가로',
+							admin: {
+								width: '50%',
+								components: { afterInput: [TEMPLATE_SIZE_UNIT] },
+							},
+							hooks: { beforeValidate: [fillDigitalSize('width')] },
+							validate: validateTemplateSize('width'),
+						},
+						{
+							name: 'height',
+							type: 'number',
+							label: '세로',
+							admin: {
+								width: '50%',
+								components: { afterInput: [TEMPLATE_SIZE_UNIT] },
+							},
+							hooks: { beforeValidate: [fillDigitalSize('height')] },
+							validate: validateTemplateSize('height'),
+						},
+					],
+				},
+			],
+		},
+		// ponytail: 옛 판형 해상도 칸 — 값은 마이그레이션이 인쇄 판형(mm)으로 옮겼다. 다음 정리 때 컬럼째 지운다.
 		{
 			name: 'canvasPpi',
 			type: 'number',
-			label: '판형 해상도(ppi)',
-			min: MIN_PRINT_PPI,
-			max: MAX_PRINT_PPI,
-			// 🔴 기본값을 두지 않는다 — 300을 깔면 기존 디지털 템플릿이 전부 인쇄판으로 선언된다.
-			admin: {
-				position: 'sidebar',
-				description:
-					'이 판을 인쇄물로 선언합니다. 물리 크기 = 위 px ÷ ppi × 25.4mm (예: 2480×3508px에 300 → A4). 소수도 됩니다 — 630×891px 판을 정확히 A4로 선언하려면 76.2입니다. 비우면 디지털판이라 mm를 쓰지 않고, 창작자가 인쇄 해상도를 직접 고릅니다.',
-			},
-			// 커스텀 validate는 기본 min/max 검증을 대체한다 — isPrintPpi 하나가 정수·범위를 모두 본다.
-			validate: (value: unknown) =>
-				value === null || value === undefined || isPrintPpi(value)
-					? true
-					: `판형 해상도는 ${MIN_PRINT_PPI}~${MAX_PRINT_PPI} 사이 숫자여야 합니다.`,
+			admin: { hidden: true },
 		},
 		{
 			name: 'category',

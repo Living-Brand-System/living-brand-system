@@ -304,15 +304,15 @@ it('배경 Type·Image Mode는 왼쪽에서 전환하고 오른쪽에는 편집 
 })
 
 it.each([
-	{ canvasPpi: undefined, width: '800', height: '600', unit: 'px' },
-	{ canvasPpi: 100, width: '203.2', height: '152.4', unit: 'mm' },
+	{ printSizeMm: undefined, width: '800', height: '600', unit: 'px' },
+	{ printSizeMm: { width: 200, height: 150 }, width: '200', height: '150', unit: 'mm' },
 ])('출력 크기 2열 스택은 실제 템플릿의 $unit 치수를 사용한다', async ({
-	canvasPpi,
+	printSizeMm,
 	width,
 	height,
 	unit,
 }) => {
-	const { container } = renderTemplate(studio(1, { canvasPpi }))
+	const { container } = renderTemplate(studio(1, { printSizeMm }))
 	await screen.findByRole('textbox', { name: '제목' })
 	const output = container.querySelector('[data-slot="studio-layout-output"]')
 	const rows = output?.querySelectorAll(

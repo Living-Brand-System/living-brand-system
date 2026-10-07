@@ -1,6 +1,6 @@
 'use client'
 
-import { useField } from '@payloadcms/ui'
+import { useField, useFormFields } from '@payloadcms/ui'
 import { useEffect } from 'react'
 import { AdminSectionHeading } from '@/components/admin/shared/admin-section-heading'
 import { Controller } from '@/components/shared/controller'
@@ -9,6 +9,7 @@ import {
 	resolveStudioArtifactOutputFormats,
 	resolveStudioOutputCapability,
 } from '@/features/studio-export/studio-output'
+import { TEMPLATE_KIND_FORMATS } from '@/features/template-customization/domain/template-studio-config'
 import {
 	type StudioAdminBaseConfig,
 	type StudioAdminRuntimeSource,
@@ -138,8 +139,16 @@ export function StudioExportPolicyField({
 	const originalField = useField<boolean | null | undefined>({ path: `${path}.original` })
 
 	const manifest = useStudioRuntimeManifest(source, baseConfigs)
+	// 템플릿은 디지털과 인쇄 중 하나만이다 — 고른 종류의 형식만 칩으로 보여 준다.
+	const templateKind = useFormFields(([fields]) => fields.outputKind?.value) as
+		| keyof typeof TEMPLATE_KIND_FORMATS
+		| undefined
+	const kindFormats: readonly string[] | null =
+		source === 'template' ? TEMPLATE_KIND_FORMATS[templateKind ?? 'digital'] : null
 	const supportedFormats = manifest
-		? resolveStudioArtifactOutputFormats(manifest.artifacts, undefined)
+		? resolveStudioArtifactOutputFormats(manifest.artifacts, undefined).filter(
+				(format) => !kindFormats || kindFormats.includes(format),
+			)
 		: []
 	const output = manifest ? resolveStudioOutputCapability(manifest.artifacts) : null
 
@@ -226,20 +235,23 @@ export function StudioExportPolicyField({
 							</Controller.Row>
 						</Controller.Group>
 
-						{output?.print && (
-							<Controller.Group title="인쇄" collapsible={false}>
-								<NumberOptionChips
-									label="사용할 인쇄 해상도"
-									unit="ppi"
-									numbers={output.print.ppi}
-									value={ppiField.value}
-									disabled={ppiField.disabled}
-									onChange={(next) => ppiField.setValue(next)}
-								/>
-							</Controller.Group>
-						)}
+						{output?.print &&
+							supportedFormats.some(
+								(format) => format === 'tiff' || format === 'pdf',
+							) && (
+								<Controller.Group title="인쇄" collapsible={false}>
+									<NumberOptionChips
+										label="사용할 인쇄 해상도"
+										unit="ppi"
+										numbers={output.print.ppi}
+										value={ppiField.value}
+										disabled={ppiField.disabled}
+										onChange={(next) => ppiField.setValue(next)}
+									/>
+								</Controller.Group>
+							)}
 
-						{output?.video && (
+						{output?.video && supportedFormats.includes('mp4') && (
 							<Controller.Group title="영상" collapsible={false}>
 								<NumberOptionChips
 									label="사용할 영상 프레임"
