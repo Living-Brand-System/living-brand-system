@@ -220,7 +220,7 @@ Controller 사용 구조는 다섯 책임으로 나눕니다.
 
 별도 `ControllerProvider`는 두지 않습니다. 편집 계약과 세션 값은 화면의 Studio Provider가 소유하고, Controller 컴파운드는 표현 레이아웃만 소유합니다. 여러 Controller Root 사이에서 공유할 표현 상태가 실제로 생길 때만 Provider를 추가합니다.
 
-세 Studio의 Admin UI는 Runtime Manifest를 읽기 전용으로 보여주되, Image는 Profile이 선택한 feature로 좁힌 Controller projection을 보여줍니다. Image·Graphic Admin은 `{ controlId, availability, defaultValue, maxLength, optionValues, min, max }`만 sparse JSON `controllerRestrictions`로 저장하고 `kind`·label·placeholder·display·aspectRatio·group title·collapsible·defaultOpen을 입력하지 않습니다. Template Admin은 `controllerRestrictions`를 쓰지 않고 배경(`backgroundPolicy`)·레이어별 `overrides[nodeId]`·출력(`exportPolicy`)만 저장하며, `controllerPresentation`은 계산된 기본값입니다. Draft는 작성 중인 불완전 상태를 허용하지만 publish는 공통 parser로 unknown field·중복 id·kind별 기본값과 제약을 엄격하게 검증합니다. 세 Studio는 legacy Controller/Policy 저장을 읽지 않고 Effective `config.controller.groups`만 소비합니다.
+세 Studio의 Admin UI는 Runtime Manifest를 읽기 전용으로 보여주되, Image는 Profile이 선택한 feature로 좁힌 Controller projection을 보여줍니다. Image·Graphic Admin은 `{ controlId, availability, defaultValue, maxLength, optionValues, min, max }`만 sparse JSON `controllerRestrictions`로 저장하고(Image는 장수·비율·해상도만 좁히며 프롬프트·색은 제한하지 않고, `controllerPresentation`은 Template처럼 계산된 기본값입니다) `kind`·label·placeholder·display·aspectRatio·group title·collapsible·defaultOpen을 입력하지 않습니다. Template Admin은 `controllerRestrictions`를 쓰지 않고 배경(`backgroundPolicy`)·레이어별 `overrides[nodeId]`·출력(`exportPolicy`)만 저장하며, `controllerPresentation`은 계산된 기본값입니다. Draft는 작성 중인 불완전 상태를 허용하지만 publish는 공통 parser로 unknown field·중복 id·kind별 기본값과 제약을 엄격하게 검증합니다. 세 Studio는 legacy Controller/Policy 저장을 읽지 않고 Effective `config.controller.groups`만 소비합니다.
 
 어드민은 화면 패널을 구성하지 않고 기본값·선택지·범위·availability만 `controllerRestrictions`로 저작합니다(Template은 예외 — 위 문단 참고). Image Runtime Manifest의 control 종류·그룹·표현·stable ID와 전체 supported feature는 Generation Model capability가 소유하고, Image Profile은 feature를 선택합니다. Restrictions를 여러 번 적용해도 같은 Effective Definition이 나와야 합니다. `enabled`로의 잠금 해제, select 선택지 추가, range 확장, 알 수 없는 ID는 발행 시 거부합니다. Graphic의 서버 안전 Manifest Catalog는 직렬화 가능한 Runtime Manifest만 소유하고, Artifact 생성 runtime과 파일 변환 adapter는 각각 runtime/client와 studio-export 모듈이 소유합니다. `Visibility`는 Controller 계약에 두지 않습니다. 현재 렌더러는 Effective Definition에 들어 있는 control을 모두 표시합니다.
 
@@ -727,7 +727,7 @@ CMS 저장·검증·관계 해석은 `features/guideline/sections/`가 담당하
 - 전경색을 생략했다고 배경색으로부터 자동 반전하거나 로고 변형을 추론하지 않습니다. 로고 배경 대비 선택·사용 허용 여부는 해당 디스플레이의 기존 계약을 따릅니다.
 - 공통 카드가 색상 변수를 소유하고 세 컨테이너가 같은 입력을 전달합니다. `GuidelineDisplayFrame`은 배경색, `GuidelineDisplayContent`는 상속 가능한 전경색을 적용합니다. 서체 굵기 디스플레이가 콘텐츠 레이어를 사용합니다.
 
-- `GuidelineClearspaceDisplay`의 On 오버레이는 선택 `dimBackground`를 사용해 이미지 → 80% background 테마색 디머 → SVG 순서로 표시합니다. 라이트에서는 흰색, 다크에서는 기존 background의 검정 계열이며 Off에서는 디머도 제거합니다. 액션은 디머 밖에 유지하고 기본값은 false입니다.
+- `GuidelineClearspaceDisplay`의 On 오버레이는 선택 `dimBackground`를 사용해 이미지를 흰색 80%로 흐린 뒤 SVG를 얹습니다. 흐림은 별도 막이 아니라 이미지 자체의 `filter`라 `object-contain` 여백과 카드 배경색에는 닿지 않습니다. Off에서는 흐림도 제거하고 기본값은 false입니다.
 
 - 섹션 전체 다운로드는 테두리 없는 muted 버튼·Medium(500)으로 표시하며 기본 배경은 카드 디스플레이와 같은 `muted`입니다. 기본 문구는 수량 없이 `전체 다운로드`입니다. 준비 중·실패 재시도·접근성 라벨은 유지합니다.
 - 전체 다운로드의 기본·눌림 전경색은 카드 액션과 같은 `foreground`, 호버·포커스는 `action-hover-foreground`를 사용합니다. 호버·포커스 배경은 카드 액션 배경과 같은 `border`이며 포커스 링·비활성 표시는 기존 Button 규칙을 따릅니다.

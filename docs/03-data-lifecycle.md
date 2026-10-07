@@ -48,20 +48,20 @@
 ### 3.2 GuidelineChapter
 
 데이터명: GuidelineChapter
-수집 목적: 토픽을 묶는 분류. 사이드바와 가이드라인 첫 화면의 블록(제목·설명)이고 토픽 URL의 첫 조각이다.
+수집 목적: 문서를 묶는 분류. 사이드바와 가이드라인 첫 화면의 블록(제목·설명)이고 문서 URL의 첫 조각이다.
 
 | 단계 | 작성 내용 |
 | --- | --- |
 | 생성·수집 | Manager가 챕터 제목과 표시 순서를 입력하면 `guideline-chapters` 레코드로 생성한다. slug는 제목에서 만들고 언어 공통이다. |
 | 전송 | 챕터 편집 요청은 Payload API로 전달한다. |
 | 저장 | 독립 레코드로 저장하고 제목, 설명(선택, 로케일별), slug, 표시 순서만 보관한다. 본문·면을 갖지 않는다. |
-| 처리 | 토픽이 필수 관계로 챕터를 참조한다. 챕터는 자기 화면을 갖지 않고 `/guideline/<chapter>`는 인덱스로 보낸다. |
+| 처리 | 문서가 필수 관계로 챕터를 참조한다. 챕터는 자기 화면을 갖지 않고 `/guideline/<chapter>`는 인덱스로 보낸다. |
 | 활용 | 사이드바 트리, 인덱스 카드, 헤더 검색의 그룹 제목에 사용한다. |
-| 공유·제공 | 토픽 URL의 첫 조각으로만 노출한다. |
+| 공유·제공 | 문서 URL의 첫 조각으로만 노출한다. |
 | 보관 | 버전을 갖지 않는다. 현재 값만 보관한다. |
-| 파기 | 참조하는 토픽이 있으면 삭제할 수 없다. 토픽을 다른 챕터로 재분류한 뒤 삭제한다. |
+| 파기 | 참조하는 문서가 있으면 삭제할 수 없다. 문서를 다른 챕터로 재분류한 뒤 삭제한다. |
 
-### 3.3 GuidelineDocument(토픽)
+### 3.3 GuidelineDocument(가이드라인 문서)
 
 데이터명: GuidelineDocument
 수집 목적: URL을 가진 가이드라인 한 장. 헤더 이미지와 본문 섹션을 소유하고 적용할 검수 규칙(Rule)을 참조로 선택한다.
@@ -69,28 +69,28 @@
 | 단계 | 작성 내용 |
 | --- | --- |
 | 생성·수집 | Manager가 챕터, 제목, 표시 순서를 입력하면 `guideline-documents` 레코드로 생성한다. slug는 제목에서 만들고 언어 공통이며 같은 챕터 안에서 유일하다. |
-| 전송 | 토픽 편집 요청은 Payload API를 통해 Guideline publishing service로 전달한다. |
+| 전송 | 문서 편집 요청은 Payload API를 통해 Guideline publishing service로 전달한다. |
 | 저장 | 독립 레코드로 저장하고 챕터 관계, 설명(선택, 로케일별 — 가이드라인 첫 화면 카드), 헤더 이미지(카드 썸네일 겸용), 본문 섹션, Rule 관계, 표시 순서를 함께 보관한다. 초안과 발행 상태는 Payload version이 관리한다. |
-| 처리 | `sections → containers → cards`를 임베디드로 소유한다. 섹션은 별도 문서가 아니며 토픽과 발행 단위를 공유한다. |
+| 처리 | `sections → containers → cards`를 임베디드로 소유한다. 섹션은 별도 문서가 아니며 문서와 발행 단위를 공유한다. |
 | 활용 | Creator 가이드라인 화면, Agent 답변 근거, 품질 검수 기준 탐색, MCP 조회에 사용한다. |
-| 공유·제공 | 발행된 토픽만 Creator, Agent, MCP에 제공한다. BehaviorEventLog에는 조회와 클릭 대상인 PageRef만 제공한다. |
+| 공유·제공 | 발행된 문서만 Creator, Agent, MCP에 제공한다. BehaviorEventLog에는 조회와 클릭 대상인 PageRef만 제공한다. |
 | 보관 | Payload revision과 발행 상태를 보관한다. |
-| 파기 | 발행 전 토픽은 삭제할 수 있다. 발행 후 draft로 되돌리거나 삭제하면 화면과 검수 대상에서 제외하고 기존 CheckSession snapshot은 보존한다. |
+| 파기 | 발행 전 문서는 삭제할 수 있다. 발행 후 draft로 되돌리거나 삭제하면 화면과 검수 대상에서 제외하고 기존 CheckSession snapshot은 보존한다. |
 
 ### 3.4 GuidelineSection
 
 데이터명: GuidelineSection
-수집 목적: 토픽 본문을 구성하는 콘텐츠 단위이자 검수 근거. 섹션은 유형(`section`·`subsection`·`incorrect-usages`), 앵커·제목·설명과 컨테이너 목록을 갖고, 컨테이너는 레이아웃과 카드 목록을 갖는다.
+수집 목적: 문서 본문을 구성하는 콘텐츠 단위이자 검수 근거. 섹션은 유형(`section`·`subsection`·`incorrect-usages`), 앵커·제목·설명과 컨테이너 목록을 갖고, 컨테이너는 레이아웃과 카드 목록을 갖는다.
 
 | 단계 | 작성 내용 |
 | --- | --- |
-| 생성·수집 | Manager가 섹션 유형과 콘텐츠를 입력하면 토픽 안에 생성한다. 섹션의 앵커는 제목에서 자동 생성하고 한 번 정해지면 제목을 고쳐도 유지한다. |
-| 전송 | 토픽 편집 요청에 포함해 Payload API로 전달한다. |
-| 저장 | 콘텐츠와 식별자는 소속 토픽 안에 임베디드 데이터로 저장한다. 섹션 식별자는 부모 토픽 안에서만 유효하다. |
+| 생성·수집 | Manager가 섹션 유형과 콘텐츠를 입력하면 문서 안에 생성한다. 섹션의 앵커는 제목에서 자동 생성하고 한 번 정해지면 제목을 고쳐도 유지한다. |
+| 전송 | 문서 편집 요청에 포함해 Payload API로 전달한다. |
+| 저장 | 콘텐츠와 식별자는 소속 문서 안에 임베디드 데이터로 저장한다. 섹션 식별자는 부모 문서 안에서만 유효하다. |
 | 처리 | 이미지와 컬러 같은 표시 자원을 참조하고, 적용할 Rule을 관계로 선택한다. 참조 중인 Rule은 삭제할 수 없다. 위젯의 자식 이미지는 표현일 뿐 기계가 읽는 근거가 아니다. |
 | 활용 | Creator 화면, Agent 답변 근거, 검수 evidence 생성, 섹션 목차(사이드바 앵커)에 사용한다. |
-| 공유·제공 | 발행된 토픽에 포함된 섹션만 제공한다. |
-| 보관 | 토픽의 Payload revision에 포함해 변경 이력을 보관한다. |
+| 공유·제공 | 발행된 문서에 포함된 섹션만 제공한다. |
+| 보관 | 문서의 Payload revision에 포함해 변경 이력을 보관한다. |
 | 파기 | 섹션을 제거하면 다음 발행부터 화면과 검수 대상에서 제외한다. 기존 CheckSession snapshot은 보존한다. |
 
 옛 모델의 PagePolicy, PageAssetRef, PageExample은 별도 엔티티로 존재하지 않는다. 정책 문구는 섹션 설명과 카드 캡션으로, 에셋 연결은 카드 디스플레이와 다운로드로, 사례의 사용 표시는 카드의 `status`로 저작한다. 이 표시는 검수 결과가 아니다.
@@ -118,18 +118,18 @@ CMS와 문서 API는 `sections`만 저작하며 `blocks`와 `contentModel`을 �
 ### 4.2 Check
 
 데이터명: Check
-수집 목적: 토픽(GuidelineDocument), 섹션에 적용할 검수 규칙을 선언한다.
+수집 목적: 문서(GuidelineDocument), 섹션에 적용할 검수 규칙을 선언한다.
 
 | 단계 | 작성 내용 |
 | --- | --- |
 | 생성·수집 | Manager가 문서 단위 안에서 영문·한글 이름, 중요도, 실행 유형별 설정과 RuleChecker를 입력한다. CheckKey는 영문 이름에서 자동 생성하고 저장 전에 전체 Guideline에서 중복을 검사한다. |
 | 전송 | Check는 부모 Guideline 문서 편집 요청에 포함해 Payload API로 전달한다. |
-| 저장 | CheckKey, 영문·한글 Title, Tier, RuleCheckerRef와 실행 유형에 따른 Options, HeuristicCriteria, HeuristicPrompt, Messages를 부모 토픽 또는 섹션 안에 저장한다. 별도 source 필드는 두지 않는다. |
+| 저장 | CheckKey, 영문·한글 Title, Tier, RuleCheckerRef와 실행 유형에 따른 Options, HeuristicCriteria, HeuristicPrompt, Messages를 부모 문서 또는 섹션 안에 저장한다. 별도 source 필드는 두지 않는다. |
 | 처리 | 검수 시작 시 부모 문서 또는 섹션의 전체 정규화 콘텐츠와 RuleChecker 실행 계약을 결합한다. 휴리스틱 AI는 HeuristicCriteria별 관찰값만 반환하고, 검수 Service가 기대값과 비교해 최종 상태를 결정한다. Guideline 변경 시 별도 snapshot을 동기화하지 않는다. |
 | 활용 | CheckScenario는 CheckKey로 실행 범위를 선택하고, 검수 런타임은 Check options를 RuleChecker에 전달한다. |
 | 공유·제공 | Creator와 Agent에는 발행된 GuidelineVersion에 포함된 Check만 제공한다. |
 | 보관 | Check는 부모 GuidelineVersion과 Payload revision에 포함해 보관하고, 실행 당시 값은 CheckSession에 snapshot으로 저장한다. |
-| 파기 | 부모 토픽이 draft 또는 삭제 상태가 되거나 섹션이 제거되면 이후 검수 대상에서 제외한다. 기존 CheckSession snapshot은 보존한다. |
+| 파기 | 부모 문서가 draft 또는 삭제 상태가 되거나 섹션이 제거되면 이후 검수 대상에서 제외한다. 기존 CheckSession snapshot은 보존한다. |
 
 ### 4.3 CheckScenario
 
@@ -527,7 +527,7 @@ Image 기능의 프로파일 기반 생성은 `generated-images`에 결과 파�
 
 | 단계 | 작성 내용 |
 | --- | --- |
-| 생성·수집 | 사용자가 가이드라인 토픽 화면을 열면 화면 이벤트로 생성한다. |
+| 생성·수집 | 사용자가 가이드라인 문서 화면을 열면 화면 이벤트로 생성한다. |
 | 전송 | 클라이언트에서 Client fetch route handler를 거쳐 Behavior event service로 전송한다. |
 | 저장 | BehaviorEventLog 하위 이벤트로 저장한다. |
 | 처리 | PageRef, SessionData, OccurredAt을 연결한다. |

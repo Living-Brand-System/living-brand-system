@@ -50,7 +50,7 @@ export function anchorField(): Field {
 		},
 		admin: {
 			description:
-				'이 섹션의 URL 앵커입니다(예: key-layout). 비우면 제목에서 자동 생성합니다. 토픽 안에서 유일해야 합니다.',
+				'이 섹션의 URL 앵커입니다(예: key-layout). 비우면 제목에서 자동 생성합니다. 문서 안에서 유일해야 합니다.',
 		},
 	}
 }

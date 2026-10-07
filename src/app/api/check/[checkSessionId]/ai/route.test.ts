@@ -19,7 +19,10 @@ const mocks = vi.hoisted(() => ({
 	readCheckImage: vi.fn(),
 }))
 
-vi.mock('@/lib/auth', () => ({ isPayloadUser: () => true }))
+vi.mock('@/lib/auth', async (importOriginal) => ({
+	...(await importOriginal<typeof import('@/lib/auth')>()),
+	isPayloadUser: () => true,
+}))
 vi.mock('@/lib/request-auth', () => ({
 	authenticateRequest: mocks.authenticateRequest,
 	isCrossOriginRequest: mocks.isCrossOriginRequest,
@@ -50,7 +53,7 @@ describe('POST /api/check/:checkSessionId/ai', () => {
 		mocks.isCrossOriginRequest.mockReturnValue(false)
 		mocks.authenticateRequest.mockResolvedValue({
 			payload: { logger: mocks.logger },
-			user: { id: 7 },
+			user: { id: 7, role: 'admin' },
 		})
 		mocks.readCheckImage.mockResolvedValue({
 			buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
@@ -72,7 +75,7 @@ describe('POST /api/check/:checkSessionId/ai', () => {
 		expect(mocks.completeCheckSessionAiCheck).toHaveBeenCalledWith({
 			buffer: expect.any(Buffer),
 			checkSessionId: 41,
-			user: { id: 7 },
+			user: { id: 7, role: 'admin' },
 		})
 		expect(mocks.logger.error).not.toHaveBeenCalled()
 	})

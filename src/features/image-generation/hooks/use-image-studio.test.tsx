@@ -131,21 +131,6 @@ function config(
 				: []),
 			{ blockType: 'cameraControl' },
 		],
-		controllerRestrictions: options.colorAdjustment
-			? {
-					controls: [
-						{ controlId: 'lineColor', defaultValue: options.colorAdjustment.line },
-						...(options.colorAdjustment.background
-							? [
-									{
-										controlId: 'backgroundColor',
-										defaultValue: options.colorAdjustment.background,
-									},
-								]
-							: []),
-					],
-				}
-			: undefined,
 	})
 	const batch = (options.batch ?? [1, 2, 3, 4]).map(String)
 	const ratio = options.ratio ?? ['2:3', '16:9']
@@ -180,12 +165,21 @@ function configureControl(
 		batch: string[]
 		ratio: ImageAspectRatio[]
 		resolution: ImageOutputSize[]
+		colorAdjustment?: { line: string; background?: string }
 		maxPromptLength?: number
 		promptAvailability?: ControllerAvailability
 		promptDefault?: string
 		ratioAvailability?: ControllerAvailability
 	},
 ): ControllerControlDefinition {
+	// 어드민은 색 기본값을 정하지 않지만, Provider는 계약이 준 기본값을 그대로 따라야 한다.
+	if (control.kind === 'color') {
+		const defaultValue =
+			control.id === IMAGE_STUDIO_CONTROL_IDS.lineColor
+				? options.colorAdjustment?.line
+				: options.colorAdjustment?.background
+		return { ...control, defaultValue: defaultValue ?? control.defaultValue }
+	}
 	if (control.id === IMAGE_STUDIO_CONTROL_IDS.prompt && control.kind === 'text') {
 		return {
 			...control,

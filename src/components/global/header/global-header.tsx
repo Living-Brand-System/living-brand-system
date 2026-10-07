@@ -111,8 +111,9 @@ export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderPr
 		href: item.href,
 		label: item.label,
 	})
-	const studioCreationItems = studioNavItems('creation').map(toHeaderItem)
-	const studioSettingItems = studioNavItems('setting').map(toHeaderItem)
+	const studioCreationItems = studioNavItems('creation', session).map(toHeaderItem)
+	// admin이 아니면 비어 있다(미개발 스튜디오만 있는 묶음) — 빈 묶음은 구분선째 그리지 않는다.
+	const studioSettingItems = studioNavItems('setting', session).map(toHeaderItem)
 	// 🔴 데스크톱과 컴팩트가 같은 것을 두 번 그린다 — 한 자리로 묶어 한쪽만 고쳐지는 일을 막는다.
 	// 세션은 서버가 아니라 브라우저가 묻는다 — 루트 레이아웃이 세션을 읽으면 `/`와 `/guideline`의
 	// 정적 렌더가 깨지기 때문이다(docs/05). 모르는 동안(`unknown`)은 아무것도 그리지 않는다.
@@ -164,11 +165,15 @@ export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderPr
 						aria-label="Studio 제작"
 						items={studioCreationItems}
 					/>
-					<NavigationHeader.Separator />
-					<NavigationHeader.LinkGroup
-						aria-label="Studio 설정"
-						items={studioSettingItems}
-					/>
+					{studioSettingItems.length > 0 && (
+						<>
+							<NavigationHeader.Separator />
+							<NavigationHeader.LinkGroup
+								aria-label="Studio 설정"
+								items={studioSettingItems}
+							/>
+						</>
+					)}
 				</NavigationHeader.Center>
 				<NavigationHeader.End>
 					<NavigationHeader.SearchTrigger
@@ -219,17 +224,21 @@ export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderPr
 									/>
 								))}
 							</NavigationHeader.CompactLinkGroup>
-							<NavigationHeader.CompactSeparator />
-							<NavigationHeader.CompactLinkGroup>
-								{studioSettingItems.map((item) => (
-									<NavigationHeader.Link
-										key={item.href}
-										{...item}
-										onClick={closeCompact}
-										surface="compact"
-									/>
-								))}
-							</NavigationHeader.CompactLinkGroup>
+							{studioSettingItems.length > 0 && (
+								<>
+									<NavigationHeader.CompactSeparator />
+									<NavigationHeader.CompactLinkGroup>
+										{studioSettingItems.map((item) => (
+											<NavigationHeader.Link
+												key={item.href}
+												{...item}
+												onClick={closeCompact}
+												surface="compact"
+											/>
+										))}
+									</NavigationHeader.CompactLinkGroup>
+								</>
+							)}
 							<NavigationHeader.CompactLinkGroup className="pt-6">
 								{session.status === 'in' && (
 									<>

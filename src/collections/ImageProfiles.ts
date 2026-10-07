@@ -11,6 +11,7 @@ import {
 import {
 	assertImageProfileRunnable,
 	deriveImageStudioConfig,
+	IMAGE_UNRESTRICTED_CONTROL_IDS,
 	type PublishedImageProfileDefinition,
 } from '@/features/image-generation/domain/image-studio-config'
 import { imageGenerationErrorResponse } from '@/features/image-generation/respond-image-generation'
@@ -22,7 +23,6 @@ import { isManager, managerManagedPublishedAccess } from '@/lib/auth'
 import { imageProfileFeaturesField } from './fields/image-profile-features-field'
 import { previewImageField } from './fields/preview-image-field'
 import {
-	studioControllerPresentationField,
 	studioControllerRestrictionsField,
 	studioExportPolicyField,
 } from './fields/studio-controller-field'
@@ -179,11 +179,9 @@ export const ImageProfiles: CollectionConfig = {
 			label: '유저 프롬프트',
 			labels: { singular: '유저 프롬프트', plural: '유저 프롬프트' },
 			validate: validateImagePromptNormalizationRows,
-			admin: {
-				initCollapsed: false,
-				description:
-					'선택사항입니다. 행이 있으면 AI가 후보 중 하나로 정규화하고 유저 인풋 원문은 최종 프롬프트에서 제외합니다. 비어 있으면 원문을 subject로 사용합니다.',
-			},
+			// 🔴 후보 정규화는 꺼 두었다(2026-10-07) — 생성 경로가 읽지 않으므로 화면에서도 뺐다.
+			// ponytail: 테이블은 남긴다. 필드를 지우면 DROP 마이그레이션이 필요하다 — 정리할 때 함께.
+			admin: { hidden: true },
 			fields: [
 				{ name: 'key', type: 'text', required: true, label: '주제' },
 				{
@@ -201,8 +199,13 @@ export const ImageProfiles: CollectionConfig = {
 			],
 		},
 		imageProfileFeaturesField(),
-		studioControllerRestrictionsField({ source: 'image' }),
-		studioControllerPresentationField({ source: 'image' }),
+		studioControllerRestrictionsField({
+			source: 'image',
+			unrestrictedControlIds: IMAGE_UNRESTRICTED_CONTROL_IDS,
+		}),
+		// 🔴 표현은 어드민이 정하지 않는다(2026-10-07) — 스튜디오가 읽지 않으므로 화면에서 뺐다.
+		// ponytail: 컬럼은 남긴다. 필드를 지우면 DROP 마이그레이션이 필요하다 — 정리할 때 함께.
+		{ name: 'controllerPresentation', type: 'json', admin: { hidden: true } },
 		studioExportPolicyField({
 			source: 'image',
 			includeOriginal: true,

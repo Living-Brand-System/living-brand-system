@@ -7,6 +7,7 @@ import { ImageGenerator } from './image-generator'
 
 const mocks = vi.hoisted(() => ({
 	profiles: vi.fn(),
+	history: vi.fn(),
 	generate: vi.fn(),
 	prepare: vi.fn(),
 	export: vi
@@ -34,6 +35,9 @@ vi.mock('@/features/template-core/services/template-editor-options.client', asyn
 // 「프로파일 변경」 자산 브라우저가 여는 실제 교체 후보 목록.
 vi.mock('@/features/image-generation/services/list-image-studio-configs.client', () => ({
 	fetchImageStudioConfigs: mocks.profiles,
+}))
+vi.mock('@/features/image-generation/services/list-generated-image-history.client', () => ({
+	fetchGeneratedImageHistory: mocks.history,
 }))
 vi.mock('@/features/image-generation/services/generate-image.client', () => ({
 	requestImageGeneration: mocks.generate,
@@ -82,6 +86,7 @@ const result = {
 beforeEach(() => {
 	vi.clearAllMocks()
 	mocks.profiles.mockResolvedValue([profile, basic])
+	mocks.history.mockResolvedValue({ hasMore: false, items: [] })
 	mocks.generate.mockResolvedValue(result)
 	mocks.prepare.mockResolvedValue(new Blob(['image'], { type: 'image/webp' }))
 	Object.defineProperties(HTMLElement.prototype, {
@@ -266,4 +271,39 @@ it('Reset 이전 응답이 새 세션에 나타나지 않는다', async () => {
 	await act(async () => complete(result))
 	expect(screen.queryByRole('img', { name: '생성 결과 1' })).not.toBeInTheDocument()
 	expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue('')
+})
+
+// 위쪽이 보여주는 것이 저장된다 — 결과 세션이 남아 있어도 스트립에서 고른 장을 저장한다(2026-10-07).
+it('생성 뒤 스트립에서 고른 이력을 선택 저장한다', async () => {
+	mocks.history.mockImplementation(async (_page, options?: { bestOnly?: boolean }) => ({
+		hasMore: false,
+		items: options?.bestOnly
+			? []
+			: [
+					{
+						id: 7,
+						url: '/api/generated-images/file/past.png',
+						createdAt: '2026-09-20T00:00:00.000Z',
+						batchKey: null,
+						profileId: 41,
+						profileName: profile.name,
+						prompt: '옛날 강아지',
+						aspectRatio: '16:9',
+						imageSize: '1K',
+					},
+				],
+	}))
+	const user = await setup()
+	await user.type(screen.getByRole('textbox', { name: 'Prompt' }), '작은 나무 한 그루')
+	await user.click(screen.getByRole('button', { name: '이미지 생성' }))
+	await screen.findByRole('img', { name: '생성 결과 1' })
+
+	await user.click(await screen.findByRole('button', { name: '옛날 강아지' }))
+	await user.click(screen.getByRole('button', { name: '선택 저장' }))
+
+	await waitFor(() =>
+		expect(mocks.export).toHaveBeenCalledWith(
+			expect.objectContaining({ fileName: expect.stringContaining('옛날-강아지') }),
+		),
+	)
 })

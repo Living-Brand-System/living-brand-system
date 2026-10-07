@@ -10,9 +10,12 @@ type StudioAdminBaseConfig = StudioRuntimeManifest & { id: string }
 export function studioControllerRestrictionsField({
 	source,
 	baseConfigs,
+	unrestrictedControlIds,
 }: {
 	source: StudioKind
 	baseConfigs?: readonly StudioAdminBaseConfig[]
+	/** 어드민이 좁히지 않는 컨트롤 — 제한 화면에 그리지 않는다. */
+	unrestrictedControlIds?: readonly string[]
 }): Field {
 	return {
 		name: 'controllerRestrictions',
@@ -22,7 +25,7 @@ export function studioControllerRestrictionsField({
 			components: {
 				Field: {
 					path: '/components/admin/studio/studio-controller-restrictions-field#StudioControllerRestrictionsField',
-					clientProps: { source, baseConfigs },
+					clientProps: { source, baseConfigs, unrestrictedControlIds },
 				},
 			},
 		},

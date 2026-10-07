@@ -21,7 +21,6 @@ export async function listPublishedImageProfileDefinitions(
 		overrideAccess: true,
 		select: {
 			controllerRestrictions: true,
-			controllerPresentation: true,
 			features: true,
 			imageModelPreset: true,
 			name: true,
@@ -41,13 +40,11 @@ export async function listPublishedImageProfileDefinitions(
 			slug,
 			imageModelPreset,
 			controllerRestrictions,
-			controllerPresentation,
 			features,
 			exportPolicy,
 			previewImage,
 		} = document as typeof document & {
 			controllerRestrictions?: unknown
-			controllerPresentation?: unknown
 			features?: unknown
 			previewImage?: unknown
 		}
@@ -57,7 +54,6 @@ export async function listPublishedImageProfileDefinitions(
 			slug: slug || null,
 			imageModelPreset,
 			controllerRestrictions,
-			controllerPresentation,
 			features,
 			exportPolicy,
 			previewImage,

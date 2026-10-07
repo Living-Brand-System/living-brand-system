@@ -1,3 +1,5 @@
+import { isAdmin } from '@/lib/auth'
+
 /**
  * 로그인·로그아웃 브라우저 fetch. 화면 문구와 이동은 호출자(훅)가 소유한다.
  *
@@ -6,18 +8,19 @@
  */
 
 /**
- * 지금 로그인돼 있나. 🔑 헤더가 필요한 것은 그것뿐이라 계정 정보를 들고 오지 않는다 —
- * 누구인지는 계정 화면이 서버에서 읽는다.
+ * 지금 로그인돼 있나, admin인가. 🔑 헤더가 필요한 것은 그것뿐이라 계정 정보를 들고 오지 않는다 —
+ * 누구인지는 계정 화면이 서버에서 읽는다. admin 여부는 미개발 스튜디오 링크를 가리는 데만 쓴다 —
+ * 🔴 표시용일 뿐 권한 경계가 아니다. 막는 것은 각 페이지의 서버 게이트다.
  *
  * 🔑 헤더는 서버에서 세션을 읽지 못한다. 루트 레이아웃이 세션을 읽으면 `/`와 `/guideline`의
  *    정적 렌더가 깨지기 때문이다(docs/05). 그래서 브라우저가 직접 묻는다.
  */
-export async function requestIsSignedIn(): Promise<boolean> {
+export async function requestSession(): Promise<{ signedIn: boolean; isAdmin: boolean }> {
 	const response = await fetch('/api/users/me').catch(() => null)
-	if (!response?.ok) return false
+	if (!response?.ok) return { signedIn: false, isAdmin: false }
 
 	const body = (await response.json().catch(() => null)) as { user?: unknown } | null
-	return Boolean(body?.user)
+	return { signedIn: Boolean(body?.user), isAdmin: isAdmin(body?.user) }
 }
 
 export type LoginResult = { status: 'ok' } | { status: 'rejected' } | { status: 'error' }

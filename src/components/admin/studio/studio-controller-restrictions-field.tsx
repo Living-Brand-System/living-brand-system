@@ -20,6 +20,7 @@ import {
 type ControllerAdminFieldProps = ComponentProps<JSONFieldClientComponent> & {
 	source: StudioAdminRuntimeSource
 	baseConfigs?: readonly StudioAdminBaseConfig[]
+	unrestrictedControlIds?: readonly string[]
 }
 
 type StoredControllerPresentation = {
@@ -45,9 +46,16 @@ export function StudioControllerRestrictionsField({
 	path,
 	source,
 	baseConfigs = [],
+	unrestrictedControlIds = [],
 }: ControllerAdminFieldProps) {
 	const { disabled, errorMessage, setValue, showError, value } = useField<unknown>({ path })
-	const groups = useStudioRuntimeManifest(source, baseConfigs)?.controller.groups ?? []
+	// 좁히지 않는 컨트롤은 그리지 않는다 — 저장값에 남아 있으면 아래 「정리」 버튼이 지운다.
+	const groups = (useStudioRuntimeManifest(source, baseConfigs)?.controller.groups ?? [])
+		.map((group) => ({
+			...group,
+			controls: group.controls.filter(({ id }) => !unrestrictedControlIds.includes(id)),
+		}))
+		.filter((group) => group.controls.length > 0)
 	const current = readRestrictions(value)
 	// 기능을 끄거나 모델·Runtime을 바꾸면 화면에서 사라진 컨트롤의 제한이 저장값에만 남아 발행을 막는다.
 	const knownControlIds = new Set(groups.flatMap(({ controls }) => controls.map(({ id }) => id)))

@@ -212,7 +212,7 @@ export interface PayloadMcpApiKeyAuthOperations {
   };
 }
 /**
- * 토픽을 묶는 분류입니다. 챕터 자체는 화면을 갖지 않습니다.
+ * 문서를 묶는 분류입니다. 챕터 자체는 화면을 갖지 않습니다.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "guideline-chapters".
@@ -245,7 +245,7 @@ export interface GuidelineChapter {
   createdAt: string;
 }
 /**
- * 챕터에 속한 토픽 한 장입니다. 본문은 섹션 블록으로 나눕니다.
+ * 챕터에 속한 문서 한 장입니다. 본문은 섹션 블록으로 나눕니다.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "guideline-documents".
@@ -253,12 +253,12 @@ export interface GuidelineChapter {
 export interface GuidelineDocument {
   id: number;
   /**
-   * 이 토픽이 속한 챕터입니다. URL의 첫 조각이 됩니다.
+   * 이 문서가 속한 챕터입니다. URL의 첫 조각이 됩니다.
    */
   chapter: number | GuidelineChapter;
   title: string;
   /**
-   * 가이드라인 첫 화면의 토픽 카드에서 제목 아래에 표시됩니다.
+   * 가이드라인 첫 화면의 문서 카드에서 제목 아래에 표시됩니다.
    */
   description?: string | null;
   /**
@@ -267,7 +267,7 @@ export interface GuidelineDocument {
   generateSlug?: boolean | null;
   slug: string;
   /**
-   * 토픽 헤더와 가이드라인 첫 화면의 토픽 카드에 표시할 선택 이미지입니다.
+   * 문서 헤더와 가이드라인 첫 화면의 문서 카드에 표시할 선택 이미지입니다.
    */
   headerImage?: (number | null) | ApplicationImage;
   contentModel?: ('legacy' | 'sections') | null;
@@ -279,7 +279,7 @@ export interface GuidelineDocument {
         type: 'section' | 'subsection' | 'incorrect-usages';
         title?: string | null;
         /**
-         * 이 섹션의 URL 앵커입니다(예: key-layout). 비우면 제목에서 자동 생성합니다. 토픽 안에서 유일해야 합니다.
+         * 이 섹션의 URL 앵커입니다(예: key-layout). 비우면 제목에서 자동 생성합니다. 문서 안에서 유일해야 합니다.
          */
         anchor?: string | null;
         description?: string | null;
@@ -931,9 +931,6 @@ export interface ImageProfile {
     value: string;
     id?: string | null;
   }[];
-  /**
-   * 선택사항입니다. 행이 있으면 AI가 후보 중 하나로 정규화하고 유저 인풋 원문은 최종 프롬프트에서 제외합니다. 비어 있으면 원문을 subject로 사용합니다.
-   */
   userPromptNormalization?:
     | {
         key: string;

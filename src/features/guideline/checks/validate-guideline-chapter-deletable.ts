@@ -19,7 +19,7 @@ export async function assertGuidelineChapterDeletable(
 
 	if (totalDocs > 0) {
 		throw new APIError(
-			`토픽 ${totalDocs}개가 이 챕터에 속해 있어 삭제할 수 없습니다. 먼저 다른 챕터로 옮기세요.`,
+			`문서 ${totalDocs}개가 이 챕터에 속해 있어 삭제할 수 없습니다. 먼저 다른 챕터로 옮기세요.`,
 			400,
 		)
 	}

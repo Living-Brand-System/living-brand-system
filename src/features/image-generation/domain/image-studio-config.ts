@@ -64,7 +64,6 @@ export type PublishedImageProfileDefinition = {
 	slug: string | null
 	imageModelPreset: ImageModelPreset
 	controllerRestrictions?: unknown
-	controllerPresentation?: unknown
 	features?: unknown
 	exportPolicy?: unknown
 	previewImage?: unknown
@@ -177,14 +176,9 @@ export function resolveImagePromptExecution(control: ControlOfKind<'text'>, valu
  * 🔴 읽기(스튜디오 목록)에는 걸지 않는다. 이미 발행된 행 하나 때문에 스튜디오 전체가 죽지 않게 발행 훅에서만 부른다.
  */
 export function assertImageProfileRunnable(config: ImageStudioConfig): void {
-	const { prompt, batch, ratio, resolution } = getImageStudioControls(config)
+	const { batch, ratio, resolution } = getImageStudioControls(config)
 	const locked = (availability: string | undefined) =>
 		availability === 'readonly' || availability === 'disabled'
-	if (locked(prompt.availability) && !prompt.defaultValue?.trim()) {
-		throw new Error(
-			'프롬프트를 잠그려면 기본 문구를 넣어야 합니다. 비어 있으면 생성할 수 없습니다.',
-		)
-	}
 	for (const control of [batch, ratio, resolution]) {
 		if (control.defaultValue === null) {
 			throw new Error(`${control.label} 기본값은 비워 둘 수 없습니다. 하나를 고르세요.`)
@@ -303,10 +297,8 @@ export function deriveImageStudioConfig(
 		) as StudioOutputCapability & { original: boolean },
 		artifacts: manifest.artifacts,
 		controller,
-		controllerPresentation: resolveControllerPresentation(
-			controller.groups,
-			profile.controllerPresentation,
-		),
+		// 어드민은 표현을 정하지 않는다(2026-10-07) — 늘 Definition 기본값이다.
+		controllerPresentation: resolveControllerPresentation(controller.groups, undefined),
 		previewImage: toStudioPreviewImage(profile.previewImage),
 		image: {
 			slug: profile.slug ?? null,
@@ -418,6 +410,16 @@ function assertFeatureKeys(value: Record<string, unknown>, allowed: readonly str
 	}
 }
 
+/**
+ * 어드민이 좁히지 않는 컨트롤(2026-10-07 사용자 결정) — 프롬프트는 사용자 입력 그 자체이고,
+ * 색은 브랜드 색 조합과 features 토글이 이미 정한다. 저장값에 남아 있어도 적용하지 않는다.
+ */
+export const IMAGE_UNRESTRICTED_CONTROL_IDS: readonly string[] = [
+	IMAGE_STUDIO_CONTROL_IDS.prompt,
+	IMAGE_STUDIO_CONTROL_IDS.lineColor,
+	IMAGE_STUDIO_CONTROL_IDS.backgroundColor,
+]
+
 /** Admin form과 published projector가 같은 Manifest→Feature→Restrictions 순서를 소비한다. */
 export function deriveImageProfileController(
 	modelPreset: ImageModelPreset,
@@ -426,10 +428,15 @@ export function deriveImageProfileController(
 ): ImageStudioConfig['controller'] {
 	const manifest = getImageRuntimeManifest(modelPreset)
 	const featureSelections = projectSupportedImageProfileFeatureSelections(manifest, features)
+	const restrictions = projectPayloadControllerRestrictions(controllerRestrictions)
 	return {
 		groups: applyControllerRestrictions(
 			selectImageProfileControllerGroups(manifest, featureSelections),
-			projectPayloadControllerRestrictions(controllerRestrictions),
+			restrictions && {
+				controls: restrictions.controls.filter(
+					({ controlId }) => !IMAGE_UNRESTRICTED_CONTROL_IDS.includes(controlId),
+				),
+			},
 		),
 	}
 }
