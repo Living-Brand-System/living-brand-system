@@ -4,7 +4,7 @@ import {
 	GRAPH_RUNTIME_OPTIONS,
 	graphRuntimeManifests,
 } from '@/features/graph-generation/domain/graph-studio-manifest'
-import { managerManagedAccess } from '@/lib/auth'
+import { managerManagedPublishedAccess } from '@/lib/auth'
 import { previewImageField } from './fields/preview-image-field'
 import {
 	studioControllerPresentationField,
@@ -22,7 +22,7 @@ const graphAdminRuntimeManifests = graphRuntimeManifests.map(({ artifacts, contr
 export const GraphProfiles: CollectionConfig = {
 	slug: 'graph-profiles',
 	dbName: 'graph_profiles',
-	access: managerManagedAccess,
+	access: managerManagedPublishedAccess,
 	hooks: {
 		beforeChange: [
 			keepPublishedOnRestore,

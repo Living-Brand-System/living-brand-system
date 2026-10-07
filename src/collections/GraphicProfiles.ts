@@ -4,7 +4,7 @@ import {
 	GRAPHIC_RUNTIME_OPTIONS,
 	graphicRuntimeManifests,
 } from '@/features/graphic-generation/domain/graphic-studio-manifest'
-import { managerManagedAccess } from '@/lib/auth'
+import { managerManagedPublishedAccess } from '@/lib/auth'
 import { previewImageField } from './fields/preview-image-field'
 import {
 	studioControllerPresentationField,
@@ -20,7 +20,7 @@ const graphicAdminRuntimeManifests = graphicRuntimeManifests.map(
 export const GraphicProfiles: CollectionConfig = {
 	slug: 'graphic-profiles',
 	dbName: 'graphic_profiles',
-	access: managerManagedAccess,
+	access: managerManagedPublishedAccess,
 	hooks: {
 		beforeChange: [
 			keepPublishedOnRestore,

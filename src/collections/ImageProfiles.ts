@@ -23,7 +23,7 @@ import {
 	assertImageProfileUnpinned,
 	isUnpublishTransition,
 } from '@/features/template-core/services/guard-template-references.service'
-import { isManager, managerManagedAccess } from '@/lib/auth'
+import { isManager, managerManagedPublishedAccess } from '@/lib/auth'
 import { imageProfileFeaturesField } from './fields/image-profile-features-field'
 import { previewImageField } from './fields/preview-image-field'
 import {
@@ -69,7 +69,7 @@ async function normalizePromptEndpoint(req: PayloadRequest) {
 export const ImageProfiles: CollectionConfig = {
 	slug: 'image-profiles',
 	dbName: 'image_profiles',
-	access: managerManagedAccess,
+	access: managerManagedPublishedAccess,
 	hooks: {
 		// 발행 템플릿의 overrides가 imageInput.profileId로 고정한 프로파일은 삭제·발행 해제를 거부한다.
 		beforeChange: [

@@ -1,7 +1,7 @@
 import { APIError, type CollectionConfig, slugField } from 'payload'
 import { isPrintPpi, MAX_PRINT_PPI, MIN_PRINT_PPI } from '@/features/studio-export/print-policy'
 import { prepareTemplateSave } from '@/features/template-import/services/prepare-template-save.service'
-import { isManager, managerOrAdmin } from '@/lib/auth'
+import { isManager, managerManagedPublishedAccess } from '@/lib/auth'
 import { previewImageField } from './fields/preview-image-field'
 import { studioExportPolicyField } from './fields/studio-controller-field'
 import { templateBackgroundPolicyField } from './fields/template-policy-field'
@@ -9,15 +9,7 @@ import { draftVersions, keepPublishedOnRestore } from './shared'
 
 export const Templates: CollectionConfig = {
 	slug: 'templates',
-	access: {
-		read: ({ req }) =>
-			isManager(req.user) || {
-				_status: { equals: 'published' },
-			},
-		create: managerOrAdmin,
-		update: managerOrAdmin,
-		delete: managerOrAdmin,
-	},
+	access: managerManagedPublishedAccess,
 	hooks: {
 		// 모든 HTML 저장은 실행 마크업과 외부 URL을 차단한다. 브랜드 에셋 published 검증은
 		// 발행 시에만 추가하고, draft의 staging 에셋은 manager/admin에게만 보인다 (docs/07).
