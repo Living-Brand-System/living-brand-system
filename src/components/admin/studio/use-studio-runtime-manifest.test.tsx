@@ -36,4 +36,15 @@ describe('useStudioRuntimeManifest', () => {
 			]),
 		)
 	})
+	it('Graph 편집 화면은 Template이 아니라 선택한 Graph runtime의 매니페스트를 그린다', () => {
+		payloadForm.fields = { runtime: { value: 'infographic' } }
+		const infographic = { id: 'infographic', controller: { groups: [] }, artifacts: [] }
+
+		const { result } = renderHook(() =>
+			// biome-ignore lint/suspicious/noExplicitAny: 매니페스트 선택만 본다
+			useStudioRuntimeManifest('graph', [infographic as any]),
+		)
+
+		expect(result.current).toBe(infographic)
+	})
 })

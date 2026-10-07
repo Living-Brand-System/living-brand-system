@@ -172,6 +172,35 @@ export function resolveImagePromptExecution(control: ControlOfKind<'text'>, valu
 		: value.trim()
 }
 
+/**
+ * 발행 전에 이 프로파일로 실제로 생성할 수 있는지 본다 — 계약 구조는 맞아도 생성이 막히는 조합을 거부한다.
+ * 🔴 읽기(스튜디오 목록)에는 걸지 않는다. 이미 발행된 행 하나 때문에 스튜디오 전체가 죽지 않게 발행 훅에서만 부른다.
+ */
+export function assertImageProfileRunnable(config: ImageStudioConfig): void {
+	const { prompt, batch, ratio, resolution } = getImageStudioControls(config)
+	const locked = (availability: string | undefined) =>
+		availability === 'readonly' || availability === 'disabled'
+	if (locked(prompt.availability) && !prompt.defaultValue?.trim()) {
+		throw new Error(
+			'프롬프트를 잠그려면 기본 문구를 넣어야 합니다. 비어 있으면 생성할 수 없습니다.',
+		)
+	}
+	for (const control of [batch, ratio, resolution]) {
+		if (control.defaultValue === null) {
+			throw new Error(`${control.label} 기본값은 비워 둘 수 없습니다. 하나를 고르세요.`)
+		}
+	}
+	// 카메라 재생성과 템플릿 이미지 슬롯은 늘 1장으로 생성한다.
+	if (
+		!batch.options.some((option) => option.value === '1') ||
+		(locked(batch.availability) && batch.defaultValue !== '1')
+	) {
+		throw new Error(
+			`${batch.label}에는 1장이 들어 있어야 합니다. 카메라 재생성과 템플릿 이미지 칸은 1장으로 생성합니다.`,
+		)
+	}
+}
+
 /** stable ID로 이미지 도메인의 필수 생성 컨트롤과 선택 색 컨트롤을 찾는다. */
 export function getImageStudioControls(config: ImageStudioConfig): ImageStudioControls {
 	return {

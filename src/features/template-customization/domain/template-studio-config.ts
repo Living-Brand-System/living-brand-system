@@ -861,7 +861,7 @@ export function deriveTemplateStudioConfig(
 		name: template.name,
 		output: resolveStudioOutputCapability(
 			runtimeManifest.artifacts,
-			withGuaranteedTemplateFormats(projectStudioOutputPolicy(template.exportPolicy)),
+			projectStudioOutputPolicy(template.exportPolicy),
 		),
 		artifacts: runtimeManifest.artifacts,
 		controller: {
@@ -884,26 +884,6 @@ export function deriveTemplateStudioConfig(
 	}
 	parseTemplateStudioConfig(config)
 	return config
-}
-
-/**
- * 🔑 템플릿은 어떤 정책이든 **벡터(svg·pdf)** 를 낸다. 벡터는 고르는 선택지가 아니라 판이 가진
- *    성질이라, 정책이 지우면 「왜 벡터가 없지」를 템플릿마다 다시 디버깅하게 된다(2026-08-27에
- *    실제로 그랬다 — 발행된 12개 중 벡터를 허용한 것이 하나도 없었다).
- *    콘텐츠에 따라 벡터라도 사실상 이미지 덩어리일 수 있으나 그것은 결과의 성격이지 가부가 아니다.
- * 🔴 래스터는 보장하지 않는다 — png를 못 끄게 만들면 admin의 「래스터」 토글이 거짓말을 한다.
- */
-export const GUARANTEED_TEMPLATE_FORMATS = ['svg', 'pdf'] as const
-
-function withGuaranteedTemplateFormats(
-	policy: ReturnType<typeof projectStudioOutputPolicy>,
-): ReturnType<typeof projectStudioOutputPolicy> {
-	// 좁히지 않는 정책은 이미 전부 낸다 — 손대면 오히려 의미가 바뀐다.
-	if (!policy?.allowedFormats) return policy
-	return {
-		...policy,
-		allowedFormats: [...new Set([...policy.allowedFormats, ...GUARANTEED_TEMPLATE_FORMATS])],
-	}
 }
 
 function templateRecord(value: unknown, name: string): Record<string, unknown> {

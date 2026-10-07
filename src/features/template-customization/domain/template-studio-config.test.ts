@@ -284,21 +284,13 @@ describe('deriveTemplateStudioConfig', () => {
 				},
 			},
 		})
-		// 🔑 정책이 무엇을 적든 벡터(svg·pdf)는 남는다 — 판이 가진 성질이라 고르는 것이 아니다.
-		expect(
-			deriveTemplateStudioConfig({
-				...template,
-				exportPolicy: { allowedFormats: ['jpeg'] },
-			}).output.formats,
-		).toEqual(['jpeg', 'pdf', 'svg'])
-		// 발행된 템플릿들이 실제로 갖고 있던 값 — 벡터만 더해지고 나머지는 그대로 좁혀진다.
+		// 🔑 출력 형식은 admin 칩대로만 낸다 — 벡터(svg·pdf)도 다른 스튜디오처럼 켠 칩에서만(사용자 결정 2026-10-07).
 		expect(
 			deriveTemplateStudioConfig({
 				...template,
 				exportPolicy: { allowedFormats: ['png', 'jpeg', 'mp4'] },
 			}).output.formats,
-		).toEqual(['png', 'jpeg', 'pdf', 'svg', 'mp4'])
-		// 래스터는 보장하지 않는다 — admin의 「래스터」 토글이 실제로 먹어야 한다.
+		).toEqual(['png', 'jpeg', 'mp4'])
 		expect(
 			deriveTemplateStudioConfig({
 				...template,

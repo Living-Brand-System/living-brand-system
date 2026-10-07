@@ -61,6 +61,20 @@ describe('StudioExportPolicyField', () => {
 		])
 	})
 
+	it('Payload가 돌려준 빈 목록은 「전부 허용」으로 그리고, 마지막 칩은 끌 수 없다', () => {
+		// 전부 켜면 값 없음으로 저장되는데 Payload는 그것을 []로 돌려준다 — 꺼짐으로 그리면 admin과 앱이 반대가 된다.
+		fieldState('exportPolicy.allowedFormats').value = []
+		renderField()
+		for (const name of ['인쇄', '래스터', '영상']) {
+			expect(screen.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'true')
+		}
+
+		cleanup()
+		fieldState('exportPolicy.allowedFormats').value = ['png']
+		renderField()
+		expect(screen.getByRole('button', { name: '래스터' })).toBeDisabled()
+	})
+
 	it('인쇄 해상도 허용 목록을 다중 토글로 저장한다', () => {
 		fieldState('exportPolicy.print.allowedPpi').value = [72]
 		renderField()

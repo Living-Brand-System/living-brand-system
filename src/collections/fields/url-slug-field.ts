@@ -29,6 +29,14 @@ export function urlSlugField({ useAsSlug, localized }: { useAsSlug: string; loca
 				(candidate) => 'name' in candidate && candidate.name === 'slug',
 			)
 			if (slug?.type === 'text') {
+				// 🔴 초안 저장은 검증을 건너뛴다 — 직접 친 한글 slug가 초안으로 남지 않게 저장마다 영문으로 정리한다.
+				slug.hooks = {
+					...slug.hooks,
+					beforeChange: [
+						...(slug.hooks?.beforeChange ?? []),
+						({ value }) => (typeof value === 'string' ? toUrlSlug(value) : value),
+					],
+				}
 				slug.validate = (value: unknown) =>
 					typeof value === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)
 						? true
