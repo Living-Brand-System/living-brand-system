@@ -21,6 +21,8 @@ export const GraphicProfiles: CollectionConfig = {
 	slug: 'graphic-profiles',
 	dbName: 'graphic_profiles',
 	access: managerManagedPublishedAccess,
+	// runtime이 unique라 프로파일은 runtime당 하나다 — 복제는 매번 고유 제약에 걸려 실패만 한다.
+	disableDuplicate: true,
 	hooks: {
 		beforeChange: [
 			keepPublishedOnRestore,

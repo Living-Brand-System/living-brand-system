@@ -1,10 +1,4 @@
-import {
-	APIError,
-	type CollectionConfig,
-	type FieldAccess,
-	type PayloadRequest,
-	slugField,
-} from 'payload'
+import { APIError, type CollectionConfig, type FieldAccess, type PayloadRequest } from 'payload'
 import {
 	DEFAULT_IMAGE_MODEL_PRESET,
 	IMAGE_MODEL_PRESET_OPTIONS,
@@ -31,6 +25,7 @@ import {
 	studioControllerRestrictionsField,
 	studioExportPolicyField,
 } from './fields/studio-controller-field'
+import { urlSlugField } from './fields/url-slug-field'
 import { draftVersions, keepPublishedOnRestore } from './shared'
 
 const managerFieldRead: FieldAccess = ({ req }) => isManager(req.user)
@@ -127,10 +122,7 @@ export const ImageProfiles: CollectionConfig = {
 			required: true,
 			label: '프로파일 이름',
 		},
-		slugField({
-			useAsSlug: 'name',
-			required: true,
-		}),
+		urlSlugField({ useAsSlug: 'name' }),
 		previewImageField(),
 		{
 			name: 'displayOrder',
