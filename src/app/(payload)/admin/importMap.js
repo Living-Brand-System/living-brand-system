@@ -8,6 +8,7 @@ import { StudioExportPolicyField as StudioExportPolicyField_100bfeb2a58aa702365a
 import { ImageProfileTestPanel as ImageProfileTestPanel_4e5dbfcb16cbe71d2377850041f37640 } from '../../../components/admin/image-profiles/image-profile-test-panel'
 import { TemplateLayersField as TemplateLayersField_50c68c65c3e705e4e610557c8a05e5e6 } from '../../../components/admin/templates/template-layers-field'
 import { TemplateBackgroundPolicyField as TemplateBackgroundPolicyField_db5e24a3a4d2a7d4f0c86814bf290e5c } from '../../../components/admin/templates/template-background-policy-field'
+import { TemplateSizeUnit as TemplateSizeUnit_811e1ae0b0fa04312c1ddc5411ed36e0 } from '../../../components/admin/templates/template-size-unit'
 import { SidebarDivider as SidebarDivider_34b02386e3687855f2c939d264827b16 } from '../../../components/admin/templates/sidebar-divider'
 import { FigmaHtmlImportField as FigmaHtmlImportField_be9c443aa962726f6d016f5ca8fc7c1f } from '../../../components/admin/templates/figma-html-import-field'
 import { CheckScenarioChecksField as CheckScenarioChecksField_e627639efdf8e16289f7f26d48157b23 } from '../../../components/admin/check-scenarios/check-scenario-checks-field'
@@ -38,6 +39,7 @@ export const importMap = {
   "/components/admin/image-profiles/image-profile-test-panel#ImageProfileTestPanel": ImageProfileTestPanel_4e5dbfcb16cbe71d2377850041f37640,
   "/components/admin/templates/template-layers-field#TemplateLayersField": TemplateLayersField_50c68c65c3e705e4e610557c8a05e5e6,
   "/components/admin/templates/template-background-policy-field#TemplateBackgroundPolicyField": TemplateBackgroundPolicyField_db5e24a3a4d2a7d4f0c86814bf290e5c,
+  "/components/admin/templates/template-size-unit#TemplateSizeUnit": TemplateSizeUnit_811e1ae0b0fa04312c1ddc5411ed36e0,
   "/components/admin/templates/sidebar-divider#SidebarDivider": SidebarDivider_34b02386e3687855f2c939d264827b16,
   "/components/admin/templates/figma-html-import-field#FigmaHtmlImportField": FigmaHtmlImportField_be9c443aa962726f6d016f5ca8fc7c1f,
   "/components/admin/check-scenarios/check-scenario-checks-field#CheckScenarioChecksField": CheckScenarioChecksField_e627639efdf8e16289f7f26d48157b23,

@@ -1975,7 +1975,13 @@ describe('TemplateGenerator', () => {
 
 	it('선택한 Effective 포맷으로 내보낸다', async () => {
 		const user = userEvent.setup()
-		render(<TemplateGenerator categoryTitle="카드" template={template} />)
+		// PDF는 인쇄판에서만 나간다 — 디지털판은 PNG·JPG·MP4뿐이다.
+		render(
+			<TemplateGenerator
+				categoryTitle="카드"
+				template={{ ...template, printSizeMm: { width: 200, height: 150 } }}
+			/>,
+		)
 
 		screen.getByRole('combobox', { name: 'Format' }).focus()
 		await user.keyboard('{ArrowDown}')

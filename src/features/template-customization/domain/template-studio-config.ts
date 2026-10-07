@@ -13,7 +13,7 @@ import {
 	type ImageStudioConfig,
 	parseImageStudioConfig,
 } from '@/features/image-generation/domain/image-studio-config'
-import { isPrintPpi, type PrintPpi } from '@/features/studio-export/print-policy'
+import type { StudioOutputFormat } from '@/features/studio-export/export-contract'
 import {
 	DEFAULT_RASTER_VIDEO_CAPABILITY,
 	parseStudioOutputCapability,
@@ -67,6 +67,8 @@ type TemplateEditableSlotBase = TemplateSlotBindingBase & ResolvedTemplateLayerP
 type TextControlDefinition = Extract<ControllerControlDefinition, { kind: 'text' }>
 type SelectControlDefinition = Extract<ControllerControlDefinition, { kind: 'select' }>
 
+/** 인쇄 판형(mm). 인쇄판의 물리 크기 정본이다. */
+export type TemplatePrintSizeMm = { width: number; height: number }
 export type TemplateTextSlot = TemplateEditableSlotBase & {
 	kind: 'text'
 	/** 공통 controller.groups에 있는 text Definition의 stable id. */
@@ -151,8 +153,10 @@ export type PublishedHtmlTemplate = {
 	nodeConfigs: Record<string, PublishedTemplateNodeConfig>
 	width: number
 	height: number
-	/** 판형 선언 — 이 px를 몇 ppi로 그렸는가. 없으면 디지털판이라 물리 크기가 없다. */
-	canvasPpi?: PrintPpi
+	/** 인쇄 판형(mm) — 인쇄판의 정본. 없으면 디지털판이라 물리 크기가 없다. */
+	printSizeMm?: TemplatePrintSizeMm
+	/** 디지털판의 판형 크기(px). 파일은 이 크기로 나간다. 없으면 판 크기 그대로다. */
+	digitalSizePx?: TemplatePrintSizeMm
 	templateVersion: string
 	exportPolicy?: unknown
 	backgroundPolicy?: TemplateBackgroundPolicy
@@ -183,8 +187,10 @@ export type TemplateStudioConfig = StudioControllerConfig<'template', number> & 
 		graphicConfigs: readonly GraphicStudioConfig[]
 		exportOption: {
 			canvas: { width: number; height: number }
-			/** 판형이 선언된 템플릿의 인쇄 해상도. 있으면 창작자가 크기도 해상도도 고르지 않는다. */
-			canvasPpi?: PrintPpi
+			/** 인쇄판의 판형(mm). 있으면 파일 px는 창작자가 고른 ppi와 이 mm로 계산된다. */
+			printSizeMm?: TemplatePrintSizeMm
+			/** 디지털판의 판형 크기(px). 있으면 파일이 이 크기로 나간다. */
+			digitalSizePx?: TemplatePrintSizeMm
 			/** 캔버스 좌표계 대비 허용 최대 출력 배율. MP4 인코딩 한도에서 되짚어 구한다. */
 			maxScale: number
 		}
@@ -335,7 +341,7 @@ export function parseTemplateStudioConfig(input: unknown): TemplateStudioConfig 
 	}
 
 	const exportOption = templateRecord(template.exportOption, 'TemplateStudioConfig exportOption')
-	assertTemplateKeys(exportOption, ['canvas', 'canvasPpi', 'maxScale'])
+	assertTemplateKeys(exportOption, ['canvas', 'printSizeMm', 'digitalSizePx', 'maxScale'])
 	resolveStudioArtifactOutputFormats(
 		common.artifacts,
 		(root.output as StudioOutputCapability).formats,
@@ -345,8 +351,23 @@ export function parseTemplateStudioConfig(input: unknown): TemplateStudioConfig 
 	assertPositiveNumber(canvas.width, 'canvas.width')
 	assertPositiveNumber(canvas.height, 'canvas.height')
 	assertPositiveNumber(exportOption.maxScale, 'exportOption.maxScale')
-	if (exportOption.canvasPpi !== undefined && !isPrintPpi(exportOption.canvasPpi)) {
-		throw new Error('TemplateStudioConfig canvasPpi: 인쇄 해상도 범위의 정수여야 합니다.')
+	if (exportOption.printSizeMm !== undefined) {
+		const printSize = templateRecord(
+			exportOption.printSizeMm,
+			'TemplateStudioConfig printSizeMm',
+		)
+		assertTemplateKeys(printSize, ['width', 'height'])
+		assertPositiveNumber(printSize.width, 'printSizeMm.width')
+		assertPositiveNumber(printSize.height, 'printSizeMm.height')
+	}
+	if (exportOption.digitalSizePx !== undefined) {
+		const digitalSize = templateRecord(
+			exportOption.digitalSizePx,
+			'TemplateStudioConfig digitalSizePx',
+		)
+		assertTemplateKeys(digitalSize, ['width', 'height'])
+		assertPositiveNumber(digitalSize.width, 'digitalSizePx.width')
+		assertPositiveNumber(digitalSize.height, 'digitalSizePx.height')
 	}
 
 	const typed = input as TemplateStudioConfig
@@ -859,9 +880,12 @@ export function deriveTemplateStudioConfig(
 		id: template.id,
 		version: 1,
 		name: template.name,
-		output: resolveStudioOutputCapability(
-			runtimeManifest.artifacts,
-			projectStudioOutputPolicy(template.exportPolicy),
+		output: withTemplateKindFormats(
+			resolveStudioOutputCapability(
+				runtimeManifest.artifacts,
+				projectStudioOutputPolicy(template.exportPolicy),
+			),
+			template.printSizeMm ? 'print' : 'digital',
 		),
 		artifacts: runtimeManifest.artifacts,
 		controller: {
@@ -877,13 +901,42 @@ export function deriveTemplateStudioConfig(
 			graphicConfigs: scopedGraphicConfigs,
 			exportOption: {
 				canvas: { width: template.width, height: template.height },
-				...(template.canvasPpi === undefined ? {} : { canvasPpi: template.canvasPpi }),
+				...(template.printSizeMm ? { printSizeMm: template.printSizeMm } : {}),
+				...(template.digitalSizePx && !template.printSizeMm
+					? { digitalSizePx: template.digitalSizePx }
+					: {}),
 				maxScale: resolveMaxExportScale(template.width, template.height),
 			},
 		},
 	}
 	parseTemplateStudioConfig(config)
 	return config
+}
+
+/**
+ * 템플릿은 디지털과 인쇄 중 하나만이다(사용자 결정 2026-10-07) — 종류 밖의 형식은 출력 설정이 켜 둬도 내지 않는다.
+ * 디지털 = PNG·JPG·MP4(px), 인쇄 = PDF·TIFF·SVG(mm). 디지털을 mm로 인쇄하는 길은 없다.
+ */
+export const TEMPLATE_KIND_FORMATS = {
+	digital: ['png', 'jpeg', 'mp4'],
+	print: ['pdf', 'tiff', 'svg'],
+} as const satisfies Record<'digital' | 'print', readonly StudioOutputFormat[]>
+
+function withTemplateKindFormats(
+	output: StudioOutputCapability,
+	kind: keyof typeof TEMPLATE_KIND_FORMATS,
+): StudioOutputCapability {
+	const allowed: readonly StudioOutputFormat[] = TEMPLATE_KIND_FORMATS[kind]
+	const { print, video, ...rest } = output
+	const formats = output.formats.filter((format) => allowed.includes(format))
+	return {
+		...rest,
+		formats,
+		...(print && formats.some((format) => format === 'pdf' || format === 'tiff')
+			? { print }
+			: {}),
+		...(video && formats.includes('mp4') ? { video } : {}),
+	}
 }
 
 function templateRecord(value: unknown, name: string): Record<string, unknown> {
