@@ -193,7 +193,9 @@ export function StudioExportPolicyField({
 									aria-label="허용 형식"
 									disabled={formatsField.disabled}
 									// 다 끄면 스튜디오에 내보낼 형식이 없다 — 마지막 칩은 끌 수 없다.
-									disabledValues={onCategories.length === 1 ? onCategories : undefined}
+									disabledValues={
+										onCategories.length === 1 ? onCategories : undefined
+									}
 									options={categories.map(({ value, label }) => ({
 										value,
 										label,
@@ -206,7 +208,8 @@ export function StudioExportPolicyField({
 											const category = categories.find((candidate) =>
 												candidate.supported.includes(format),
 											)
-											if (!category || !next.includes(category.value)) return false
+											if (!category || !next.includes(category.value))
+												return false
 											return onCategories.includes(category.value)
 												? selectedFormats.has(format)
 												: true
