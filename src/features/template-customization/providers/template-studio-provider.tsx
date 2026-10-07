@@ -876,6 +876,8 @@ export function TemplateStudioProvider({
 		],
 	)
 
+	// 중첩 편집 중에는 들어오기 전 값을 저장한다 — 완료 전에 페이지를 떠나면 취소로 친다.
+	const committed = targetId ? snapshot.current : null
 	useTemplateDraftAutosave(
 		userId,
 		String(template.id),
@@ -884,8 +886,8 @@ export function TemplateStudioProvider({
 			textColor: text.color,
 			vectorColors: vectors.colors,
 			visibility: layers.visibility,
-			images: images.states,
-			background: background.state,
+			images: committed?.images ?? images.states,
+			background: committed?.background ?? background.state,
 		},
 		restoreDraft,
 	)
