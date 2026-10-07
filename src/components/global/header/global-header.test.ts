@@ -9,7 +9,7 @@ let pathname = ''
 //    실제로 두 번 어긋났다(한쪽만 배경을 주고, 다음엔 반대로 통일했다). 여기서 못 박는다.
 const LOGIN_LOGOUT_SURFACE = 'grouped'
 // 헤더는 마운트 때 /api/users/me를 묻는다 — 테스트가 그 답을 정한다.
-let sessionUser: { email: string } | null = null
+let sessionUser: { email: string; role?: string } | null = null
 const push = vi.fn()
 
 vi.stubGlobal(
@@ -125,14 +125,9 @@ describe('GlobalHeader', () => {
 		//    이 단언이 「실수로 다시 들어오는 것」을 막는다.
 		expect(links.queryByRole('link', { name: 'MCP' })).toBeNull()
 		expect(links.queryByRole('link', { name: 'Usage' })).toBeNull()
-		expect(links.getByRole('link', { name: 'Review' })).toHaveAttribute(
-			'href',
-			'/studio/review',
-		)
-		expect(links.getByRole('link', { name: 'Assets' })).toHaveAttribute(
-			'href',
-			'/studio/assets',
-		)
+		// 🔴 미개발 스튜디오는 admin에게만 보인다 — 페이지가 그 밖에는 404다.
+		expect(links.queryByRole('link', { name: 'Review' })).toBeNull()
+		expect(links.queryByRole('link', { name: 'Assets' })).toBeNull()
 		expect(links.getByRole('link', { name: 'Graphic' })).toHaveAttribute('aria-current', 'page')
 		expect(
 			within(links.getByRole('link', { name: /Guideline/ })).getByText('Update'),
@@ -173,7 +168,8 @@ describe('GlobalHeader', () => {
 		expect(chatTrigger).toHaveAttribute('aria-expanded', 'true')
 	})
 
-	it('Assets 경로에서는 Assets만 current로 표시한다', () => {
+	it('admin은 Review·Assets를 보고, Assets 경로에서는 Assets만 current로 표시한다', async () => {
+		sessionUser = { email: 'admin@example.com', role: 'admin' }
 		pathname = '/studio/assets'
 		renderHeader()
 
@@ -182,8 +178,11 @@ describe('GlobalHeader', () => {
 		)
 		expect(desktop).not.toBeNull()
 		expect(
-			within(desktop as HTMLElement).getByRole('link', { name: 'Assets' }),
+			await within(desktop as HTMLElement).findByRole('link', { name: 'Assets' }),
 		).toHaveAttribute('aria-current', 'page')
+		expect(
+			within(desktop as HTMLElement).getByRole('link', { name: 'Review' }),
+		).toHaveAttribute('href', '/studio/review')
 		expect(
 			within(desktop as HTMLElement).getByRole('link', { name: 'Graphic' }),
 		).not.toHaveAttribute('aria-current')
