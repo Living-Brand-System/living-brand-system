@@ -663,6 +663,37 @@ describe('Payload Controller projection과 Override 적용', () => {
 		])
 	})
 
+	it('정수 축 같은 눈금(step) 밖 값으로 좁히면 거부한다 — 런타임이 거부해 스튜디오가 죽는다', () => {
+		const base = [
+			{
+				id: 'shape',
+				title: 'Shape',
+				controls: [
+					{
+						id: 'lineCount',
+						kind: 'range' as const,
+						label: '선 개수',
+						defaultValue: 8,
+						min: 4,
+						max: 24,
+						step: 1,
+					},
+				],
+			},
+		] satisfies readonly ControllerGroupDefinition[]
+		const narrow = (restriction: Record<string, unknown>) => () =>
+			applyControllerRestrictions(
+				base,
+				projectPayloadControllerRestrictions({
+					controls: [{ controlId: 'lineCount', ...restriction }],
+				}),
+			)
+
+		expect(narrow({ defaultValue: 7.5 })).toThrow('1 단위여야')
+		expect(narrow({ min: 4.5 })).toThrow('1 단위여야')
+		expect(narrow({ min: 6, max: 12, defaultValue: 10 })).not.toThrow()
+	})
+
 	it('팔레트를 이미 가진 색 control을 넓히려 하면 거부한다', () => {
 		const base = [
 			{
