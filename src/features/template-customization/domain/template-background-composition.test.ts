@@ -36,7 +36,14 @@ const visibleIds = (
 		Object.entries(slots).map(([slot, entries]) => [
 			slot,
 			entries.flatMap((entry) =>
-				entry.type === 'group' ? entry.group.controls.map((c) => c.id) : [],
+				entry.type === 'group'
+					? [
+							...entry.group.controls.map((c) => c.id),
+							...(entry.clusters ?? []).flatMap((c) =>
+								Object.values(c.cluster.members),
+							),
+						]
+					: Object.values(entry.cluster.members),
 			),
 		]),
 	)

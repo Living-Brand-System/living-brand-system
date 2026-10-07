@@ -351,7 +351,7 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 | `reference` | `gate`(사용) + 첨부 |
 | `asset-browser` | 자산 선택 1개(샘플 이미지 등) |
 | `preset-list` | 프리셋 select 1개 — 카드 목록으로 그린다 |
-| `swatches` | 브랜드 색 하나(color) — CMS 정본 스와치, Custom 잠금. 제목은 접근성 이름의 대상(`텍스트`·심볼 이름) |
+| `swatches` | 브랜드 색 하나(color) — CMS 정본 스와치, Custom 잠금. 제목은 접근성 이름의 대상(`텍스트`·심볼 이름·`Background`) |
 | `text-field` | 템플릿 텍스트 슬롯 1개 — 발행 text 정의에 슬롯 입력 제약(형식·줄 수)을 얹는다 |
 | `transform` | 이미지 Transform(위치 pad + Scale + Rotate를 한 값으로) — 배정된 이미지가 생기기 전에는 잠긴다 |
 

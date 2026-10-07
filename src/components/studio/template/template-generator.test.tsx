@@ -1805,7 +1805,7 @@ describe('TemplateGenerator', () => {
 		)
 	})
 
-	it('만진 배경색이 캔버스(루트 프레임) 배경으로 합성된다', () => {
+	it('만진 배경색이 캔버스(루트 프레임) 배경으로 합성된다', async () => {
 		const { container } = render(
 			<TemplateGenerator
 				categoryTitle="카드"
@@ -1822,11 +1822,11 @@ describe('TemplateGenerator', () => {
 		// 만지기 전 — 저작 배경 유지.
 		expect((canvasOf() as HTMLElement).style.backgroundColor).toBe('rgb(0, 40, 10)')
 
-		fireEvent.change(screen.getByLabelText('Background Color 색상 선택'), {
-			target: { value: '#ff0000' },
-		})
+		// 텍스트·심볼과 같은 브랜드 스와치 — 자유 색 입력은 잠겨 있다.
+		expect(screen.getByRole('radio', { name: 'Custom' })).toBeDisabled()
+		fireEvent.click(await screen.findByRole('radio', { name: 'Background 색상 #002c5f' }))
 
-		expect((canvasOf() as HTMLElement).style.backgroundColor).toBe('rgb(255, 0, 0)')
+		expect((canvasOf() as HTMLElement).style.backgroundColor).toBe('rgb(0, 44, 95)')
 	})
 
 	it('서버가 전달한 Image Config로 배경 이미지를 생성해 캔버스에 깐다', async () => {
@@ -1958,12 +1958,10 @@ describe('TemplateGenerator', () => {
 			}),
 		)
 		await waitFor(() => expect(mocks.destroyGraphicPreview).toHaveBeenCalledTimes(2))
-		fireEvent.change(screen.getByLabelText('Background Color 색상 선택'), {
-			target: { value: '#ff0000' },
-		})
+		fireEvent.click(await screen.findByRole('radio', { name: 'Background 색상 #002c5f' }))
 		// 색만 고르면 루트 이미지를 걷는다(compose가 none으로 선언) — 고른 색이 사진 아래 묻히지 않게.
 		expect(canvasOf().style.backgroundImage).toBe('none')
-		expect(canvasOf().style.backgroundColor).toBe('rgb(255, 0, 0)')
+		expect(canvasOf().style.backgroundColor).toBe('rgb(0, 44, 95)')
 
 		await user.click(
 			within(screen.getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {

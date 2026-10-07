@@ -1,6 +1,7 @@
 'use client'
 
 import type { ControlPanelComposition } from '@/components/studio/shared/control-panel'
+import { TEMPLATE_LAYER_WIDGETS } from '@/components/studio/template/template-layer-composition'
 import type { TemplateStudioValue } from '@/features/template-customization/contexts/template-studio-context'
 import {
 	deriveTemplateBackgroundComposition,
@@ -68,6 +69,8 @@ export function buildTemplateBackgroundComposition({
 		slots: arrangeStudioPanel(manifest, TEMPLATE_BACKGROUND_PANEL_POLICY, values),
 		values,
 		onChange,
+		// 배경색은 텍스트·심볼 색과 같은 스와치 위젯이 그린다.
+		widgets: TEMPLATE_LAYER_WIDGETS,
 		// 배경색을 만지면 캔버스가 도화지를 짚는다 — 지금 「Background」 그룹의 활성화 배선 그대로.
 		groupSection: (group) =>
 			group.id === 'background-color'
