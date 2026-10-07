@@ -1,64 +1,41 @@
-import { composeTemplateHtml } from '@/features/template-core/runtime/compose-template-html.client'
-import { mergeTemplateDefaultOverrides } from '@/features/template-customization/domain/template-default-overrides'
-import type { TemplateNodeConfigMap } from '@/types/template'
+import {
+	type TemplateDraft,
+	withoutTransientFields,
+} from '@/features/template-customization/services/template-draft.client'
 
-type StoredTemplate = {
-	_status?: 'draft' | 'published' | null
-	baseHtml?: string | null
-	html?: string | null
-	overrides?: TemplateNodeConfigMap | null
-}
-
-async function readTemplate(id: number, draft: boolean): Promise<StoredTemplate> {
+async function readStatus(id: number, draft: boolean): Promise<string | null | undefined> {
 	const response = await fetch(`/api/templates/${id}?depth=0${draft ? '&draft=true' : ''}`)
 	if (!response.ok) throw new Error('템플릿을 읽지 못했어요.')
-	return (await response.json()) as StoredTemplate
+	return ((await response.json()) as { _status?: string | null })._status
 }
 
 /**
- * 스튜디오의 지금 상태를 템플릿 기본값으로 저장한다. Payload REST로 쓰므로 권한(`managerManagedPublishedAccess`)과
- * 저장 검증(`prepareTemplateSave`)은 admin 저장과 같은 자리가 집행한다.
+ * 스튜디오의 지금 화면을 템플릿 「기본 화면」(`defaultSession`)으로 저장한다 — 모든 사용자의 스튜디오가
+ * 이 화면으로 시작한다. Payload REST로 쓰므로 권한(`managerManagedPublishedAccess`)과 검증은 서버가 집행한다.
  *
- * 🔑 저장 형태는 admin 레이어 설정과 같다 — `overrides`가 정본이고 `html`은 그것을 base에 다시 합성한 결과다.
+ * 🔑 화면 상태를 통째로 저장한다. 노드 설정(`overrides`)에 옮겨 담으면 배경·숨김·샘플 이미지처럼 담을
+ *    자리가 없는 값이 조용히 빠진다(2026-10-07에 실제로 「저장했는데 안 남는」 것으로 드러났다).
  * 🔴 `_status`를 읽은 그대로 되쓴다. 빠뜨리면 최신(초안) 버전을 따라 써 게시 템플릿이 초안으로 떨어진다
  *    (`/api/studio/preview`와 같은 이유·같은 가드).
  */
 export async function saveTemplateDefaults({
 	templateId,
-	sessionOverrides,
-	initialText,
+	session,
 }: {
 	templateId: number
-	sessionOverrides: TemplateNodeConfigMap
-	initialText: Readonly<Record<string, string>>
+	session: TemplateDraft
 }): Promise<void> {
-	const current = await readTemplate(templateId, true)
-	if (
-		current._status === 'draft' &&
-		(await readTemplate(templateId, false))._status === 'published'
-	) {
+	const status = await readStatus(templateId, true)
+	if (status === 'draft' && (await readStatus(templateId, false)) === 'published') {
 		throw new Error(
 			'admin에 발행하지 않은 초안이 있어요. 초안을 발행하거나 되돌린 뒤 다시 저장해 주세요.',
 		)
 	}
-	const base = current.baseHtml || current.html
-	if (!base) throw new Error('템플릿 HTML이 없어 저장할 수 없어요.')
-
-	const merged = mergeTemplateDefaultOverrides(
-		current.overrides ?? {},
-		sessionOverrides,
-		initialText,
-	)
-	if ('blocker' in merged) throw new Error(merged.blocker)
 
 	const response = await fetch(`/api/templates/${templateId}?depth=0`, {
 		method: 'PATCH',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({
-			overrides: merged.overrides,
-			html: composeTemplateHtml(base, merged.overrides),
-			_status: current._status,
-		}),
+		body: JSON.stringify({ defaultSession: withoutTransientFields(session), _status: status }),
 	})
 	if (!response.ok) {
 		const body = (await response.json().catch(() => null)) as {

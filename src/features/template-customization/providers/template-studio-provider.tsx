@@ -53,7 +53,6 @@ import {
 	type TemplateVectorSlot,
 } from '@/features/template-customization/domain/template-studio-config'
 import {
-	buildTemplateSessionOverrides,
 	composeTemplateStudioHtml,
 	createTemplateRasterArtifact,
 	createTemplateVectorArtifact,
@@ -70,6 +69,7 @@ import {
 	pickKnownSlots,
 	readTemplateDraft,
 	type TemplateDraft,
+	toTemplateDraft,
 	writeTemplateDraft,
 } from '@/features/template-customization/services/template-draft.client'
 import { useLazyResource } from '@/hooks/use-lazy-resource'
@@ -699,8 +699,11 @@ export function TemplateStudioProvider({
 	 * 임시 저장된 화면 — **첫 렌더 전에 한 번만** 읽는다. 값이 자리를 잡은 뒤 되돌리면 기본값이
 	 * 한 프레임 보였다가 바뀌고, 그 사이 도는 effect들이 기본값을 기준으로 측정한다.
 	 */
-	const [draft] = useState<TemplateDraft | null>(() =>
-		restoreDraft && userId ? readTemplateDraft(userId, String(template.id)) : null,
+	const [draft] = useState<TemplateDraft | null>(
+		() =>
+			(restoreDraft && userId ? readTemplateDraft(userId, String(template.id)) : null) ??
+			// 내 임시 초안이 없거나 초기화했으면 manager가 저장한 기본 화면으로 시작한다.
+			toTemplateDraft(template.defaultSession),
 	)
 	// 교체 후보 목록은 자산 브라우저가 열릴 때 가져온다 — 페이지는 현재 카테고리 이름 하나만 싣는다.
 	const templateBrowse = useLazyResource(fetchCreateNavigation)
@@ -872,19 +875,27 @@ export function TemplateStudioProvider({
 
 	// 중첩 편집 중에는 들어오기 전 값을 저장한다 — 완료 전에 페이지를 떠나면 취소로 친다.
 	const committed = targetId ? snapshot.current : null
-	useTemplateDraftAutosave(
-		userId,
-		String(template.id),
-		{
+	// 임시 저장과 「기본값으로 저장」이 같은 화면 상태를 쓴다 — 둘이 갈라지면 기본값이 화면과 달라진다.
+	const defaults = useCallback(
+		(): TemplateDraft => ({
 			text: text.values,
 			textColor: text.color,
 			vectorColors: vectors.colors,
 			visibility: layers.visibility,
 			images: committed?.images ?? images.states,
 			background: committed?.background ?? background.state,
-		},
-		restoreDraft,
+		}),
+		[
+			background.state,
+			committed,
+			images.states,
+			layers.visibility,
+			text.color,
+			text.values,
+			vectors.colors,
+		],
 	)
+	useTemplateDraftAutosave(userId, String(template.id), defaults(), restoreDraft)
 	const deferredTextColor = useDeferredValue(text.color)
 	const deferredImageStates = useDeferredValue(images.states)
 	const deferredVectorColors = useDeferredValue(vectors.colors)
@@ -922,40 +933,6 @@ export function TemplateStudioProvider({
 			deferredLayerVisibility,
 			width,
 			height,
-		],
-	)
-
-	// 「기본값으로 저장」은 화면 합성과 같은 변환을 읽되, 미뤄진 값이 아니라 지금 값을 읽는다.
-	const defaults = useCallback(
-		() => ({
-			sessionOverrides: buildTemplateSessionOverrides({
-				textSlots,
-				textValues: text.values,
-				textColor: text.color,
-				imageStates: images.states,
-				imageSlots,
-				imageContracts: images.contracts,
-				vectorSlots,
-				vectorColors: vectors.colors,
-				layerVisibility: layers.visibility,
-				width,
-				height,
-			}),
-			initialText: initialTemplateTextValues(config, textSlots),
-		}),
-		[
-			config,
-			height,
-			imageSlots,
-			images.contracts,
-			images.states,
-			layers.visibility,
-			text.color,
-			text.values,
-			textSlots,
-			vectorSlots,
-			vectors.colors,
-			width,
 		],
 	)
 

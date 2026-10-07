@@ -22,7 +22,7 @@ export function useTemplateDefaults() {
 		if (saving) return
 		setSaving(true)
 		setMessage(null)
-		void saveTemplateDefaults({ templateId: config.id, ...canvas.defaults() })
+		void saveTemplateDefaults({ templateId: config.id, session: canvas.defaults() })
 			.then(() => setMessage('지금 상태를 이 템플릿의 기본값으로 저장했어요.'))
 			.catch((cause: unknown) =>
 				setMessage(cause instanceof Error ? cause.message : '기본값을 저장하지 못했어요.'),
@@ -56,11 +56,12 @@ export function TemplateDefaultsButton({
 			<TooltipContent side="bottom" sideOffset={8} className="flex-col items-start">
 				<span className="font-medium">지금 상태를 기본값으로 저장</span>
 				<span>
-					문구·로고 색·생성 이미지(위치·크기·색 포함)를 이 템플릿의 기본값으로 바꿔요.
-					모든 사용자가 다음부터 이 상태로 시작해요.
+					지금 캔버스 그대로(문구·색·이미지·배경·레이어 표시)를 이 템플릿의 기본 화면으로
+					저장해요. 모든 사용자가 다음부터 이 화면으로 시작하고, 초기화해도 이 화면으로
+					돌아와요.
 				</span>
 				<span>
-					배경·텍스트 색·디밍·레이어 표시는 저장되지 않고, 샘플 이미지는 저장할 수 없어요.
+					이미 이 템플릿을 작업 중인 사람은 자기 임시 저장(24시간)이 먼저 보여요.
 					되돌리기는 admin의 버전 기록에서 해요.
 				</span>
 			</TooltipContent>

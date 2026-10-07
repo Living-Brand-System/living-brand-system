@@ -213,10 +213,9 @@ export type TemplateSessionOverridesInput = {
 }
 
 /**
- * 세션 값 → 노드 설정 map. 화면 합성(`composeTemplateStudioHtml`)과 「기본값으로 저장」이 같은
- * 변환을 읽는다 — 둘이 갈라지면 저장한 기본값이 화면과 다른 그림이 된다.
+ * 세션 값 → 노드 설정 map. 배경을 뺀 나머지 세션 값을 `composeTemplateStudioHtml`이 이것으로 얹는다.
  */
-export function buildTemplateSessionOverrides({
+function buildTemplateSessionOverrides({
 	textSlots,
 	textValues,
 	textColor,
