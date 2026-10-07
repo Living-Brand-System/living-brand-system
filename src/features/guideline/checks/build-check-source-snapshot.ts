@@ -1,12 +1,8 @@
 import type { GuidelineDocument } from '@/payload-types'
 import { projectSection } from '../sections/projection'
-import { relationshipId } from '../utils/block-text'
 import type { CheckSourceSnapshot } from './check-source'
 
-export type GuidelineCheckDocument = Pick<
-	GuidelineDocument,
-	'rules' | 'headerImage' | 'id' | 'sections'
->
+export type GuidelineCheckDocument = Pick<GuidelineDocument, 'rules' | 'id' | 'sections'>
 
 /** 문서 전체 또는 blockId가 가리키는 단일 섹션을 Check source로 정규화한다. */
 export function buildCheckSourceSnapshot(
@@ -22,22 +18,13 @@ export function buildCheckSourceSnapshot(
 	}
 
 	const blockSnapshots = sections.map(projectSection)
-	const headerImage = document.headerImage
-	const headerImageId = relationshipId(headerImage)
 
 	return {
 		evidence: {
 			type: 'document',
 			blocks: blockSnapshots.map((snapshot) => snapshot.evidence),
 		},
-		referenceAssets: [
-			...(headerImageId == null ? [] : [{ id: headerImageId, role: 'context' as const }]),
-			...blockSnapshots.flatMap((snapshot) => snapshot.referenceAssets),
-		].filter(
-			(asset, index, assets) =>
-				assets.findIndex(
-					(candidate) => candidate.id === asset.id && candidate.role === asset.role,
-				) === index,
-		),
+		// 헤더 이미지는 가이드라인 첫 화면의 카드 썸네일이라 검수 근거로 싣지 않는다.
+		referenceAssets: blockSnapshots.flatMap((snapshot) => snapshot.referenceAssets),
 	}
 }
