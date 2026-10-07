@@ -125,7 +125,8 @@ describe('getPublishedTemplate', () => {
 			nodeConfigs: { '2:1': { input: { label: '이름' } } },
 			width: 1280,
 			height: 720,
-			printPpi: undefined,
+			// 디지털판 판형 크기를 아직 저장하지 않았으면 Figma 판 크기가 곧 판형 크기다.
+			digitalSizePx: { width: 1280, height: 720 },
 			templateVersion: '2026-07-29T00:00:00.000Z',
 		})
 	})

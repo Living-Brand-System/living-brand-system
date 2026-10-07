@@ -1038,6 +1038,17 @@ function applyControlRestriction(
 			if (min < base.min || max > base.max) {
 				throw new Error(`Controller restriction range가 기본 계약을 확장합니다: ${base.id}`)
 			}
+			// 🔴 좁힌 값도 원본 눈금(step) 위여야 한다 — 선 개수 같은 정수 축에 7.5가 들어가면 런타임 모델이
+			//    거부해 스튜디오가 통째로 죽고, 눈금 밖 최솟값은 슬라이더 칸을 반 칸씩 밀어 화면 숫자와 실제 값이 갈린다.
+			for (const value of [min, max, restriction.defaultValue]) {
+				if (typeof value !== 'number') continue
+				const steps = (value - base.min) / base.step
+				if (Math.abs(steps - Math.round(steps)) > 1e-6) {
+					throw new Error(
+						`${base.label ?? base.id}의 값 ${value}은 ${base.step} 단위여야 합니다(원본 ${base.min}~${base.max}).`,
+					)
+				}
+			}
 			next = {
 				...base,
 				...definedProperty('availability', availability),

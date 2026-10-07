@@ -9,6 +9,7 @@ import {
 	validateImagePromptNormalizationRows,
 } from '@/features/image-generation/domain/image-profile-prompt'
 import {
+	assertImageProfileRunnable,
 	deriveImageStudioConfig,
 	type PublishedImageProfileDefinition,
 } from '@/features/image-generation/domain/image-studio-config'
@@ -77,11 +78,13 @@ export const ImageProfiles: CollectionConfig = {
 				const effective = { ...originalDoc, ...data }
 				if (effective._status === 'published') {
 					try {
-						deriveImageStudioConfig({
-							...effective,
-							// create의 beforeChange에는 DB id가 아직 없으므로 계약 검증용 유한값을 쓴다.
-							id: Number(effective.id ?? 0),
-						} as PublishedImageProfileDefinition)
+						assertImageProfileRunnable(
+							deriveImageStudioConfig({
+								...effective,
+								// create의 beforeChange에는 DB id가 아직 없으므로 계약 검증용 유한값을 쓴다.
+								id: Number(effective.id ?? 0),
+							} as PublishedImageProfileDefinition),
+						)
 					} catch (error) {
 						throw new APIError(
 							error instanceof Error

@@ -170,7 +170,7 @@ config.output
 
 값의 정본은 언제나 px입니다. `px`와 `mm`는 대등한 두 모드이고 표시 설정이 아닙니다 — px 모드는 mm를 보여주지 않고, mm 모드는 px를 보여주지 않습니다. 해상도(ppi)는 두 모드를 잇는 값이라 mm 입력이 있는 컨트롤(`SizingControls`)에서만 묻습니다.
 
-Template은 판형이 문서에 선언되어 있어 창작자가 바꿀 수 없습니다. `templates.canvasPpi`가 그 선언이고 물리 크기는 `width·height(px) ÷ canvasPpi × 25.4mm`로 파생합니다. 물리 크기를 정하는 값은 이 하나뿐입니다 — mm를 따로 저장하면 px와 종횡비가 어긋나 한 변이 조용히 버려집니다. 판형이 선언된 인쇄판은 사이드바가 mm만 보여 주고 배율도 해상도도 고르지 않습니다. `canvasPpi`가 비어 있으면 디지털판이라 물리 크기가 없고, 인쇄 형식을 낼 때만 창작자가 `exportPolicy.print.allowedPpi` 프리셋에서 해상도를 고릅니다. 🔴 Figma 재import는 `baseHtml`·`html`·`overrides`·`width`·`height`·`sourceUrl`을 덮으므로 판형 선언을 그 축에 얹으면 안 됩니다.
+Template의 판형은 문서가 소유하고, 템플릿마다 `templates.outputKind`로 **디지털(px)과 인쇄(mm) 중 하나만** 고릅니다. 판형 크기는 두 종류 모두 `templates.size`(가로·세로, 정수)가 정본이고 단위만 다릅니다. 디지털판은 px이고(비워 두면 Figma 판 크기로 채움) PNG·JPG·MP4를 그 크기 그대로 냅니다. 인쇄판은 mm이고 PDF·TIFF·SVG만 냅니다. 디지털을 mm로 인쇄하는 길은 없습니다. 인쇄판의 해상도는 창작자가 `exportPolicy.print.allowedPpi`(72·150·300 중 켠 값)에서 고르고, 래스터(TIFF) px는 `mm ÷ 25.4 × ppi`로 계산합니다 — 브라우저 캔버스 한도를 넘는 ppi는 선택지에서 빠지고, 하나도 안 남으면 SVG·PDF로만 냅니다. 벡터(PDF·SVG)는 ppi와 상관없이 판형 mm 그대로 나갑니다. Figma 판(`width·height` px)은 디자인 좌표계라 admin에서 숨기고, 판형 크기와 가로세로 비율은 저장 검증이 1% 안으로 맞춥니다. 출력 설정 형식 칩은 고른 종류의 형식만 보여 줍니다. 🔴 Figma 재import는 `baseHtml`·`html`·`overrides`·`width`·`height`·`sourceUrl`을 덮으므로 판형 선언을 그 축에 얹으면 안 됩니다. (옛 `canvasPpi`는 숨긴 채 남아 있고 다음 정리에서 지웁니다.)
 
 래스터 인쇄 요청이 싣는 크기 정보는 `scale` 하나뿐입니다(`createRasterExportRequest`) — 높이는 캔버스 비율에서 파생합니다. 그래서 판의 두 변을 따로 받는 크기 컨트롤을 Template 사이드바에 붙이면 높이 입력이 요청에 도달하지 못한 채 조용히 버려집니다(A size를 골라도 210×297mm가 아니라 210×262mm로 나갔습니다). Template 사이드바가 크기를 읽기 전용으로 두고 배율만 받는 이유가 이것입니다.
 
@@ -320,7 +320,7 @@ Image 슬롯과 이미지 배경은 독립 Image의 Color·Generate 표현 컴�
 Template 생성에는 참조 이미지·카메라 요청 경로가 없어 해당 컨트롤을 열지 않으며, 배경 이미지의 색 치환 제한도 유지합니다.
 Layers는 Text·Symbol·Image·Background
 네 줄이며 없는 종류는 비활성화합니다. Text·Symbol은 묶음 컨트롤을, Image·Background는 현재 대상의 편집 패널을 표시합니다. Text·Symbol 색은 같은 Solid 스와치 그리드(`TemplateColorSwatches`)를 쓰고, 색 목록은 CMS의 발행된 `brand-color-groups`에 속한 색(`usePublishedBrandColorValues`, 그룹 생성 순서·그룹 안 순서, 중복은 처음 자리 한 번)입니다. 그룹에 없는 보조색은 팔레트가 아니라 나오지 않습니다. 무채색 정본은 Mono Color 8단입니다. 템플릿 텍스트 컨트롤이 `values`로 범위를 좁혔으면 그 목록을 씁니다. 정본 밖 색이 나가지 않도록 둘 다 Custom 모드를 잠그고, 목록을 못 불러오면 고를 수 없습니다.
-눈 아이콘은 표시 변경이 허용된 슬롯만 함께 표시·숨김 처리하며, 읽기 전용 슬롯과 배경의 기존 정책은 유지합니다.
+눈 아이콘은 편집 권한과 무관하게 묶음의 모든 슬롯을 함께 표시하거나 숨깁니다. 배경을 끄면 판이 투명해지고 색·이미지·그래픽·디머가 모두 빠집니다.
 첫 진입은 첫 텍스트 레이어를 선택하며
 텍스트 Compound는 라벨·입력만 표시하고 지원 문구와 잘림 안내는 생략합니다. 입력 형식 오류는 유지합니다.
 Output 크기는 새 모듈의 가로·세로 아이콘 2열을 재사용하고, 실제 export 세션의 mm/px 치수를 읽기 전용으로 표시합니다.
@@ -340,7 +340,7 @@ Template Studio의 Output은 왼쪽에 둡니다.
 
 디자인 기준은 Figma V2 `529:16921`이며, 아래 규칙은 디자인 검토 후 확정한 동작입니다.
 
-- 이미지 또는 배경 레이어를 고르면 중첩 편집을 시작합니다. 왼쪽 카드는 실제 이미지 프로파일·그래픽 종류를 고르며, Setting 카드에 방식 설정과 그 아래 취소(테두리)·완료(회색)를 표시합니다(Figma `525:8777`). 배경의 방식·Dimming·색은 패널 컴포지션 계약(docs/10 §3.7)으로 섭니다 — `deriveTemplateBackgroundComposition`이 역할·조건을 선언하고 템플릿 셸의 `TEMPLATE_BACKGROUND_PANEL_POLICY`가 방식(source)을 왼쪽 설정 카드, Dimming(overlay)을 오른쪽 고정 카드, 색(palette)을 Basic에 놓습니다. Image Mode는 컴포지션 컨트롤(`background.imageMode`)로 승격했습니다. 두 패널은 프로파일 교체 패널(자산 브라우저)과 같은 거리·시간으로 움직입니다(`MOTION.tight`, 150ms CSS `ease`, `src/lib/motion.ts`). 편집 중 기본(마스터) 패널은 왼쪽 아래 대각선(`x: -16px`, `y: 16px`)으로 밀리며 50% 불투명도·`blur(4px)`가 되고(돌아오면 filter를 걷음), 편집 패널은 공용 패널 렌더의 왼쪽 모양(`PANEL_RENDER.left`: 왼쪽 16px·투명·0.95 크기)으로 들어오고 같은 상태로 나갑니다. 오른쪽 패널은 레이어 종류·배경 방식이 바뀌거나 레일 탭이 바뀌면 내용 열만 오른쪽 모양(`PANEL_RENDER.right`)으로 다시 그리고, 레일은 움직이지 않습니다. 첫 진입에는 걸지 않습니다. 퇴장 중에는 클릭을 받지 않고, 모션 감소 시 둘 다 즉시 전환합니다. 완료·취소하면 선택을 비우지 않고 처음 들어왔을 때의 마스터 레이어(`listTemplateLayerGroups`의 첫 묶음, 보통 Text)로 돌아갑니다. 템플릿·레이어·출력과 상단 이동은 완료 또는 취소 전까지 `inert`로 잠급니다. 상단 헤더는 스튜디오 트리 밖 앱 셸에 있어서, 편집 패널이 `useShellLock`(`src/hooks/use-shell-lock.ts`)으로 잠금을 걸고 헤더가 `useShellLocked`를 읽어 스스로 `inert`가 됩니다. DOM을 찾아 속성을 바꾸지 않습니다. Provider도 다른 레이어 선택을 거부합니다.
+- 이미지 또는 배경 레이어를 고르면 중첩 편집을 시작합니다. 왼쪽 카드는 실제 이미지 프로파일·그래픽 종류를 고르며, Setting 카드에 방식 설정과 그 아래 취소(테두리)·완료(회색)를 표시합니다(Figma `525:8777`). 배경의 방식·Dimming·색은 패널 컴포지션 계약(docs/10 §3.7)으로 섭니다 — `deriveTemplateBackgroundComposition`이 역할·조건을 선언하고 템플릿 셸의 `TEMPLATE_BACKGROUND_PANEL_POLICY`가 방식(source)을 왼쪽 설정 카드, Dimming(overlay)을 오른쪽 고정 카드, 색(palette)을 Basic에 놓습니다. Image Mode는 컴포지션 컨트롤(`background.imageMode`)로 승격했습니다. 두 패널은 프로파일 교체 패널(자산 브라우저)과 같은 거리·시간으로 움직입니다(`MOTION.tight`, 150ms CSS `ease`, `src/lib/motion.ts`). 편집 중 기본(마스터) 패널은 왼쪽 아래 대각선(`x: -16px`, `y: 16px`)으로 밀리며 50% 불투명도·`blur(4px)`가 되고(돌아오면 filter를 걷음), 편집 패널은 공용 패널 렌더의 왼쪽 모양(`PANEL_RENDER.left`: 왼쪽 16px·투명·0.95 크기)으로 들어오고 같은 상태로 나갑니다. 오른쪽 패널은 레이어 종류·배경 방식이 바뀌거나 레일 탭이 바뀌면 내용 열만 오른쪽 모양(`PANEL_RENDER.right`)으로 다시 그리고, 레일은 움직이지 않습니다. 첫 진입에는 걸지 않습니다. 퇴장 중에는 클릭을 받지 않고, 모션 감소 시 둘 다 즉시 전환합니다. 완료·취소하면 선택을 비우지 않고 처음 들어왔을 때의 마스터 레이어(`listTemplateLayerGroups`의 첫 묶음, 보통 Text)로 돌아갑니다. 템플릿·레이어·출력은 완료 또는 취소 전까지 `inert`로 잠급니다. 상단 헤더는 잠그지 않습니다(2026-10-07) — 완료 전에 페이지를 떠나면 취소로 치고, 임시 저장도 편집 중에는 들어오기 전 값(스냅샷)을 씁니다. Provider도 다른 레이어 선택을 거부합니다.
 - `TemplateStudioProvider.editing`이 진입 시 상태를 보관합니다. 변경은 캔버스에 즉시 미리보기하고, 완료는 유지하며 취소는 진입 상태로 복원합니다. Reset은 현재 대상의 프로파일·방식·배정 이미지를 유지하고 설정을 기본값으로 되돌립니다. Reset 뒤 취소해도 진입 상태가 복원됩니다.
 - 이미지 Preset은 완성된 이미지를 교체합니다. 위치·확대·회전은 초기화하고 배경 Dimming은 유지합니다. 그래픽 Preset은 타입·색상·세부 조정값의 묶음이며 `기본값 + 선택한 프리셋 값`으로 교체합니다.
 - Preset/Generate 전환은 화면 상태만 바꿉니다. 프롬프트·조정값·현재 이미지는 유지하며, 실제 이미지를 고르거나 생성에 성공했을 때만 교체합니다. 이미지 슬롯은 Image만, 배경은 발행 계약의 Color·Image·Graphic만 지원합니다.
@@ -416,4 +416,4 @@ src/features/graphic-generation/graphic-runtimes/<id>/
 
 ### 공통 Template Layers
 
-`TemplateLayerGroups`는 Text·Symbol·Image·Background 네 묶음을 표시합니다. 없는 묶음은 비활성화하며 표시·숨김은 visibility 변경이 허용된 슬롯에만 적용합니다. 처음에는 Text를 선택하고, 이미지·배경 편집 중에는 다른 묶음 이동을 잠급니다. 완료·취소는 기존 Template 세션의 적용·복원 동작을 사용합니다.
+`TemplateLayerGroups`는 Text·Symbol·Image·Background 네 묶음을 표시합니다. 없는 묶음은 비활성화하며, 표시·숨김은 묶음 전체에 적용합니다. 배경을 포함한 표시 상태는 슬롯 id를 키로 하는 한 맵(배경은 `background`)에 담겨 초안과 함께 저장됩니다. 처음에는 Text를 선택하고, 이미지·배경 편집 중에는 다른 묶음 이동을 잠급니다. 완료·취소는 기존 Template 세션의 적용·복원 동작을 사용합니다.

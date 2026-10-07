@@ -2,7 +2,7 @@
 
 import { FieldDescription, FieldError, useField } from '@payloadcms/ui'
 import type { JSONFieldClientComponent } from 'payload'
-import type { ComponentProps } from 'react'
+import { type ComponentProps, useState } from 'react'
 import { AdminSectionHeading } from '@/components/admin/shared/admin-section-heading'
 import { Controller } from '@/components/shared/controller'
 import {
@@ -49,6 +49,11 @@ export function StudioControllerRestrictionsField({
 	const { disabled, errorMessage, setValue, showError, value } = useField<unknown>({ path })
 	const groups = useStudioRuntimeManifest(source, baseConfigs)?.controller.groups ?? []
 	const current = readRestrictions(value)
+	// 기능을 끄거나 모델·Runtime을 바꾸면 화면에서 사라진 컨트롤의 제한이 저장값에만 남아 발행을 막는다.
+	const knownControlIds = new Set(groups.flatMap(({ controls }) => controls.map(({ id }) => id)))
+	const staleControls = groups.length
+		? current.controls.filter(({ controlId }) => !knownControlIds.has(controlId))
+		: []
 
 	function update(controlId: string, patch: Partial<ControllerControlRestriction>) {
 		const previous = current.controls.find((control) => control.controlId === controlId) ?? {
@@ -67,6 +72,22 @@ export function StudioControllerRestrictionsField({
 		<div className="lbs-kit field-type json mb-20">
 			<AdminSectionHeading>컨트롤러 제한</AdminSectionHeading>
 			<FieldError message={errorMessage} path={path} showError={showError} />
+			{staleControls.length > 0 && (
+				<button
+					type="button"
+					className="mb-3 text-destructive text-sm underline"
+					disabled={disabled}
+					onClick={() =>
+						setValue({
+							controls: current.controls.filter(({ controlId }) =>
+								knownControlIds.has(controlId),
+							),
+						})
+					}
+				>
+					지금 화면에 없는 컨트롤 제한 {staleControls.length}개 정리
+				</button>
+			)}
 			<div className="flex flex-col gap-2 rounded-3xl border bg-background px-3 pt-6 pb-3">
 				{groups.length === 0 ? (
 					<EmptyControllerMessage source={source} />
@@ -344,6 +365,15 @@ function ColorValuesRestriction({
 	disabled?: boolean
 	onChange: (value: readonly string[] | undefined) => void
 }) {
+	// 친 글자는 그대로 두고 칸을 벗어날 때만 쪼개 저장한다 — 글자마다 쪼개 되돌려 놓으면 끝에 친 쉼표·공백이
+	// 사라져 다음 색이 앞 색에 붙었다(「#000000#ffffff」).
+	const joined = value?.join(', ') ?? ''
+	const [text, setText] = useState(joined)
+	const [shown, setShown] = useState(joined)
+	if (shown !== joined) {
+		setShown(joined)
+		setText(joined)
+	}
 	return (
 		<Controller.Field
 			label={`허용 색 (원본 ${baseValues?.length ? `${baseValues.length}개` : '자유 색상'})`}
@@ -352,8 +382,9 @@ function ColorValuesRestriction({
 			<Controller.Input
 				className="text-left font-mono"
 				placeholder="#000000, #ffffff — 비우면 자유 색상"
-				value={value?.join(', ') ?? ''}
-				onChange={(event) => onChange(parseColorValues(event.currentTarget.value))}
+				value={text}
+				onChange={(event) => setText(event.currentTarget.value)}
+				onBlur={() => onChange(parseColorValues(text))}
 			/>
 			{value?.length ? (
 				<div className="mt-1 flex flex-wrap gap-1">

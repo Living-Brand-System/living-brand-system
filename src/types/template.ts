@@ -17,6 +17,7 @@ export type TemplateLayerAccess = 'hidden' | 'readonly' | 'editable'
 
 export interface TemplateLayerCreatorPolicy {
 	access: TemplateLayerAccess
+	/** 🔴 읽지 않는다 — 예전에 저장된 값의 파싱 호환용. 표시 여부는 스튜디오 사용자가 정한다. */
 	visibility?: {
 		defaultVisible?: boolean
 		allowToggle?: boolean
@@ -25,7 +26,7 @@ export interface TemplateLayerCreatorPolicy {
 
 /** Template의 nodeId 하나에 저장하는 앱 편집 설정. */
 export interface TemplateNodeConfig {
-	/** Admin이 정하는 Creator 노출·편집·visibility 정책. */
+	/** Admin이 정하는 Creator 노출·편집 정책. */
 	creator?: TemplateLayerCreatorPolicy
 	/**
 	 * 이 노드의 **자식 겹침 순서** — Admin이 정하는 정본이다(2026-09-10).

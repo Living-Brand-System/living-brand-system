@@ -7,10 +7,7 @@ import type {
 import { isEmptyTemplateSessionPatch } from '@/features/template-customization/domain/template-session-patch'
 import { toTemplateSessionPatch } from './agent-template-request.service'
 
-const policy = (access: 'editable' | 'readonly') => ({
-	access,
-	visibility: { defaultVisible: true, allowToggle: false },
-})
+const policy = (access: 'editable' | 'readonly') => ({ access })
 
 const textSlot = (
 	nodeId: string,

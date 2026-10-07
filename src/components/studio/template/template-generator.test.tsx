@@ -40,7 +40,6 @@ import {
 import { TemplateStudioProvider } from '@/features/template-customization/providers/template-studio-provider'
 import type { TemplateRasterArtifactProducer } from '@/features/template-customization/runtime/template-runtime.client'
 import type { GetCreateNavigationOutput } from '@/features/template-customization/services/get-create-navigation.service'
-import { useShellLocked } from '@/hooks/use-shell-lock'
 import { TemplateGenerator as TemplateGeneratorView } from './template-generator'
 import { TemplateWorkspace } from './template-workspace'
 
@@ -835,32 +834,34 @@ describe('TemplateGenerator', () => {
 		expect(screen.getByRole('radiogroup', { name: 'Use' })).toBeInTheDocument()
 	})
 
-	it('중첩 편집 동안 트리 밖의 셸 헤더를 잠그고, 취소하면 푼다', async () => {
-		const user = userEvent.setup()
-		function ShellHeader() {
-			return <nav aria-label="셸" inert={useShellLocked()} />
-		}
-		render(
-			<>
-				<ShellHeader />
-				<TemplateGenerator
+	// 상단 이동을 잠그지 않는다 — 완료 전에 떠나면 취소로 친다(2026-10-07 결정).
+	it('중첩 편집을 마치지 않고 떠나면 들어오기 전 값을 임시 저장한다', async () => {
+		const config = deriveTemplateStudioConfig(template, imageConfigs, effectiveGraphicConfigs)
+		const { result, unmount } = renderHook(useTemplateStudio, {
+			wrapper: ({ children }) => (
+				<TemplateStudioProvider
+					config={config}
+					template={template}
 					categoryTitle="카드"
-					template={{
-						...template,
-						html: '<div data-node-id="1:1" data-figma-type="FRAME" data-name="배경" data-image-carrier=""></div>',
-						nodeConfigs: { '1:1': { imageInput: { profileId: 7 } } },
-					}}
-				/>
-			</>,
+					userId="7"
+				>
+					{children}
+				</TemplateStudioProvider>
+			),
+		})
+		act(() => result.current.background.update({ prompt: '들어오기 전' }))
+		await waitFor(() =>
+			expect(window.localStorage.getItem('lbs.templateDraft')).toContain('들어오기 전'),
 		)
-		const header = () => screen.getByRole('navigation', { name: '셸' })
-		expect(header()).not.toHaveAttribute('inert')
+		act(() => result.current.editing.begin('background'))
+		act(() => result.current.background.update({ prompt: '편집 중' }))
+		// 저장 지연(600ms)이 지나도 편집 중 값은 쓰지 않는다.
+		await new Promise((resolve) => setTimeout(resolve, 700))
+		unmount()
 
-		selectLayerGroup('image')
-		expect(header()).toHaveAttribute('inert')
-
-		await user.click(screen.getByRole('button', { name: '취소' }))
-		expect(header()).not.toHaveAttribute('inert')
+		const stored = window.localStorage.getItem('lbs.templateDraft')
+		expect(stored).toContain('들어오기 전')
+		expect(stored).not.toContain('편집 중')
 	})
 
 	it('심볼 색은 브랜드 색 스와치로 고르고, Custom은 열지 않는다', async () => {
@@ -1805,7 +1806,7 @@ describe('TemplateGenerator', () => {
 		)
 	})
 
-	it('만진 배경색이 캔버스(루트 프레임) 배경으로 합성된다', () => {
+	it('만진 배경색이 캔버스(루트 프레임) 배경으로 합성된다', async () => {
 		const { container } = render(
 			<TemplateGenerator
 				categoryTitle="카드"
@@ -1822,11 +1823,11 @@ describe('TemplateGenerator', () => {
 		// 만지기 전 — 저작 배경 유지.
 		expect((canvasOf() as HTMLElement).style.backgroundColor).toBe('rgb(0, 40, 10)')
 
-		fireEvent.change(screen.getByLabelText('Background Color 색상 선택'), {
-			target: { value: '#ff0000' },
-		})
+		// 텍스트·심볼과 같은 브랜드 스와치 — 자유 색 입력은 잠겨 있다.
+		expect(screen.getByRole('radio', { name: 'Custom' })).toBeDisabled()
+		fireEvent.click(await screen.findByRole('radio', { name: 'Background 색상 #002c5f' }))
 
-		expect((canvasOf() as HTMLElement).style.backgroundColor).toBe('rgb(255, 0, 0)')
+		expect((canvasOf() as HTMLElement).style.backgroundColor).toBe('rgb(0, 44, 95)')
 	})
 
 	it('서버가 전달한 Image Config로 배경 이미지를 생성해 캔버스에 깐다', async () => {
@@ -1958,12 +1959,10 @@ describe('TemplateGenerator', () => {
 			}),
 		)
 		await waitFor(() => expect(mocks.destroyGraphicPreview).toHaveBeenCalledTimes(2))
-		fireEvent.change(screen.getByLabelText('Background Color 색상 선택'), {
-			target: { value: '#ff0000' },
-		})
+		fireEvent.click(await screen.findByRole('radio', { name: 'Background 색상 #002c5f' }))
 		// 색만 고르면 루트 이미지를 걷는다(compose가 none으로 선언) — 고른 색이 사진 아래 묻히지 않게.
 		expect(canvasOf().style.backgroundImage).toBe('none')
-		expect(canvasOf().style.backgroundColor).toBe('rgb(255, 0, 0)')
+		expect(canvasOf().style.backgroundColor).toBe('rgb(0, 44, 95)')
 
 		await user.click(
 			within(screen.getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {
@@ -1976,7 +1975,13 @@ describe('TemplateGenerator', () => {
 
 	it('선택한 Effective 포맷으로 내보낸다', async () => {
 		const user = userEvent.setup()
-		render(<TemplateGenerator categoryTitle="카드" template={template} />)
+		// PDF는 인쇄판에서만 나간다 — 디지털판은 PNG·JPG·MP4뿐이다.
+		render(
+			<TemplateGenerator
+				categoryTitle="카드"
+				template={{ ...template, printSizeMm: { width: 200, height: 150 } }}
+			/>,
+		)
 
 		screen.getByRole('combobox', { name: 'Format' }).focus()
 		await user.keyboard('{ArrowDown}')

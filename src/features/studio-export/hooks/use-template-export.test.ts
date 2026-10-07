@@ -5,6 +5,7 @@ import {
 	createTemplateRasterArtifact,
 	type TemplateVideoArtifact,
 } from '@/features/template-customization/runtime/template-runtime.client'
+import type { StudioOutputFormat } from '../export-contract'
 import { executeArtifactExport } from '../services/export-artifact.client'
 import { useTemplateExport } from './use-template-export'
 
@@ -328,42 +329,83 @@ describe('useTemplateExport', () => {
 
 	describe('판형 선언', () => {
 		// 🔑 템플릿은 판형이 문서에 선언돼 있어 창작자가 크기도 밀도도 고르지 않는다.
-		it('판형이 선언된 인쇄판은 mm가 고정이고 배율·해상도를 고르지 않는다', () => {
-			const { result } = renderHook(() =>
+		// 🔑 인쇄판은 mm가 정본이다 — 판(px)이 297×420(mm 숫자)이어도 파일 px는 mm × 고른 ppi로 나온다.
+		const printHook = (
+			formats: StudioOutputFormat[],
+			printSizeMm: { width: number; height: number },
+		) =>
+			renderHook(() =>
 				useTemplateExport({
 					artifact: () =>
 						createTemplateRasterArtifact({
 							html: '<div>poster</div>',
-							width: 2480,
-							height: 3508,
+							width: 297,
+							height: 420,
 						}),
 					videoArtifact: null,
 					capability: {
-						formats: ['pdf'],
+						formats,
 						colorProfiles: { cmyk: ['cgats21-crpc6'] },
-						print: { ppi: [300] },
+						print: { ppi: [72, 150, 300] },
 					},
 					metadata: {
 						...MP4_METADATA,
-						width: 2480,
-						height: 3508,
+						width: 297,
+						height: 420,
 						maxScale: 4,
-						canvasPpi: 300,
+						printSizeMm,
+					},
+				}),
+			)
+
+		it('인쇄판은 mm가 정본이고, 고른 ppi로 파일 px를 계산한다', () => {
+			const { result } = printHook(['png'], { width: 297, height: 420 })
+
+			expect(result.current.sizeMm).toEqual({ width: 297, height: 420 })
+			expect(result.current.scaleApplies).toBe(false)
+			expect(result.current.ppiApplies).toBe(true)
+			// A3 @300ppi = 3508 × 4961px
+			expect(result.current.outputSize).toEqual({ width: 3508, height: 4961 })
+			act(() => result.current.setPpi(150))
+			expect(result.current.outputSize).toEqual({ width: 1754, height: 2480 })
+		})
+
+		it('디지털판은 판형 크기(px) 그대로 나가고 배율을 고르지 않는다', () => {
+			const { result } = renderHook(() =>
+				useTemplateExport({
+					artifact: () =>
+						createTemplateRasterArtifact({
+							html: '<div>card</div>',
+							width: 1080,
+							height: 1350,
+						}),
+					videoArtifact: null,
+					capability: { formats: ['png'] },
+					metadata: {
+						...MP4_METADATA,
+						width: 1080,
+						height: 1350,
+						maxScale: 4,
+						digitalSizePx: { width: 2160, height: 2700 },
 					},
 				}),
 			)
 
 			expect(result.current.scaleApplies).toBe(false)
-			expect(result.current.ppiApplies).toBe(false)
-			expect(Math.round(result.current.sizeMm?.width ?? 0)).toBe(210)
-			expect(Math.round(result.current.sizeMm?.height ?? 0)).toBe(297)
+			expect(result.current.sizeMm).toBeNull()
+			expect(result.current.outputSize).toEqual({ width: 2160, height: 2700 })
+		})
 
-			// 🔴 배율을 밀어 넣어도 선언한 판이 커지지 않는다.
-			//    2는 이 판의 배율 상한 안이라 실제로 적용될 수 있는 값이다 — 상한 밖 값(4)을 쓰면
-			//    애초에 무시돼 「선언이 배율을 막는다」를 검증하지 못한다.
-			expect(result.current.scaleOptions).toContain(2)
-			act(() => result.current.setScale(2))
-			expect(result.current.outputSize).toEqual({ width: 2480, height: 3508 })
+		it('브라우저가 그릴 수 없는 ppi는 빼고, 하나도 없으면 이미지 파일을 내지 않는다', () => {
+			// Banner 600×1800mm는 300에서 세로가 21,260px라 16,384px를 넘는다.
+			expect(
+				printHook(['png'], { width: 600, height: 1800 }).result.current.ppiOptions,
+			).toEqual([72, 150])
+			// Media Wall 6144mm는 72에서도 가로 17,418px라 하나도 안 남는다.
+			const wall = printHook(['png'], { width: 6144, height: 1312 }).result.current
+			expect(wall.ppiOptions).toEqual([])
+			expect(wall.printTooLarge).toBe(true)
+			expect(wall.canExport).toBe(false)
 		})
 
 		it('선언이 없으면 디지털판이라 배율과 해상도를 창작자가 고른다', () => {

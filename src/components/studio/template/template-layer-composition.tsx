@@ -112,7 +112,7 @@ function TextFieldWidget({ controls, values, onChange }: ControllerWidgetProps) 
 	)
 }
 
-const TEMPLATE_LAYER_WIDGETS: ControllerWidgetRegistry = {
+export const TEMPLATE_LAYER_WIDGETS: ControllerWidgetRegistry = {
 	swatches: SwatchesWidget,
 	'text-field': TextFieldWidget,
 }

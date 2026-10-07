@@ -1,6 +1,6 @@
 'use client'
 
-import { useField } from '@payloadcms/ui'
+import { useField, useFormFields } from '@payloadcms/ui'
 import { useEffect } from 'react'
 import { AdminSectionHeading } from '@/components/admin/shared/admin-section-heading'
 import { Controller } from '@/components/shared/controller'
@@ -9,7 +9,7 @@ import {
 	resolveStudioArtifactOutputFormats,
 	resolveStudioOutputCapability,
 } from '@/features/studio-export/studio-output'
-import { GUARANTEED_TEMPLATE_FORMATS } from '@/features/template-customization/domain/template-studio-config'
+import { TEMPLATE_KIND_FORMATS } from '@/features/template-customization/domain/template-studio-config'
 import {
 	type StudioAdminBaseConfig,
 	type StudioAdminRuntimeSource,
@@ -139,36 +139,43 @@ export function StudioExportPolicyField({
 	const originalField = useField<boolean | null | undefined>({ path: `${path}.original` })
 
 	const manifest = useStudioRuntimeManifest(source, baseConfigs)
+	// 템플릿은 디지털과 인쇄 중 하나만이다 — 고른 종류의 형식만 칩으로 보여 준다.
+	const templateKind = useFormFields(([fields]) => fields.outputKind?.value) as
+		| keyof typeof TEMPLATE_KIND_FORMATS
+		| undefined
+	const kindFormats: readonly string[] | null =
+		source === 'template' ? TEMPLATE_KIND_FORMATS[templateKind ?? 'digital'] : null
 	const supportedFormats = manifest
-		? resolveStudioArtifactOutputFormats(manifest.artifacts, undefined)
+		? resolveStudioArtifactOutputFormats(manifest.artifacts, undefined).filter(
+				(format) => !kindFormats || kindFormats.includes(format),
+			)
 		: []
 	const output = manifest ? resolveStudioOutputCapability(manifest.artifacts) : null
 
-	const restricted = Array.isArray(formatsField.value)
+	// 🔴 빈 목록은 「전부 허용」이다. 칩을 전부 켜면 값 없음으로 저장되는데 Payload는 그것을 `[]`로 돌려준다.
+	//    전부 끄기는 마지막 칩 잠금으로 막으므로 `[]`가 「전부 꺼짐」일 수는 없다.
+	const restricted = Array.isArray(formatsField.value) && formatsField.value.length > 0
 	const selectedFormats = new Set(restricted ? formatsField.value : supportedFormats)
 	const supportedKey = supportedFormats.join(',')
 	const { setValue: setFormats, value: formatsValue } = formatsField
 
 	// Runtime이 지원하지 않게 된 형식이 저장값에 남아 조용히 되살아나지 않게 잘라낸다.
+	// 🔴 지원 형식을 아직 모르면(Runtime 미선택·배경 정책 계산 실패) 건드리지 않는다 — 빈 값으로 자르면
+	//    저장된 형식이 화면에 안 보인 채 전부 지워진다.
 	useEffect(() => {
-		if (!Array.isArray(formatsValue)) return
+		if (!Array.isArray(formatsValue) || !supportedKey) return
 		const supported = new Set(supportedKey.split(','))
 		const next = formatsValue.filter((format) => supported.has(format))
 		if (next.length !== formatsValue.length) setFormats(next)
 	}, [supportedKey, formatsValue, setFormats])
 
-	// 🔴 템플릿의 벡터(svg·pdf)는 정책이 지울 수 없다(`GUARANTEED_TEMPLATE_FORMATS`가 정본).
-	//    끌 수 있어 보이는데 안 꺼지는 토글을 남기면 「껐는데 왜 나오지」로 다시 헤맨다 —
-	//    그 형식을 범주에서 빼고, 그래서 빈 범주가 되면 범주째 지운다(벡터가 그렇다).
-	const guaranteed: readonly string[] = source === 'template' ? GUARANTEED_TEMPLATE_FORMATS : []
 	const categories = FORMAT_CATEGORIES.map((category) => ({
 		...category,
-		supported: category.formats.filter(
-			(format) => supportedFormats.includes(format) && !guaranteed.includes(format),
-		),
+		supported: category.formats.filter((format) => supportedFormats.includes(format)),
 	})).filter((category) => category.supported.length > 0)
+	// 범주 안 형식이 하나라도 있으면 켜진 것으로 본다 — 「PNG만」 같은 저장값이 꺼진 칩으로 보이지 않게.
 	const onCategories = categories
-		.filter((category) => category.supported.every((format) => selectedFormats.has(format)))
+		.filter((category) => category.supported.some((format) => selectedFormats.has(format)))
 		.map((category) => category.value)
 
 	return (
@@ -183,24 +190,41 @@ export function StudioExportPolicyField({
 					</p>
 				) : (
 					<>
-						<Controller.Group title="허용" collapsible={false}>
+						<Controller.Group
+							title="허용"
+							collapsible={false}
+							trailing={
+								<span className="text-muted-foreground text-xs">
+									반드시 하나는 사용합니다
+								</span>
+							}
+						>
 							<Controller.Row label="형식">
 								<Controller.Chips
 									aria-label="허용 형식"
 									disabled={formatsField.disabled}
+									// 다 끄면 스튜디오에 내보낼 형식이 없다 — 마지막 칩은 끌 수 없다.
+									disabledValues={
+										onCategories.length === 1 ? onCategories : undefined
+									}
 									options={categories.map(({ value, label }) => ({
 										value,
 										label,
 									}))}
 									value={onCategories}
 									onChange={(next) => {
-										const allowed = supportedFormats.filter((format) =>
-											categories.some(
-												(category) =>
-													next.includes(category.value) &&
-													category.supported.includes(format),
-											),
-										)
+										if (next.length === 0) return
+										// 바뀐 범주만 켜고 끈다 — 나머지 범주의 저장값(예: PNG만)은 그대로 둔다.
+										const allowed = supportedFormats.filter((format) => {
+											const category = categories.find((candidate) =>
+												candidate.supported.includes(format),
+											)
+											if (!category || !next.includes(category.value))
+												return false
+											return onCategories.includes(category.value)
+												? selectedFormats.has(format)
+												: true
+										})
 										setFormats(
 											allowed.length === supportedFormats.length
 												? undefined
@@ -211,20 +235,23 @@ export function StudioExportPolicyField({
 							</Controller.Row>
 						</Controller.Group>
 
-						{output?.print && (
-							<Controller.Group title="인쇄" collapsible={false}>
-								<NumberOptionChips
-									label="사용할 인쇄 해상도"
-									unit="ppi"
-									numbers={output.print.ppi}
-									value={ppiField.value}
-									disabled={ppiField.disabled}
-									onChange={(next) => ppiField.setValue(next)}
-								/>
-							</Controller.Group>
-						)}
+						{output?.print &&
+							supportedFormats.some(
+								(format) => format === 'tiff' || format === 'pdf',
+							) && (
+								<Controller.Group title="인쇄" collapsible={false}>
+									<NumberOptionChips
+										label="사용할 인쇄 해상도"
+										unit="ppi"
+										numbers={output.print.ppi}
+										value={ppiField.value}
+										disabled={ppiField.disabled}
+										onChange={(next) => ppiField.setValue(next)}
+									/>
+								</Controller.Group>
+							)}
 
-						{output?.video && (
+						{output?.video && supportedFormats.includes('mp4') && (
 							<Controller.Group title="영상" collapsible={false}>
 								<NumberOptionChips
 									label="사용할 영상 프레임"

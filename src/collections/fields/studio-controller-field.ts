@@ -66,7 +66,8 @@ export function studioExportPolicyField({
 		type: 'group',
 		label: '출력 설정',
 		admin: {
-			description: '비우면 Exporter가 지원하는 형식을 모두 허용합니다.',
+			description:
+				'형식 칩을 전부 켜면 지원하는 형식을 모두 허용합니다. 전부 끌 수는 없습니다.',
 			// 그룹 전체를 정본(76:4) 카드로 그린다 — 하위 필드는 스키마·저장 계약만 소유하고
 			// 렌더는 이 컴포넌트가 useField(하위 path)로 직접 잇는다.
 			components: {

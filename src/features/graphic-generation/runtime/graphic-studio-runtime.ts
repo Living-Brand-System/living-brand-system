@@ -98,8 +98,10 @@ export function createGraphicPresetValues(
  * 🔴 프로파일이 **잠근** control은 런타임 기본값을 아예 받지 않는다. 받으면 창작자가 못 만지는
  *    값이 프리셋을 따라 움직이는데, 실행 경계는 잠긴 control에 「계약의 기본값과 같을 것」을
  *    요구하므로 미리보기는 멀쩡한 채 내보내기만 조용히 막힌다.
- * 🔴 select 계열(런타임이 선택지를 좁히면서 기본값도 주는 축)은 아직 같은 보호가 없다 —
- *    범위처럼 「가까운 값」이 없어서 무엇으로 떨어뜨릴지가 결정이다.
+ * 🔴 select 계열(런타임이 선택지를 좁히면서 기본값도 주는 축)은 프로파일이 남긴 선택지와의 교집합만
+ *    쓴다. 기본값이 그 밖이면 남은 첫 선택지로, 교집합이 비면 런타임 좁힘을 버리고 프로파일 선택지를
+ *    그대로 둔다 — 범위와 같은 「프로파일이 이긴다」. 안 그러면 Formation 선 색·Pattern 방향처럼
+ *    런타임이 스스로 좁히는 축을 admin이 또 좁히는 순간 스튜디오가 통째로 죽는다.
  */
 function clampRestrictionsToBase(
 	baseGroups: readonly ControllerGroupDefinition[],
@@ -111,8 +113,9 @@ function clampRestrictionsToBase(
 		),
 	)
 	return {
-		controls: restrictions.controls.map((restriction) => {
-			const base = baseById.get(restriction.controlId)
+		controls: restrictions.controls.map((raw) => {
+			const base = baseById.get(raw.controlId)
+			const restriction = base?.kind === 'select' ? narrowSelectToBase(base, raw) : raw
 			if (base && (base.availability ?? 'enabled') !== 'enabled') {
 				const { defaultValue: _dropped, ...rest } = restriction
 				return rest
@@ -127,6 +130,28 @@ function clampRestrictionsToBase(
 				? restriction
 				: { ...restriction, defaultValue }
 		}),
+	}
+}
+
+function narrowSelectToBase(
+	base: Extract<ControllerGroupDefinition['controls'][number], { kind: 'select' }>,
+	restriction: StudioControllerRestrictions['controls'][number],
+): StudioControllerRestrictions['controls'][number] {
+	if (!restriction.optionValues) return restriction
+	const optionValues = restriction.optionValues.filter((value) =>
+		base.options.some((option) => option.value === value),
+	)
+	if (optionValues.length === 0) {
+		const { optionValues: _dropped, defaultValue: _default, ...rest } = restriction
+		return rest
+	}
+	const { defaultValue } = restriction
+	return {
+		...restriction,
+		optionValues,
+		...(typeof defaultValue === 'string' && !optionValues.includes(defaultValue)
+			? { defaultValue: optionValues[0] }
+			: {}),
 	}
 }
 

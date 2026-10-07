@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { CAMERA_AZIMUTHS, CAMERA_ELEVATIONS } from './camera-control'
 import { getImageRuntimeManifest } from './image-runtime-manifest'
 import {
+	assertImageProfileRunnable,
 	deriveImageStudioConfig,
 	getImageColorAdjustmentControls,
 	getImageStudioControls,
@@ -97,6 +98,30 @@ describe('deriveImageStudioConfig', () => {
 			options: [{ value: '1:1' }, { value: '2:3' }],
 		})
 		expect(controls.resolution.availability).toBe('readonly')
+	})
+
+	it('발행 전에 생성이 막히는 조합(빈 잠금 프롬프트·빈 기본값·1장 없는 장수)을 거부한다', () => {
+		const runnable = (controls: Record<string, unknown>[]) => () =>
+			assertImageProfileRunnable(
+				deriveImageStudioConfig({ ...profile, controllerRestrictions: { controls } }),
+			)
+
+		expect(runnable([])).not.toThrow()
+		expect(runnable([{ controlId: 'prompt', availability: 'readonly' }])).toThrow('기본 문구')
+		expect(
+			runnable([
+				{ controlId: 'prompt', availability: 'readonly', defaultValue: '선화 일러스트' },
+			]),
+		).not.toThrow()
+		expect(runnable([{ controlId: 'resolution', defaultValue: null }])).toThrow(
+			'비워 둘 수 없습니다',
+		)
+		expect(
+			runnable([{ controlId: 'batch', optionValues: ['2', '3'], defaultValue: '2' }]),
+		).toThrow('1장')
+		expect(
+			runnable([{ controlId: 'batch', availability: 'readonly', defaultValue: '2' }]),
+		).toThrow('1장')
 	})
 
 	it('Admin Restrictions가 알 수 없는 ID·선택지·프롬프트 상한을 확장하면 거부한다', () => {

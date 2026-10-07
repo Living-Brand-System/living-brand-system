@@ -275,30 +275,24 @@ describe('deriveTemplateStudioConfig', () => {
 	})
 
 	it('output은 Raster Exporter capability를 따르고 canvas만 Template 도메인 정보로 남긴다', () => {
+		// 🔑 템플릿은 디지털과 인쇄 중 하나만이다 — 디지털은 PNG·JPG·MP4, 인쇄는 PDF·TIFF·SVG.
 		expect(deriveTemplateStudioConfig(template)).toMatchObject({
-			// svg는 인쇄용 벡터 내보내기가 열었다 — Template artifacts가 vector를 선언한다.
-			output: { formats: ['png', 'jpeg', 'tiff', 'pdf', 'svg', 'mp4'] },
+			output: { formats: ['png', 'jpeg', 'mp4'] },
 			template: {
 				exportOption: {
 					canvas: { width: 800, height: 600 },
 				},
 			},
 		})
-		// 🔑 정책이 무엇을 적든 벡터(svg·pdf)는 남는다 — 판이 가진 성질이라 고르는 것이 아니다.
+		const print = { ...template, printSizeMm: { width: 200, height: 150 } }
+		expect(deriveTemplateStudioConfig(print).output.formats).toEqual(['tiff', 'pdf', 'svg'])
+		// 출력 형식 칩은 그 종류 안에서만 좁힌다 — 디지털판에 PDF를 켜 둬도 나가지 않는다.
 		expect(
 			deriveTemplateStudioConfig({
 				...template,
-				exportPolicy: { allowedFormats: ['jpeg'] },
+				exportPolicy: { allowedFormats: ['png', 'pdf'] },
 			}).output.formats,
-		).toEqual(['jpeg', 'pdf', 'svg'])
-		// 발행된 템플릿들이 실제로 갖고 있던 값 — 벡터만 더해지고 나머지는 그대로 좁혀진다.
-		expect(
-			deriveTemplateStudioConfig({
-				...template,
-				exportPolicy: { allowedFormats: ['png', 'jpeg', 'mp4'] },
-			}).output.formats,
-		).toEqual(['png', 'jpeg', 'pdf', 'svg', 'mp4'])
-		// 래스터는 보장하지 않는다 — admin의 「래스터」 토글이 실제로 먹어야 한다.
+		).toEqual(['png'])
 		expect(
 			deriveTemplateStudioConfig({
 				...template,

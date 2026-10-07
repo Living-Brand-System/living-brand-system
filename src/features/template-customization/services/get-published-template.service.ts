@@ -63,7 +63,30 @@ export async function getPublishedTemplate(
 		previewImage: toStudioPreviewImage(template.previewImage),
 		...renderModel,
 		// 🔑 스프레드 뒤에 둔다 — 앞에 두면 renderModel이 같은 이름을 갖게 될 때 조용히 덮인다.
-		canvasPpi: template.canvasPpi ?? undefined,
+		...toTemplateSize(template),
 		nodeConfigs: projectStudioNodeConfigs(renderModel.nodeConfigs),
 	}
+}
+
+/**
+ * 판형 크기 — 인쇄판은 mm(printSizeMm), 디지털판은 px(digitalSizePx)다. 둘 중 하나만 싣는다.
+ * 디지털판이 아직 판형 크기를 저장하지 않았으면(가져오기 직후) Figma 판 크기가 곧 판형 크기다.
+ */
+function toTemplateSize(template: {
+	outputKind?: 'digital' | 'print' | null
+	width?: number | null
+	height?: number | null
+	size?: { width?: number | null; height?: number | null } | null
+}): {
+	printSizeMm?: { width: number; height: number }
+	digitalSizePx?: { width: number; height: number }
+} {
+	const positive = (value: unknown): value is number => typeof value === 'number' && value > 0
+	if (template.outputKind === 'print') {
+		const { width, height } = template.size ?? {}
+		return positive(width) && positive(height) ? { printSizeMm: { width, height } } : {}
+	}
+	const width = template.size?.width ?? template.width
+	const height = template.size?.height ?? template.height
+	return positive(width) && positive(height) ? { digitalSizePx: { width, height } } : {}
 }

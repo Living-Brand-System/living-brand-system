@@ -13,7 +13,7 @@ import {
 	type ImageStudioConfig,
 	parseImageStudioConfig,
 } from '@/features/image-generation/domain/image-studio-config'
-import { isPrintPpi, type PrintPpi } from '@/features/studio-export/print-policy'
+import type { StudioOutputFormat } from '@/features/studio-export/export-contract'
 import {
 	DEFAULT_RASTER_VIDEO_CAPABILITY,
 	parseStudioOutputCapability,
@@ -67,6 +67,8 @@ type TemplateEditableSlotBase = TemplateSlotBindingBase & ResolvedTemplateLayerP
 type TextControlDefinition = Extract<ControllerControlDefinition, { kind: 'text' }>
 type SelectControlDefinition = Extract<ControllerControlDefinition, { kind: 'select' }>
 
+/** 인쇄 판형(mm). 인쇄판의 물리 크기 정본이다. */
+export type TemplatePrintSizeMm = { width: number; height: number }
 export type TemplateTextSlot = TemplateEditableSlotBase & {
 	kind: 'text'
 	/** 공통 controller.groups에 있는 text Definition의 stable id. */
@@ -151,8 +153,10 @@ export type PublishedHtmlTemplate = {
 	nodeConfigs: Record<string, PublishedTemplateNodeConfig>
 	width: number
 	height: number
-	/** 판형 선언 — 이 px를 몇 ppi로 그렸는가. 없으면 디지털판이라 물리 크기가 없다. */
-	canvasPpi?: PrintPpi
+	/** 인쇄 판형(mm) — 인쇄판의 정본. 없으면 디지털판이라 물리 크기가 없다. */
+	printSizeMm?: TemplatePrintSizeMm
+	/** 디지털판의 판형 크기(px). 파일은 이 크기로 나간다. 없으면 판 크기 그대로다. */
+	digitalSizePx?: TemplatePrintSizeMm
 	templateVersion: string
 	exportPolicy?: unknown
 	backgroundPolicy?: TemplateBackgroundPolicy
@@ -183,8 +187,10 @@ export type TemplateStudioConfig = StudioControllerConfig<'template', number> & 
 		graphicConfigs: readonly GraphicStudioConfig[]
 		exportOption: {
 			canvas: { width: number; height: number }
-			/** 판형이 선언된 템플릿의 인쇄 해상도. 있으면 창작자가 크기도 해상도도 고르지 않는다. */
-			canvasPpi?: PrintPpi
+			/** 인쇄판의 판형(mm). 있으면 파일 px는 창작자가 고른 ppi와 이 mm로 계산된다. */
+			printSizeMm?: TemplatePrintSizeMm
+			/** 디지털판의 판형 크기(px). 있으면 파일이 이 크기로 나간다. */
+			digitalSizePx?: TemplatePrintSizeMm
 			/** 캔버스 좌표계 대비 허용 최대 출력 배율. MP4 인코딩 한도에서 되짚어 구한다. */
 			maxScale: number
 		}
@@ -260,7 +266,6 @@ export function parseTemplateStudioConfig(input: unknown): TemplateStudioConfig 
 					'label',
 					'kind',
 					'access',
-					'visibility',
 					'controlId',
 					'input',
 				])
@@ -281,7 +286,6 @@ export function parseTemplateStudioConfig(input: unknown): TemplateStudioConfig 
 					'label',
 					'kind',
 					'access',
-					'visibility',
 					'box',
 					'imageConfig',
 					'featureOverrides',
@@ -300,15 +304,7 @@ export function parseTemplateStudioConfig(input: unknown): TemplateStudioConfig 
 				break
 			}
 			case 'vector':
-				assertTemplateKeys(slot, [
-					'id',
-					'layer',
-					'label',
-					'kind',
-					'access',
-					'visibility',
-					'color',
-				])
+				assertTemplateKeys(slot, ['id', 'layer', 'label', 'kind', 'access', 'color'])
 				if (slot.color !== undefined) assertTemplateString(slot.color, 'slot.color')
 				break
 			case 'background':
@@ -335,7 +331,7 @@ export function parseTemplateStudioConfig(input: unknown): TemplateStudioConfig 
 	}
 
 	const exportOption = templateRecord(template.exportOption, 'TemplateStudioConfig exportOption')
-	assertTemplateKeys(exportOption, ['canvas', 'canvasPpi', 'maxScale'])
+	assertTemplateKeys(exportOption, ['canvas', 'printSizeMm', 'digitalSizePx', 'maxScale'])
 	resolveStudioArtifactOutputFormats(
 		common.artifacts,
 		(root.output as StudioOutputCapability).formats,
@@ -345,8 +341,23 @@ export function parseTemplateStudioConfig(input: unknown): TemplateStudioConfig 
 	assertPositiveNumber(canvas.width, 'canvas.width')
 	assertPositiveNumber(canvas.height, 'canvas.height')
 	assertPositiveNumber(exportOption.maxScale, 'exportOption.maxScale')
-	if (exportOption.canvasPpi !== undefined && !isPrintPpi(exportOption.canvasPpi)) {
-		throw new Error('TemplateStudioConfig canvasPpi: 인쇄 해상도 범위의 정수여야 합니다.')
+	if (exportOption.printSizeMm !== undefined) {
+		const printSize = templateRecord(
+			exportOption.printSizeMm,
+			'TemplateStudioConfig printSizeMm',
+		)
+		assertTemplateKeys(printSize, ['width', 'height'])
+		assertPositiveNumber(printSize.width, 'printSizeMm.width')
+		assertPositiveNumber(printSize.height, 'printSizeMm.height')
+	}
+	if (exportOption.digitalSizePx !== undefined) {
+		const digitalSize = templateRecord(
+			exportOption.digitalSizePx,
+			'TemplateStudioConfig digitalSizePx',
+		)
+		assertTemplateKeys(digitalSize, ['width', 'height'])
+		assertPositiveNumber(digitalSize.width, 'digitalSizePx.width')
+		assertPositiveNumber(digitalSize.height, 'digitalSizePx.height')
 	}
 
 	const typed = input as TemplateStudioConfig
@@ -410,6 +421,12 @@ export type TemplateLayerGroup = {
  * 도화지라 정의상 나머지를 받는다(`mapTemplateNodeLayers`가 목록을 내지 않는 이유).
  */
 export const TEMPLATE_BACKGROUND_LAYER = 'Background'
+const TEMPLATE_BACKGROUND_SLOT_ID = 'background'
+
+/** 배경을 끄면 판은 투명이다 — 색·이미지·그래픽·디머를 모두 걷는다. 키가 없으면 보인다. */
+export function isTemplateBackgroundVisible(visibility: Readonly<Record<string, boolean>>) {
+	return visibility[TEMPLATE_BACKGROUND_SLOT_ID] !== false
+}
 
 const LAYER_GROUP_ORDER = [
 	{ kind: 'text', label: 'Text' },
@@ -774,7 +791,6 @@ export function deriveTemplateStudioConfig(
 				label: slot.input.label ?? slot.name,
 				kind: 'text',
 				access: slot.policy.access,
-				visibility: slot.policy.visibility,
 				controlId: `text:${slot.nodeId}`,
 				input: {
 					format: slot.input.inputFormat ?? 'free',
@@ -789,7 +805,6 @@ export function deriveTemplateStudioConfig(
 				label: slot.name,
 				kind: 'image',
 				access: slot.policy.access,
-				visibility: slot.policy.visibility,
 				box: { width: slot.boxWidth, height: slot.boxHeight },
 				imageConfig: slot.profileId
 					? { mode: 'pinned', configId: slot.profileId }
@@ -816,12 +831,11 @@ export function deriveTemplateStudioConfig(
 				label: slot.name,
 				kind: 'vector',
 				access: slot.policy.access,
-				visibility: slot.policy.visibility,
 				...(slot.color ? { color: slot.color } : {}),
 			}),
 		),
 		{
-			id: 'background',
+			id: TEMPLATE_BACKGROUND_SLOT_ID,
 			layer: 'background',
 			label: 'Background',
 			kind: 'background',
@@ -859,9 +873,12 @@ export function deriveTemplateStudioConfig(
 		id: template.id,
 		version: 1,
 		name: template.name,
-		output: resolveStudioOutputCapability(
-			runtimeManifest.artifacts,
-			withGuaranteedTemplateFormats(projectStudioOutputPolicy(template.exportPolicy)),
+		output: withTemplateKindFormats(
+			resolveStudioOutputCapability(
+				runtimeManifest.artifacts,
+				projectStudioOutputPolicy(template.exportPolicy),
+			),
+			template.printSizeMm ? 'print' : 'digital',
 		),
 		artifacts: runtimeManifest.artifacts,
 		controller: {
@@ -877,7 +894,10 @@ export function deriveTemplateStudioConfig(
 			graphicConfigs: scopedGraphicConfigs,
 			exportOption: {
 				canvas: { width: template.width, height: template.height },
-				...(template.canvasPpi === undefined ? {} : { canvasPpi: template.canvasPpi }),
+				...(template.printSizeMm ? { printSizeMm: template.printSizeMm } : {}),
+				...(template.digitalSizePx && !template.printSizeMm
+					? { digitalSizePx: template.digitalSizePx }
+					: {}),
 				maxScale: resolveMaxExportScale(template.width, template.height),
 			},
 		},
@@ -887,22 +907,28 @@ export function deriveTemplateStudioConfig(
 }
 
 /**
- * 🔑 템플릿은 어떤 정책이든 **벡터(svg·pdf)** 를 낸다. 벡터는 고르는 선택지가 아니라 판이 가진
- *    성질이라, 정책이 지우면 「왜 벡터가 없지」를 템플릿마다 다시 디버깅하게 된다(2026-08-27에
- *    실제로 그랬다 — 발행된 12개 중 벡터를 허용한 것이 하나도 없었다).
- *    콘텐츠에 따라 벡터라도 사실상 이미지 덩어리일 수 있으나 그것은 결과의 성격이지 가부가 아니다.
- * 🔴 래스터는 보장하지 않는다 — png를 못 끄게 만들면 admin의 「래스터」 토글이 거짓말을 한다.
+ * 템플릿은 디지털과 인쇄 중 하나만이다(사용자 결정 2026-10-07) — 종류 밖의 형식은 출력 설정이 켜 둬도 내지 않는다.
+ * 디지털 = PNG·JPG·MP4(px), 인쇄 = PDF·TIFF·SVG(mm). 디지털을 mm로 인쇄하는 길은 없다.
  */
-export const GUARANTEED_TEMPLATE_FORMATS = ['svg', 'pdf'] as const
+export const TEMPLATE_KIND_FORMATS = {
+	digital: ['png', 'jpeg', 'mp4'],
+	print: ['pdf', 'tiff', 'svg'],
+} as const satisfies Record<'digital' | 'print', readonly StudioOutputFormat[]>
 
-function withGuaranteedTemplateFormats(
-	policy: ReturnType<typeof projectStudioOutputPolicy>,
-): ReturnType<typeof projectStudioOutputPolicy> {
-	// 좁히지 않는 정책은 이미 전부 낸다 — 손대면 오히려 의미가 바뀐다.
-	if (!policy?.allowedFormats) return policy
+function withTemplateKindFormats(
+	output: StudioOutputCapability,
+	kind: keyof typeof TEMPLATE_KIND_FORMATS,
+): StudioOutputCapability {
+	const allowed: readonly StudioOutputFormat[] = TEMPLATE_KIND_FORMATS[kind]
+	const { print, video, ...rest } = output
+	const formats = output.formats.filter((format) => allowed.includes(format))
 	return {
-		...policy,
-		allowedFormats: [...new Set([...policy.allowedFormats, ...GUARANTEED_TEMPLATE_FORMATS])],
+		...rest,
+		formats,
+		...(print && formats.some((format) => format === 'pdf' || format === 'tiff')
+			? { print }
+			: {}),
+		...(video && formats.includes('mp4') ? { video } : {}),
 	}
 }
 
@@ -955,17 +981,6 @@ function assertTemplateBox(value: unknown) {
 function assertTemplateLayerPolicy(slot: Record<string, unknown>) {
 	if (slot.access !== 'readonly' && slot.access !== 'editable') {
 		throw new Error('TemplateStudioConfig layer access가 올바르지 않습니다.')
-	}
-	const visibility = templateRecord(slot.visibility, 'TemplateStudioConfig layer visibility')
-	assertTemplateKeys(visibility, ['defaultVisible', 'allowToggle'])
-	if (
-		typeof visibility.defaultVisible !== 'boolean' ||
-		typeof visibility.allowToggle !== 'boolean'
-	) {
-		throw new Error('TemplateStudioConfig layer visibility가 올바르지 않습니다.')
-	}
-	if (slot.access !== 'editable' && (!visibility.defaultVisible || visibility.allowToggle)) {
-		throw new Error('TemplateStudioConfig readonly layer는 visibility 정책을 바꿀 수 없습니다.')
 	}
 }
 

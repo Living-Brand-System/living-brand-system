@@ -1,16 +1,11 @@
+// HD 심볼은 단독 사용이 불가하다 — 가로형 워드마크를 쓴다.
 export function AdminLogo() {
 	return (
 		<span
 			aria-label="Living Brand System"
+			className="admin-hd-logo"
 			role="img"
-			style={{
-				backgroundColor: 'var(--theme-text)',
-				display: 'block',
-				height: 64,
-				mask: 'url("/symbols/symbol_blk.svg") center / contain no-repeat',
-				WebkitMask: 'url("/symbols/symbol_blk.svg") center / contain no-repeat',
-				width: 64,
-			}}
+			style={{ height: 64 }}
 		/>
 	)
 }

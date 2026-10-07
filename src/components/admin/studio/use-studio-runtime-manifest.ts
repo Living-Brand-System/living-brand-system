@@ -43,7 +43,9 @@ export function useStudioRuntimeManifest(
 		| TemplateBackgroundPolicy
 		| undefined
 
-	if (source === 'graphic') {
+	// Graph도 캔버스 스튜디오라 Graphic처럼 runtime 매니페스트를 고른다 — 빠지면 아래 Template 분기로 떨어져
+	// Graph 편집 화면에 Template 배경 컨트롤이 그려졌다.
+	if (source === 'graphic' || source === 'graph') {
 		return baseConfigs.find((config) => config.id === runtime) ?? null
 	}
 	if (source === 'image') {

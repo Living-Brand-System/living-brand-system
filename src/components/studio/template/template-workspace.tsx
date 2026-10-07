@@ -41,7 +41,8 @@ export function TemplateWorkspace({
 			width: config.template.exportOption.canvas.width,
 			height: config.template.exportOption.canvas.height,
 			maxScale: config.template.exportOption.maxScale,
-			canvasPpi: config.template.exportOption.canvasPpi,
+			printSizeMm: config.template.exportOption.printSizeMm,
+			digitalSizePx: config.template.exportOption.digitalSizePx,
 			controller: { groups: config.controller.groups, values: execution.controllerValues },
 		},
 	})

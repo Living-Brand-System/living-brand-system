@@ -16,7 +16,6 @@ import {
 } from '@/components/studio/template/template-media-controls'
 import { Button } from '@/components/ui/button'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
-import { useShellLock } from '@/hooks/use-shell-lock'
 import { PANEL_RENDER, useMotionTransition } from '@/lib/motion'
 
 // 두 패널은 같은 시간(`MOTION.tight`)으로 움직인다. 편집 패널은 공용 패널 렌더(`PANEL_RENDER`)로
@@ -45,8 +44,6 @@ export function TemplateEditingPanel({
 	const reducedMotion = useReducedMotion()
 	const transition = useMotionTransition('tight')
 	const targetId = editing.targetId
-	// 상단 이동도 완료·취소 전까지 잠근다 — 헤더는 셸 잠금을 읽어 스스로 inert가 된다.
-	useShellLock(Boolean(targetId))
 	useEffect(() => {
 		if (!targetId) return
 		const previous =

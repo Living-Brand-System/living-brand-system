@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import { useEffect } from 'react'
 import { Controller } from '@/components/shared/controller'
 import { snapCameraAngle } from '@/components/shared/controller/camera-orbit'
 import { Button } from '@/components/ui/button'
@@ -103,6 +104,16 @@ export function ImageCameraControl({
 		) ??
 		elevationPresets.find((preset) => preset.value === DEFAULT_ELEVATION) ??
 		elevationPresets[0]
+	// 🔴 보이는 칸과 보낼 각도를 맞춘다. 허용 구간이 정면·눈높이를 빼면 시작 각도 0°/0°는 화면에서만
+	//    가까운 칸으로 보이고 요청에는 그대로 실려 서버가 거부했다.
+	const snappedAzimuth = azimuthPreset?.degrees
+	const snappedElevation = elevationPreset?.degrees
+	useEffect(() => {
+		if (snappedAzimuth === undefined || snappedElevation === undefined) return
+		if (snappedAzimuth !== azimuthDeg || snappedElevation !== elevationDeg) {
+			onChange({ azimuthDeg: snappedAzimuth, elevationDeg: snappedElevation })
+		}
+	}, [snappedAzimuth, snappedElevation, azimuthDeg, elevationDeg, onChange])
 	// 계약이 두 축 중 하나라도 비우면 조작할 수 있는 시점이 없다 — 섹션을 그리지 않는다.
 	if (!azimuthPreset || !elevationPreset) return null
 

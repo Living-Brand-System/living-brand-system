@@ -10,12 +10,13 @@ import {
 	type ImageTransformValue,
 	toImageEditTransform,
 } from '@/features/template-customization/domain/image-edit-transform'
-import type {
-	ResolvedTemplateImageConfig,
-	TemplateBackgroundType,
-	TemplateImageConfigSlot,
-	TemplateTextSlot,
-	TemplateVectorSlot,
+import {
+	isTemplateBackgroundVisible,
+	type ResolvedTemplateImageConfig,
+	type TemplateBackgroundType,
+	type TemplateImageConfigSlot,
+	type TemplateTextSlot,
+	type TemplateVectorSlot,
 } from '@/features/template-customization/domain/template-studio-config'
 import type {
 	CanvasVideoSource,
@@ -264,17 +265,21 @@ export function composeTemplateStudioHtml({
 	const visibilityOverrides = Object.fromEntries(
 		Object.entries(layerVisibility).map(([slotId, visible]) => [slotId, { visible }]),
 	)
-	const canvasBackground = {
-		...(background.type === 'graphic' ? { clear: true } : {}),
-		...(background.type === 'color' && background.color ? { color: background.color } : {}),
-		...(background.type === 'image' && background.image
-			? { imageUrl: background.image.url }
-			: {}),
-		// 꺼져 있으면 키를 빼서 조기 반환을 살린다 — 합성은 매번 불변 base HTML에서 다시 시작한다.
-		...(background.dimmer && background.dimmerOpacity > 0
-			? { dimmer: background.dimmerOpacity }
-			: {}),
-	}
+	const canvasBackground = !isTemplateBackgroundVisible(layerVisibility)
+		? { clear: true }
+		: {
+				...(background.type === 'graphic' ? { clear: true } : {}),
+				...(background.type === 'color' && background.color
+					? { color: background.color }
+					: {}),
+				...(background.type === 'image' && background.image
+					? { imageUrl: background.image.url }
+					: {}),
+				// 꺼져 있으면 키를 빼서 조기 반환을 살린다 — 합성은 매번 불변 base HTML에서 다시 시작한다.
+				...(background.dimmer && background.dimmerOpacity > 0
+					? { dimmer: background.dimmerOpacity }
+					: {}),
+			}
 	return composeTemplateHtml(
 		html,
 		mergeTemplateOverrides(textOverrides, imageOverrides, vectorOverrides, visibilityOverrides),

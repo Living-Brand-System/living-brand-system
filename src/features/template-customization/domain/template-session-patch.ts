@@ -50,7 +50,7 @@ export const templateSessionPatchSchema = z.object({
 	textColor: z.string().nullable().optional(),
 	/** 벡터(로고) 슬롯의 색. */
 	vectorColor: z.record(z.string(), z.string()).optional(),
-	/** 레이어 표시 여부. 🔴 `visibility.allowToggle`이 아닌 슬롯은 세션이 거부한다. */
+	/** 레이어 표시 여부. 키는 슬롯 id이고 배경은 `background`다. 모르는 슬롯은 세션이 거부한다. */
 	visibility: z.record(z.string(), z.boolean()).optional(),
 	images: z.record(z.string(), templateImageSlotPatchSchema).optional(),
 	background: templateBackgroundPatchSchema.optional(),

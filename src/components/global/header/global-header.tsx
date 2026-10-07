@@ -15,7 +15,6 @@ import {
 import { useLogout } from '@/features/auth/hooks/use-logout'
 import { useSession } from '@/features/auth/hooks/use-session'
 import type { GetGuidelineNavigationOutput } from '@/features/guideline/services/get-guideline-navigation.service'
-import { useShellLocked } from '@/hooks/use-shell-lock'
 import { routes } from '@/lib/routes'
 import { type StudioNavKey, studioNavItems } from '../studio-nav'
 
@@ -132,10 +131,9 @@ export function GlobalHeader({ guidelineChapters, updates = {} }: GlobalHeaderPr
 		label: 'Account',
 	} as const
 	const closeCompact = () => setCompactOpen(false)
-	const shellLocked = useShellLocked()
 
 	return (
-		<NavigationHeader.Root inert={shellLocked}>
+		<NavigationHeader.Root>
 			<NavigationHeader.Desktop>
 				<NavigationHeader.Start>
 					{session.status === 'in' && (

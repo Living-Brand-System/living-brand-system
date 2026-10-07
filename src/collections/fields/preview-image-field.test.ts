@@ -4,10 +4,11 @@ import { ImageProfiles } from '../ImageProfiles'
 import { Templates } from '../Templates'
 import { previewImageField } from './preview-image-field'
 
+// 템플릿만 미리보기 없이 만들 수 있다 — 프로파일은 여전히 필수다.
 const STUDIO_COLLECTIONS = [
-	['graphic-profiles', GraphicProfiles],
-	['image-profiles', ImageProfiles],
-	['templates', Templates],
+	['graphic-profiles', GraphicProfiles, true],
+	['image-profiles', ImageProfiles, true],
+	['templates', Templates, false],
 ] as const
 
 describe('previewImageField', () => {
@@ -20,12 +21,12 @@ describe('previewImageField', () => {
 		})
 	})
 
-	it('그래픽·이미지 프로파일과 템플릿이 같은 계약을 요구한다', () => {
-		for (const [slug, collection] of STUDIO_COLLECTIONS) {
+	it('그래픽·이미지 프로파일과 템플릿이 같은 계약을 쓰고, 템플릿만 선택이다', () => {
+		for (const [slug, collection, required] of STUDIO_COLLECTIONS) {
 			const field = collection.fields.find(
 				(candidate) => 'name' in candidate && candidate.name === 'previewImage',
 			)
-			expect(field, slug).toEqual(previewImageField())
+			expect(field, slug).toEqual(previewImageField({ required }))
 		}
 	})
 })
