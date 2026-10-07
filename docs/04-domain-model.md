@@ -142,7 +142,7 @@ flowchart LR
   end
 
   BrandGuideline -.->|"공통 표시 설정"| GuidelineDocument
-  GuidelineChapter -->|"토픽 묶음"| GuidelineDocument
+  GuidelineChapter -->|"문서 묶음"| GuidelineDocument
   GuidelineDocument -->|"소유"| GuidelineSection
   GuidelineDocument -->|"적용(참조)"| Rule
   GuidelineSection -->|"적용(참조)"| Rule
@@ -194,7 +194,7 @@ flowchart LR
 | 관계 | 의미 |
 | --- | --- |
 | BrandGuideline -> GuidelineDocument | `BrandGuideline`은 공통 표시 설정만 제공합니다. 문서의 생성·발행·삭제 생명주기를 소유하지 않습니다. |
-| GuidelineChapter -> GuidelineDocument | 챕터는 토픽을 묶는 분류이고, 토픽(GuidelineDocument)이 챕터를 필수로 참조합니다. 챕터는 자기 화면과 본문을 갖지 않습니다. 각 토픽은 독립 애그리거트입니다. 토픽 안의 섹션은 별도 문서가 아니며 토픽과 발행 단위를 공유합니다. |
+| GuidelineChapter -> GuidelineDocument | 챕터는 문서를 묶는 분류이고, 문서(GuidelineDocument)가 챕터를 필수로 참조합니다. 챕터는 자기 화면과 본문을 갖지 않습니다. 각 문서는 독립 애그리거트입니다. 문서 안의 섹션은 별도 문서가 아니며 문서와 발행 단위를 공유합니다. |
 | GuidelineDocument -> GuidelineSection | 문서는 섹션을 임베디드 엔티티로 소유합니다. 섹션 식별자는 부모 문서 안에서만 유효합니다. |
 | GuidelineDocument / GuidelineSection -> Rule | 각 문서 단위는 적용할 Rule을 관계로 선택합니다. Rule 정의는 공유 가능하며 source는 참조하는 쪽의 위치가 결정합니다. |
 | Rule -> RuleChecker | Rule은 실행 유형에 따라 결정론적 options 또는 AI 추가 판단 기준을 선언하고 RuleChecker 실행 계약을 참조합니다. |
@@ -214,7 +214,7 @@ flowchart LR
 
 품질 규칙 관리는 Rule, RuleChecker, CheckScenario의 정의와 생명주기를 소유하는 독립 바운디드 컨텍스트입니다.
 가이드라인 관리는 브랜드 가이드라인, 공식 자원, Official Version을 관리하며 Rule을 배치하고 문서 근거를 제공합니다.
-현재 구현의 편집·발행 애그리거트는 `GuidelineDocument`(토픽)입니다. 챕터는 별도 컬렉션 `GuidelineChapter`의 분류 항목이고 토픽이 이를 필수 관계로 참조합니다(2026-08-26까지는 문서 자기참조·깊이로 표현했습니다). 각 토픽은 독립적으로 초안·발행·버전 생명주기를 가집니다. 토픽 화면의 섹션은 임베디드 본문이라 토픽과 발행 단위를 공유합니다.
+현재 구현의 편집·발행 애그리거트는 `GuidelineDocument`(가이드라인 문서)입니다. 챕터는 별도 컬렉션 `GuidelineChapter`의 분류 항목이고 문서가 이를 필수 관계로 참조합니다(2026-08-26까지는 문서 자기참조·깊이로 표현했습니다). 각 문서는 독립적으로 초안·발행·버전 생명주기를 가집니다. 문서 화면의 섹션은 임베디드 본문이라 문서와 발행 단위를 공유합니다.
 `GuidelineSection`은 `GuidelineDocument`가 소유한 임베디드 엔티티이며 식별자는 부모 문서 안에서만 유효합니다.
 `BrandGuideline`은 회사명, 문서 제목, 테마 같은 단일 공통 설정입니다. 모든 `GuidelineDocument`를 소유하는 루트가 아닙니다.
 
@@ -304,7 +304,7 @@ flowchart LR
   end
 
   BrandGuideline -.->|"공통 표시 설정"| Document
-  Chapter -->|"토픽 묶음"| Document
+  Chapter -->|"문서 묶음"| Document
   Document -->|"소유"| Section
   Document -->|"적용(참조)"| Rule
   Section -->|"적용(참조)"| Rule
@@ -326,7 +326,7 @@ flowchart LR
 ```
 
 BrandGuideline은 가이드라인 전체에 적용되는 표시 설정을 관리합니다.
-GuidelineDocument는 토픽이며 GuidelineChapter를 필수로 참조해 챕터·토픽 구조를 만들고, 순서가 있는 `sections → containers → cards`를 임베디드로 소유합니다. 섹션 유형은 `section`·`subsection`·`incorrect-usages`이고, 컨테이너가 레이아웃과 카드 목록을 갖습니다.
+GuidelineDocument는 가이드라인 문서이며 GuidelineChapter를 필수로 참조해 챕터·문서 구조를 만들고, 순서가 있는 `sections → containers → cards`를 임베디드로 소유합니다. 섹션 유형은 `section`·`subsection`·`incorrect-usages`이고, 컨테이너가 레이아웃과 카드 목록을 갖습니다.
 GuidelineVersionRef는 발행된 GuidelineDocument revision을 CheckBasis가 참조하기 위해 저장하는 값 객체입니다.
 
 섹션은 앵커와 목차 항목을 제공하고, 카드는 디스플레이·캡션·사용 상태(`status`)·동작을 소유합니다. 사용 상태는 개별 사례의 표시이며 검수 Rule이나 검수 결과를 대신하지 않습니다. 저작·표현 계약은 [Guideline 기능 명세](features/guideline.md)가 안내합니다. CMS와 문서 API에는 `blocks`·`contentModel` 저작 선택이 없으며, 비공개 이력 표식은 구형 버전 복원을 막는 내부 계약입니다.

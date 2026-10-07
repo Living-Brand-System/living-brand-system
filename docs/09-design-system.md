@@ -101,7 +101,7 @@ rg -n '#[0-9a-fA-F]{3,8}\b|(?:bg|text|border|ring|fill|from|to|via)-(?:(?:red|or
 
 §4의 색-데이터 예외로 면에 hex를 주입할 때, 배경만 넣으면 그 면의 전경·테두리·muted가 바깥 스코프에 남습니다. 라이트 모드 페이지에 어두운 브랜드 색을 깐 면은 배경만 어두워지고 안쪽 컴포넌트는 라이트 팔레트의 near-black 컨트롤을 그대로 그려 면에 묻힙니다(반대 방향도 같습니다). 전경색 한 개를 짝지어 주는 것으로는 부족합니다 — 안쪽이 쓰는 것은 색이 아니라 토큰이기 때문입니다.
 
-그러므로 hex를 주입하는 자리에서 그 밝기로 `light`/`dark`를 골라 같은 요소에 선언합니다. 선례는 토픽 히어로(`pages/guideline-topic.tsx`)의 `dark` 스코프이고, `text-foreground`를 함께 주는 이유도 거기 적혀 있습니다(색 클래스가 없는 면은 바깥에서 **계산된** 색을 상속하므로 토큰 재선언만으로는 글자 색이 따라오지 않습니다).
+그러므로 hex를 주입하는 자리에서 그 밝기로 `light`/`dark`를 골라 같은 요소에 선언합니다. 선례는 문서 히어로(`pages/guideline-topic.tsx`)의 `dark` 스코프이고, `text-foreground`를 함께 주는 이유도 거기 적혀 있습니다(색 클래스가 없는 면은 바깥에서 **계산된** 색을 상속하므로 토큰 재선언만으로는 글자 색이 따라오지 않습니다).
 
 🔴 이 스코프 전환은 토큰만 되돌립니다. `dark:` 유틸은 `.dark *` **후손** 선택자라 다크 페이지 안의 밝은 섬에서도 여전히 걸립니다. §4가 컴포넌트에서 `dark:` 팔레트 클래스를 금지하는 이유가 여기서 한 번 더 성립합니다.
 
@@ -190,17 +190,17 @@ CMS 섹션은 평면 섹션 구조를 사용합니다. Subsection은 직전 Sect
 
 신규 경로는 `ContentFrame`을 사용하지 않습니다. Section이 가용 폭과 좌우 여백을 제공하고, Heading·Sticky는 최대 1415px에서 중앙 배치합니다. Grid는 목표 카드 너비×열 수+가로 간격으로 최대 폭을 계산하고 Carousel은 가용 폭을 사용합니다. 카드 간격은 Grid 좌우 12px·상하 24px, Carousel 좌우 12px, Sticky 세로 24px입니다. 컴포넌트 API는 [10의 신규 문서 구조 계약](10-component-authoring.md#가이드라인-문서-구조-api-2026-09-23)을 따릅니다.
 
-헤딩 계층은 토픽의 h1을 `GuidelineDisplayTitle`이, 섹션 제목을 `GuidelineSectionHeading`(`hierarchy` main h2 / sub h3)이 소유합니다. 가이드라인 첫 화면(Figma 458:16373)의 h1은 히어로 락업이, 챕터는 문서와 같은 `GuidelineSection`·`GuidelineSectionHeading`(h2)이, 토픽은 링크 가이드라인 카드(`GuidelineGridContainer`의 `href`)가 그립니다. 스튜디오 첫 화면(`StudioHome`)도 같은 섹션 블록에 프로파일 카드를 담습니다. 랜드마크는 셸이 `main`을(`section-layout.tsx`), 토픽 화면이 `article` 하나를(`pages/guideline-topic.tsx`) 갖고, 블록 프레임과 섹션 안쪽은 랜드마크를 만들지 않습니다.
+헤딩 계층은 문서의 h1을 `GuidelineDisplayTitle`이, 섹션 제목을 `GuidelineSectionHeading`(`hierarchy` main h2 / sub h3)이 소유합니다. 가이드라인 첫 화면(Figma 458:16373)의 h1은 히어로 락업이, 챕터는 문서와 같은 `GuidelineSection`·`GuidelineSectionHeading`(h2)이, 문서는 링크 가이드라인 카드(`GuidelineGridContainer`의 `href`)가 그립니다. 스튜디오 첫 화면(`StudioHome`)도 같은 섹션 블록에 프로파일 카드를 담습니다. 랜드마크는 셸이 `main`을(`section-layout.tsx`), 문서 화면이 `article` 하나를(`pages/guideline-topic.tsx`) 갖고, 블록 프레임과 섹션 안쪽은 랜드마크를 만들지 않습니다.
 
 ### 가이드라인 계층 이름은 Figma 정본과 다릅니다
 
-코드는 **챕터 → 토픽 → 섹션**으로 부르고 Figma는 다른 이름을 씁니다. 노드를 대조할 때 한 번 꺾이므로 여기에 적어 둡니다.
+코드와 화면은 **챕터 → 문서 → 섹션**으로 부르고(일부 코드 식별자는 옛 이름 `topic`을 유지합니다 — `[topicSlug]`·`guideline-topic.tsx` 등) Figma는 다른 이름을 씁니다. 노드를 대조할 때 한 번 꺾이므로 여기에 적어 둡니다.
 
 | 코드 | Figma 노드 | 무엇 |
 | --- | --- | --- |
-| 챕터 chapter | — | 토픽을 묶는 분류. 별도 챕터 화면은 없습니다 |
-| 토픽 topic | **Section Heading**(61:3503) | URL을 가진 문서 한 장. 히어로 + 제목 |
-| 섹션 section | **Article**(61:3299·61:3376) | 토픽 본문 안의 섹션. 문서가 아니라 블록이고 `#앵커`만 가집니다 |
+| 챕터 chapter | — | 문서를 묶는 분류. 별도 챕터 화면은 없습니다 |
+| 문서 document(식별자 `topic`) | **Section Heading**(61:3503) | URL을 가진 문서 한 장. 히어로 + 제목 |
+| 섹션 section | **Article**(61:3299·61:3376) | 문서 본문 안의 섹션. 문서가 아니라 블록이고 `#앵커`만 가집니다 |
 
 🔴 코드 주석이 인용하는 Figma 노드 id는 그대로 둡니다 — 이름을 코드 어휘로 바꿔 적으면 Figma에서 그 노드를 찾을 수 없게 됩니다.
 
