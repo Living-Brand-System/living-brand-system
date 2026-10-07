@@ -86,7 +86,7 @@ export const Templates: CollectionConfig = {
 		},
 
 		// ── 사이드바 (렌더 순서 = 배열 순서) ──
-		previewImageField(),
+		previewImageField({ required: false }),
 		{
 			type: 'row',
 			admin: { position: 'sidebar' },
