@@ -247,10 +247,9 @@ export const customMcpTools = [
 								url: new URL(image.url, requestUrl).toString(),
 							})),
 							imageSize: result.imageSize,
-							model: result.model,
+							// 합성 프롬프트·모델은 manager 전용 값이라 싣지 않는다.
 							profileId: result.profileId,
 							profileName: result.profileName,
-							prompt: result.prompt,
 						}),
 					},
 					...previews,

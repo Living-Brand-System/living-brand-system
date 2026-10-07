@@ -7,7 +7,7 @@ type BeforeChangeHook = (args: {
 	req: { payload: { find: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> } }
 }) => Promise<unknown>
 
-const hook = Templates.hooks?.beforeChange?.[0] as unknown as BeforeChangeHook
+const hook = Templates.hooks?.beforeChange?.at(-1) as unknown as BeforeChangeHook
 
 type AccessFunction = (args: { req: { user: unknown } }) => unknown
 

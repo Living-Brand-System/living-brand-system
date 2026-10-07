@@ -90,7 +90,7 @@ describe('studioControllerRestrictionsField', () => {
 })
 
 describe('ImageProfiles publish validation', () => {
-	const hook = ImageProfiles.hooks?.beforeChange?.[0]
+	const hook = ImageProfiles.hooks?.beforeChange?.at(-1)
 	if (!hook) throw new Error('ImageProfiles beforeChange hook is not configured')
 	const profile = {
 		name: 'Profile',
@@ -147,7 +147,7 @@ describe('ImageProfiles publish validation', () => {
 })
 
 describe('GraphicProfiles publish validation', () => {
-	const hook = GraphicProfiles.hooks?.beforeChange?.[0]
+	const hook = GraphicProfiles.hooks?.beforeChange?.at(-1)
 	if (!hook) throw new Error('GraphicProfiles beforeChange hook is not configured')
 
 	it('draft는 불완전 restrictions를 허용하고 publish는 runtime보다 넓은 계약을 거부한다', () => {

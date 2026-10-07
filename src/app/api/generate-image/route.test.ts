@@ -105,7 +105,7 @@ describe('POST /api/generate-image', () => {
 		expect(response.headers.get('Retry-After')).toBe('12')
 	})
 
-	it('유효한 입력과 사용자를 서비스에 전달하고 실제 모델을 반환한다', async () => {
+	it('유효한 입력과 사용자를 서비스에 전달한다 — 응답에 합성 프롬프트·모델은 싣지 않는다(manager 전용)', async () => {
 		const response = await POST(imageRequest({ prompt: '  sample  ', profileId: 5, count: 1 }))
 
 		expect(response.status).toBe(200)
@@ -121,8 +121,6 @@ describe('POST /api/generate-image', () => {
 			],
 			images: ['/api/generated-images/file/generated.png'],
 			imageSize: '1K',
-			model: 'gpt-image-2',
-			prompt: 'sample',
 		})
 		expect(mocks.generateImages).toHaveBeenCalledWith({
 			userInput: 'sample',

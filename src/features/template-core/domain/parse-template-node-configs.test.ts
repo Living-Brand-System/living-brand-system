@@ -94,6 +94,9 @@ describe('parseTemplateNodeConfigs imageInput', () => {
 	it.each([
 		['빈 스펙(개방 선언만)', {}],
 		['profileId 고정', { profileId: 3 }],
+		// admin 이미지 레이어 편집기가 쓰는 두 키 — 빠지면 저장이 400으로 막힌다.
+		['허용 프로파일 범위', { allowedProfileIds: [3, 6] }],
+		['변형 끔', { transform: { enabled: false } }],
 	] as const)('%s을 허용한다', (_label, imageInput) => {
 		const parsed = parseTemplateNodeConfigs({ 'frame-1': { imageInput } })
 

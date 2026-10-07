@@ -73,13 +73,13 @@ export async function POST(request: Request) {
 	try {
 		// 🔴 현재 `_status`를 읽어 update에 그대로 되쓴다. versioned 컬렉션은 이것을 빠뜨리면
 		//    최신(초안) 버전의 상태를 따라 써서 **게시 문서가 초안으로 떨어진다**(2026-08-05 실사고).
-		const current =
+		const read = async (draft: boolean) =>
 			lookup === 'id'
 				? await payload.findByID({
 						collection,
 						id: Number(rawProfileId),
 						depth: 0,
-						draft: true,
+						draft,
 						overrideAccess: false,
 						user,
 					})
@@ -89,13 +89,25 @@ export async function POST(request: Request) {
 							where: { runtime: { equals: rawProfileId } },
 							depth: 0,
 							limit: 1,
-							draft: true,
+							draft,
 							overrideAccess: false,
 							user,
 						})
 					).docs[0]
+		const current = await read(true)
 		if (!current) {
 			return Response.json({ message: '프로파일을 찾을 수 없습니다.' }, { status: 404 })
+		}
+		// 🔴 발행본 위에 초안이 얹혀 있으면 갱신하지 않는다. update는 최신(초안) 버전 위에 쓰므로
+		//    `draft`로 되쓰면 발행이 풀리고, `published`로 되쓰면 그 초안이 몰래 발행된다.
+		if (current._status === 'draft' && (await read(false))?._status === 'published') {
+			return Response.json(
+				{
+					message:
+						'admin에 발행하지 않은 초안이 있어요. 초안을 발행하거나 되돌린 뒤 썸네일을 갱신해 주세요.',
+				},
+				{ status: 409 },
+			)
 		}
 		const profileId = current.id
 
