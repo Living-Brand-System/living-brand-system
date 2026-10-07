@@ -1,6 +1,7 @@
-import { type CollectionConfig, slugField } from 'payload'
+import type { CollectionConfig } from 'payload'
 import { assertTemplateCategoryDeletable } from '@/features/template-core/services/guard-template-references.service'
 import { managerManagedAccess } from '@/lib/auth'
+import { urlSlugField } from './fields/url-slug-field'
 
 /**
  * Create 화면 사이드바의 템플릿 분류 단위.
@@ -35,11 +36,7 @@ export const TemplateCategories: CollectionConfig = {
 				description: '사이드바 카테고리 제목으로 표시됩니다.',
 			},
 		},
-		slugField({
-			useAsSlug: 'title',
-			localized: true,
-			required: true,
-		}),
+		urlSlugField({ useAsSlug: 'title', localized: true }),
 		{
 			name: 'description',
 			type: 'textarea',

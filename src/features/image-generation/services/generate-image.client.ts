@@ -84,18 +84,21 @@ export interface ImageGenerationResult {
 	profileName?: string
 }
 
+/** 브라우저가 받는 응답 — 합성 프롬프트·모델은 manager 전용이라 서버가 빼고 보낸다. */
+export type ImageGenerationResponse = Omit<ImageGenerationResult, 'model' | 'prompt'>
+
 /** 사용자 이미지 생성을 요청한다. */
 export function requestImageGeneration(
 	input: ImageGenerationRequest,
-): Promise<ImageGenerationResult> {
-	return postImageGeneration<ImageGenerationResult>('/api/generate-image', input)
+): Promise<ImageGenerationResponse> {
+	return postImageGeneration('/api/generate-image', input)
 }
 
 /** Admin 이미지 생성을 요청한다. */
 export function requestAdminImageGeneration(
 	input: AdminImageGenerationRequest,
-): Promise<ImageGenerationResult> {
-	return postImageGeneration<ImageGenerationResult>('/api/admin/generate-image', input)
+): Promise<ImageGenerationResponse> {
+	return postImageGeneration('/api/admin/generate-image', input)
 }
 
 /** Payload REST에서 현재 사용자가 선택할 수 있는 published 이미지 프로파일을 조회한다. */
@@ -126,16 +129,18 @@ export async function requestImagePromptNormalization(
 	return { finalPrompt: body.finalPrompt, normalizedInput: body.normalizedInput }
 }
 
-async function postImageGeneration<Result extends ImageGenerationResult>(
+async function postImageGeneration(
 	url: string,
 	input: AdminImageGenerationRequest | ImageGenerationRequest,
-): Promise<Result> {
+): Promise<ImageGenerationResponse> {
 	const response = await fetch(url, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(input),
 	})
-	const body = (await response.json().catch(() => null)) as (Result & { message?: string }) | null
+	const body = (await response.json().catch(() => null)) as
+		| (ImageGenerationResponse & { message?: string })
+		| null
 	if (!response.ok) throw new Error(body?.message || `생성 실패 (${response.status})`)
 	if (!body) throw new Error('생성 응답이 올바르지 않습니다.')
 	return body

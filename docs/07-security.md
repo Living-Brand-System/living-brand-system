@@ -60,6 +60,7 @@
 - Route Handler와 Server Action은 요청마다 현재 사용자를 확인합니다.
 - Payload Local API를 사용할 때는 가능한 `user`와 `overrideAccess: false`를 전달합니다.
 - `overrideAccess: true`는 migration, seed, 관리성 batch처럼 명확한 예외에서만 사용합니다.
+- 발행 흐름이 있는 스튜디오 컬렉션(템플릿·그래픽·그래프·이미지 프로파일)은 worker에게 발행본만 읽히고, 초안과 버전 이력(`readVersions`)은 manager 이상만 읽습니다. manager 전용 필드(이미지 프로파일의 시스템 프롬프트·모델)는 생성 응답·채팅 첨부·MCP 결과에도 싣지 않습니다.
 - 외부 서비스 개인 자격증명(Figma API 토큰)은 사용자별로 `PAYLOAD_SECRET`에서 파생한 키로 암호화해 저장하고, 필드 access로 API·Admin 노출을 전부 닫습니다. 그 필드는 전용 repository만 요청자 본인 id로 `overrideAccess: true` 접근합니다. 서버 공용 토큰으로 대신하지 않습니다.
 
 ### 회원가입과 사용자 생성

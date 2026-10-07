@@ -1,27 +1,21 @@
-import { APIError, type CollectionConfig, slugField } from 'payload'
+import { APIError, type CollectionConfig } from 'payload'
 import { isPrintPpi, MAX_PRINT_PPI, MIN_PRINT_PPI } from '@/features/studio-export/print-policy'
 import { prepareTemplateSave } from '@/features/template-import/services/prepare-template-save.service'
-import { isManager, managerOrAdmin } from '@/lib/auth'
+import { isManager, managerManagedPublishedAccess } from '@/lib/auth'
 import { previewImageField } from './fields/preview-image-field'
 import { studioExportPolicyField } from './fields/studio-controller-field'
 import { templateBackgroundPolicyField } from './fields/template-policy-field'
-import { draftVersions } from './shared'
+import { urlSlugField } from './fields/url-slug-field'
+import { draftVersions, keepPublishedOnRestore } from './shared'
 
 export const Templates: CollectionConfig = {
 	slug: 'templates',
-	access: {
-		read: ({ req }) =>
-			isManager(req.user) || {
-				_status: { equals: 'published' },
-			},
-		create: managerOrAdmin,
-		update: managerOrAdmin,
-		delete: managerOrAdmin,
-	},
+	access: managerManagedPublishedAccess,
 	hooks: {
 		// 모든 HTML 저장은 실행 마크업과 외부 URL을 차단한다. 브랜드 에셋 published 검증은
 		// 발행 시에만 추가하고, draft의 staging 에셋은 manager/admin에게만 보인다 (docs/07).
 		beforeChange: [
+			keepPublishedOnRestore,
 			async ({ data, originalDoc, req }) => {
 				const blocker = await prepareTemplateSave({ data, originalDoc, req })
 				if (blocker) throw new APIError(blocker, 400)
@@ -48,39 +42,7 @@ export const Templates: CollectionConfig = {
 			localized: true,
 		},
 		// 🔴 slug는 localized가 아니다 — URL은 정체성이라 로케일마다 달라지면 링크가 갈라진다.
-		// name은 localized지만 slug는 한 번 파생된 뒤 그 값으로 고정된다(ImageProfiles와 같은 방식).
-		slugField({
-			useAsSlug: 'name',
-			required: true,
-			// 🔴 Payload 기본 slugify는 `[^\w-]+`를 버려 한글 이름이 전부 사라진다
-			// ('환영 카드' → '-'). 그대로 두면 두 번째 한글 템플릿이 slug unique 인덱스에
-			// 걸려 DB 오류로 저장이 깨진다. 낱말이 하나도 안 남으면 빈 값을 돌려주어
-			// required 검증이 "직접 입력하세요"로 막게 한다 — 실패를 DB가 아니라 폼에서 낸다.
-			slugify: ({ valueToSlugify }) => {
-				const slug =
-					valueToSlugify
-						?.trim()
-						.replace(/ /g, '-')
-						.replace(/[^\w-]+/g, '')
-						.toLowerCase() ?? ''
-				return /[a-z0-9]/.test(slug) ? slug : ''
-			},
-			// slug은 영문 소문자·숫자·하이픈만 받는다 — URL 세그먼트이므로 인코딩이 필요한 문자를
-			// 애초에 들이지 않는다. 이름이 영문이면 위 slugify가 알아서 채우고, 한글이면 비어서
-			// 이 검증이 "직접 입력하세요"로 막는다.
-			overrides: (field) => {
-				const slug = field.fields.find(
-					(candidate) => 'name' in candidate && candidate.name === 'slug',
-				)
-				if (slug?.type === 'text') {
-					slug.validate = (value: unknown) =>
-						typeof value === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)
-							? true
-							: '영문 소문자·숫자·하이픈만 사용하세요. 예: summer-poster'
-				}
-				return field
-			},
-		}),
+		urlSlugField({ useAsSlug: 'name' }),
 		{
 			name: 'description',
 			type: 'textarea',

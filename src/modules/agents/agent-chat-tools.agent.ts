@@ -200,12 +200,7 @@ export function getAgentTools() {
 					}
 					throw error
 				}
-				const {
-					images,
-					prompt: composedPrompt,
-					profileId: usedProfileId,
-					profileName,
-				} = generated
+				const { images, profileId: usedProfileId, profileName } = generated
 				if (images.length === 0) {
 					// 실패를 모델에 명시적으로 알린다 — 안 그러면 빈 결과에도 "만들었어"라고 답한다.
 					return {
@@ -215,7 +210,8 @@ export function getAgentTools() {
 				}
 				return {
 					type: 'generated-images',
-					prompt: composedPrompt,
+					// 사용자가 낸 원문만 보여 준다 — 합성 프롬프트에는 manager 전용 시스템 프롬프트가 들어 있다.
+					prompt,
 					profileId: usedProfileId,
 					profileName,
 					images,

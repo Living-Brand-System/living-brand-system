@@ -4,14 +4,14 @@ import {
 	GRAPHIC_RUNTIME_OPTIONS,
 	graphicRuntimeManifests,
 } from '@/features/graphic-generation/domain/graphic-studio-manifest'
-import { managerManagedAccess } from '@/lib/auth'
+import { managerManagedPublishedAccess } from '@/lib/auth'
 import { previewImageField } from './fields/preview-image-field'
 import {
 	studioControllerPresentationField,
 	studioControllerRestrictionsField,
 	studioExportPolicyField,
 } from './fields/studio-controller-field'
-import { draftVersions } from './shared'
+import { draftVersions, keepPublishedOnRestore } from './shared'
 
 const graphicAdminRuntimeManifests = graphicRuntimeManifests.map(
 	({ artifacts, controller, id }) => ({ artifacts, controller, id }),
@@ -20,9 +20,12 @@ const graphicAdminRuntimeManifests = graphicRuntimeManifests.map(
 export const GraphicProfiles: CollectionConfig = {
 	slug: 'graphic-profiles',
 	dbName: 'graphic_profiles',
-	access: managerManagedAccess,
+	access: managerManagedPublishedAccess,
+	// runtime이 unique라 프로파일은 runtime당 하나다 — 복제는 매번 고유 제약에 걸려 실패만 한다.
+	disableDuplicate: true,
 	hooks: {
 		beforeChange: [
+			keepPublishedOnRestore,
 			({ data, originalDoc }) => {
 				const effective = { ...originalDoc, ...data }
 				if (effective._status !== 'published') return data

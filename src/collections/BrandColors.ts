@@ -28,7 +28,8 @@ export const BrandColors: CollectionConfig = {
 			type: 'text',
 			required: true,
 			validate: (value: string | null | undefined) =>
-				typeof value === 'string' && isValidHex(value)
+				// 🔴 `#`을 필수로 받는다 — 인쇄 잉크 표가 원문을 키로 써서 `#` 없는 값은 정본 CMYK를 못 찾는다.
+				typeof value === 'string' && value.startsWith('#') && isValidHex(value)
 					? true
 					: '6자리 HEX 컬러를 입력하세요. 예: #RRGGBB',
 			admin: {

@@ -55,8 +55,10 @@ interface ImageRouteLogger {
 	info: (fields: object, message: string) => void
 }
 
-/** 세 생성 route의 공통 후처리: 빈 결과→502, provider 제거, done/failed 로그, 오류 표 매핑, 그 외 500. */
-export async function respondImageGeneration<T extends { images: string[]; provider: string }>({
+/** 세 생성 route의 공통 후처리: 빈 결과→502, provider·프롬프트·모델 제거, done/failed 로그, 오류 표 매핑, 그 외 500. */
+export async function respondImageGeneration<
+	T extends { images: string[]; provider: string; prompt: string; model: string },
+>({
 	run,
 	logger,
 	event,
@@ -76,7 +78,9 @@ export async function respondImageGeneration<T extends { images: string[]; provi
 		if (result.images.length === 0) {
 			return Response.json({ message: 'Image generation failed.' }, { status: 502 })
 		}
-		const { provider: _provider, ...response } = result
+		// 🔴 합성 프롬프트·모델은 응답에서 뺀다 — 이미지 프로파일의 시스템 프롬프트·모델은 manager 전용
+		//    필드라서, 응답에 실으면 worker가 그대로 읽는다.
+		const { provider: _provider, prompt: _prompt, model: _model, ...response } = result
 		logger.info(doneLog(result), `${event}.done`)
 		return Response.json(response)
 	} catch (error) {

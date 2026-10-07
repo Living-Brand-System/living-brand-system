@@ -1,10 +1,4 @@
-import {
-	APIError,
-	type CollectionConfig,
-	type FieldAccess,
-	type PayloadRequest,
-	slugField,
-} from 'payload'
+import { APIError, type CollectionConfig, type FieldAccess, type PayloadRequest } from 'payload'
 import {
 	DEFAULT_IMAGE_MODEL_PRESET,
 	IMAGE_MODEL_PRESET_OPTIONS,
@@ -23,7 +17,7 @@ import {
 	assertImageProfileUnpinned,
 	isUnpublishTransition,
 } from '@/features/template-core/services/guard-template-references.service'
-import { isManager, managerManagedAccess } from '@/lib/auth'
+import { isManager, managerManagedPublishedAccess } from '@/lib/auth'
 import { imageProfileFeaturesField } from './fields/image-profile-features-field'
 import { previewImageField } from './fields/preview-image-field'
 import {
@@ -31,7 +25,8 @@ import {
 	studioControllerRestrictionsField,
 	studioExportPolicyField,
 } from './fields/studio-controller-field'
-import { draftVersions } from './shared'
+import { urlSlugField } from './fields/url-slug-field'
+import { draftVersions, keepPublishedOnRestore } from './shared'
 
 const managerFieldRead: FieldAccess = ({ req }) => isManager(req.user)
 
@@ -69,10 +64,11 @@ async function normalizePromptEndpoint(req: PayloadRequest) {
 export const ImageProfiles: CollectionConfig = {
 	slug: 'image-profiles',
 	dbName: 'image_profiles',
-	access: managerManagedAccess,
+	access: managerManagedPublishedAccess,
 	hooks: {
 		// 발행 템플릿의 overrides가 imageInput.profileId로 고정한 프로파일은 삭제·발행 해제를 거부한다.
 		beforeChange: [
+			keepPublishedOnRestore,
 			async ({ data, originalDoc, req }) => {
 				if (isUnpublishTransition({ data, originalDoc, req })) {
 					await assertImageProfileUnpinned(req, Number(originalDoc?.id), '발행 해제')
@@ -126,10 +122,7 @@ export const ImageProfiles: CollectionConfig = {
 			required: true,
 			label: '프로파일 이름',
 		},
-		slugField({
-			useAsSlug: 'name',
-			required: true,
-		}),
+		urlSlugField({ useAsSlug: 'name' }),
 		previewImageField(),
 		{
 			name: 'displayOrder',

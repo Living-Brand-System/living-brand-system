@@ -45,6 +45,18 @@ export const managerManagedAccess: CollectionConfig['access'] = {
 }
 
 /**
+ * 발행 흐름이 있는 스튜디오 컬렉션용 — worker는 발행본만 읽고, 초안과 버전 이력은 manager 이상만 읽는다.
+ * readVersions를 비워 두면 Payload 기본값(로그인만 하면 허용)이라 `/api/<slug>/versions`로 초안이 다 보인다.
+ */
+export const managerManagedPublishedAccess: CollectionConfig['access'] = {
+	read: ({ req }) => isManager(req.user) || { _status: { equals: 'published' } },
+	readVersions: managerOrAdmin,
+	create: managerOrAdmin,
+	update: managerOrAdmin,
+	delete: managerOrAdmin,
+}
+
+/**
  * manager가 운영하는 세계에는 `worker`와 `manager`만 있다 — admin 행은 보이지도 고쳐지지도 않는다.
  * (2026-09-28 결정: manager는 admin이 될 수 없고, admin 계정을 삭제·강등할 수도 없다.)
  */
