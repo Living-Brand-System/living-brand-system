@@ -53,6 +53,7 @@ import {
 	type TemplateVectorSlot,
 } from '@/features/template-customization/domain/template-studio-config'
 import {
+	buildTemplateSessionOverrides,
 	composeTemplateStudioHtml,
 	createTemplateRasterArtifact,
 	createTemplateVectorArtifact,
@@ -924,6 +925,40 @@ export function TemplateStudioProvider({
 		],
 	)
 
+	// 「기본값으로 저장」은 화면 합성과 같은 변환을 읽되, 미뤄진 값이 아니라 지금 값을 읽는다.
+	const defaults = useCallback(
+		() => ({
+			sessionOverrides: buildTemplateSessionOverrides({
+				textSlots,
+				textValues: text.values,
+				textColor: text.color,
+				imageStates: images.states,
+				imageSlots,
+				imageContracts: images.contracts,
+				vectorSlots,
+				vectorColors: vectors.colors,
+				layerVisibility: layers.visibility,
+				width,
+				height,
+			}),
+			initialText: initialTemplateTextValues(config, textSlots),
+		}),
+		[
+			config,
+			height,
+			imageSlots,
+			images.contracts,
+			images.states,
+			layers.visibility,
+			text.color,
+			text.values,
+			textSlots,
+			vectorSlots,
+			vectors.colors,
+			width,
+		],
+	)
+
 	const controllerValues = useMemo(
 		() =>
 			templateControllerValues(config, textSlots, text.values, text.color, background.state),
@@ -1026,11 +1061,13 @@ export function TemplateStudioProvider({
 				previewRef,
 				registerGraphicFrame,
 				registerGraphicVideo,
+				defaults,
 			},
 			execution: { controllerValues },
 		}),
 		[
 			artifact,
+			defaults,
 			editing,
 			background,
 			supportsBackgroundVideo,
