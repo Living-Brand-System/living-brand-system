@@ -727,7 +727,7 @@ CMS 저장·검증·관계 해석은 `features/guideline/sections/`가 담당하
 - 전경색을 생략했다고 배경색으로부터 자동 반전하거나 로고 변형을 추론하지 않습니다. 로고 배경 대비 선택·사용 허용 여부는 해당 디스플레이의 기존 계약을 따릅니다.
 - 공통 카드가 색상 변수를 소유하고 세 컨테이너가 같은 입력을 전달합니다. `GuidelineDisplayFrame`은 배경색, `GuidelineDisplayContent`는 상속 가능한 전경색을 적용합니다. 서체 굵기 디스플레이가 콘텐츠 레이어를 사용합니다.
 
-- `GuidelineClearspaceDisplay`의 On 오버레이는 선택 `dimBackground`를 사용해 이미지 → 80% background 테마색 디머 → SVG 순서로 표시합니다. 라이트에서는 흰색, 다크에서는 기존 background의 검정 계열이며 Off에서는 디머도 제거합니다. 액션은 디머 밖에 유지하고 기본값은 false입니다.
+- `GuidelineClearspaceDisplay`의 On 오버레이는 선택 `dimBackground`를 사용해 이미지를 흰색 80%로 흐린 뒤 SVG를 얹습니다. 흐림은 별도 막이 아니라 이미지 자체의 `filter`라 `object-contain` 여백과 카드 배경색에는 닿지 않습니다. Off에서는 흐림도 제거하고 기본값은 false입니다.
 
 - 섹션 전체 다운로드는 테두리 없는 muted 버튼·Medium(500)으로 표시하며 기본 배경은 카드 디스플레이와 같은 `muted`입니다. 기본 문구는 수량 없이 `전체 다운로드`입니다. 준비 중·실패 재시도·접근성 라벨은 유지합니다.
 - 전체 다운로드의 기본·눌림 전경색은 카드 액션과 같은 `foreground`, 호버·포커스는 `action-hover-foreground`를 사용합니다. 호버·포커스 배경은 카드 액션 배경과 같은 `border`이며 포커스 링·비활성 표시는 기존 Button 규칙을 따릅니다.
