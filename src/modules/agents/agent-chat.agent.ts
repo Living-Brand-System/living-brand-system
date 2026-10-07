@@ -7,6 +7,7 @@ import {
 	withHistoryCacheBreakpoint,
 } from '@/features/agent-chat/cache-breakpoint'
 import { getAgentExecutionPolicy } from '@/features/agent-chat/domain/agent-skill-tool-policy'
+import { prunePriorTurns } from '@/features/agent-chat/prune-prior-turns'
 import { findEnabledAgentSkillSummaries } from '@/features/agent-chat/repositories/agent-skill.payload.repository'
 import { getAgentDefaultInstructions } from '@/features/agent-chat/services/get-agent-default-instructions.service'
 import type { AgentChatReaction } from '@/features/agent-chat/types'
@@ -59,7 +60,10 @@ export const agentChatAgent = new ToolLoopAgent<
 	callOptionsSchema: agentChatCallOptionsSchema,
 	stopWhen: isStepCount(10),
 	prepareStep: ({ stepNumber, steps, messages }) => {
-		const cachedMessages = withHistoryCacheBreakpoint(messages)
+		// 첫 스텝이 돌려준 messages가 이후 스텝의 기준이 되므로 한 번만 덜어내면 된다.
+		const cachedMessages = withHistoryCacheBreakpoint(
+			stepNumber === 0 ? prunePriorTurns(messages) : messages,
+		)
 
 		if (stepNumber === 0) {
 			return {
