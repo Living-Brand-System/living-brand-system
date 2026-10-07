@@ -56,35 +56,70 @@ export function ImageGenerator({ config }: { config: ImageStudioConfig | null })
 }
 
 function ImageWorkspace({ onReset }: { onReset: (config: ImageStudioConfig) => void }) {
-	const { config, profiles, results } = useImageStudio()
+	const { config, generation, history, profiles, results } = useImageStudio()
 	const panel = useImagePanel()
 	const items = results.items
-	const resultConfig = profiles.options.find((candidate) => candidate.id === items[0]?.profileId)
-	const exportSize = results.output
-		? toOpenAIImageSize(results.output.aspectRatio, results.output.imageSize)
+	// 스트립을 누르면 위쪽이 이력으로 바뀌고, 생성을 시작하면 결과 그리드로 돌아온다.
+	// effect 없이 렌더 중에 맞춘다 — effect면 한 프레임 이력이 보였다가 넘어간다.
+	const [viewingHistory, setViewingHistory] = useState(false)
+	if (generation.busy && viewingHistory) setViewingHistory(false)
+	const showingHistory = !generation.busy && (viewingHistory || items.length === 0)
+
+	// 🔑 저장 대상은 위쪽 캔버스가 보여주는 쪽을 따른다 — 이력을 보고 있으면 그 묶음, 아니면
+	//    이번 세션 결과(2026-10-07 사용자 지시). 보이는 것과 저장되는 것이 갈리지 않게 한다.
+	const picked = history.stack.find((item) => item.id === history.selectedId) ?? history.stack[0]
+	const source = showingHistory
+		? {
+				images: history.stack.map((item) => item.url),
+				// 이력은 색 조정 전 원본을 그린다 — 보이는 그대로 저장한다.
+				color: null,
+				selected: picked ? history.stack.indexOf(picked) : null,
+				profileId: picked?.profileId,
+				output:
+					picked?.aspectRatio && picked.imageSize
+						? { aspectRatio: picked.aspectRatio, imageSize: picked.imageSize }
+						: null,
+				metadata:
+					picked?.profileName && picked.prompt
+						? {
+								profileName: picked.profileName,
+								prompt: picked.prompt,
+								createdAt: picked.createdAt,
+							}
+						: undefined,
+			}
+		: {
+				images: items.map((item) => item.src),
+				color: results.color,
+				selected: results.selected,
+				profileId: items[0]?.profileId,
+				output: results.output,
+				metadata: results.metadata,
+			}
+	const resultConfig = profiles.options.find((candidate) => candidate.id === source.profileId)
+	const exportSize = source.output
+		? toOpenAIImageSize(source.output.aspectRatio, source.output.imageSize)
 				.split('x')
 				.map(Number)
 		: null
 	const artifacts =
-		items.length > 0
-			? createImageArtifacts({
-					images: items.map((item) => item.src),
-					color: results.color,
-				})
+		source.images.length > 0
+			? createImageArtifacts({ images: source.images, color: source.color })
 			: null
 	const download = useImageExport({
-		metadata: results.metadata,
+		metadata: source.metadata,
 		artifacts,
-		capability: resultConfig?.output ?? { formats: [], original: false },
-		selected: results.selected,
+		// ponytail: 이력의 프로파일이 아직 안 실렸으면 지금 프로파일의 출력 계약을 빌린다.
+		capability: resultConfig?.output ?? config.output,
+		selected: source.selected,
 		size: exportSize ? { width: exportSize[0], height: exportSize[1] } : null,
 	})
 
 	// 🔑 화면의 결과를 만든 프로파일과 지금 편집 중인 프로파일이 같을 때만 갱신을 연다 —
 	//    프로파일을 바꿔도 옛 결과가 남아 있어, 그대로 박으면 엉뚱한 카드에 남의 그림이 들어간다.
 	const previewArtifact =
-		resultConfig?.id === config.id && results.selected !== null
-			? (artifacts?.raster[results.selected] ?? null)
+		resultConfig?.id === config.id && source.selected !== null
+			? (artifacts?.raster[source.selected] ?? null)
 			: null
 	const preview = useProfilePreview({
 		studio: 'image',
@@ -125,7 +160,12 @@ function ImageWorkspace({ onReset }: { onReset: (config: ImageStudioConfig) => v
 					),
 				},
 				output: <ImageSettingPanel title="Output" download={download} />,
-				canvas: <ImageCanvas />,
+				canvas: (
+					<ImageCanvas
+						showingHistory={showingHistory}
+						onSelectHistory={() => setViewingHistory(true)}
+					/>
+				),
 				panel,
 			}}
 		/>

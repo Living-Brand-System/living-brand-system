@@ -9,18 +9,26 @@ import { useImageStudio } from '@/features/image-generation/hooks/use-image-stud
  *
  * 🔑 위는 지금 보고 있는 한 장, 아래는 이 앱에서 만든 이미지 전체가 선 스트립이다
  *    (사용자 지시, 2026-09-21). 방금 만든 결과가 있으면 위쪽은 그 결과 그리드가 차지한다.
+ * 🔑 위쪽은 사용자가 마지막에 한 행동을 따른다 — 스트립을 누르면 그 이력, 생성을 시작하면
+ *    결과 그리드. 저장 버튼도 위쪽이 보여주는 쪽을 저장한다(2026-10-07 결정).
  * 🔴 「이미지를 생성하세요」 안내가 없다 — 스트립이 열리자마자 가장 최근 묶음을 골라 주므로
  *    빈 화면으로 남지 않는다.
  */
-export function ImageCanvas() {
+export function ImageCanvas({
+	showingHistory,
+	onSelectHistory,
+}: {
+	/** 위쪽에 이력을 그릴지 — 저장 대상도 같은 값을 따르므로 워크스페이스가 정한다. */
+	showingHistory: boolean
+	onSelectHistory: () => void
+}) {
 	const { generation, results } = useImageStudio()
-	const showingResults = generation.busy || results.items.length > 0
 
 	return (
 		// 🔴 폭을 캔버스에 묶는다 — 없으면 스트립이 콘텐츠 폭만큼 늘어나 캔버스 전체가 함께 스크롤된다.
 		<div className="flex h-full min-h-0 w-full min-w-0 flex-col">
 			<div className="flex min-h-0 flex-1 flex-col">
-				{showingResults ? (
+				{!showingHistory ? (
 					<ImageGenerationResults
 						aspectRatio={
 							generation.busy
@@ -39,7 +47,7 @@ export function ImageCanvas() {
 					<SelectedImageView />
 				)}
 			</div>
-			<ImageHistoryStrip />
+			<ImageHistoryStrip onSelect={onSelectHistory} />
 		</div>
 	)
 }
