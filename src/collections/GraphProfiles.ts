@@ -11,7 +11,7 @@ import {
 	studioControllerRestrictionsField,
 	studioExportPolicyField,
 } from './fields/studio-controller-field'
-import { draftVersions } from './shared'
+import { draftVersions, keepPublishedOnRestore } from './shared'
 
 const graphAdminRuntimeManifests = graphRuntimeManifests.map(({ artifacts, controller, id }) => ({
 	artifacts,
@@ -25,6 +25,7 @@ export const GraphProfiles: CollectionConfig = {
 	access: managerManagedAccess,
 	hooks: {
 		beforeChange: [
+			keepPublishedOnRestore,
 			({ data, originalDoc }) => {
 				const effective = { ...originalDoc, ...data }
 				if (effective._status !== 'published') return data

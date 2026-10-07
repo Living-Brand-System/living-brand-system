@@ -106,6 +106,22 @@ describe('POST /api/studio/preview', () => {
 		)
 	})
 
+	it('🔴 발행본 위에 초안이 얹혀 있으면 갱신하지 않는다 — 되쓰면 발행이 풀리거나 초안이 몰래 발행된다', async () => {
+		mocks.findByID.mockImplementation(async ({ draft }: { draft: boolean }) => ({
+			id: 3,
+			name: '템플릿',
+			_status: draft ? 'draft' : 'published',
+		}))
+
+		const response = await POST(
+			requestWith({ studio: 'template', profileId: '3', file: pngFile() }),
+		)
+
+		expect(response.status).toBe(409)
+		expect(mocks.create).not.toHaveBeenCalled()
+		expect(mocks.update).not.toHaveBeenCalled()
+	})
+
 	it('미리보기 이미지는 published로 만든다', async () => {
 		await POST(requestWith({ studio: 'template', profileId: '3', file: pngFile() }))
 

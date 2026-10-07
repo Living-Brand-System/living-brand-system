@@ -5,7 +5,7 @@ import { isManager, managerOrAdmin } from '@/lib/auth'
 import { previewImageField } from './fields/preview-image-field'
 import { studioExportPolicyField } from './fields/studio-controller-field'
 import { templateBackgroundPolicyField } from './fields/template-policy-field'
-import { draftVersions } from './shared'
+import { draftVersions, keepPublishedOnRestore } from './shared'
 
 export const Templates: CollectionConfig = {
 	slug: 'templates',
@@ -22,6 +22,7 @@ export const Templates: CollectionConfig = {
 		// 모든 HTML 저장은 실행 마크업과 외부 URL을 차단한다. 브랜드 에셋 published 검증은
 		// 발행 시에만 추가하고, draft의 staging 에셋은 manager/admin에게만 보인다 (docs/07).
 		beforeChange: [
+			keepPublishedOnRestore,
 			async ({ data, originalDoc, req }) => {
 				const blocker = await prepareTemplateSave({ data, originalDoc, req })
 				if (blocker) throw new APIError(blocker, 400)

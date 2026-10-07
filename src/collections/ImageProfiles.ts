@@ -31,7 +31,7 @@ import {
 	studioControllerRestrictionsField,
 	studioExportPolicyField,
 } from './fields/studio-controller-field'
-import { draftVersions } from './shared'
+import { draftVersions, keepPublishedOnRestore } from './shared'
 
 const managerFieldRead: FieldAccess = ({ req }) => isManager(req.user)
 
@@ -73,6 +73,7 @@ export const ImageProfiles: CollectionConfig = {
 	hooks: {
 		// 발행 템플릿의 overrides가 imageInput.profileId로 고정한 프로파일은 삭제·발행 해제를 거부한다.
 		beforeChange: [
+			keepPublishedOnRestore,
 			async ({ data, originalDoc, req }) => {
 				if (isUnpublishTransition({ data, originalDoc, req })) {
 					await assertImageProfileUnpinned(req, Number(originalDoc?.id), '발행 해제')
