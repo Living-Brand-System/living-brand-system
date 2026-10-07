@@ -17,6 +17,7 @@ import type {
 } from '@/features/template-customization/runtime/template-runtime.client'
 import type { GetCreateNavigationOutput } from '@/features/template-customization/services/get-create-navigation.service'
 import type { SampleImageOption } from '@/features/template-customization/services/list-sample-images.client'
+import type { TemplateDraft } from '@/features/template-customization/services/template-draft.client'
 import type { LazyResource } from '@/hooks/use-lazy-resource'
 import type { CanvasVideoSource } from '@/modules/studio-artifact/studio-artifact'
 import type {
@@ -25,7 +26,6 @@ import type {
 	ControllerValues,
 	StudioPreviewImage,
 } from '@/modules/studio-controller/controller-definition'
-import type { TemplateNodeConfigMap } from '@/types/template'
 
 /**
  * 슬롯이나 배경에 배정된 이미지. 출처가 다르면 뒤따르는 규칙이 달라 kind로 가른다 —
@@ -250,11 +250,8 @@ export type TemplateStudioValue = {
 		previewRef: RefObject<HTMLDivElement | null>
 		registerGraphicFrame: (capture: (() => string) | null) => void
 		registerGraphicVideo: (source: CanvasVideoSource | null) => void
-		/** 「기본값으로 저장」의 입력 — 화면 합성과 같은 세션 노드 설정과, 비교 기준인 처음 문구. */
-		defaults: () => {
-			sessionOverrides: TemplateNodeConfigMap
-			initialText: Record<string, string>
-		}
+		/** 「기본값으로 저장」의 입력 — 임시 저장과 같은 모양의 지금 화면 상태. */
+		defaults: () => TemplateDraft
 	}
 	execution: {
 		controllerValues: ControllerValues

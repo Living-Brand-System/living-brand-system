@@ -128,6 +128,7 @@ export async function findPublishedTemplate(templateSlug: string): Promise<
 		},
 		select: {
 			backgroundPolicy: true,
+			defaultSession: true,
 			name: true,
 			updatedAt: true,
 			html: true,

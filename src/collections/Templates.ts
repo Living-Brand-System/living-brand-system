@@ -1,5 +1,6 @@
 import { APIError, type CollectionConfig } from 'payload'
 import { MAX_PRINT_SIDE_PIXELS } from '@/features/studio-export/print-policy'
+import { findTemplateDefaultSessionBlocker } from '@/features/template-core/domain/template-default-session'
 import { prepareTemplateSave } from '@/features/template-import/services/prepare-template-save.service'
 import { isManager, managerManagedPublishedAccess } from '@/lib/auth'
 import { previewImageField } from './fields/preview-image-field'
@@ -123,6 +124,14 @@ export const Templates: CollectionConfig = {
 			type: 'json',
 			access: { read: ({ req }) => isManager(req.user) },
 			admin: { hidden: true },
+		},
+		{
+			// 스튜디오 「기본값으로 저장」이 남기는 화면 상태 — 모든 사용자의 스튜디오가 이 화면으로 시작한다.
+			// 쓰기는 컬렉션 access(manager 이상)가 막는다.
+			name: 'defaultSession',
+			type: 'json',
+			admin: { hidden: true },
+			validate: (value: unknown) => findTemplateDefaultSessionBlocker(value) ?? true,
 		},
 
 		// ── 사이드바 (렌더 순서 = 배열 순서) ──

@@ -61,6 +61,7 @@ export async function getPublishedTemplate(
 		exportPolicy: template.exportPolicy,
 		backgroundPolicy: template.backgroundPolicy as PublishedHtmlTemplate['backgroundPolicy'],
 		previewImage: toStudioPreviewImage(template.previewImage),
+		defaultSession: template.defaultSession ?? undefined,
 		...renderModel,
 		// 🔑 스프레드 뒤에 둔다 — 앞에 두면 renderModel이 같은 이름을 갖게 될 때 조용히 덮인다.
 		...toTemplateSize(template),

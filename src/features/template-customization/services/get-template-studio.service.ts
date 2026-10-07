@@ -35,10 +35,10 @@ export async function getTemplateStudio(
 
 	if (!published) return null
 
-	const { id, name, html, width, height } = published
+	const { id, name, html, width, height, defaultSession } = published
 	return {
 		config: deriveTemplateStudioConfig(published, imageConfigs, graphicConfigs),
-		template: { id, name, html, width, height },
+		template: { id, name, html, width, height, defaultSession },
 		highlightColor: highlight,
 	}
 }

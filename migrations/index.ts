@@ -129,6 +129,7 @@ import * as migration_20261006_030158_add_card_ratio_5_3 from './20261006_030158
 import * as migration_20261006_042145_remove_section_align from './20261006_042145_remove_section_align';
 import * as migration_20261006_044903_add_ai_token_limits from './20261006_044903_add_ai_token_limits';
 import * as migration_20261007_055710_template_output_size from './20261007_055710_template_output_size';
+import * as migration_20261007_110418_template_default_session from './20261007_110418_template_default_session';
 
 export const migrations = [
   {
@@ -784,6 +785,11 @@ export const migrations = [
   {
     up: migration_20261007_055710_template_output_size.up,
     down: migration_20261007_055710_template_output_size.down,
-    name: '20261007_055710_template_output_size'
+    name: '20261007_055710_template_output_size',
+  },
+  {
+    up: migration_20261007_110418_template_default_session.up,
+    down: migration_20261007_110418_template_default_session.down,
+    name: '20261007_110418_template_default_session'
   },
 ];
