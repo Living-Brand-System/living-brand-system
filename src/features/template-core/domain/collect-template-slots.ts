@@ -7,9 +7,9 @@ import type {
 } from '@/types/template'
 import { isTemplateVectorNodeType } from './template-node-types'
 
+/** 표시 여부는 정책이 아니다 — 스튜디오 사용자가 Layers 패널에서 정한다(2026-10-07). */
 export type ResolvedTemplateLayerPolicy = {
 	access: Exclude<TemplateLayerAccess, 'hidden'>
-	visibility: { defaultVisible: boolean; allowToggle: boolean }
 }
 
 /** 명시 정책을 우선하고 기존 input/imageInput은 editable 선언으로 호환한다. */
@@ -19,17 +19,7 @@ export function resolveTemplateLayerPolicy(
 ): ResolvedTemplateLayerPolicy | null {
 	const access = config?.creator?.access ?? (legacyEditable ? 'editable' : 'hidden')
 	if (access === 'hidden') return null
-	return {
-		access,
-		visibility: {
-			defaultVisible:
-				access === 'editable'
-					? (config?.creator?.visibility?.defaultVisible ?? true)
-					: true,
-			allowToggle:
-				access === 'editable' && (config?.creator?.visibility?.allowToggle ?? false),
-		},
-	}
+	return { access }
 }
 
 export interface TemplateSlot {

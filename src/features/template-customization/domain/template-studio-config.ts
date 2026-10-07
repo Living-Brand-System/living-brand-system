@@ -266,7 +266,6 @@ export function parseTemplateStudioConfig(input: unknown): TemplateStudioConfig 
 					'label',
 					'kind',
 					'access',
-					'visibility',
 					'controlId',
 					'input',
 				])
@@ -287,7 +286,6 @@ export function parseTemplateStudioConfig(input: unknown): TemplateStudioConfig 
 					'label',
 					'kind',
 					'access',
-					'visibility',
 					'box',
 					'imageConfig',
 					'featureOverrides',
@@ -306,15 +304,7 @@ export function parseTemplateStudioConfig(input: unknown): TemplateStudioConfig 
 				break
 			}
 			case 'vector':
-				assertTemplateKeys(slot, [
-					'id',
-					'layer',
-					'label',
-					'kind',
-					'access',
-					'visibility',
-					'color',
-				])
+				assertTemplateKeys(slot, ['id', 'layer', 'label', 'kind', 'access', 'color'])
 				if (slot.color !== undefined) assertTemplateString(slot.color, 'slot.color')
 				break
 			case 'background':
@@ -431,6 +421,12 @@ export type TemplateLayerGroup = {
  * 도화지라 정의상 나머지를 받는다(`mapTemplateNodeLayers`가 목록을 내지 않는 이유).
  */
 export const TEMPLATE_BACKGROUND_LAYER = 'Background'
+const TEMPLATE_BACKGROUND_SLOT_ID = 'background'
+
+/** 배경을 끄면 판은 투명이다 — 색·이미지·그래픽·디머를 모두 걷는다. 키가 없으면 보인다. */
+export function isTemplateBackgroundVisible(visibility: Readonly<Record<string, boolean>>) {
+	return visibility[TEMPLATE_BACKGROUND_SLOT_ID] !== false
+}
 
 const LAYER_GROUP_ORDER = [
 	{ kind: 'text', label: 'Text' },
@@ -795,7 +791,6 @@ export function deriveTemplateStudioConfig(
 				label: slot.input.label ?? slot.name,
 				kind: 'text',
 				access: slot.policy.access,
-				visibility: slot.policy.visibility,
 				controlId: `text:${slot.nodeId}`,
 				input: {
 					format: slot.input.inputFormat ?? 'free',
@@ -810,7 +805,6 @@ export function deriveTemplateStudioConfig(
 				label: slot.name,
 				kind: 'image',
 				access: slot.policy.access,
-				visibility: slot.policy.visibility,
 				box: { width: slot.boxWidth, height: slot.boxHeight },
 				imageConfig: slot.profileId
 					? { mode: 'pinned', configId: slot.profileId }
@@ -837,12 +831,11 @@ export function deriveTemplateStudioConfig(
 				label: slot.name,
 				kind: 'vector',
 				access: slot.policy.access,
-				visibility: slot.policy.visibility,
 				...(slot.color ? { color: slot.color } : {}),
 			}),
 		),
 		{
-			id: 'background',
+			id: TEMPLATE_BACKGROUND_SLOT_ID,
 			layer: 'background',
 			label: 'Background',
 			kind: 'background',
@@ -988,17 +981,6 @@ function assertTemplateBox(value: unknown) {
 function assertTemplateLayerPolicy(slot: Record<string, unknown>) {
 	if (slot.access !== 'readonly' && slot.access !== 'editable') {
 		throw new Error('TemplateStudioConfig layer access가 올바르지 않습니다.')
-	}
-	const visibility = templateRecord(slot.visibility, 'TemplateStudioConfig layer visibility')
-	assertTemplateKeys(visibility, ['defaultVisible', 'allowToggle'])
-	if (
-		typeof visibility.defaultVisible !== 'boolean' ||
-		typeof visibility.allowToggle !== 'boolean'
-	) {
-		throw new Error('TemplateStudioConfig layer visibility가 올바르지 않습니다.')
-	}
-	if (slot.access !== 'editable' && (!visibility.defaultVisible || visibility.allowToggle)) {
-		throw new Error('TemplateStudioConfig readonly layer는 visibility 정책을 바꿀 수 없습니다.')
 	}
 }
 

@@ -33,6 +33,7 @@ import {
 	TEMPLATE_BACKGROUND_SECTION_ID,
 	templateSlotFocusTarget,
 } from '@/features/template-customization/contexts/template-studio-context'
+import { isTemplateBackgroundVisible } from '@/features/template-customization/domain/template-studio-config'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import {
 	type ControllerValues,
@@ -287,14 +288,16 @@ export function TemplateCanvas() {
 						cursor: 'pointer',
 					}}
 				>
-					{background.state.type === 'graphic' && graphicConfig && (
-						<TemplateGraphicBackground
-							config={graphicConfig}
-							values={background.state.graphicValues}
-							width={width}
-							height={height}
-						/>
-					)}
+					{background.state.type === 'graphic' &&
+						graphicConfig &&
+						isTemplateBackgroundVisible(layers.visibility) && (
+							<TemplateGraphicBackground
+								config={graphicConfig}
+								values={background.state.graphicValues}
+								width={width}
+								height={height}
+							/>
+						)}
 					<div
 						ref={canvas.previewRef}
 						data-background-type={background.state.type}
