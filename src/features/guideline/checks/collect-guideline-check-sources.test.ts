@@ -82,7 +82,7 @@ describe('collectGuidelineCheckSources', () => {
 		expect(sources.map(({ rule }) => rule.key)).toEqual(['logo.page'])
 	})
 
-	it('문서 Rule의 참조 자산은 헤더 이미지다 — leaf의 이미지는 넣지 않는다', () => {
+	it('문서 Rule에는 참조 자산이 없다 — 헤더 이미지(카드 썸네일)도 leaf의 이미지도 넣지 않는다', () => {
 		const image = {
 			id: 66,
 			name: 'Brand Guideline Reference p.37',
@@ -108,6 +108,6 @@ describe('collectGuidelineCheckSources', () => {
 
 		const sources = collectGuidelineCheckSources(page)
 
-		expect(sources[0]?.referenceAssets).toEqual([{ asset: image, role: 'context' }])
+		expect(sources[0]?.referenceAssets).toEqual([])
 	})
 })

@@ -32,7 +32,7 @@ describe('buildCheckSourceSnapshot', () => {
 		})
 	})
 
-	it('토픽 전체 snapshot은 섹션을 순서대로 합치고 header image만 참조 자산으로 갖는다', () => {
+	it('토픽 전체 snapshot은 섹션을 순서대로 합치고 헤더 이미지(카드 썸네일)는 참조 자산으로 싣지 않는다', () => {
 		const topic = {
 			title: 'Brand Core',
 			headerImage: { id: 3, name: 'Core', alt: 'Core visual' },
@@ -72,7 +72,7 @@ describe('buildCheckSourceSnapshot', () => {
 					},
 				],
 			},
-			referenceAssets: [{ id: 3, role: 'context' }],
+			referenceAssets: [],
 		})
 	})
 
