@@ -15,17 +15,17 @@ export const GuidelineDocuments: CollectionConfig = {
 	dbName: 'guideline_docs',
 	access: managerManagedAccess,
 	labels: {
-		singular: '가이드라인 토픽',
-		plural: '가이드라인 토픽',
+		singular: '가이드라인 문서',
+		plural: '가이드라인 문서',
 	},
 	admin: {
 		group: '가이드라인',
 		useAsTitle: 'title',
 		// 표시 순서가 목록의 정렬 기준이므로 열로 내놓는다 — 안 보이면 왜 이 순서인지 알 수 없다.
 		defaultColumns: ['title', 'chapter', 'slug', '_status', 'displayOrder', 'updatedAt'],
-		description: '챕터에 속한 토픽 한 장입니다. 본문은 섹션 블록으로 나눕니다.',
+		description: '챕터에 속한 문서 한 장입니다. 본문은 섹션 블록으로 나눕니다.',
 		// 🔴 문서는 설명·면(배경색·톤)을 갖지 않는다(2026-08-26 제거). 설명은 전 문서에서 값이 하나도
-		//    없었고 토픽 화면이 그리지도 않았다. 면(배경) 설정은 2026-09-04에 전 계층에서 걷었다 —
+		//    없었고 문서 화면이 그리지도 않았다. 면(배경) 설정은 2026-09-04에 전 계층에서 걷었다 —
 		//    브랜드 면은 위젯이 자기 규정으로 그린다.
 		// 🔴 커스텀 목록 뷰는 폐기했다(2026-08-26). 계층을 재귀 트리로 그리려고 만든 것인데
 		//    챕터가 별도 컬렉션이 되면서 그릴 계층이 없어졌다 — Payload 기본 목록이 열 몇 개로
@@ -67,7 +67,7 @@ export const GuidelineDocuments: CollectionConfig = {
 			required: true,
 			admin: {
 				position: 'main',
-				description: '이 토픽이 속한 챕터입니다. URL의 첫 조각이 됩니다.',
+				description: '이 문서가 속한 챕터입니다. URL의 첫 조각이 됩니다.',
 			},
 		},
 		{
@@ -80,7 +80,7 @@ export const GuidelineDocuments: CollectionConfig = {
 			name: 'description',
 			type: 'textarea',
 			localized: true,
-			admin: { description: '가이드라인 첫 화면의 토픽 카드에서 제목 아래에 표시됩니다.' },
+			admin: { description: '가이드라인 첫 화면의 문서 카드에서 제목 아래에 표시됩니다.' },
 		},
 		// 🔴 slug는 localized가 아니다(2026-09-04). URL은 언어를 가리지 않는다 — 섹션 앵커와 같은
 		//    이유로, 로케일마다 slug가 갈리면 공유한 링크가 언어를 바꾸는 순간 끊긴다.
@@ -110,7 +110,7 @@ export const GuidelineDocuments: CollectionConfig = {
 			admin: {
 				position: 'sidebar',
 				description:
-					'토픽 헤더와 가이드라인 첫 화면의 토픽 카드에 표시할 선택 이미지입니다.',
+					'문서 헤더와 가이드라인 첫 화면의 문서 카드에 표시할 선택 이미지입니다.',
 			},
 		},
 		// 과거 버전의 복원 형식만 판별합니다. 본문 선택이나 API 응답에 노출하지 않습니다.

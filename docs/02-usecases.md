@@ -50,7 +50,7 @@ Creator가 사용하는 기준과 자원은 이 도메인에서 발행된 것만
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | GL-01 | 가이드라인 기본 정보 편집 | Manager, System | 회사명, 문서 제목, 발행 표기, 테마 | Manager가 공통 표시 정보를 수정하면 System이 BrandGuideline global을 갱신합니다. | Updated BrandGuideline | BrandGuideline | 가이드라인 문서 초안 생성 |
 | GL-02 | 가이드라인 문서 초안 생성 | Manager, System | 제목, 설명, slug, 표시 순서 | Manager가 문서를 만들면 System이 독립 GuidelineDocument draft를 저장합니다. | Draft GuidelineDocument | GuidelineDocument, Payload revision | 문서 계층 구성 |
-| GL-03 | 토픽을 챕터에 배치 | Manager, System | GuidelineDocument, GuidelineChapter | Manager가 챕터를 선택하면 System이 같은 챕터 안의 slug 중복을 확인해 관계를 저장합니다. 챕터는 분류일 뿐 자기 화면이 없습니다. | Categorized GuidelineDocument | ChapterRef | 문서 블록 작성 |
+| GL-03 | 문서를 챕터에 배치 | Manager, System | GuidelineDocument, GuidelineChapter | Manager가 챕터를 선택하면 System이 같은 챕터 안의 slug 중복을 확인해 관계를 저장합니다. 챕터는 분류일 뿐 자기 화면이 없습니다. | Categorized GuidelineDocument | ChapterRef | 문서 블록 작성 |
 | GL-04 | 문서 블록 작성 | Manager, System | GuidelineDocument, 블록 유형, 콘텐츠 | Manager가 본문 블록을 작성하면 System이 GuidelineBlock 목록을 문서에 임베드합니다. | GuidelineBlock | GuidelineBlock, Payload revision | 규칙을 문서에 연결 |
 | GL-05 | 규칙을 문서에 연결 | Manager, System | GuidelineDocument 또는 GuidelineBlock, Rule | Manager가 발행 규칙을 선택하면 System이 Rule 관계를 저장합니다. Rule 정의는 변경하지 않습니다. | Rule reference | RuleRef, Payload revision | 문서 초안 미리보기 |
 | GL-06 | 에셋을 문서에 연결 | Manager, System | GuidelineDocument 또는 GuidelineBlock, 공식 에셋 | Manager가 헤더나 블록 에셋을 선택하면 System이 공식 에셋 관계를 저장합니다. | Asset reference | ApplicationImageRef 또는 BrandAssetRef, Payload revision | 문서 초안 미리보기 |

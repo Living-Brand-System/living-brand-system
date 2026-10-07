@@ -4,13 +4,13 @@
 
 ## 1. 목적
 
-저작자가 한 토픽 안에 설명·도판·사례를 조합하고 사용자가 같은 기준을 화면·검색·Agent에서 읽게 합니다. 섹션은 문서 위계, 컨테이너는 배치, 카드는 도판·상태·캡션·액션을 소유합니다.
+저작자가 한 문서 안에 설명·도판·사례를 조합하고 사용자가 같은 기준을 화면·검색·Agent에서 읽게 합니다. 섹션은 문서 위계, 컨테이너는 배치, 카드는 도판·상태·캡션·액션을 소유합니다.
 
 ## 2. 핵심 계약
 
 ### 2.1 저작과 표시의 경계
 
-챕터는 분류이고 토픽은 제목·slug·선택 헤더 이미지·발행 상태를 가진 독립 문서입니다. 섹션은 토픽 안의 평면 목록이며 Section·Incorrect Usages는 H2, Subsection은 앞선 H2 아래의 H3입니다. 캡션은 figcaption이고 문서 헤딩을 만들지 않습니다.
+챕터는 분류이고 문서는 제목·slug·선택 헤더 이미지·발행 상태를 가진 독립 단위입니다. 섹션은 문서 안의 평면 목록이며 Section·Incorrect Usages는 H2, Subsection은 앞선 H2 아래의 H3입니다. 캡션은 figcaption이고 문서 헤딩을 만들지 않습니다.
 
 ### 2.2 설정의 소유권
 
@@ -75,7 +75,7 @@ Section은 H2, Subsection은 앞선 메인 섹션에 속하는 H3입니다. CMS�
 
 **연결 범위**는 세 섹션 타입·Grid/Carousel/Sticky·세 캡션 타입·상태·개별/섹션 다운로드입니다. 디스플레이는 이미지, 이미지+가이드 Off/On, 레이아웃 그리드, 레이아웃 이미지 오버레이, 서체 굵기, 팔레트(스와치/로고 배경 비교), 단독 스와치, 로고 배경색 선택의 8종입니다. 이름 선택형 Carousel은 카드마다 선택 이름이 필요합니다. 서체 언어는 순서가 있는 목록이며 기본 국문·Medium, 굵기 전환을 끄면 고정 표본으로 표시합니다. 카드 배경색·전경색은 게시된 `brand-colors`를 선택합니다. 추가 END 액션은 순서가 있는 링크·복사 목록이며 다운로드 뒤에 표시합니다. 각 액션에 라벨과 링크 주소 또는 복사 내용을 입력합니다. 링크는 내부 경로·앵커·HTTP(S)만 허용합니다. CI 선택기·TypeSpecimen 편집은 후속입니다. 이미지와 별도 다운로드 파일은 기존 `application-images`·`brand-icons`·`brand-logos`를 참조합니다. 일반 첨부 파일·ZIP 업로드는 이번 범위에 없습니다.
 
-팔레트는 `brand-color-groups.family`의 Primary·Supportive·Monotone 키로 게시된 그룹과 색상을 읽습니다. 키는 중복 등록할 수 없으며 Brand는 Primary+Supportive를 조합합니다. 기존 이름 매핑은 family가 없는 데이터의 호환 경로로만 남깁니다. 신규 그룹은 저장된 색상 순서를 따르고, 레거시 Supportive만 기존 정렬을 유지합니다. 디스플레이의 복사·색상 선택·초기화와 CMS 다운로드는 같은 END 액션 레이어에 합칩니다. 로고 배경색 선택에는 블랙·화이트 파일이 모두 필요합니다. 토픽 본문은 `GuidelineDisplayFooter`와 제공된 public HD현대 로고를 사용합니다. 높이는 100dvh, 모바일 로고 너비는 80%입니다.
+팔레트는 `brand-color-groups.family`의 Primary·Supportive·Monotone 키로 게시된 그룹과 색상을 읽습니다. 키는 중복 등록할 수 없으며 Brand는 Primary+Supportive를 조합합니다. 기존 이름 매핑은 family가 없는 데이터의 호환 경로로만 남깁니다. 신규 그룹은 저장된 색상 순서를 따르고, 레거시 Supportive만 기존 정렬을 유지합니다. 디스플레이의 복사·색상 선택·초기화와 CMS 다운로드는 같은 END 액션 레이어에 합칩니다. 로고 배경색 선택에는 블랙·화이트 파일이 모두 필요합니다. 문서 본문은 `GuidelineDisplayFooter`와 제공된 public HD현대 로고를 사용합니다. 높이는 100dvh, 모바일 로고 너비는 80%입니다.
 
 게시 조회·목차·초안 미리보기·검색·Agent·MCP·검수 투영·읽기 전용 콘텐츠 스냅샷은 sections만 읽습니다. 빈 배열도 구형 본문으로 되돌아가지 않습니다. 기본 Admin 편집과 저장 후 미리보기를 사용하며 Better Editor의 구형 블록 직접 선택은 제공하지 않습니다. 내부 복원 표식은 신규 저장 훅이 채우며 legacy·null·표식 없는 버전은 거절합니다.
 
@@ -132,10 +132,10 @@ CMS 저장·UI 계약은 `containers → cards → display`를 유지합니다. 
 
 ## 3. 표면
 
-- Page는 `components/guideline/pages/guideline-topic.tsx`에서 토픽 헤딩 → `CmsGuidelineSections` → 푸터를 조합합니다. 구형 렌더 분기는 없습니다.
+- Page는 `components/guideline/pages/guideline-topic.tsx`에서 문서 헤딩 → `CmsGuidelineSections` → 푸터를 조합합니다. 구형 렌더 분기는 없습니다.
 - Admin은 `sections/schema.ts`·`display-schema.ts`와 공통 `fields.ts`의 저장·검증 계약을 사용합니다.
-- 검색·검수는 `sections/projection.ts`가 섹션 제목·설명·앵커·카드 캡션을 투영합니다. 카드 이미지는 자동 검수 근거가 아니며 `referenceAssets: []`를 유지합니다. 토픽의 `headerImage`도 가이드라인 첫 화면 카드 썸네일이라 검수 참조 자산으로 싣지 않습니다.
-- 목차는 챕터·토픽·메인 섹션까지만 표시합니다. Subsection은 본문·공통 읽기 위계에만 유지합니다.
+- 검색·검수는 `sections/projection.ts`가 섹션 제목·설명·앵커·카드 캡션을 투영합니다. 카드 이미지는 자동 검수 근거가 아니며 `referenceAssets: []`를 유지합니다. 문서의 `headerImage`도 가이드라인 첫 화면 카드 썸네일이라 검수 참조 자산으로 싣지 않습니다.
+- 목차는 챕터·문서·메인 섹션까지만 표시합니다. Subsection은 본문·공통 읽기 위계에만 유지합니다.
 
 ## 4. 의존
 
