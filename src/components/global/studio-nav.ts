@@ -6,14 +6,20 @@ import { routes } from '@/lib/routes'
  * 🔴 두 곳이 각자 목록을 들고 있었고, 실제로 어긋났다(푸터에 Graph가 없어 그 스튜디오는 주소를
  *    아는 사람만 갈 수 있었다 — QA C1). 목록이 둘이면 언젠가 또 갈린다.
  * 🔑 `group`은 GNB만 쓴다(제작/설정 두 묶음). 푸터는 한 묶음으로 전부 그린다.
- * 🔑 `adminOnly`는 미개발 스튜디오다 — 페이지가 admin 밖에 404를 내므로 링크도 admin에게만 보인다.
- *    개발이 끝나면 페이지 게이트와 함께 지운다.
+ * 🔑 `adminOnly`는 아직 worker에게 열지 않은 스튜디오다(Review·Assets는 미개발, Graph는 2026-10-07 결정) —
+ *    페이지가 admin 밖에 404를 내므로 링크도 admin에게만 보인다. 열 때 페이지 게이트와 함께 지운다.
  */
 export const STUDIO_NAV_ITEMS = [
 	{ key: 'template', href: routes.studio.template, label: 'Template', group: 'creation' },
 	{ key: 'image', href: routes.studio.image, label: 'Image', group: 'creation' },
 	{ key: 'graphic', href: routes.studio.graphic, label: 'Graphic', group: 'creation' },
-	{ key: 'graph', href: routes.studio.graph, label: 'Graph', group: 'creation' },
+	{
+		key: 'graph',
+		href: routes.studio.graph,
+		label: 'Graph',
+		group: 'creation',
+		adminOnly: true,
+	},
 	{
 		key: 'review',
 		href: routes.studio.review,

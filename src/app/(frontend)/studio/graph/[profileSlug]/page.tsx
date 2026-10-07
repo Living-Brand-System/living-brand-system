@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { GraphicGenerator } from '@/components/studio/graphic/graphic-generator'
 import { StudioWorkspacePage } from '@/components/studio/shared/studio-workspace'
 import { listGraphStudioConfigs } from '@/features/graph-generation/services/list-graph-studio-configs.service'
+import { isAdmin } from '@/lib/auth'
 import { requireUser } from '@/lib/request-auth'
 import { getStudioGraphRoute } from '@/lib/routes'
 
@@ -16,6 +17,8 @@ export default async function GenerateGraphProfilePage({
 }) {
 	const { profileSlug } = await params
 	const { user } = await requireUser(getStudioGraphRoute(profileSlug))
+	// ponytail: worker에게 아직 열지 않은 스튜디오 — admin 밖에는 이 주소가 없다(404). 열 때 이 줄을 지운다.
+	if (!isAdmin(user)) notFound()
 
 	const configs = await listGraphStudioConfigs(user)
 	const config = configs.find((item) => item.id === profileSlug)
