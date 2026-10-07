@@ -80,6 +80,7 @@ const ADJUSTED_SESSION = {
 
 const mocks = vi.hoisted(() => ({
 	generate: vi.fn(),
+	loading: false,
 	// 세션·선택은 테스트마다 갈아끼운다 — 카메라 잠금이 선택에서 파생되기 때문이다.
 	state: { session: null as unknown, selected: null as number | null },
 }))
@@ -88,7 +89,7 @@ vi.mock('@/features/image-generation/hooks/use-image-generation', () => ({
 	useImageGeneration: () => ({
 		error: null,
 		generate: mocks.generate,
-		loading: false,
+		loading: mocks.loading,
 		requested: 0,
 		selected: mocks.state.selected,
 		session: mocks.state.session,
@@ -521,9 +522,37 @@ describe('이미지 이력 — 본보기 패널과 캔버스 스트립', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		mocks.state = { session: null, selected: null }
+		mocks.loading = false
 		respond({})
 	})
 	afterEach(cleanup)
+
+	// 결과 세션이 남아 있어도 스트립을 누르면 위쪽은 그 이력을 보여준다(2026-10-07 실측 회귀).
+	it('생성 결과가 있어도 스트립에서 고른 장이 캔버스에 뜬다', async () => {
+		mocks.state = { session: SESSION, selected: 0 }
+		respond({ history: [historyItem({ id: 1, prompt: '옛날 것' })] })
+		render(createElement(ImageGenerator, { config: config(5, '제품컷') }))
+
+		const pick = await screen.findByRole('button', { name: '옛날 것' })
+		expect(screen.queryByRole('img', { name: '옛날 것' })).not.toBeInTheDocument()
+		fireEvent.click(pick)
+		expect(screen.getByRole('img', { name: '옛날 것' })).toBeInTheDocument()
+	})
+
+	it('생성이 끝나면 스트립이 이력을 다시 받는다', async () => {
+		const profile = config(5, '제품컷')
+		const view = render(createElement(ImageGenerator, { config: profile }))
+		const stripCalls = () =>
+			historyMocks.fetchGeneratedImageHistory.mock.calls.filter(([, options]) => !options)
+		await waitFor(() => expect(stripCalls()).toHaveLength(1))
+
+		mocks.loading = true
+		view.rerender(createElement(ImageGenerator, { config: profile }))
+		mocks.loading = false
+		view.rerender(createElement(ImageGenerator, { config: profile }))
+
+		await waitFor(() => expect(stripCalls()).toHaveLength(2))
+	})
 
 	it('본보기는 bestOnly로만 조회한다', async () => {
 		respond({ best: [historyItem({ id: 1, prompt: '본보기' })] })

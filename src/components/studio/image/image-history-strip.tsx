@@ -16,11 +16,14 @@ import { cn } from '@/lib/utils'
  * ponytail: 그래서 아주 오래된 이력은 여기에 안 나온다. 더 필요해지면 페이지가 아니라
  *    「기간으로 좁히기」가 맞는 처방이다(스크롤을 늘리는 쪽은 이미 한 번 접었다).
  */
-export function ImageHistoryStrip() {
-	const { history } = useImageStudio()
+export function ImageHistoryStrip({ onSelect }: { onSelect: () => void }) {
+	const { generation, history } = useImageStudio()
 	const [items, setItems] = useState<GeneratedImageHistoryItem[]>([])
 
+	// 생성이 끝날 때마다 다시 받는다 — 방금 만든 묶음이 맨 앞에 붙는다.
+	const busy = generation.busy
 	useEffect(() => {
+		if (busy) return
 		let alive = true
 		fetchGeneratedImageHistory(1).then(
 			(result) => alive && setItems(result.items),
@@ -29,7 +32,7 @@ export function ImageHistoryStrip() {
 		return () => {
 			alive = false
 		}
-	}, [])
+	}, [busy])
 
 	// 날짜 안에서 묶음까지 갈라 둔 구조를 그대로 쓴다 — 여기서는 날짜 머리글 없이 묶음만 쓴다.
 	const stacks = useMemo(
@@ -73,7 +76,10 @@ export function ImageHistoryStrip() {
 							<button
 								key={item.id}
 								type="button"
-								onClick={() => history.selectStack(stack.items, item.id)}
+								onClick={() => {
+									history.selectStack(stack.items, item.id)
+									onSelect()
+								}}
 								title={item.prompt ?? undefined}
 								aria-current={selected || undefined}
 								aria-label={label}
