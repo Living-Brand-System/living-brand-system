@@ -22,7 +22,7 @@ Create가 산출물에 이미지가 필요할 때 이 기능을 호출하는 것
 
 브랜드 프롬프트의 유일한 런타임 원천은 Payload의 published 이미지 프로파일입니다. 소스 코드에는 브랜드 base나 씬 목록을 두지 않습니다.
 
-- **프로파일 생성**: `profileId`가 있으면 published 프로파일의 시스템 프롬프트와 선택적 유저 프롬프트 후보를 읽습니다. 후보가 있으면 Haiku가 각 주제에서 하나를 선택하고 유저 인풋 원문은 최종 프롬프트에서 제외합니다. 후보가 없으면 AI 정규화를 생략하고 원문을 `subject`로 보존합니다.
+- **프로파일 생성**: `profileId`가 있으면 published 프로파일의 시스템 프롬프트를 읽고 유저 인풋 원문을 `subject`로 합칩니다. 프로파일은 화풍을, 사용자는 무엇을 그릴지를 정합니다. 유저 프롬프트 후보 정규화는 꺼 두었습니다(2026-10-07) — 저장된 후보가 있어도 쓰지 않습니다.
 - **프로파일 상태**: 일반 생성은 published 프로파일만 사용합니다. Admin의 생성 테스트만 저장하지 않은 현재 폼 값을 직접 사용합니다.
 
 ### 이미지 프로파일 Admin
@@ -30,16 +30,16 @@ Create가 산출물에 이미지가 필요할 때 이 기능을 호출하는 것
 Manager는 Payload Admin의 `이미지 프로파일` 컬렉션에서 이미지 유형별 설정을 편집하고 테스트합니다.
 
 - **시스템 프롬프트**: `주제(key)`, `프롬프트(value)` 행을 최종 프롬프트의 기본값으로 사용합니다.
-- **유저 프롬프트**: 선택적으로 `주제(key)`, `프롬프트 후보[]`를 정의합니다. 행이 있으면 AI 구조화 출력은 각 주제마다 후보 중 하나만 선택하고, 비어 있으면 AI 정규화를 호출하지 않습니다.
+- **유저 프롬프트(꺼 둠)**: `userPromptNormalization` 필드와 테이블은 남아 있지만 Admin에서 숨겼고 생성 경로가 읽지 않습니다. 배우기 어렵고, 사용자 입력이 후보로 조용히 바뀌어 결과를 설명할 수 없었기 때문입니다. 필드·테이블·정규화 서비스는 DROP 마이그레이션과 함께 걷어낼 예정입니다.
 - **이미지 모델**: 프로파일은 허용된 모델 프리셋을 선택합니다. 현재 계약은 `openai-gpt-image-2`, `google-nano-banana-2-lite`, `google-nano-banana-2`입니다.
 - **프로파일 기능**: `색 조정`, `카메라 조정`, `참조 이미지 첨부`를 프로파일마다 켜고 끕니다. `참조 이미지 첨부`는 저장하지 않는 1회용 첨부라 세부 설정이 없고 켜고 끄는 것이 전부입니다.
-- **Runtime Manifest**: 선택한 모델의 비율·해상도·프롬프트 상한·지원 feature·출력 형식은 코드의 Runtime Manifest가 정의합니다. 프로파일은 `features`, `controllerRestrictions`, `output`으로 이 범위를 좁힙니다. 그룹의 접힘 가능 여부와 최초 열림값은 Runtime이 아니라 Admin의 `controllerPresentation`이 소유합니다.
+- **Runtime Manifest**: 선택한 모델의 비율·해상도·프롬프트 상한·지원 feature·출력 형식은 코드의 Runtime Manifest가 정의합니다. 프로파일은 `features`, `controllerRestrictions`, `output`으로 이 범위를 좁힙니다. Controller 제한은 장수·비율·해상도에만 겁니다 — 프롬프트는 사용자 입력이고 색은 브랜드 색 조합과 `색 조정` feature가 정하므로, 저장값이 있어도 적용하지 않습니다(`IMAGE_UNRESTRICTED_CONTROL_IDS`). `controllerPresentation`은 Admin에서 숨겼고 늘 계산된 기본값입니다.
 - **출력 조건**: 공급자와 무관한 비율과 해상도는 Effective Controller의 `ratio`·`resolution` control에서 읽습니다. 비율은 `1:1`, `2:3`, `3:2`, `3:4`, `4:3`, `4:5`, `5:4`, `9:16`, `16:9`, `21:9`, 해상도는 `1K`, `2K`, `4K`입니다.
 - **공급자 변환**: Google에는 `imageConfig.aspectRatio`와 `imageConfig.imageSize`를 그대로 전달합니다. OpenAI `gpt-image-2`에는 같은 계약을 16px 배수, 최대 3840px, 3:1 이하, 655,360~8,294,400 픽셀 범위의 실제 `size`로 변환합니다.
 - **모델 제약**: Nano Banana 2 일반형(`gemini-3.1-flash-image`)은 `1K`(기본값), `2K`, `4K`를 지원합니다. Nano Banana 2 Lite는 위 비율 10종과 `1K`만 지원하므로 `2K`, `4K` 프로파일 저장과 관리자 생성 테스트를 거부합니다.
-- **최종 프롬프트 JSON**: 시스템 프롬프트와 정규화 결과를 flat JSON으로 합칩니다. 정규화 후보가 없을 때만 유저 인풋 원문을 `subject`로 보존합니다. textarea 줄바꿈은 `, `로 정규화하며, 같은 주제는 정규화 결과가 우선합니다.
+- **최종 프롬프트 JSON**: 시스템 프롬프트와 유저 인풋 원문(`subject`)을 flat JSON으로 합칩니다. textarea 줄바꿈은 `, `로 정규화합니다.
 - **런타임 사용**: `profileId`가 지정되면 사용자에게 공개된 published 프로파일의 모델·feature·Controller 제한·출력 정책으로 Effective Config를 파생하고, 그 Controller가 허용한 값만 이미지 생성기로 전달합니다. Admin의 draft는 생성 테스트에서만 사용합니다.
-- **생성 테스트**: 현재 Admin 폼의 모델·feature·Controller 제한으로 같은 Effective Controller를 파생해 정규화와 이미지 생성을 실행합니다. 테스트 화면에서 유저 프롬프트 후보 정규화를 끄면 유저 인풋 원문을 `subject`로 합성합니다. 미저장 값도 테스트할 수 있고 결과는 저장하지 않습니다.
+- **생성 테스트**: 현재 Admin 폼의 모델·feature·Controller 제한으로 같은 Effective Controller를 파생해 최종 프롬프트 합성과 이미지 생성을 실행합니다. 유저 인풋 원문은 런타임과 같이 `subject`로 합성합니다. 미저장 값도 테스트할 수 있고 결과는 저장하지 않습니다.
 - **Admin 생성 API**: 프로파일 생성 테스트는 모델과 출력 계약을 모두 명시하고, 템플릿의 AI 배경 생성은 서버 기본 계약을 사용합니다. 두 요청 모두 Manager 전용 `POST /api/admin/generate-image`를 사용합니다.
 
 프로파일 기반 응답의 `images`는 저장 URL이며 `generatedImages`에는 각 문서의 `id`, `url`, `createdAt`이 포함됩니다. 저장된 생성 결과를 참조하는 요청은 원본 data URI와 최종 프롬프트를 재전송하지 않고 `reference: { generatedImageId }`를 전달합니다. 프롬프트를 비워 보내면 참조의 저장된 `effectivePrompt`를 물려받습니다. 서버는 같은 사용자·published 프로파일에 귀속된 `generated-images` 원본과 저장된 `effectivePrompt`를 조회·검증해 사용합니다.
@@ -64,7 +64,7 @@ Creator는 published 프로파일을 선택해 생성하고, AI Chat은 `listIma
 - Vercel AI SDK `generateImage`. Google은 provider options의 `imageConfig`, OpenAI는 Images API의 `size`를 사용합니다.
 - Google 직접 호출은 `@ai-sdk/google`과 서버의 `GEMINI_API_KEY`를 사용하며 AI Gateway를 거치지 않습니다.
 - 프로파일 저장소: Payload CMS의 published `image-profiles` 컬렉션. `slug`가 있는 프로파일은 `displayOrder` 순서로 Studio 내비게이션과 `/studio/image/:profileSlug` 경로에 노출됩니다.
-- 프로파일 정규화: 유저 프롬프트 후보가 있는 프로파일만 Anthropic Haiku 구조화 출력을 사용합니다. 후보가 없는 정적 프로파일은 정규화 모델을 호출하지 않습니다.
+- 프로파일 정규화: 꺼 두었으므로 이미지 생성은 정규화 모델(Anthropic Haiku)을 호출하지 않습니다.
 - Review 미사용(의도적) — 이미지 검수 성능이 아직 일부 항목에 한정되어 있어 생성 품질을 검수에 묶지 않습니다.
 - 키가 없으면 불가: 프리셋이 요구하는 키(`OPENAI_API_KEY` 또는 `GEMINI_API_KEY`)가 없으면 다른 모델로 대체하지 않고 실패합니다. dev 폴백은 없습니다.
 

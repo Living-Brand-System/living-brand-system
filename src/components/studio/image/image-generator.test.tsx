@@ -104,9 +104,8 @@ function config(
 	name: string,
 	options: {
 		cameraControl?: boolean
-		colorAdjustment?: { line: string; background?: string }
+		colorAdjustment?: { background?: boolean }
 		imageModelPreset?: ImageModelPreset
-		maxPromptLength?: number
 		referenceImage?: boolean
 	} = {},
 ) {
@@ -127,29 +126,6 @@ function config(
 			...(options.cameraControl === false ? [] : [{ blockType: 'cameraControl' }]),
 			...(options.referenceImage ? [{ blockType: 'referenceImage' }] : []),
 		],
-		controllerRestrictions: {
-			controls: [
-				...(options.maxPromptLength
-					? [{ controlId: 'prompt', maxLength: options.maxPromptLength }]
-					: []),
-				...(options.colorAdjustment
-					? [
-							{
-								controlId: 'lineColor',
-								defaultValue: options.colorAdjustment.line,
-							},
-							...(options.colorAdjustment.background
-								? [
-										{
-											controlId: 'backgroundColor',
-											defaultValue: options.colorAdjustment.background,
-										},
-									]
-								: []),
-						]
-					: []),
-			],
-		},
 	})
 }
 
@@ -263,7 +239,7 @@ describe('ImageGenerator', () => {
 		render(
 			createElement(ImageGenerator, {
 				config: config(5, '라인 일러스트', {
-					colorAdjustment: { line: '#000dff', background: '#00ffd4' },
+					colorAdjustment: { background: true },
 				}),
 			}),
 		)
@@ -271,7 +247,7 @@ describe('ImageGenerator', () => {
 		openAdjustment()
 		expect(screen.getByRole('group', { name: 'Color' })).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('radio', { name: 'Custom' }))
-		expect(screen.getByLabelText('Foreground 색상 선택')).toHaveValue('#000dff')
+		expect(screen.getByLabelText('Foreground 색상 선택')).toBeEnabled()
 		expect(screen.getByLabelText('Background 색상 선택')).toBeEnabled()
 	})
 
@@ -279,7 +255,7 @@ describe('ImageGenerator', () => {
 	it('라인 색만 개방한 프로파일은 배경 색 행을 그리지 않는다', () => {
 		render(
 			createElement(ImageGenerator, {
-				config: config(5, '라인 일러스트', { colorAdjustment: { line: '#000dff' } }),
+				config: config(5, '라인 일러스트', { colorAdjustment: {} }),
 			}),
 		)
 
@@ -438,9 +414,9 @@ describe('ImageProfilePicker', () => {
 			config(1, '카메라만'),
 			config(2, '색만', {
 				cameraControl: false,
-				colorAdjustment: { line: '#000dff' },
+				colorAdjustment: {},
 			}),
-			config(3, '둘 다', { colorAdjustment: { line: '#000dff' } }),
+			config(3, '둘 다', { colorAdjustment: {} }),
 			config(4, '없음', { cameraControl: false }),
 		])
 
@@ -474,16 +450,11 @@ describe('ImageProfilePicker', () => {
 	})
 
 	it('카드를 고르면 프로파일이 바뀌고 패널이 닫힌다', async () => {
-		const { panel } = await openBrowser([
-			config(5, '제품컷'),
-			config(7, '그라디언트', { maxPromptLength: 42 }),
-		])
+		const { panel } = await openBrowser([config(5, '제품컷'), config(7, '그라디언트')])
 
 		fireEvent.click(within(panel).getByRole('button', { name: /그라디언트/ }))
 
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-		// 사이드바 헤더가 새 계약을 그린다 — 카운터 상한도 새 프로파일의 것이다.
-		expect(screen.getByText('0/42')).toBeInTheDocument()
 		fireEvent.change(screen.getByRole('textbox', { name: 'Prompt' }), {
 			target: { value: '노란 배경' },
 		})
