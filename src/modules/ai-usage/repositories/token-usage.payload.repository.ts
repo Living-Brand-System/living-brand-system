@@ -19,12 +19,15 @@ export async function findTokenUsage(userIds: readonly number[]): Promise<Map<nu
 	const zone = sql.raw(`'${AI_USAGE_TIME_ZONE}'`)
 	const startOf = (unit: 'day' | 'month') =>
 		sql`(date_trunc(${sql.raw(`'${unit}'`)}, now() AT TIME ZONE ${zone}) AT TIME ZONE ${zone})`
+	// 🔑 캐시 읽기는 공급자 단가대로 10%만 센다 — total_tokens에는 캐시 읽기가 통째로 들어 있어, 스텝마다
+	//    같은 프리픽스를 다시 읽는 에이전트 챗 한 턴이 실제 비용의 2~3배로 한도를 깎았다.
+	const charged = sql`${events.totalTokens} - 0.9 * coalesce(${events.cacheReadInputTokens}, 0)`
 
 	const rows = await payload.db.drizzle
 		.select({
 			userId: events.createdBy,
-			daily: sql<string>`coalesce(sum(${events.totalTokens}) filter (where ${events.createdAt} >= ${startOf('day')}), 0)`,
-			monthly: sql<string>`coalesce(sum(${events.totalTokens}), 0)`,
+			daily: sql<string>`round(coalesce(sum(${charged}) filter (where ${events.createdAt} >= ${startOf('day')}), 0))`,
+			monthly: sql<string>`round(coalesce(sum(${charged}), 0))`,
 		})
 		.from(events)
 		.where(
