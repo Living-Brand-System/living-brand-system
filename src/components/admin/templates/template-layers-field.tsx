@@ -28,11 +28,38 @@ const DEFAULT_CANVAS_HEIGHT = 560
 const DEFAULT_LAYER_WIDTH = 260
 const DEFAULT_WORKSPACE_GAP = 16
 
-function buildPreviewDocument(html: string, origin: string): string {
-	const imageSource = origin || "'none'"
+/* `src/app/(frontend)/theme.css`의 "HD OTF" @font-face 사본.
+   🔴 srcDoc iframe은 부모 문서의 CSS를 물려받지 않는다 — 이게 없으면 임포트한 템플릿의 `font-family: "HD OTF"`가
+   웹폰트를 못 집고 로컬 설치 폰트로 떨어져, HD체가 없는 기기에서만 기본 서체로 보인다.
+   theme.css와 어긋나면 template-layers-field.test.ts가 잡는다. */
+const HD_LATIN_RANGE = 'U+0000-00FF, U+2018-201D, U+2026, U+2192, U+20A9'
+const HD_KO_RANGE = 'U+1100-11FF, U+3000-303F, U+3130-318F, U+AC00-D7A3, U+FF01-FF60'
+const PREVIEW_FONT_CSS = (
+	[
+		['Light', 300],
+		['Medium', 500],
+		['Bold', 700],
+	] as const
+)
+	.flatMap(([name, weight]) =>
+		(
+			[
+				['latin', HD_LATIN_RANGE],
+				['ko', HD_KO_RANGE],
+			] as const
+		).map(
+			([script, range]) =>
+				`@font-face { font-family: "HD OTF"; src: url("/fonts/hd/HD-${name}-${script}.woff2") format("woff2"); font-weight: ${weight}; font-style: normal; font-display: block; unicode-range: ${range}; }`,
+		),
+	)
+	.join('')
+
+export function buildPreviewDocument(html: string, origin: string): string {
+	const assetSource = origin || "'none'"
 	return (
 		'<!doctype html><html><head><meta charset="utf-8">' +
-		`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src ${imageSource} data: blob:; font-src data:">` +
+		`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src ${assetSource} data: blob:; font-src ${assetSource} data:">` +
+		`<style>${PREVIEW_FONT_CSS}</style>` +
 		`</head><body>${html}</body></html>`
 	)
 }
