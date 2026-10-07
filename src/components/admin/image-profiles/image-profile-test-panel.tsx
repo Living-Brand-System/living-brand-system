@@ -4,7 +4,6 @@ import { useForm } from '@payloadcms/ui'
 import { useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldTitle } from '@/components/ui/field'
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
@@ -27,7 +26,6 @@ import {
 export function ImageProfileTestPanel() {
 	const { getData, getDataByPath } = useForm()
 	const [userPrompt, setUserPrompt] = useState('')
-	const [normalizeUserPrompt, setNormalizeUserPrompt] = useState(true)
 	const [result, setResult] = useState<ImagePromptNormalizationResult | null>(null)
 	const [image, setImage] = useState<string | null>(null)
 	const [error, setError] = useState('')
@@ -37,9 +35,8 @@ export function ImageProfileTestPanel() {
 	async function normalizeCurrentForm(): Promise<ImagePromptNormalizationResult> {
 		const next = await requestImagePromptNormalization({
 			profilePrompt: getDataByPath('profilePrompt'),
-			userPromptNormalization: normalizeUserPrompt
-				? (getDataByPath('userPromptNormalization') ?? [])
-				: [],
+			// 생성 경로와 같이 후보 정규화 없이 원문을 subject로 합성한다(2026-10-07).
+			userPromptNormalization: [],
 			userPrompt,
 		})
 		setResult(next)
@@ -126,19 +123,6 @@ export function ImageProfileTestPanel() {
 						rows={4}
 					/>
 				</Field>
-				<Field orientation="horizontal">
-					<FieldLabel htmlFor="image-profile-normalize-user-prompt">
-						유저 프롬프트 후보 정규화
-					</FieldLabel>
-					<Checkbox
-						id="image-profile-normalize-user-prompt"
-						checked={normalizeUserPrompt}
-						onCheckedChange={(checked) => setNormalizeUserPrompt(checked === true)}
-					/>
-				</Field>
-				<FieldDescription>
-					켜면 유저 원문은 후보 선택에만 사용하고, 끄면 원문을 subject로 합성합니다.
-				</FieldDescription>
 				<div className="flex gap-2">
 					<Button
 						type="button"

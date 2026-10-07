@@ -84,7 +84,6 @@ describe('deriveImageStudioConfig', () => {
 				...profile,
 				controllerRestrictions: {
 					controls: [
-						{ controlId: 'prompt', maxLength: 120 },
 						{ controlId: 'ratio', optionValues: ['1:1', '2:3'], defaultValue: '1:1' },
 						{ controlId: 'resolution', availability: 'readonly' },
 					],
@@ -92,7 +91,6 @@ describe('deriveImageStudioConfig', () => {
 			}),
 		)
 
-		expect(controls.prompt.maxLength).toBe(120)
 		expect(controls.ratio).toMatchObject({
 			defaultValue: '1:1',
 			options: [{ value: '1:1' }, { value: '2:3' }],
@@ -100,19 +98,35 @@ describe('deriveImageStudioConfig', () => {
 		expect(controls.resolution.availability).toBe('readonly')
 	})
 
-	it('발행 전에 생성이 막히는 조합(빈 잠금 프롬프트·빈 기본값·1장 없는 장수)을 거부한다', () => {
+	// 프롬프트는 사용자 입력, 색은 브랜드 색 조합이 정한다 — 어드민은 좁히지 않는다(2026-10-07).
+	it('프롬프트·색 제한은 저장돼 있어도 적용하지 않는다', () => {
+		const config = deriveImageStudioConfig({
+			...profile,
+			features: [{ blockType: 'colorAdjustment', background: true }],
+			controllerRestrictions: {
+				controls: [
+					{ controlId: 'prompt', availability: 'readonly', maxLength: 120 },
+					{ controlId: 'lineColor', defaultValue: '#112233' },
+					{ controlId: 'backgroundColor', colorValues: ['#ffffff'] },
+				],
+			},
+		})
+
+		const { prompt } = getImageStudioControls(config)
+		expect(prompt.availability).not.toBe('readonly')
+		expect(prompt.maxLength).toBe(500)
+		const color = getImageColorAdjustmentControls(config)
+		expect(color?.line.defaultValue).toBeNull()
+		expect(color?.background?.values).toBeUndefined()
+	})
+
+	it('발행 전에 생성이 막히는 조합(빈 기본값·1장 없는 장수)을 거부한다', () => {
 		const runnable = (controls: Record<string, unknown>[]) => () =>
 			assertImageProfileRunnable(
 				deriveImageStudioConfig({ ...profile, controllerRestrictions: { controls } }),
 			)
 
 		expect(runnable([])).not.toThrow()
-		expect(runnable([{ controlId: 'prompt', availability: 'readonly' }])).toThrow('기본 문구')
-		expect(
-			runnable([
-				{ controlId: 'prompt', availability: 'readonly', defaultValue: '선화 일러스트' },
-			]),
-		).not.toThrow()
 		expect(runnable([{ controlId: 'resolution', defaultValue: null }])).toThrow(
 			'비워 둘 수 없습니다',
 		)
@@ -124,7 +138,7 @@ describe('deriveImageStudioConfig', () => {
 		).toThrow('1장')
 	})
 
-	it('Admin Restrictions가 알 수 없는 ID·선택지·프롬프트 상한을 확장하면 거부한다', () => {
+	it('Admin Restrictions가 알 수 없는 ID·선택지를 확장하면 거부한다', () => {
 		expect(() =>
 			deriveImageStudioConfig({
 				...profile,
@@ -139,14 +153,6 @@ describe('deriveImageStudioConfig', () => {
 				},
 			}),
 		).toThrow('Controller restriction options가 기본 계약을 확장합니다: ratio')
-		expect(() =>
-			deriveImageStudioConfig({
-				...profile,
-				controllerRestrictions: {
-					controls: [{ controlId: 'prompt', maxLength: 501 }],
-				},
-			}),
-		).toThrow('Controller restriction maxLength가 기본 계약을 확장합니다: prompt')
 	})
 
 	it('feature 선택이 stable semantic ID의 control과 descriptor를 같이 파생한다', () => {
@@ -161,34 +167,17 @@ describe('deriveImageStudioConfig', () => {
 				},
 				{ id: 'feature-camera', blockName: '카메라 조정', blockType: 'cameraControl' },
 			],
-			controllerRestrictions: {
-				controls: [
-					{ controlId: 'lineColor', defaultValue: '#112233' },
-					{ controlId: 'backgroundColor', defaultValue: '#ffffff' },
-				],
-			},
 		})
 
 		expect(getImageStudioFeature(config, 'camera-control')).toBeDefined()
 		expect(getImageColorAdjustmentControls(config)).toMatchObject({
-			line: { id: IMAGE_STUDIO_CONTROL_IDS.lineColor, defaultValue: '#112233' },
-			background: {
-				id: IMAGE_STUDIO_CONTROL_IDS.backgroundColor,
-				defaultValue: '#ffffff',
-			},
+			line: { id: IMAGE_STUDIO_CONTROL_IDS.lineColor },
+			background: { id: IMAGE_STUDIO_CONTROL_IDS.backgroundColor },
 		})
 		expect(getImageStudioFeatureControlIds(config)).toEqual(['lineColor', 'backgroundColor'])
 	})
 
-	it('선택하지 않은 feature control에 제한을 걸면 fail-closed한다', () => {
-		expect(() =>
-			deriveImageStudioConfig({
-				...profile,
-				controllerRestrictions: {
-					controls: [{ controlId: 'lineColor', defaultValue: '#112233' }],
-				},
-			}),
-		).toThrow('Controller restriction control을 찾을 수 없습니다: lineColor')
+	it('feature 선택이 잘못되면 fail-closed한다', () => {
 		expect(() =>
 			deriveImageStudioConfig({
 				...profile,

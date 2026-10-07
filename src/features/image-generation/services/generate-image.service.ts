@@ -214,7 +214,9 @@ export async function generateImages({
 	const normalization = trimmed
 		? await normalizeImageProfilePrompt({
 				profilePrompt: profile.profilePrompt,
-				userPromptNormalization: profile.userPromptNormalization ?? [],
+				// ponytail: 후보 정규화는 꺼 두었다(2026-10-07 사용자 결정) — 원문이 늘 subject다.
+				//    저장된 후보가 있어도 쓰지 않는다. 기능을 지울 때 서비스·AI 저장소·테이블을 함께 걷는다.
+				userPromptNormalization: [],
 				userPrompt: effective.userInput,
 			})
 		: null

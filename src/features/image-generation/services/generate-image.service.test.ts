@@ -183,9 +183,10 @@ describe('generateImages', () => {
 			provider: 'openai',
 		})
 		expect(mocks.findPublishedImageProfile).toHaveBeenCalledWith(user, 5)
+		// 후보가 저장돼 있어도 정규화하지 않는다(2026-10-07) — 원문이 subject가 된다.
 		expect(mocks.normalizeImageProfilePrompt).toHaveBeenCalledWith({
 			profilePrompt: [{ key: 'style', value: 'minimalist' }],
-			userPromptNormalization: [{ key: 'mood', candidates: [{ value: 'organic' }] }],
+			userPromptNormalization: [],
 			userPrompt: '파란 세럼병',
 		})
 		expect(mocks.generateBrandImages).toHaveBeenCalledWith({
@@ -334,7 +335,7 @@ describe('generateImages', () => {
 		expect(mocks.storeGeneratedImages).not.toHaveBeenCalled()
 	})
 
-	it('published prompt maxLength를 정규화 전에 강제한다', async () => {
+	it('프롬프트 상한을 정규화 전에 강제한다', async () => {
 		mocks.findPublishedImageProfile.mockResolvedValue({
 			id: 5,
 			name: 'Technical Illustration',
@@ -342,16 +343,13 @@ describe('generateImages', () => {
 			imageModelPreset: 'openai-gpt-image-2',
 			aspectRatio: '2:3',
 			imageSize: '1K',
-			controllerRestrictions: {
-				controls: [{ controlId: 'prompt', maxLength: 3 }],
-			},
 			profilePrompt: [],
 			userPromptNormalization: [],
 		})
 
 		await expect(
 			generateImages({
-				userInput: '1234',
+				userInput: 'a'.repeat(501),
 				profileId: 5,
 				user: { id: 1 },
 				count: 1,

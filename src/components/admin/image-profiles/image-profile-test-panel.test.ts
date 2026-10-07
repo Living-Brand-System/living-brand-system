@@ -56,13 +56,12 @@ describe('ImageProfileTestPanel', () => {
 		vi.unstubAllGlobals()
 	})
 
-	it('정규화를 끄면 후보는 제외하고 현재 배열 폼 값으로 생성한다', async () => {
+	it('저장된 후보는 보내지 않고 현재 배열 폼 값으로 생성한다', async () => {
 		render(createElement(ImageProfileTestPanel))
 
 		fireEvent.change(screen.getByLabelText('유저 인풋 프롬프트'), {
 			target: { value: '굴착기' },
 		})
-		fireEvent.click(screen.getByLabelText('유저 프롬프트 후보 정규화'))
 		fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
 
 		await waitFor(() => expect(mocks.requestAdminImageGeneration).toHaveBeenCalledOnce())
