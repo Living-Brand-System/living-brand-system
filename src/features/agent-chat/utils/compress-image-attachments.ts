@@ -47,18 +47,22 @@ export function estimateDataUrlBytes(url: string): number {
 }
 
 /**
- * 전송할 첨부를 준비한다. 한도를 넘는 이미지가 없으면 FileList를 그대로 돌려주고,
- * 있으면 전체를 FileUIPart 배열로 바꾸되 큰 이미지만 축소한다.
+ * 전송할 첨부를 FileUIPart 배열로 바꾸되 한도를 넘는 이미지만 축소한다.
  * 축소에 실패한 파일(디코딩 불가 등)은 원본 그대로 보낸다 — 서버 검증이 최종 경계다.
+ *
+ * FileList를 그대로 돌려주지 않는다: <input>의 FileList는 살아 있는 객체라, 호출자가
+ * 이 함수를 await하는 사이 input을 비우면 같은 객체가 0개가 되어 첨부가 조용히 빠진다.
+ * 그래서 첫 await 전에 동기로 떠 둔다(convertFileListToFileUIParts도 호출 즉시 읽는다).
  */
 export async function prepareAgentChatFiles(
 	files: FileList | undefined,
-): Promise<FileList | FileUIPart[] | undefined> {
-	if (!files || !Array.from(files).some(needsImageCompression)) return files
+): Promise<FileUIPart[] | undefined> {
+	if (!files?.length) return undefined
 
+	const list = Array.from(files)
 	const parts = await convertFileListToFileUIParts(files)
 	return Promise.all(
-		Array.from(files).map(async (file, index) => {
+		list.map(async (file, index) => {
 			const original = parts[index] as FileUIPart
 			if (!needsImageCompression(file)) return original
 			const compressed = await compressImageFile(file).catch(() => null)
