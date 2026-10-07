@@ -40,7 +40,6 @@ import {
 import { TemplateStudioProvider } from '@/features/template-customization/providers/template-studio-provider'
 import type { TemplateRasterArtifactProducer } from '@/features/template-customization/runtime/template-runtime.client'
 import type { GetCreateNavigationOutput } from '@/features/template-customization/services/get-create-navigation.service'
-import { useShellLocked } from '@/hooks/use-shell-lock'
 import { TemplateGenerator as TemplateGeneratorView } from './template-generator'
 import { TemplateWorkspace } from './template-workspace'
 
@@ -835,32 +834,34 @@ describe('TemplateGenerator', () => {
 		expect(screen.getByRole('radiogroup', { name: 'Use' })).toBeInTheDocument()
 	})
 
-	it('중첩 편집 동안 트리 밖의 셸 헤더를 잠그고, 취소하면 푼다', async () => {
-		const user = userEvent.setup()
-		function ShellHeader() {
-			return <nav aria-label="셸" inert={useShellLocked()} />
-		}
-		render(
-			<>
-				<ShellHeader />
-				<TemplateGenerator
+	// 상단 이동을 잠그지 않는다 — 완료 전에 떠나면 취소로 친다(2026-10-07 결정).
+	it('중첩 편집을 마치지 않고 떠나면 들어오기 전 값을 임시 저장한다', async () => {
+		const config = deriveTemplateStudioConfig(template, imageConfigs, effectiveGraphicConfigs)
+		const { result, unmount } = renderHook(useTemplateStudio, {
+			wrapper: ({ children }) => (
+				<TemplateStudioProvider
+					config={config}
+					template={template}
 					categoryTitle="카드"
-					template={{
-						...template,
-						html: '<div data-node-id="1:1" data-figma-type="FRAME" data-name="배경" data-image-carrier=""></div>',
-						nodeConfigs: { '1:1': { imageInput: { profileId: 7 } } },
-					}}
-				/>
-			</>,
+					userId="7"
+				>
+					{children}
+				</TemplateStudioProvider>
+			),
+		})
+		act(() => result.current.background.update({ prompt: '들어오기 전' }))
+		await waitFor(() =>
+			expect(window.localStorage.getItem('lbs.templateDraft')).toContain('들어오기 전'),
 		)
-		const header = () => screen.getByRole('navigation', { name: '셸' })
-		expect(header()).not.toHaveAttribute('inert')
+		act(() => result.current.editing.begin('background'))
+		act(() => result.current.background.update({ prompt: '편집 중' }))
+		// 저장 지연(600ms)이 지나도 편집 중 값은 쓰지 않는다.
+		await new Promise((resolve) => setTimeout(resolve, 700))
+		unmount()
 
-		selectLayerGroup('image')
-		expect(header()).toHaveAttribute('inert')
-
-		await user.click(screen.getByRole('button', { name: '취소' }))
-		expect(header()).not.toHaveAttribute('inert')
+		const stored = window.localStorage.getItem('lbs.templateDraft')
+		expect(stored).toContain('들어오기 전')
+		expect(stored).not.toContain('편집 중')
 	})
 
 	it('심볼 색은 브랜드 색 스와치로 고르고, Custom은 열지 않는다', async () => {
