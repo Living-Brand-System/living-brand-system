@@ -59,7 +59,8 @@ export function buildPreviewDocument(html: string, origin: string): string {
 	return (
 		'<!doctype html><html><head><meta charset="utf-8">' +
 		`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src ${assetSource} data: blob:; font-src ${assetSource} data:">` +
-		`<style>${PREVIEW_FONT_CSS}</style>` +
+		// body 기본 margin(8px)을 지운다 — 남으면 판이 iframe 안에서 밀려 위·왼쪽에 여백, 아래·오른쪽이 잘린다.
+		`<style>body{margin:0}${PREVIEW_FONT_CSS}</style>` +
 		`</head><body>${html}</body></html>`
 	)
 }

@@ -402,7 +402,7 @@ async function flattenToImage(
 
 /** 이 요소를 실제로 자르는 가장 가까운 조상의 상자. 아무도 안 자르면 null이다. */
 function clipBoxOf(element: HTMLElement, origin: DOMRect): Box | null {
-	// 🔴 자기 자신부터 본다 — Figma의 고정 크기 텍스트는 `<p style="overflow:hidden">`으로 내려와
+	// 🔴 자기 자신부터 본다 — Figma의 말줄임 텍스트는 `<p style="overflow:hidden">`으로 내려와
 	//    자기 글자를 자른다. 부모만 보면 화면에서 잘린 문장이 인쇄물에 되살아난다.
 	// 🔴 첫 클립에서 멈추지 않는다 — 더 위에 더 좁은 프레임이 있으면 그것도 함께 자른다.
 	let clip: Box | null = null

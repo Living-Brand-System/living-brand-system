@@ -343,23 +343,22 @@ export function createContainerStyle(node: Node): IrCssStyle {
 }
 
 /**
- * 텍스트 노드의 말줄임(…) 의도·고정 박스(fixedBox) 판정과 -webkit-line-clamp 줄 수 유도 — 이 판단의 단일 소유자.
+ * 텍스트 노드의 말줄임(…) 의도 판정과 -webkit-line-clamp 줄 수 유도 — 이 판단의 단일 소유자.
  * 줄 수는 maxLines 우선, 없으면 고정 박스 높이 ÷ Figma가 계산한 줄높이(px)로 유도한다.
  * truncates인데 lineClamp가 없으면 말줄임 의도가 overflow:hidden clip으로만 강등된다는 뜻 —
  * createTextStyle은 그대로 clip을 남기고, planFigmaAssets는 이를 진단으로 알린다.
  */
 export function resolveTextTruncation(node: Node): {
 	truncates: boolean
-	fixedBox: boolean
 	lineClamp?: number
 } {
 	const s = node.style ?? {}
-	// auto-resize가 꺼진(NONE/생략/레거시 TRUNCATE) 고정 박스 — 넘친 텍스트가 박스에서 잘린다.
+	// auto-resize가 꺼진(NONE/생략/레거시 TRUNCATE) 고정 박스 — 박스 높이로 줄 수를 유도할 수 있다.
 	const fixedBox =
 		!s.textAutoResize || s.textAutoResize === 'NONE' || s.textAutoResize === 'TRUNCATE'
 	const truncates = s.textTruncation === 'ENDING' || s.textAutoResize === 'TRUNCATE'
-	if (!truncates) return { truncates, fixedBox }
-	if (s.maxLines) return { truncates, fixedBox, lineClamp: s.maxLines }
+	if (!truncates) return { truncates }
+	if (s.maxLines) return { truncates, lineClamp: s.maxLines }
 	if (fixedBox && s.lineHeightPx && node.absoluteBoundingBox) {
 		// 마지막 줄은 줄간격 전체가 아니라 글리프 높이(≈fontSize)만 들어가면 Figma가 그린다 —
 		// floor(높이÷줄높이)는 329px÷110px(줄간격 110·글자 100)처럼 1px 모자란 박스에서
@@ -367,7 +366,6 @@ export function resolveTextTruncation(node: Node): {
 		const lastLineHeight = s.fontSize ?? s.lineHeightPx
 		return {
 			truncates,
-			fixedBox,
 			lineClamp: Math.max(
 				1,
 				Math.floor((node.absoluteBoundingBox.height - lastLineHeight) / s.lineHeightPx) + 1,
@@ -375,7 +373,7 @@ export function resolveTextTruncation(node: Node): {
 		}
 	}
 	// ponytail: 줄높이 px가 없으면 줄 수 유도 불가 → clamp 없이 overflow:hidden clip만 남는다.
-	return { truncates, fixedBox }
+	return { truncates }
 }
 
 /** 스타일 이름 → CSS 웨이트. 합성 이름이 있어 순서가 값이다(ExtraBold가 Bold보다 먼저). */
@@ -431,10 +429,10 @@ export function createTextStyle(node: Node): IrCssStyle {
 	const verticalAlign: Record<string, string> = { CENTER: 'center', BOTTOM: 'flex-end' }
 	const justify = s.textAlignVertical ? verticalAlign[s.textAlignVertical] : undefined
 
-	// Figma 텍스트 박스의 넘침 재현: 고정 박스(fixedBox)는 박스에서 잘리고,
-	// textTruncation ENDING(레거시 TRUNCATE 포함)은 -webkit-line-clamp로 「…」 말줄임을 그린다.
-	// 두 판정 모두 resolveTextTruncation(단일 소유자)이 한다.
-	const { fixedBox, lineClamp } = resolveTextTruncation(node)
+	// Figma 텍스트 박스의 넘침 재현: 고정 박스라도 Figma는 넘친 글자를 자르지 않고 박스 밖에 그린다 —
+	// 자르는 것은 textTruncation ENDING(레거시 TRUNCATE 포함)뿐이고, -webkit-line-clamp로 「…」 말줄임을 그린다.
+	// 판정은 resolveTextTruncation(단일 소유자)이 한다.
+	const { truncates, lineClamp } = resolveTextTruncation(node)
 
 	return {
 		margin: '0',
@@ -465,7 +463,7 @@ export function createTextStyle(node: Node): IrCssStyle {
 					overflow: 'hidden',
 				}
 			: {
-					...(fixedBox ? { overflow: 'hidden' } : {}),
+					...(truncates ? { overflow: 'hidden' } : {}),
 					...(justify
 						? {
 								display: 'flex',

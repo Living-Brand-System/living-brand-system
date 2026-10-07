@@ -315,7 +315,7 @@ describe('convertFigmaNodeToHtml — 텍스트', () => {
 		expect(rootStyle(convertFigmaNodeToHtml(node).html)).toContain('-webkit-line-clamp:3')
 	})
 
-	it('말줄임 없는 고정 박스(NONE/생략) 텍스트는 박스에서 잘리고, HEIGHT/HUG는 잘리지 않는다', () => {
+	it('말줄임 없는 텍스트는 고정 박스(NONE/생략)여도 잘리지 않는다 — Figma는 넘친 글자를 박스 밖에 그린다', () => {
 		const node = (autoResize?: string) => ({
 			id: '1:1',
 			name: 't',
@@ -325,11 +325,12 @@ describe('convertFigmaNodeToHtml — 텍스트', () => {
 			style: { fontFamily: 'Inter', fontSize: 16, textAutoResize: autoResize },
 		})
 
+		// 실제 Figma 노드(hd_lbs_templates 122:6): 박스 높이 52.6px에 3줄×23px — 잘리면 제목이 깎인다.
 		const fixed = rootStyle(convertFigmaNodeToHtml(node('NONE')).html)
-		expect(fixed).toContain('overflow:hidden')
+		expect(fixed).not.toContain('overflow')
 		expect(fixed).not.toContain('-webkit-line-clamp')
 		// textAutoResize 생략 = Figma 기본값(auto-resize 없음) = 고정 박스.
-		expect(rootStyle(convertFigmaNodeToHtml(node(undefined)).html)).toContain('overflow:hidden')
+		expect(rootStyle(convertFigmaNodeToHtml(node(undefined)).html)).not.toContain('overflow')
 
 		expect(rootStyle(convertFigmaNodeToHtml(node('HEIGHT')).html)).not.toContain('overflow')
 		expect(rootStyle(convertFigmaNodeToHtml(node('WIDTH_AND_HEIGHT')).html)).not.toContain(
