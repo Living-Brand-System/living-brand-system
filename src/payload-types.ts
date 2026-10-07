@@ -1367,7 +1367,7 @@ export interface Template {
   height?: number | null;
   outputKind: 'digital' | 'print';
   /**
-   * 디지털은 px, 인쇄는 mm입니다. 디지털은 비워 두면 Figma 크기로 채워집니다. 인쇄의 dpi는 창작자가 저장할 때 「출력 설정 → 인쇄」에서 켠 값 중 고릅니다. 가로세로 비율은 Figma 판과 같아야 합니다.
+   * 디지털은 px, 인쇄는 mm입니다.
    */
   size?: {
     width?: number | null;
