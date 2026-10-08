@@ -7,6 +7,11 @@ import {
 	type TemplateSlot,
 } from '@/features/template-core/domain/collect-template-slots'
 import { projectTemplateRenderModel } from '@/features/template-core/domain/project-template-render-model'
+import {
+	type AgentTemplateDocument,
+	findAgentTemplate,
+	listAgentTemplates,
+} from '@/features/template-core/services/read-agent-template.service'
 import type { TemplateSessionPatch } from '@/features/template-customization/domain/template-session-patch'
 import {
 	deriveTemplateStudioConfig,
@@ -14,11 +19,6 @@ import {
 	type TemplateStudioConfig,
 } from '@/features/template-customization/domain/template-studio-config'
 import { AgentConfigurationError } from '@/lib/errors'
-import {
-	type AgentTemplateDocument,
-	findAgentTemplate,
-	listAgentTemplates,
-} from '../repositories/agent-template.payload.repository'
 
 /**
  * 모델이 채우는 슬롯 값 한 칸.

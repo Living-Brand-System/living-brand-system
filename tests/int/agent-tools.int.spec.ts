@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as agentSkillRepository from '@/features/agent-chat/repositories/agent-skill.payload.repository'
-import * as agentTemplateRepository from '@/features/agent-chat/repositories/agent-template.payload.repository'
 import * as agentGuidelineContext from '@/features/agent-chat/services/get-agent-guideline-context.service'
 import {
 	getAgentCitations,
@@ -9,6 +8,7 @@ import {
 import * as checkSessionService from '@/features/asset-check/services/start-check-session.service'
 import * as mcpGuidelineRepository from '@/features/guideline/repositories/mcp-guideline.payload.repository'
 import * as checkScenarioRepository from '@/features/quality-rule/repositories/check-scenario.payload.repository'
+import * as agentTemplateRepository from '@/features/template-core/services/read-agent-template.service'
 import type { AgentChatMessage } from '@/modules/agents/agent-chat.agent'
 import { getAgentTools } from '@/modules/agents/agent-chat-tools.agent'
 import { validateAgentChatMessages } from '@/modules/agents/validate-agent-chat-messages.agent'
