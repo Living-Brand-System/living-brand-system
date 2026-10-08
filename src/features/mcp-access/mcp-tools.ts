@@ -20,6 +20,7 @@ import {
 	findMcpGuideline,
 	findMcpGuidelineDocuments,
 } from '@/features/guideline/services/find-mcp-guideline.service'
+import { IMAGE_PROMPT_MAX_LENGTH } from '@/features/image-generation/domain/image-generation-limits'
 import { decodeImageDataUri } from '@/features/image-generation/image-data-uri'
 import { resolveGeneratedImageReference } from '@/features/image-generation/repositories/generated-image.payload.repository'
 import { generateImages } from '@/features/image-generation/services/generate-image.service'
@@ -198,8 +199,10 @@ export const customMcpTools = [
 		'generateBrandImage',
 		'Generate and store brand images with a published profile, then return stored original URLs and inline WebP previews.',
 		{
-			prompt: z.string().trim().min(1).max(500),
+			prompt: z.string().trim().min(1).max(IMAGE_PROMPT_MAX_LENGTH),
 			profileId: z.number().int().positive(),
+			// ponytail: 도메인 상한(IMAGE_BATCH_MAX)보다 좁다 — 장마다 1600px 미리보기를 응답에 그대로 실어서
+			//    장수가 곧 MCP 응답 크기다. 미리보기를 URL로만 돌려주게 되면 도메인 상한으로 넓힌다.
 			count: z.number().int().min(1).max(2).optional(),
 		},
 		async (args, req) => {

@@ -708,19 +708,31 @@ console.log(user.email, accessToken, rawUploadPath)
 예시:
 
 ```ts
-export async function POST(req: Request) {
-  try {
-    const input: PublishGuidelineInput = await req.json()
-    const output = await publishGuideline(input)
+const requestSchema = z.object({ guidelineId: z.number().int().positive() })
 
-    return Response.json(output)
+export async function POST(req: Request) {
+  // 본문은 신뢰 경계 밖이다 — 타입 단언(`as`·타입 주석)이 아니라 스키마로 읽는다(docs/07).
+  const parsed = requestSchema.safeParse(await req.json().catch(() => null))
+  if (!parsed.success) {
+    return Response.json({ message: '요청 형식이 올바르지 않습니다.' }, { status: 400 })
+  }
+
+  const { payload, user } = await authenticateRequest()
+  if (!user) return Response.json({ message: 'Unauthorized' }, { status: 401 })
+
+  try {
+    return Response.json(await publishGuideline({ ...parsed.data, user }))
   } catch (error) {
-    return toErrorResponse(error)
+    if (error instanceof GuidelineNotPublishableError) {
+      return Response.json({ message: error.message }, { status: 409 })
+    }
+    payload.logger.error({ err: error }, 'guideline.publish.failed')
+    return Response.json({ message: '게시하지 못했습니다.' }, { status: 500 })
   }
 }
 ```
 
-Service는 업무상 실패를 명확한 오류로 던지고, Route Handler가 HTTP 응답으로 바꿉니다.
+Service는 업무상 실패를 명확한 오류로 던지고, Route Handler가 HTTP 응답으로 바꿉니다. 아는 도메인 오류만 상태 코드로 옮기고, 나머지는 서버 로그에 남긴 뒤 일반화된 메시지로 답합니다. JSON 본문은 위의 한 줄(`schema.safeParse(await req.json().catch(() => null))`), FormData는 `await req.formData().catch(() => null)` 뒤 필드별 검사가 이 리포의 공통 형태입니다.
 
 ## 16. 스키마 변경과 마이그레이션 워크플로
 
