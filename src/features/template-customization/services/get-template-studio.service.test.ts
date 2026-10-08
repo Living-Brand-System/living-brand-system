@@ -27,10 +27,9 @@ vi.mock('@/features/graphic-generation/services/list-graphic-studio-configs.serv
 }))
 // 🔴 이것이 빠져 있어 단위 테스트가 Payload를 실제로 부팅했다 — 빈 DB에서는 스키마 생성까지
 //    이 테스트가 떠안아 CI가 타임아웃으로 죽었다.
-vi.mock(
-	'@/features/template-customization/repositories/brand-highlight-color.payload.repository',
-	() => ({ getTemplateHighlightColor: vi.fn(async () => '#1d7a4c') }),
-)
+vi.mock('@/features/guideline/services/list-brand-colors.service', () => ({
+	listPublishedBrandColors: vi.fn(async () => [{ name: 'HD HERITAGE GREEN', hex: '#1d7a4c' }]),
+}))
 
 describe('getTemplateStudio', () => {
 	it('published 템플릿이 없으면 null을 반환한다', async () => {
