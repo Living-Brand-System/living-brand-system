@@ -7,9 +7,12 @@ import {
 } from './list-available-scenario-checks.service'
 
 const find = vi.fn()
+vi.mock('../repositories/rules.payload.repository', () => ({
+	findPublishedRules: (req: PayloadRequest) => find(req).then((r: { docs: unknown[] }) => r.docs),
+}))
 
 function req(user?: unknown): PayloadRequest {
-	return { payload: { find }, user } as never
+	return { user } as never
 }
 
 const rule = (overrides: Record<string, unknown> = {}) => ({
@@ -43,15 +46,7 @@ describe('listAvailableScenarioChecks', () => {
 			{ executor: 'deterministic', key: 'color.palette', title: '컬러' },
 			{ executor: undefined, key: 'type.scale', title: 'Type Scale' },
 		])
-		expect(find).toHaveBeenCalledWith({
-			collection: 'rules',
-			depth: 0,
-			draft: false,
-			limit: 2000,
-			overrideAccess: false,
-			user,
-			where: { _status: { equals: 'published' } },
-		})
+		expect(find).toHaveBeenCalledWith(req(user))
 	})
 })
 

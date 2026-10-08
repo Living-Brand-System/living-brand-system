@@ -35,6 +35,8 @@ const COLLECTION_OWNERS: Record<string, string> = {
 	'guideline-documents': 'features/guideline',
 	rules: 'features/quality-rule',
 	templates: 'features/template-core',
+	// 계정 문서. 기능별 설정 필드(tokenLimits·figmaToken)를 각 기능 저장소가 직접 읽던 것을 auth가 소유한다.
+	users: 'features/auth',
 }
 
 /** R2 예외 — 인증 operation(`payload.auth`·`payload.login`)은 저장소가 아니라 인증 경계가 직접 부른다. */
@@ -73,18 +75,12 @@ const ALLOWLIST: readonly string[] = [
 	'R1 modules/agents/agent-chat-tools.agent.ts -> features/agent-chat/repositories/agent-skill.payload.repository',
 	'R1 modules/agents/agent-chat-tools.agent.ts -> features/asset-check/utils/check-display-status',
 	'R1 modules/agents/agent-chat-tools.agent.ts -> features/asset-check/utils/format-check-detail',
-	'R1 modules/agents/agent-chat-tools.agent.ts -> features/guideline/repositories/mcp-guideline.payload.repository',
 	'R1 modules/agents/agent-chat.agent.ts -> features/agent-chat/repositories/agent-skill.payload.repository',
 	'R2 app/(frontend)/account/token-limits/page.tsx',
 	'R2 app/api/auth/password/route.ts',
 	'R2 app/api/studio/preview/route.ts',
 	'R2 collections/Users.ts',
 	'R2 collections/revalidate.ts',
-	'R2 features/guideline/cards/displays/dynamics/logo-set.ts',
-	'R2 features/guideline/checks/validate-guideline-chapter-deletable.ts',
-	'R2 features/quality-rule/services/list-available-scenario-checks.service.ts',
-	'R2 modules/agents/agent-chat-tools.agent.ts',
-	'R2 modules/ai-usage/services/token-limit.service.ts',
 	'R3 agent-skills <- features/agent-chat',
 	'R3 brand-colors <- features/asset-check',
 	'R3 brand-colors <- features/studio-export',
@@ -93,6 +89,8 @@ const ALLOWLIST: readonly string[] = [
 	'R3 guideline-documents <- features/quality-rule',
 	'R3 rules <- features/guideline',
 	'R3 templates <- features/agent-chat',
+	'R3 users <- features/template-import',
+	'R3 users <- modules/ai-usage',
 ]
 
 type SourceFile = { rel: string; text: string }

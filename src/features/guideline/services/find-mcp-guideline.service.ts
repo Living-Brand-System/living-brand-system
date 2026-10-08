@@ -2,6 +2,7 @@ import { toGuidelineReadDocument } from '../domain/reading/read-document'
 import {
 	findPublishedMcpGuideline,
 	listPublishedMcpGuidelineChecks,
+	listPublishedMcpGuidelineChecksForUser,
 	listPublishedMcpGuidelineDocuments,
 } from '../repositories/mcp-guideline.payload.repository'
 import { findPaletteCatalog } from '../repositories/palette.payload.repository'
@@ -73,6 +74,15 @@ export async function findMcpChecks(
 		totalDocs: checks.length,
 		totalPages: Math.ceil(checks.length / limit),
 	}
+}
+
+/**
+ * Agent 도구용 — 요청 컨텍스트 없이 user만으로 published Check 목록을 key 순으로 준다.
+ * 페이지 정책은 없다(Agent는 전체를 한 번에 본다). payload 획득은 repository가 한다(경계 규칙 R2).
+ */
+export async function findMcpChecksForUser(user: unknown, locale: 'en' | 'ko' = 'ko') {
+	const checks = await listPublishedMcpGuidelineChecksForUser(user, locale)
+	return checks.sort((a, b) => a.key.localeCompare(b.key))
 }
 
 /**

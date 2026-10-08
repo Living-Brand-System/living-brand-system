@@ -1,4 +1,5 @@
 import type { PayloadRequest } from 'payload'
+import { findPublishedRules } from '../repositories/rules.payload.repository'
 import type { RuleExecutor } from '../rule-executor'
 
 export interface AvailableScenarioCheck {
@@ -9,22 +10,12 @@ export interface AvailableScenarioCheck {
 
 /**
  * CheckScenario 편집용 published Rule 목록을 표시 순서로 조립한다.
- * published Rule 조회 Payload I/O도 이 service가 직접 소유한다.
+ * published Rule 조회는 rules repository가 소유한다.
  */
 export async function listAvailableScenarioChecks(
 	req: PayloadRequest,
 ): Promise<AvailableScenarioCheck[]> {
-	const { docs } = await req.payload.find({
-		collection: 'rules',
-		depth: 0,
-		draft: false,
-		limit: 2000,
-		overrideAccess: !req.user,
-		user: req.user,
-		where: { _status: { equals: 'published' } },
-	})
-
-	return docs
+	return (await findPublishedRules(req))
 		.map((rule) => ({
 			executor: rule.executor,
 			key: rule.key,
@@ -43,7 +34,7 @@ export function validateCheckScenarioKey(value: unknown) {
 
 /**
  * CheckScenario가 선택한 key의 형식·중복·published Rule 존재 여부를 검증한다.
- * published Rule 조회 Payload I/O는 listAvailableScenarioChecks가 소유한다.
+ * published Rule 조회는 listAvailableScenarioChecks를 거쳐 rules repository가 소유한다.
  */
 export async function validateCheckScenarioKeys(value: unknown, req: PayloadRequest) {
 	if (!Array.isArray(value) || value.length === 0) return 'Check를 1개 이상 포함하세요.'

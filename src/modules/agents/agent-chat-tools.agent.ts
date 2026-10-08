@@ -1,6 +1,4 @@
-import config from '@payload-config'
 import { type ToolSet, tool } from 'ai'
-import { getPayload, type PayloadRequest } from 'payload'
 import { z } from 'zod'
 import { agentSkillSelectionSchema } from '@/features/agent-chat/domain/agent-skill-tool-policy'
 import {
@@ -20,7 +18,7 @@ import {
 import { startCheckSession } from '@/features/asset-check/services/start-check-session.service'
 import { checkDisplayStatus } from '@/features/asset-check/utils/check-display-status'
 import { formatCheckDetail } from '@/features/asset-check/utils/format-check-detail'
-import { listPublishedMcpGuidelineChecks } from '@/features/guideline/repositories/mcp-guideline.payload.repository'
+import { findMcpChecksForUser } from '@/features/guideline/services/find-mcp-guideline.service'
 import {
 	type AgentGeneratedImagesAttachment,
 	generateImages,
@@ -93,23 +91,16 @@ export function getAgentTools() {
 			description: 'Get checks declared by published brand guideline documents.',
 			inputSchema: z.object({}),
 			contextSchema: guidelineToolContextSchema,
-			// guideline MCP check 조회를 재사용하고, Agent에는 source를 뺀 DTO를 key 순으로 준다.
-			execute: async (_input, { context }) => {
-				const payload = await getPayload({ config })
-				const checks = await listPublishedMcpGuidelineChecks(
-					{ payload, user: context.user } as PayloadRequest,
-					'ko',
-				)
-
-				return checks
-					.map(({ evidence, key, tier, title }) => ({
+			// guideline MCP check 조회를 재사용하고, Agent에는 source를 뺀 DTO를 준다(key 순은 서비스가 맞춘다).
+			execute: async (_input, { context }) =>
+				(await findMcpChecksForUser(context.user, 'ko')).map(
+					({ evidence, key, tier, title }) => ({
 						evidence,
 						key,
 						tier: tier ?? null,
 						title,
-					}))
-					.sort((a, b) => a.key.localeCompare(b.key))
-			},
+					}),
+				),
 		}),
 		listCheckScenarios: tool({
 			description:
