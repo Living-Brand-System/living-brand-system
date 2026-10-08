@@ -130,6 +130,7 @@ import * as migration_20261006_042145_remove_section_align from './20261006_0421
 import * as migration_20261006_044903_add_ai_token_limits from './20261006_044903_add_ai_token_limits';
 import * as migration_20261007_055710_template_output_size from './20261007_055710_template_output_size';
 import * as migration_20261007_110418_template_default_session from './20261007_110418_template_default_session';
+import * as migration_20261008_015146_payload_3_90_security from './20261008_015146_payload_3_90_security';
 
 export const migrations = [
   {
@@ -790,6 +791,11 @@ export const migrations = [
   {
     up: migration_20261007_110418_template_default_session.up,
     down: migration_20261007_110418_template_default_session.down,
-    name: '20261007_110418_template_default_session'
+    name: '20261007_110418_template_default_session',
+  },
+  {
+    up: migration_20261008_015146_payload_3_90_security.up,
+    down: migration_20261008_015146_payload_3_90_security.down,
+    name: '20261008_015146_payload_3_90_security'
   },
 ];
