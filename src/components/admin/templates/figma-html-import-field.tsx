@@ -3,32 +3,12 @@
 import { Button, TextInput, toast, useForm, useFormFields } from '@payloadcms/ui'
 import { useState } from 'react'
 import { composeTemplateHtml } from '@/features/template-core/runtime/compose-template-html.client'
-import type { FigmaHtmlResult } from '@/features/template-import/utils/figma-node-to-html'
+import { requestFigmaHtmlImport } from '@/features/template-import/services/import-figma-html.client'
 import type {
 	FigmaRasterDiagnostic,
 	FigmaTruncationDiagnostic,
 } from '@/features/template-import/utils/normalize-figma-node'
 import type { TemplateNodeConfigMap } from '@/types/template'
-
-type ImportedFigmaHtml = FigmaHtmlResult & {
-	name: string
-	diagnostics?: FigmaRasterDiagnostic[]
-	truncationDiagnostics?: FigmaTruncationDiagnostic[]
-}
-
-/** Figma URL의 프레임을 HTML로 변환 요청한다. 실패하면 서버 메시지를 담아 throw한다. */
-async function importFigmaHtmlFromUrl(sourceUrl: string): Promise<ImportedFigmaHtml> {
-	const response = await fetch('/api/templates/import-figma-html', {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ sourceUrl }),
-	})
-	const body = await response.json().catch(() => null)
-	if (!response.ok) {
-		throw new Error(body?.message || 'Figma 가져오기에 실패했습니다.')
-	}
-	return body as ImportedFigmaHtml
-}
 
 /** 이미지로 고정된 레이어 진단을 어드민 경고 문구로 요약한다(3개 초과는 개수로 줄임). */
 function formatRasterWarning(diagnostics: FigmaRasterDiagnostic[]): string {
@@ -85,7 +65,7 @@ export function FigmaHtmlImportField() {
 		setIsLoading(true)
 
 		try {
-			const imported = await importFigmaHtmlFromUrl(sourceUrl)
+			const imported = await requestFigmaHtmlImport(sourceUrl)
 
 			const currentNodeConfigs = (getData()?.overrides ?? {}) as TemplateNodeConfigMap
 			const nextNodeConfigs = pruneTemplateNodeConfigs(imported.html, currentNodeConfigs)
