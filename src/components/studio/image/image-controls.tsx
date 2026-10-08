@@ -1,29 +1,14 @@
 'use client'
 
 import { useMemo } from 'react'
-import {
-	CONTROLLER_TOGGLE_OPTIONS,
-	ControllerCompound,
-	ControllerSegmented,
-} from '@/components/shared/controller'
-import { ImageCameraControl } from '@/components/studio/image/image-camera-control'
-import { ImageReferenceUpload } from '@/components/studio/image/image-reference-upload'
-import type {
-	ControllerWidgetProps,
-	ControllerWidgetRegistry,
-} from '@/components/studio/panel/studio-panel-slot'
+import { IMAGE_WIDGETS } from '@/components/studio/image/widgets/registry'
 import type { StudioSurface } from '@/components/studio/shared/studio-shell'
-import { ColorPairWidget } from '@/components/studio/shared/widgets/color-pair'
-import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
 import {
 	deriveImageStudioComposition,
 	IMAGE_COMPOSITION_GATE_IDS,
 } from '@/features/image-generation/domain/image-studio-composition'
-import {
-	getImageStudioControls,
-	getImageStudioFeature,
-} from '@/features/image-generation/domain/image-studio-config'
+import { getImageStudioControls } from '@/features/image-generation/domain/image-studio-config'
 import { useImageStudio } from '@/features/image-generation/hooks/use-image-studio'
 import {
 	arrangeStudioPanel,
@@ -86,109 +71,4 @@ export function useImagePanel(): StudioSurface['panel'] {
 				}
 			: undefined,
 	}
-}
-
-function ImageReferenceWidget({ cluster, values, onChange }: ControllerWidgetProps) {
-	const gate = cluster.members.gate
-	return <ImageReference enabled={values[gate] === true} onChange={(on) => onChange(gate, on)} />
-}
-
-function ImageCameraWidget({ cluster, values, onChange }: ControllerWidgetProps) {
-	const gate = cluster.members.gate
-	return <ImageCamera enabled={values[gate] === true} onChange={(on) => onChange(gate, on)} />
-}
-
-/** 이미지 묶음 위젯 — 본문(첨부·시드 이미지·각도)은 이미지 세션이 갖고, 사용 여부만 계약 값으로 오간다. */
-const IMAGE_WIDGETS: ControllerWidgetRegistry = {
-	'color-pair': ColorPairWidget,
-	reference: ImageReferenceWidget,
-	camera: ImageCameraWidget,
-}
-
-function ImageReference({
-	enabled,
-	onChange,
-}: {
-	enabled: boolean
-	onChange: (enabled: boolean) => void
-}) {
-	const { reference, generation } = useImageStudio()
-	return (
-		<ControllerCompound
-			label="Reference Image"
-			control={
-				<ControllerSegmented
-					compact
-					aria-label="Reference Image 사용"
-					options={CONTROLLER_TOGGLE_OPTIONS}
-					value={enabled ? 'on' : 'off'}
-					disabled={generation.busy}
-					onChange={(value) => onChange(value === 'on')}
-				/>
-			}
-		>
-			{enabled && (
-				<ImageReferenceUpload
-					compact
-					value={reference.value}
-					name={reference.name}
-					error={reference.error}
-					disabled={generation.busy || reference.preparing}
-					onAttach={reference.attach}
-					onClear={reference.clear}
-				/>
-			)}
-			{enabled && reference.preparing && (
-				<div
-					role="status"
-					className="flex items-center justify-between gap-2 px-3 pb-3 text-xs text-muted-foreground"
-				>
-					참조 이미지를 준비하고 있어요…
-					<Button size="sm" variant="ghost" onClick={reference.clear}>
-						취소
-					</Button>
-				</div>
-			)}
-		</ControllerCompound>
-	)
-}
-
-function ImageCamera({
-	enabled,
-	onChange,
-}: {
-	enabled: boolean
-	onChange: (enabled: boolean) => void
-}) {
-	const { config, camera, generation } = useImageStudio()
-	const feature = getImageStudioFeature(config, 'camera-control')
-	if (!feature) return null
-	return (
-		<ControllerCompound
-			label="Camera Control"
-			control={
-				<ControllerSegmented
-					compact
-					aria-label="Camera Control 사용"
-					options={CONTROLLER_TOGGLE_OPTIONS}
-					disabled={generation.busy || !camera.seedImage}
-					value={enabled && camera.seedImage ? 'on' : 'off'}
-					onChange={(value) => onChange(value === 'on')}
-				/>
-			}
-		>
-			{enabled && camera.seedImage && (
-				<ImageCameraControl
-					contained
-					azimuthDeg={camera.azimuthDeg}
-					elevationDeg={camera.elevationDeg}
-					seedImage={camera.seedImage}
-					busy={generation.busy}
-					azimuths={feature.azimuths}
-					elevations={feature.elevations}
-					onChange={camera.setAngles}
-				/>
-			)}
-		</ControllerCompound>
-	)
 }

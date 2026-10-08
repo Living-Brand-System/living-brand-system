@@ -4,25 +4,14 @@ import { Controller } from '@/components/shared/controller'
 import { buildGraphicPanelComposition } from '@/components/studio/graphic/graphic-editing-controls'
 import { graphicProfileCard } from '@/components/studio/graphic/graphic-profile-picker'
 import { imageProfileCard } from '@/components/studio/image/image-profile-picker'
-import type {
-	ControllerWidgetProps,
-	ControllerWidgetRegistry,
-} from '@/components/studio/panel/studio-panel-slot'
 import { StudioProfileCards } from '@/components/studio/shared/studio-profile-cards'
-import { ColorPairWidget } from '@/components/studio/shared/widgets/color-pair'
-import {
-	IMAGE_TRANSFORM_DEFAULT,
-	ImageTransformControl,
-} from '@/components/studio/template/image-transform-control'
-import { SampleImagePicker } from '@/components/studio/template/sample-image-picker'
 import type { TemplateTargetPanel } from '@/components/studio/template/template-panel'
+import type { TemplateImageTarget } from '@/components/studio/template/widgets/image-target'
+import { TEMPLATE_IMAGE_WIDGETS } from '@/components/studio/template/widgets/registry'
 import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
 import { acceptsImagePromptExecution } from '@/features/image-generation/domain/image-studio-config'
-import type {
-	TemplateImageSlotState,
-	TemplateStudioValue,
-} from '@/features/template-customization/contexts/template-studio-context'
+import type { TemplateStudioValue } from '@/features/template-customization/contexts/template-studio-context'
 import { resolveTemplateImageColorControls } from '@/features/template-customization/domain/image-colorize'
 import {
 	deriveTemplateImageComposition,
@@ -30,11 +19,7 @@ import {
 	TEMPLATE_IMAGE_DIMMER_STRENGTH,
 	TEMPLATE_IMAGE_IDS,
 } from '@/features/template-customization/domain/template-image-composition'
-import {
-	partitionTemplateSlots,
-	type ResolvedTemplateImageConfig,
-	type TemplateImageConfigSlot,
-} from '@/features/template-customization/domain/template-studio-config'
+import { partitionTemplateSlots } from '@/features/template-customization/domain/template-studio-config'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import type { SampleImageOption } from '@/features/template-customization/services/list-sample-images.client'
 import {
@@ -80,30 +65,6 @@ export function TemplateGraphicSelection() {
 	)
 }
 
-type ImageTarget = {
-	id: string
-	label: string
-	state: TemplateImageSlotState
-	contracts: readonly ResolvedTemplateImageConfig[]
-	readonly: boolean
-	pinned: boolean
-	bindings: ControllerRuntimeBindings
-	onProfile: (id: number) => void
-	onPrompt: (value: string) => void
-	onDimmer: (patch: { dimmer?: boolean; dimmerOpacity?: number }) => void
-	onFeature: (id: string, value: ControllerControlValue) => void
-	onSample: (option: SampleImageOption) => void
-	onGenerate: () => void
-	/** 슬롯 방식(Preset/Generate) — 배경 방식은 배경 컴포지션이 갖는다(없음). */
-	onMode?: (mode: 'preset' | 'generate') => void
-	/** 슬롯 Transform — 배경에는 없다. */
-	transform?: {
-		limits: TemplateImageConfigSlot['transform']['limits']
-		aspectRatio?: number
-		onChange: (transform: NonNullable<TemplateImageSlotState['transform']>) => void
-	}
-}
-
 /**
  * 이미지 대상 패널의 배치 정책(docs/10 §3.7) — 생성 중인지가 정한다(Figma 529:26114·529:27139). 고를 것뿐이면
  * 샘플 목록이 Basic 위 목록 카드이고, 생성 입력이 Basic을 차지하면 Presets 탭으로 비킨다.
@@ -131,61 +92,12 @@ const TEMPLATE_IMAGE_PRESENTATION = {
 	groups: [{ groupId: 'generate', collapsible: false, defaultOpen: true }],
 }
 
-/**
- * 이미지 묶음 위젯은 편집 대상(슬롯·배경) 하나를 본다 — 컴포지션의 `scope`로 받는다.
- * 본문(샘플·색·Transform)의 값은 대상 세션이 갖는다.
- */
-function imageTarget(scope: unknown): ImageTarget {
-	if (!scope)
-		throw new Error('이미지 위젯은 템플릿 이미지 컴포지션(scope = 대상) 안에서만 그린다.')
-	return scope as ImageTarget
-}
-
-function SamplesWidget({ scope }: ControllerWidgetProps) {
-	const target = imageTarget(scope)
-	const sample = target.state.image?.kind === 'sample' ? target.state.image : undefined
-	return (
-		<SampleImagePicker inline selectedId={sample?.sampleImageId} onSelect={target.onSample} />
-	)
-}
-
-/** 프로파일이 바뀌면 고른 모드·스와치를 처음부터 본다 — 슬롯 패널은 남은 채 계약만 바뀐다. */
-function ColorWidget(props: ControllerWidgetProps) {
-	return (
-		<ColorPairWidget {...props} identity={String(imageTarget(props.scope).state.profileId)} />
-	)
-}
-
-/** 생성 전에는 닫힌 채 잠긴다 — compose가 배정된 이미지에만 transform을 적용해서다. */
-function TransformWidget({ cluster, scope }: ControllerWidgetProps) {
-	const target = imageTarget(scope)
-	if (!target.transform) return null
-	const disabled = target.readonly || !target.state.image
-	return (
-		<Controller.Group title={cluster.title} collapsible disabled={disabled}>
-			<ImageTransformControl
-				value={target.state.transform ?? IMAGE_TRANSFORM_DEFAULT}
-				disabled={disabled}
-				limits={target.transform.limits}
-				aspectRatio={target.transform.aspectRatio}
-				onChange={target.transform.onChange}
-			/>
-		</Controller.Group>
-	)
-}
-
-const TEMPLATE_IMAGE_WIDGETS: ControllerWidgetRegistry = {
-	'asset-browser': SamplesWidget,
-	'color-pair': ColorWidget,
-	transform: TransformWidget,
-}
-
 /** 지금 편집하는 이미지 대상 — 선택한 이미지 슬롯, 또는 배경(이미지 방식). 없으면 `null`. */
 function templateImageTarget(
 	{ config, images, background, layers }: TemplateStudioValue,
 	isBackground: boolean,
-): ImageTarget | null {
-	const targets: ImageTarget[] = isBackground
+): TemplateImageTarget | null {
+	const targets: TemplateImageTarget[] = isBackground
 		? [
 				{
 					id: 'background',

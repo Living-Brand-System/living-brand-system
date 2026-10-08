@@ -1,7 +1,7 @@
 'use client'
 
 import type { ControlPanelComposition } from '@/components/studio/panel/control-panel'
-import { TEMPLATE_LAYER_WIDGETS } from '@/components/studio/template/template-layer-composition'
+import { TEMPLATE_LAYER_WIDGETS } from '@/components/studio/template/widgets/registry'
 import type { TemplateStudioValue } from '@/features/template-customization/contexts/template-studio-context'
 import {
 	deriveTemplateBackgroundComposition,
