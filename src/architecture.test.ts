@@ -79,7 +79,6 @@ const ALLOWLIST: readonly string[] = [
 	'R2 collections/Users.ts',
 	'R2 collections/revalidate.ts',
 	'R3 agent-skills <- features/agent-chat',
-	'R3 rules <- features/guideline',
 	'R3 users <- features/template-import',
 	'R3 users <- modules/ai-usage',
 ]

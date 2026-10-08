@@ -17,3 +17,26 @@ export async function findPublishedRules(req: PayloadRequest): Promise<Rule[]> {
 	})
 	return docs
 }
+
+export type RuleSummary = Pick<Rule, 'id' | 'key' | 'title'>
+
+/**
+ * id 목록으로 Rule의 key·title을 읽는다. 초안 포함 — 검색 인덱싱은 문서가 참조하는 Rule이 발행됐는지 묻지 않는다.
+ * 🔴 `req`를 그대로 넘긴다. 호출 맥락이 문서 저장 트랜잭션 안이라 같은 커넥션을 타야 한다.
+ */
+export async function findRuleSummaries(
+	req: PayloadRequest,
+	ruleIds: readonly number[],
+): Promise<RuleSummary[]> {
+	const { docs } = await req.payload.find({
+		collection: 'rules',
+		depth: 0,
+		limit: 0,
+		overrideAccess: true,
+		pagination: false,
+		req,
+		select: { key: true, title: true },
+		where: { id: { in: [...ruleIds] } },
+	})
+	return docs.map(({ id, key, title }) => ({ id, key, title }))
+}
