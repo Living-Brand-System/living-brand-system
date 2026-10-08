@@ -129,13 +129,6 @@ function sameValue(left: ControllerControlValue | undefined, right: ControllerCo
 	return left === right
 }
 
-/** 조건이 가리키는 컨트롤 id들. 검증(미지 id·자기 참조)이 쓴다. */
-export function conditionControlIds(condition: ControllerCondition): string[] {
-	if ('all' in condition) return condition.all.flatMap(conditionControlIds)
-	if ('any' in condition) return condition.any.flatMap(conditionControlIds)
-	return [condition.control]
-}
-
 /**
  * 역할 정책대로 슬롯을 채운다. 숨은 그룹·묶음·컨트롤은 빠지고, 묶음이 가리킨 컨트롤은 그룹에서 빠진다.
  * 🔴 정책에 없는 역할·역할이 없는 그룹은 어느 슬롯에도 서지 않는다 — 어드민 전용 층이다

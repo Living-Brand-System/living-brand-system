@@ -1,42 +1,16 @@
 'use client'
 
-import dynamic from 'next/dynamic'
-import { useEffect, useId, useState } from 'react'
-import { ControllerCameraControl } from '@/components/shared/controller/camera-control'
-import { snapCameraAngle } from '@/components/shared/controller/camera-orbit'
+import { useId } from 'react'
 import { ControllerColorRow } from '@/components/shared/controller/color-row'
 import { ControllerCompound } from '@/components/shared/controller/compound'
 import { ControllerInput } from '@/components/shared/controller/input'
 import { ControllerReveal } from '@/components/shared/controller/presence'
 import { ControllerRow } from '@/components/shared/controller/row'
 import { ControllerSegmented } from '@/components/shared/controller/segmented'
-import { ImageReferenceUpload } from '@/components/studio/image/image-reference-upload'
-import {
-	IMAGE_REFERENCE_UPLOAD_MAX_BYTES,
-	IMAGE_REFERENCE_UPLOAD_MIME_TYPES,
-} from '@/features/image-generation/domain/reference-image/contract'
 import {
 	type BrandColorPairSwatch,
 	usePublishedBrandColorPairs,
 } from '@/features/template-core/hooks/use-published-brand-color-pairs'
-
-const CameraOrbitControl = dynamic(
-	() =>
-		import('@/components/shared/controller/camera-orbit-control').then(
-			(module) => module.CameraOrbitControl,
-		),
-	{
-		ssr: false,
-		loading: () => (
-			<div
-				role="status"
-				className="grid size-full place-items-center text-muted-foreground text-xs"
-			>
-				3D 미리보기를 불러오는 중…
-			</div>
-		),
-	},
-)
 
 export type StudioCompound = {
 	date: string
@@ -44,37 +18,12 @@ export type StudioCompound = {
 	swatch: string
 	foreground: string
 	background: string
-	referenceEnabled: boolean
-	file: File | null
-	fileError: string | null
-	cameraEnabled: boolean
-	azimuthDeg: number
-	elevationDeg: number
 }
-type Props = { value: StudioCompound; onChange: (patch: Partial<StudioCompound>) => void }
 
 const COLOR_MODES = [
 	{ value: 'swatch', label: 'Swatch' },
 	{ value: 'custom', label: 'Custom' },
 ] as const
-const TOGGLE = [
-	{ value: 'on', label: 'On' },
-	{ value: 'off', label: 'Off' },
-] as const
-const AZIMUTHS = [
-	{ value: 0, label: 'Front' },
-	{ value: 45, label: 'Right ¾' },
-	{ value: 90, label: 'Right' },
-	{ value: 180, label: 'Back' },
-	{ value: -90, label: 'Left' },
-	{ value: -45, label: 'Left ¾' },
-]
-const ELEVATIONS = [
-	{ value: 0, label: 'Front' },
-	{ value: -20, label: 'Low' },
-	{ value: 50, label: 'High' },
-	{ value: 80, label: 'Top' },
-]
 
 type ColorCompoundProps = {
 	value: Pick<StudioCompound, 'date' | 'colorMode' | 'swatch' | 'foreground' | 'background'>
@@ -234,132 +183,5 @@ function ColorWithPalette({
 				))}
 			</div>
 		</div>
-	)
-}
-
-export function PlaygroundReferenceCompound({ value, onChange }: Props) {
-	const [preview, setPreview] = useState<{ file: File; url: string } | null>(null)
-	useEffect(() => {
-		if (!value.file) {
-			setPreview(null)
-			return
-		}
-		const url = URL.createObjectURL(value.file)
-		setPreview({ file: value.file, url })
-		return () => URL.revokeObjectURL(url)
-	}, [value.file])
-	const url = preview?.file === value.file ? (preview?.url ?? null) : null
-	return (
-		<ControllerCompound
-			label="Reference Image"
-			control={
-				<ControllerSegmented
-					compact
-					aria-label="Reference Image 사용"
-					options={TOGGLE}
-					value={value.referenceEnabled ? 'on' : 'off'}
-					onChange={(next) => onChange({ referenceEnabled: next === 'on' })}
-				/>
-			}
-		>
-			{value.referenceEnabled && (
-				<ImageReferenceUpload
-					compact
-					value={url}
-					name={value.file?.name ?? null}
-					error={value.fileError}
-					disabled={false}
-					onAttach={(file) => {
-						if (!IMAGE_REFERENCE_UPLOAD_MIME_TYPES.some((type) => type === file.type))
-							return onChange({
-								fileError: 'PNG, JPEG, WebP 이미지를 선택해 주세요.',
-							})
-						if (file.size > IMAGE_REFERENCE_UPLOAD_MAX_BYTES)
-							return onChange({ fileError: '10MB 이하의 이미지를 선택해 주세요.' })
-						onChange({ file, fileError: null })
-					}}
-					onPreviewError={() =>
-						onChange({
-							file: null,
-							fileError: '이미지를 읽지 못했습니다. 다른 이미지를 선택해 주세요.',
-						})
-					}
-					onClear={() => onChange({ file: null, fileError: null })}
-				/>
-			)}
-		</ControllerCompound>
-	)
-}
-
-export function PlaygroundCameraCompound({ value, onChange }: Props) {
-	const azimuth =
-		AZIMUTHS.find(
-			(option) =>
-				option.value ===
-				snapCameraAngle(
-					value.azimuthDeg,
-					AZIMUTHS.map((option) => option.value),
-					true,
-				),
-		) ?? AZIMUTHS[0]
-	const elevation =
-		ELEVATIONS.find(
-			(option) =>
-				option.value ===
-				snapCameraAngle(
-					value.elevationDeg,
-					ELEVATIONS.map((option) => option.value),
-				),
-		) ?? ELEVATIONS[0]
-	return (
-		<ControllerCompound
-			label="Camera Control"
-			control={
-				<ControllerSegmented
-					compact
-					aria-label="Camera Control 사용"
-					options={TOGGLE}
-					value={value.cameraEnabled ? 'on' : 'off'}
-					onChange={(next) => onChange({ cameraEnabled: next === 'on' })}
-				/>
-			}
-		>
-			{value.cameraEnabled && (
-				<ControllerCameraControl
-					contained
-					axes={[
-						{
-							label: 'X',
-							options: AZIMUTHS.map((option) => ({
-								...option,
-								value: String(option.value),
-							})),
-							value: String(azimuth.value),
-							onChange: (next) => onChange({ azimuthDeg: Number(next) }),
-						},
-						{
-							label: 'Y',
-							options: ELEVATIONS.map((option) => ({
-								...option,
-								value: String(option.value),
-							})),
-							value: String(elevation.value),
-							onChange: (next) => onChange({ elevationDeg: Number(next) }),
-						},
-					]}
-				>
-					<CameraOrbitControl
-						seedImage="/guideline/reference/grid/application-brochure-body-01.webp"
-						azimuthDeg={value.azimuthDeg}
-						elevationDeg={value.elevationDeg}
-						azimuthLabel={azimuth.label}
-						elevationLabel={elevation.label}
-						azimuthSteps={AZIMUTHS.map((option) => option.value)}
-						elevationSteps={ELEVATIONS.map((option) => option.value)}
-						onChange={onChange}
-					/>
-				</ControllerCameraControl>
-			)}
-		</ControllerCompound>
 	)
 }

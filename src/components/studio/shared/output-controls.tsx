@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { Controller } from '@/components/shared/controller'
-import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
 import type { VideoExportSpec } from '@/features/studio-export/export-contract'
 import {
@@ -467,39 +466,6 @@ export function PrintControls({
 				/>
 			)}
 		</Controller.Row>
-	)
-}
-
-type ExportActionProps = {
-	busy: boolean
-	disabled: boolean
-	error: string | null
-	/**
-	 * 실패는 아니지만 결과물이 원본과 다른 점. 🔴 인쇄물은 되돌릴 수 없어서 조용히 넘기면 안 된다 —
-	 * 파일은 나왔는데 무엇이 빠졌는지 모르는 상태가 가장 나쁘다.
-	 */
-	warnings?: readonly string[]
-	onExport: () => void
-}
-
-/** Footer의 공통 내보내기 실행 상태와 오류·경고 표현을 묶는다. */
-export function ExportAction({ busy, disabled, error, warnings, onExport }: ExportActionProps) {
-	return (
-		<div data-slot="export-action" className="flex flex-col gap-2">
-			<Button className="h-11 w-full" onClick={onExport} disabled={disabled || busy}>
-				{busy ? '내보내는 중...' : '내보내기'}
-			</Button>
-			{error && (
-				<Typography role="alert" size="sm" className="text-destructive">
-					{error}
-				</Typography>
-			)}
-			{warnings?.map((warning) => (
-				<Typography key={warning} role="status" size="sm" className="text-warning">
-					{warning}
-				</Typography>
-			))}
-		</div>
 	)
 }
 
