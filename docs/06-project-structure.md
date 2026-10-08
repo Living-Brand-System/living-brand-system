@@ -32,7 +32,7 @@ Creator UI -> Route Handler -> PublishGuidelineService -> GuidelineRepository ->
 | Collections | `src/collections` | Payload collection schema, access, hook 진입점을 둡니다. |
 | Guideline Sections | `src/features/guideline/sections` | 섹션·컨테이너·카드 CMS 스키마와 투영·표현 어댑터를 둡니다. |
 | Globals | `src/globals` | Payload global schema를 둡니다. |
-| Modules | `src/modules` | 기능 자체가 아닌 UI 비종속 공통 계약과 Agent 실행 모듈을 둡니다. |
+| Modules | `src/modules` | 기능 자체가 아닌 UI 비종속 공통 계약을 둡니다. |
 | Services | `src/features/*/services`, `src/modules/*/services`, `src/services` | Service는 사용처 수와 관계없이 소유 기능이나 모듈 안에 둡니다. 소유 경계가 없는 cross-domain orchestration만 `src/services`에 둡니다. |
 | Repositories | `src/features/*/repositories`, `src/modules/*/repositories`, `src/repositories` | Repository는 여러 기능이 사용해도 데이터의 소유 기능이나 모듈 안에 둡니다. 소유 경계가 없는 저장소만 `src/repositories`에 둡니다. |
 | Tests | `tests` | e2e, integration, helper를 둡니다. |
@@ -117,8 +117,16 @@ src/
       playground/
     shared/
       navigation/
+      controller/             # 컨트롤러 킷 — layout·controls·compose·read·asset·internal
+      controller-renderer/    # Definition → 킷 투영
     studio/
+      panel/                  # 패널 런타임(ControlPanel·슬롯·위젯 계약)
       shared/
+        widgets/              # 도메인 무지·여러 스튜디오 공용 묶음 위젯
+        studio-output.tsx     # Output 카드 공용 부품(Root·Format·Print·Video·Actions·Messages)
+      <studio>/
+        widgets/              # 스튜디오 전용 위젯 + registry
+        output/               # 스튜디오 Output 카드 조립 + 고유 행
     ui/
   features/
     graphic-generation/
@@ -204,8 +212,25 @@ scripts/
 - `page.tsx`와 `layout.tsx`는 라우팅과 화면 조합만 담당합니다.
 - `route.ts`는 HTTP adapter로만 동작합니다.
 - Collection hook은 Service를 호출하고, 업무 규칙을 직접 길게 작성하지 않습니다.
-- Payload Local API, ORM, CMS SDK import는 `*.payload.repository.ts`, `*.drizzle.repository.ts` 구현 파일에만 허용합니다. Service는 기능 전용 read 조회라도 이 규칙을 따릅니다.
+- Payload Local API, ORM, CMS SDK import는 `*.payload.repository.ts`, `*.drizzle.repository.ts` 구현 파일에만 허용합니다. Service는 기능 전용 read 조회라도 이 규칙을 따릅니다. 예외는 인증 operation(`payload.auth`·`payload.login`) 하나이며, `lib/request-auth.ts`·`proxy.ts`·`/api/auth/login` 라우트가 직접 부릅니다 — 저장소가 아니라 인증 경계이기 때문입니다.
 - Service와 Repository는 사용처 수와 관계없이 그것을 소유하는 `src/features/<feature>` 또는 `src/modules/<module>` 안에 둡니다. 다른 기능은 소유 경계의 공개 계약을 소비합니다. 소유 경계가 없는 cross-domain orchestration이나 저장소만 `src/services`, `src/repositories`에 둡니다.
+
+#### 경계 규칙
+
+경계는 `src/features/<feature>`와 `src/modules/<module>` 하나하나입니다. `src/architecture.test.ts`가 아래 셋을 소스 전체에 대조하며, 기존 위반은 그 파일의 허용목록에 적혀 있고 고치면 지웁니다(래칫). 규칙을 바꾸려면 이 문서를 먼저 고칩니다.
+
+- **R1 — 경계 밖에서 import할 수 있는 것은 그 경계의 `services/`·`domain/`과 경계 루트의 파일뿐입니다.** `repositories/`·`runtime/`·`utils/`·`hooks/`·`providers/`·`contexts/`·`adapters/`·`checks/` 등은 경계 안에서만 씁니다. 같은 이유로 서버 코드(`.tsx`·`.client.ts`·`'use client'`·브라우저 폴더가 아닌 파일)는 `.client`를 import하지 않습니다 — 양쪽이 쓸 타입·순수 함수는 `domain/`에 둡니다. 화면(`components`·`app`)과 `collections`는 저장소를 import하지 않고, `lib`는 경계를 import하지 않습니다. `import type`은 런타임 결합이 없어 검사하지 않습니다.
+- **R2 — Payload 런타임(`getPayload`·`payload.*`·`req.payload.*`)은 `*.repository.ts`에서만 부릅니다.** 위 인증 예외만 있습니다.
+- **R3 — 컬렉션 하나는 경계 하나가 소유합니다.** 다른 경계는 소유자의 읽기 서비스를 부릅니다. 저장소가 둘 이상이던 컬렉션의 소유자는 아래와 같이 확정했습니다(2026-10-08). 표에 없는 컬렉션은 저장소가 한 경계에만 있으면 됩니다. `src/repositories`는 경계가 아니므로 소유자로 세지 않습니다 — 여러 컬렉션에 **같은 동작**을 거는 cross-domain 저장소(예: 스튜디오 프로파일 4종의 미리보기 갱신)만 두고, 한 컬렉션의 도메인 조회는 소유 경계의 repository에 둡니다.
+
+| 컬렉션 | 소유자 | 비고 |
+| --- | --- | --- |
+| `brand-colors` | `features/guideline` | 발행 색 목록 읽기 서비스 하나를 열고 소비자가 자기 모양으로 좁힙니다 |
+| `guideline-documents` | `features/guideline` | `domain/reading`이 이미 MCP·Agent 공통 읽기 모델을 소유합니다 |
+| `templates` | `features/template-core` | |
+| `rules` | `features/quality-rule` | |
+| `agent-skills` | `features/agent-chat` | 에이전트 실행 단위(`*.agent.ts`)와 스킬 저장소가 같은 경계에 있습니다 |
+| `users` | `features/auth` | 계정 문서. 기능별 설정 필드(`tokenLimits`·Figma 토큰)는 auth의 `user-settings.service`로만 읽고 씁니다 — ai-usage·template-import는 그 서비스를 부릅니다 |
 - 일반 React 컴포넌트는 `src/components/<surface>`에 둡니다. 컴포넌트가 기능 hook이나 client service를 사용할 수 있지만, 기능 로직이 표현 컴포넌트를 import하면 안 됩니다.
 - 둘 이상의 화면 표면이 쓰는 컴포넌트만 `src/components/shared`로 승격합니다. 한 표면 안의 여러 화면이 공유하면 `<surface>/shared`에 둡니다.
 - Repository Interface 파일(`*.repository.ts`)은 구현체가 2개 이상 필요해지는 시점에 만듭니다. 단일 구현 단계에서는 Service가 구현 파일을 직접 import합니다.
@@ -215,7 +240,7 @@ scripts/
 - 가이드라인은 `sections/schema.ts`·`display-schema.ts`의 단일 저장 계약을 사용합니다. 스키마·투영은 Node에서 읽을 수 있어야 하며 표현 연결은 `sections/render.tsx`·`display-render.tsx`가 소유합니다.
 - 신규 가이드라인 CMS 본문은 `features/guideline/sections`가 같은 경계를 따릅니다. `schema.ts`·`display-schema.ts`는 저장 필드, `model.ts`는 공통 위계·파일 해석, `projection.ts`는 검색·검수 투영, `render.tsx`·`display-render.tsx`는 공통 표현 API 연결입니다. schema/model은 React 렌더러를 import하지 않습니다. 기존 blocks는 호환 경로로 유지합니다([기능 계약 §2.6](features/guideline.md#26-신규-cms-계약--2026-09-21)).
 - 가이드라인의 MCP·Agent 공통 읽기 모델은 `features/guideline/domain/reading`이 소유합니다. `read-document.ts`는 원본→읽기 문서 변환과 레거시 호환 분기, `read-visual.ts`는 활성 도판·조작·동작 해석, `format-document.ts`는 읽기 모델→텍스트 표현을 담당합니다. 이 계층은 DB·네트워크를 호출하지 않으며, 응답 길이와 페이지 처리는 각 서비스에 둡니다.
-- Agent는 별도 사용자 역할이 아니라 `src/modules/agents`의 실행 모듈입니다.
+- Agent는 별도 사용자 역할이 아니라 `src/features/agent-chat`의 실행 단위(`*.agent.ts`, 경계 루트)입니다. 2026-10-08까지 `src/modules/agents`였으나 feature 6개를 import하는 모듈은 아래층이 아니라 agent-chat의 엔진이라 합쳤습니다.
 - 실제 폴더 구조를 개선할 때는 `src/features`, `src/modules`, `src/components`, `src/lib`, `src/services`, `src/repositories`, `src/types`를 이 순서로 추가합니다.
 
 예시:
@@ -239,7 +264,7 @@ src/features/guideline/repositories/guideline.payload.repository.ts
 | Service | `src/features/*/services`, `src/modules/*/services`, 소유 경계가 없을 때 `src/services` | Use Case 실행, Input / Output 계약, 상태 전이 판단, 기능 전용 published 조회 |
 | Repository Interface | `src/features/*/repositories/*.repository.ts`, `src/modules/*/repositories/*.repository.ts`, 소유 경계가 없을 때 `src/repositories` | Service가 필요한 저장소 계약 (구현체 2개 이상일 때) |
 | Repository Implementation | `src/features/*/repositories/*.payload.repository.ts`, `src/modules/*/repositories/*.payload.repository.ts`, 소유 경계가 없을 때 `src/repositories` | Payload Local API, Drizzle ORM, CMS SDK 호출 |
-| Agent | `src/modules/agents` | 검색, Answer, Recommendation 생성 |
+| Agent | `src/features/agent-chat/*.agent.ts` | 검색, Answer, Recommendation 생성 |
 | 공통 유틸 | `src/lib` | 에러, 인증 helper처럼 실제 공유되는 코드 |
 
 예시:
@@ -479,7 +504,7 @@ export interface PublishGuidelineResponse {
 | `*.tsx` | React component 파일입니다. |
 | `use-*.ts` | React custom hook 파일입니다. JSX를 반환하면 `use-*.tsx`를 허용합니다. |
 | `*.service.ts` | Use Case service 함수 파일입니다. |
-| `*.client.ts` | Route Handler fetch, DOM, 다운로드처럼 브라우저 I/O를 소유하는 client service 파일입니다. 소유 기능의 `services` 폴더에 둡니다. |
+| `*.client.ts` | 브라우저 I/O를 소유하는 파일입니다. Route Handler·Payload REST fetch를 소유하는 client service는 소유 기능의 `services`에, 캔버스·DOM 변환·다운로드 같은 브라우저 실행 adapter는 `runtime`·`adapters`에 둡니다. 서버 코드는 이 파일을 import하지 않습니다(경계 규칙 R1). |
 | `*.repository.ts` | Service가 참조하는 repository interface 파일입니다. |
 | `*.payload.repository.ts` | Payload Local API 또는 CMS SDK 기반 repository 구현 파일입니다. |
 | `*.drizzle.repository.ts` | Drizzle ORM 기반 repository 구현 파일입니다. |
@@ -685,19 +710,31 @@ console.log(user.email, accessToken, rawUploadPath)
 예시:
 
 ```ts
-export async function POST(req: Request) {
-  try {
-    const input: PublishGuidelineInput = await req.json()
-    const output = await publishGuideline(input)
+const requestSchema = z.object({ guidelineId: z.number().int().positive() })
 
-    return Response.json(output)
+export async function POST(req: Request) {
+  // 본문은 신뢰 경계 밖이다 — 타입 단언(`as`·타입 주석)이 아니라 스키마로 읽는다(docs/07).
+  const parsed = requestSchema.safeParse(await req.json().catch(() => null))
+  if (!parsed.success) {
+    return Response.json({ message: '요청 형식이 올바르지 않습니다.' }, { status: 400 })
+  }
+
+  const { payload, user } = await authenticateRequest()
+  if (!user) return Response.json({ message: 'Unauthorized' }, { status: 401 })
+
+  try {
+    return Response.json(await publishGuideline({ ...parsed.data, user }))
   } catch (error) {
-    return toErrorResponse(error)
+    if (error instanceof GuidelineNotPublishableError) {
+      return Response.json({ message: error.message }, { status: 409 })
+    }
+    payload.logger.error({ err: error }, 'guideline.publish.failed')
+    return Response.json({ message: '게시하지 못했습니다.' }, { status: 500 })
   }
 }
 ```
 
-Service는 업무상 실패를 명확한 오류로 던지고, Route Handler가 HTTP 응답으로 바꿉니다.
+Service는 업무상 실패를 명확한 오류로 던지고, Route Handler가 HTTP 응답으로 바꿉니다. 아는 도메인 오류만 상태 코드로 옮기고, 나머지는 서버 로그에 남긴 뒤 일반화된 메시지로 답합니다. JSON 본문은 위의 한 줄(`schema.safeParse(await req.json().catch(() => null))`), FormData는 `await req.formData().catch(() => null)` 뒤 필드별 검사가 이 리포의 공통 형태입니다.
 
 ## 16. 스키마 변경과 마이그레이션 워크플로
 

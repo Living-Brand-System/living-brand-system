@@ -1,5 +1,5 @@
 import { type ModelMessage, pruneMessages } from 'ai'
-import type { getAgentTools } from '@/modules/agents/agent-chat-tools.agent'
+import type { getAgentTools } from '@/features/agent-chat/agent-chat-tools.agent'
 
 /**
  * 이전 턴의 조회성 tool 결과와 reasoning을 이력에서 덜어낸다 — 클라이언트는 매 턴 대화 전체를 다시 보내고,

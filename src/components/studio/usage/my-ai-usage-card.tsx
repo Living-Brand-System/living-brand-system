@@ -1,4 +1,4 @@
-import { Controller } from '@/components/shared/controller'
+import { PageCard } from '@/components/shared/page-card'
 import { Typography } from '@/components/ui/typography'
 import { cn } from '@/lib/utils'
 import type { AiUsageBreakdownRow } from '@/modules/ai-usage/ai-usage-breakdown'
@@ -59,10 +59,9 @@ export function MyAiUsageCard({
 	const exceeded = limitStatus ? exceededTokenPeriod(limitStatus.usage, limitStatus.limits) : null
 
 	return (
-		<Controller.Root className="gap-5 px-3 pt-6 pb-3 lg:h-auto">
-			<Typography as="h2" className="px-2" size="2xl" weight="medium">
-				내 사용량
-			</Typography>
+		<PageCard.Root className="gap-5">
+			{/* 한도·기능별·일별 섹션이 각자 제목을 가져 섹션 사이를 넓힌다. */}
+			<PageCard.Header title="내 사용량" />
 
 			{limitStatus && (
 				<section aria-labelledby="my-ai-usage-limit" className="flex flex-col gap-3">
@@ -173,6 +172,6 @@ export function MyAiUsageCard({
 					</div>
 				</div>
 			</section>
-		</Controller.Root>
+		</PageCard.Root>
 	)
 }

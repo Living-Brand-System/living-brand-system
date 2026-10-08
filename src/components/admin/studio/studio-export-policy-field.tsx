@@ -3,7 +3,7 @@
 import { useField, useFormFields } from '@payloadcms/ui'
 import { useEffect } from 'react'
 import { AdminSectionHeading } from '@/components/admin/shared/admin-section-heading'
-import { Controller } from '@/components/shared/controller'
+import { CONTROLLER_TOGGLE_OPTIONS, Controller } from '@/components/shared/controller'
 import type { StudioOutputFormat } from '@/features/studio-export/export-contract'
 import {
 	resolveStudioArtifactOutputFormats,
@@ -30,11 +30,6 @@ const FORMAT_CATEGORIES: readonly {
 	{ value: 'vector', label: '벡터', formats: ['svg'] },
 	{ value: 'video', label: '영상', formats: ['mp4'] },
 ]
-
-const ON_OFF = [
-	{ value: 'on', label: 'On' },
-	{ value: 'off', label: 'Off' },
-] as const
 
 function NumberOptionChips({
 	label,
@@ -295,7 +290,7 @@ export function StudioExportPolicyField({
 								<Controller.Row label="원본 다운로드 허용">
 									<Controller.Segmented
 										aria-label="원본 다운로드 허용"
-										options={ON_OFF}
+										options={CONTROLLER_TOGGLE_OPTIONS}
 										disabled={originalField.disabled}
 										value={(originalField.value ?? true) ? 'on' : 'off'}
 										onChange={(next) => originalField.setValue(next === 'on')}

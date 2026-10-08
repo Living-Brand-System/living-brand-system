@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { importFigmaHtml } from '@/features/template-import/services/import-figma-html.service'
 import { parseFigmaUrl } from '@/features/template-import/utils/parse-figma-url'
-import { isManager, isPayloadUser } from '@/lib/auth'
+import { isManager } from '@/lib/auth'
 import { FigmaApiError, FigmaConfigurationError, FigmaImportError } from '@/lib/errors'
 import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
 
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
 	if (!user) {
 		return Response.json({ message: 'Unauthorized' }, { status: 401 })
 	}
-	if (!isPayloadUser(user) || !isManager(user)) {
+	if (!isManager(user)) {
 		return Response.json({ message: 'Forbidden' }, { status: 403 })
 	}
 

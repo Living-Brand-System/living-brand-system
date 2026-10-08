@@ -564,6 +564,8 @@ export interface ApplicationImage {
   id: number;
   name: string;
   alt: string;
+  prefix?: string | null;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -601,6 +603,8 @@ export interface BrandIcon {
    * 태그 필터에 쓰는 아이콘 그룹입니다(예: 자연 원료).
    */
   group?: string | null;
+  prefix?: string | null;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -622,6 +626,8 @@ export interface BrandLogo {
   id: number;
   name: string;
   alt: string;
+  prefix?: string | null;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -845,6 +851,8 @@ export interface BrandTypeface {
    * @font-face font-weight 서술자입니다. 가변 폰트는 범위로 적습니다. 예: '400', '45 920'.
    */
   weightRange?: string | null;
+  prefix?: string | null;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -874,6 +882,8 @@ export interface SampleImage {
    * 흰 바탕에 선으로만 그린 이미지입니다. 켜면 템플릿 슬롯에서 프로파일의 색 조정이 이 이미지에도 걸립니다. 사진에 켜면 두 색으로 뭉개집니다.
    */
   lineArt?: boolean | null;
+  prefix?: string | null;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -1235,6 +1245,8 @@ export interface GeneratedImage {
    * 이 이미지를 만들 때 참조한 원본 생성 이미지입니다.
    */
   sourceImage?: (number | null) | GeneratedImage;
+  prefix?: string | null;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -1271,6 +1283,7 @@ export interface User {
   resetPasswordExpiration?: string | null;
   salt?: string | null;
   hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
   loginAttempts?: number | null;
   lockUntil?: string | null;
   sessions?:
@@ -1437,6 +1450,8 @@ export interface TemplateAsset {
    * 파일 내용 해시입니다. 임포트가 같은 조각을 다시 만들지 않도록 재사용 기준으로 씁니다.
    */
   checksum?: string | null;
+  prefix?: string | null;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -1893,6 +1908,7 @@ export interface PayloadMcpApiKey {
   enableAPIKey?: boolean | null;
   apiKey?: string | null;
   apiKeyIndex?: string | null;
+  hasAPIKey?: boolean | null;
   collection: 'payload-mcp-api-keys';
 }
 /**
@@ -2328,6 +2344,8 @@ export interface GuidelineDocumentsSelect<T extends boolean = true> {
 export interface BrandLogosSelect<T extends boolean = true> {
   name?: T;
   alt?: T;
+  prefix?: T;
+  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -2406,6 +2424,8 @@ export interface BrandTypefacesSelect<T extends boolean = true> {
   name?: T;
   familyName?: T;
   weightRange?: T;
+  prefix?: T;
+  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -2426,6 +2446,8 @@ export interface BrandTypefacesSelect<T extends boolean = true> {
 export interface BrandIconsSelect<T extends boolean = true> {
   name?: T;
   group?: T;
+  prefix?: T;
+  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -2446,6 +2468,8 @@ export interface BrandIconsSelect<T extends boolean = true> {
 export interface ApplicationImagesSelect<T extends boolean = true> {
   name?: T;
   alt?: T;
+  prefix?: T;
+  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -2482,6 +2506,8 @@ export interface SampleImagesSelect<T extends boolean = true> {
   alt?: T;
   group?: T;
   lineArt?: T;
+  prefix?: T;
+  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -2680,6 +2706,8 @@ export interface GeneratedImagesSelect<T extends boolean = true> {
   bestSample?: T;
   createdBy?: T;
   sourceImage?: T;
+  prefix?: T;
+  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -2762,6 +2790,8 @@ export interface TemplateCategoriesSelect<T extends boolean = true> {
  */
 export interface TemplateAssetsSelect<T extends boolean = true> {
   checksum?: T;
+  prefix?: T;
+  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -3002,6 +3032,7 @@ export interface UsersSelect<T extends boolean = true> {
   resetPasswordExpiration?: T;
   salt?: T;
   hash?: T;
+  resetPasswordRequestedAt?: T;
   loginAttempts?: T;
   lockUntil?: T;
   sessions?:
@@ -3050,6 +3081,7 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
   enableAPIKey?: T;
   apiKey?: T;
   apiKeyIndex?: T;
+  hasAPIKey?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -3377,7 +3409,15 @@ export interface TaskSchedulePublish {
           value: number | RuleChecker;
         } | null);
     global?: 'guideline' | null;
-    user?: (number | null) | User;
+    user?:
+      | ({
+          relationTo: 'users';
+          value: number | User;
+        } | null)
+      | ({
+          relationTo: 'payload-mcp-api-keys';
+          value: number | PayloadMcpApiKey;
+        } | null);
   };
   output?: unknown;
 }

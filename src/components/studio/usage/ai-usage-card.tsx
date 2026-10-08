@@ -1,6 +1,5 @@
-import { Controller } from '@/components/shared/controller'
+import { PageCard } from '@/components/shared/page-card'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
-import { Typography } from '@/components/ui/typography'
 import type { AiUsageBreakdownRow } from '@/modules/ai-usage/ai-usage-breakdown'
 import { AI_USAGE_AXES, AI_USAGE_PERIODS } from '@/modules/ai-usage/ai-usage-catalog'
 import { foldAiUsage } from '@/modules/ai-usage/ai-usage-fold'
@@ -48,17 +47,13 @@ export function AiUsageCard({
 		query.filters.user === undefined ? undefined : (filteredEmail ?? '삭제된 계정')
 
 	return (
-		<Controller.Root className="gap-3 px-3 pt-6 pb-3 lg:h-auto">
-			<header className="flex flex-col gap-1 px-2">
-				<Typography as="h2" size="2xl" weight="medium">
-					사용량
-				</Typography>
-				<Typography size="sm" tone="muted">
-					{canSeeEveryone
-						? '모든 계정이 AI에 쓴 토큰입니다.'
-						: '내가 AI에 쓴 토큰입니다.'}
-				</Typography>
-			</header>
+		<PageCard.Root>
+			<PageCard.Header
+				title="사용량"
+				description={
+					canSeeEveryone ? '모든 계정이 AI에 쓴 토큰입니다.' : '내가 AI에 쓴 토큰입니다.'
+				}
+			/>
 
 			<div className="flex flex-col gap-4 px-2 pb-2">
 				{/* 🔴 기간은 축보다 물리적으로 위다 — 축 안에 든 것처럼 읽히면 안 된다. */}
@@ -102,6 +97,6 @@ export function AiUsageCard({
 					)}
 				</div>
 			</div>
-		</Controller.Root>
+		</PageCard.Root>
 	)
 }

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { AgentChatMessage } from '@/features/agent-chat/agent-chat.agent'
 import type { AgentChatSessionUsageStep } from '@/features/agent-chat/domain/agent-chat-session-usage'
 import {
 	createAgentChatSessionRecord,
@@ -10,7 +11,6 @@ import {
 	startAgentChatSession,
 } from '@/features/agent-chat/services/start-agent-chat-session.service'
 import type { AgentChatSessionMessageInput } from '@/features/agent-chat/types'
-import type { AgentChatMessage } from '@/modules/agents/agent-chat.agent'
 import type { User } from '@/payload-types'
 
 vi.mock('@/features/agent-chat/repositories/agent-chat-session.payload.repository', () => ({
@@ -22,7 +22,7 @@ vi.mock('@/features/agent-chat/repositories/agent-chat-session.payload.repositor
 // 🔴 이 테스트는 세션 저장만 본다. 막지 않으면 사용량 기록이 진짜 Payload를 부팅해 insert를
 //    시도하고, 존재하지 않는 사용자라 FK로 실패하면서 재시도까지 돈다 — CI에서 4.2초를 먹어
 //    5초 제한을 넘겼다(2026-09-28). `recordAiUsage`는 스스로 던지지 않으므로 실패가 조용하다.
-vi.mock('@/modules/ai-usage/repositories/ai-usage.payload.repository', () => ({
+vi.mock('@/modules/ai-usage/services/record-ai-usage.service', () => ({
 	recordAiUsage: vi.fn(),
 }))
 

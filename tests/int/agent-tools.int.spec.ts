@@ -1,19 +1,19 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { AgentChatMessage } from '@/features/agent-chat/agent-chat.agent'
+import { getAgentTools } from '@/features/agent-chat/agent-chat-tools.agent'
 import * as agentSkillRepository from '@/features/agent-chat/repositories/agent-skill.payload.repository'
-import * as agentTemplateRepository from '@/features/agent-chat/repositories/agent-template.payload.repository'
 import * as agentGuidelineContext from '@/features/agent-chat/services/get-agent-guideline-context.service'
 import {
 	getAgentCitations,
 	getAgentMessageText,
 } from '@/features/agent-chat/utils/derive-agent-message'
+import { validateAgentChatMessages } from '@/features/agent-chat/validate-agent-chat-messages.agent'
 import * as checkSessionService from '@/features/asset-check/services/start-check-session.service'
 import * as mcpGuidelineRepository from '@/features/guideline/repositories/mcp-guideline.payload.repository'
 import * as checkScenarioRepository from '@/features/quality-rule/repositories/check-scenario.payload.repository'
-import type { AgentChatMessage } from '@/modules/agents/agent-chat.agent'
-import { getAgentTools } from '@/modules/agents/agent-chat-tools.agent'
-import { validateAgentChatMessages } from '@/modules/agents/validate-agent-chat-messages.agent'
+import * as agentTemplateRepository from '@/features/template-core/services/read-agent-template.service'
 
-// getCheckCatalog tool이 req 조립용으로만 쓰는 getPayload를 스텁한다 — repository 호출은 spy로 검증한다.
+// payload 초기화를 끊는 안전망 — 도구가 부르는 repository 진입점은 아래에서 spy로 가로채 검증한다.
 vi.mock('payload', async (importOriginal) => ({
 	...(await importOriginal<typeof import('payload')>()),
 	getPayload: vi.fn(async () => ({}) as never),
@@ -137,7 +137,7 @@ describe('agent tools', () => {
 
 	it('gets Check catalog through the guideline MCP repository', async () => {
 		const getChecks = vi
-			.spyOn(mcpGuidelineRepository, 'listPublishedMcpGuidelineChecks')
+			.spyOn(mcpGuidelineRepository, 'listPublishedMcpGuidelineChecksForUser')
 			.mockResolvedValue([
 				{
 					evidence: 'Use the legal name.',
@@ -160,7 +160,7 @@ describe('agent tools', () => {
 			context: { user: { id: 1 } },
 		} as never)
 
-		expect(getChecks).toHaveBeenCalledWith(expect.objectContaining({ user: { id: 1 } }), 'ko')
+		expect(getChecks).toHaveBeenCalledWith({ id: 1 }, 'ko')
 		// source를 벗기고 tier를 null로 정규화해 key 순으로 정렬한 기존 카탈로그 DTO 그대로다.
 		expect(result).toEqual([
 			{

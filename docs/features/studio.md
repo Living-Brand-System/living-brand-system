@@ -71,7 +71,7 @@ Graphic과 Graph는 **실행 계약이 한 벌입니다**(`CANVAS_STUDIO_KINDS`)
 
 | 갈리는 것 | Graphic | Graph |
 | --- | --- | --- |
-| 런타임 카탈로그 | `graphic-generation/graphic-runtimes` | `graph-generation/graph-runtimes` |
+| 런타임 카탈로그 | `graphic-generation/graphic-runtimes` | `graphic-generation/graph-runtimes` |
 | 프로파일 컬렉션 | `graphic-profiles` | `graph-profiles` |
 
 🔴 카탈로그를 합치면 Graph 화면에서 Graphic 런타임이 열리고, 컬렉션을 합치면 admin 목록이 섞이며 한쪽 런타임을 더할 때 상대의 enum 마이그레이션이 따라옵니다. 그래서 이 둘만 가릅니다. 새 캔버스 스튜디오를 세울 때 필요한 것도 이 둘과 라우트·API뿐이고, 카탈로그는 `scripts/generate-graphic-runtime-catalogs.ts`의 `CATALOG_TARGETS`에 한 줄을 더하면 생성됩니다.
@@ -168,7 +168,7 @@ config.output
 
 ### 출력 크기와 해상도
 
-값의 정본은 언제나 px입니다. `px`와 `mm`는 대등한 두 모드이고 표시 설정이 아닙니다 — px 모드는 mm를 보여주지 않고, mm 모드는 px를 보여주지 않습니다. 해상도(ppi)는 두 모드를 잇는 값이라 mm 입력이 있는 컨트롤(`SizingControls`)에서만 묻습니다.
+값의 정본은 언제나 px입니다. `px`와 `mm`는 대등한 두 모드이고 표시 설정이 아닙니다 — px 모드는 mm를 보여주지 않고, mm 모드는 px를 보여주지 않습니다. 해상도(ppi)는 두 모드를 잇는 값이라 mm 입력이 있는 곳 — 그래픽 Output의 Print 모드(`graphic/output/size-editor`) — 에서만 묻습니다.
 
 Template의 판형은 문서가 소유하고, 템플릿마다 `templates.outputKind`로 **디지털(px)과 인쇄(mm) 중 하나만** 고릅니다. 판형 크기는 두 종류 모두 `templates.size`(가로·세로, 정수)가 정본이고 단위만 다릅니다. 디지털판은 px이고(비워 두면 Figma 판 크기로 채움) PNG·JPG·MP4를 그 크기 그대로 냅니다. 인쇄판은 mm이고 PDF·TIFF·SVG만 냅니다. 디지털을 mm로 인쇄하는 길은 없습니다. 인쇄판의 해상도는 창작자가 `exportPolicy.print.allowedPpi`(72·150·300 중 켠 값)에서 고르고, 래스터(TIFF) px는 `mm ÷ 25.4 × ppi`로 계산합니다 — 브라우저 캔버스 한도를 넘는 ppi는 선택지에서 빠지고, 하나도 안 남으면 SVG·PDF로만 냅니다. 벡터(PDF·SVG)는 ppi와 상관없이 판형 mm 그대로 나갑니다. Figma 판(`width·height` px)은 디자인 좌표계라 admin에서 숨기고, 판형 크기와 가로세로 비율은 저장 검증이 1% 안으로 맞춥니다. 출력 설정 형식 칩은 고른 종류의 형식만 보여 줍니다. 🔴 Figma 재import는 `baseHtml`·`html`·`overrides`·`width`·`height`·`sourceUrl`을 덮으므로 판형 선언을 그 축에 얹으면 안 됩니다. (옛 `canvasPpi`는 숨긴 채 남아 있고 다음 정리에서 지웁니다.)
 
@@ -319,7 +319,7 @@ Image 슬롯과 이미지 배경은 독립 Image의 Color·Generate 표현 컴�
 생성은 기존 Template 세션의 한 장·고정 슬롯 비율 요청과 결과 배정을 사용합니다. 샘플 선택·슬롯 Transform·배경 Dimmer는 유지합니다.
 Template 생성에는 참조 이미지·카메라 요청 경로가 없어 해당 컨트롤을 열지 않으며, 배경 이미지의 색 치환 제한도 유지합니다.
 Layers는 Text·Symbol·Image·Background
-네 줄이며 없는 종류는 비활성화합니다. Text·Symbol은 묶음 컨트롤을, Image·Background는 현재 대상의 편집 패널을 표시합니다. Text·Symbol 색은 같은 Solid 스와치 그리드(`TemplateColorSwatches`)를 쓰고, 색 목록은 CMS의 발행된 `brand-color-groups`에 속한 색(`usePublishedBrandColorValues`, 그룹 생성 순서·그룹 안 순서, 중복은 처음 자리 한 번)입니다. 그룹에 없는 보조색은 팔레트가 아니라 나오지 않습니다. 무채색 정본은 Mono Color 8단입니다. 템플릿 텍스트 컨트롤이 `values`로 범위를 좁혔으면 그 목록을 씁니다. 정본 밖 색이 나가지 않도록 둘 다 Custom 모드를 잠그고, 목록을 못 불러오면 고를 수 없습니다.
+네 줄이며 없는 종류는 비활성화합니다. Text·Symbol은 묶음 컨트롤을, Image·Background는 현재 대상의 편집 패널을 표시합니다. Text·Symbol 색은 같은 Solid 스와치 그리드(`StudioColorSwatches`)를 쓰고, 색 목록은 CMS의 발행된 `brand-color-groups`에 속한 색(`usePublishedBrandColorValues`, 그룹 생성 순서·그룹 안 순서, 중복은 처음 자리 한 번)입니다. 그룹에 없는 보조색은 팔레트가 아니라 나오지 않습니다. 무채색 정본은 Mono Color 8단입니다. 템플릿 텍스트 컨트롤이 `values`로 범위를 좁혔으면 그 목록을 씁니다. 정본 밖 색이 나가지 않도록 둘 다 Custom 모드를 잠그고, 목록을 못 불러오면 고를 수 없습니다.
 눈 아이콘은 편집 권한과 무관하게 묶음의 모든 슬롯을 함께 표시하거나 숨깁니다. 배경을 끄면 판이 투명해지고 색·이미지·그래픽·디머가 모두 빠집니다.
 첫 진입은 첫 텍스트 레이어를 선택하며
 텍스트 Compound는 라벨·입력만 표시하고 지원 문구와 잘림 안내는 생략합니다. 입력 형식 오류는 유지합니다.

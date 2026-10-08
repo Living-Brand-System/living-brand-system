@@ -6,8 +6,8 @@ import {
 	ControlPanel,
 	type ControlPanelComposition,
 	type ControlPanelExtras,
-} from '@/components/studio/shared/control-panel'
-import { PanelRenderScope } from '@/components/studio/shared/panel-render'
+} from '@/components/studio/panel/control-panel'
+import { PanelRenderScope } from '@/components/studio/panel/panel-render'
 import {
 	StudioSelectionCard,
 	type StudioSelectionCardProps,

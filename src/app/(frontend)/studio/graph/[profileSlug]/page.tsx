@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { GraphicGenerator } from '@/components/studio/graphic/graphic-generator'
 import { StudioWorkspacePage } from '@/components/studio/shared/studio-workspace'
-import { listGraphStudioConfigs } from '@/features/graph-generation/services/list-graph-studio-configs.service'
+import { listGraphStudioConfigs } from '@/features/graphic-generation/services/list-graph-studio-configs.service'
 import { isAdmin } from '@/lib/auth'
 import { requireUser } from '@/lib/request-auth'
 import { getStudioGraphRoute } from '@/lib/routes'

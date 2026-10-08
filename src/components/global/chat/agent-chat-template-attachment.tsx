@@ -112,8 +112,8 @@ export function AgentChatTemplateAttachment({ attachment }: AgentChatTemplateAtt
 							.join(' / ')}`
 					: undefined
 			}
-			isExporting={output.busy}
-			exportError={output.error}
+			isExporting={output.view.busy}
+			exportError={output.view.error}
 			onExport={output.canExportFormat('png') ? () => output.runFormat('png') : undefined}
 			onExportTiff={
 				output.canExportFormat('tiff') ? () => output.runFormat('tiff') : undefined

@@ -14,12 +14,8 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/components/ui/table'
-
-interface AvailableCheck {
-	key: string
-	title: string
-	executor?: 'deterministic' | 'heuristic' | 'manual'
-}
+import { fetchAvailableScenarioChecks } from '@/features/quality-rule/services/list-available-scenario-checks.client'
+import type { AvailableScenarioCheck } from '@/features/quality-rule/services/list-available-scenario-checks.service'
 
 const HEAD_CLASS = 'align-top text-sm font-semibold text-muted-foreground'
 const CELL_CLASS = 'align-top'
@@ -29,18 +25,14 @@ export const CheckScenarioChecksField: JSONFieldClientComponent = ({ path }) => 
 	const checkKeys = Array.isArray(value)
 		? value.filter((key): key is string => typeof key === 'string')
 		: []
-	const [available, setAvailable] = useState<AvailableCheck[]>([])
+	const [available, setAvailable] = useState<AvailableScenarioCheck[]>([])
 	const [query, setQuery] = useState('')
 	const [loadError, setLoadError] = useState('')
 
 	useEffect(() => {
 		const controller = new AbortController()
-		void fetch('/api/check-scenarios/available-checks', { signal: controller.signal })
-			.then((response) => {
-				if (!response.ok) throw new Error('Check 목록을 불러오지 못했습니다.')
-				return response.json() as Promise<{ docs?: AvailableCheck[] }>
-			})
-			.then(({ docs }) => setAvailable(docs ?? []))
+		void fetchAvailableScenarioChecks(controller.signal)
+			.then(setAvailable)
 			.catch((error: unknown) => {
 				if (!controller.signal.aborted) {
 					setLoadError(
@@ -75,7 +67,8 @@ export const CheckScenarioChecksField: JSONFieldClientComponent = ({ path }) => 
 
 	return (
 		<div className="field-type json mb-5">
-			<FieldLabel htmlFor={`${path}-search`} label="포함된 Check" path={path} required />
+			{/* 🔑 제목은 아래 표의 이름이다 — 검색 칸 라벨은 따로 있어 같은 칸을 두 라벨이 가리키지 않게 span으로 둔다. */}
+			<FieldLabel as="span" label="포함된 Check" path={path} required />
 			<FieldError message={errorMessage} path={path} showError={showError} />
 			{loadError ? <p role="alert">{loadError}</p> : null}
 

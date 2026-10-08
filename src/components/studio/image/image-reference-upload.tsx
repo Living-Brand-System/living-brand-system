@@ -1,7 +1,7 @@
 'use client'
 
 import { Close } from '@carbon/icons-react'
-import type { ClipboardEvent, DragEvent } from 'react'
+import { type ClipboardEvent, type DragEvent, useId } from 'react'
 import { Button } from '@/components/ui/button'
 import { FieldError } from '@/components/ui/field'
 import { IMAGE_REFERENCE_UPLOAD_MIME_TYPES } from '@/features/image-generation/domain/reference-image/contract'
@@ -46,6 +46,8 @@ export function ImageReferenceUpload({
 	onPreviewError,
 }: ImageReferenceUploadProps) {
 	const fileInput = useFileInput()
+	const errorId = useId()
+	const describedBy = error ? errorId : undefined
 	const attachFirst = (files: FileList) => {
 		const file = files[0]
 		if (file) onAttach(file)
@@ -108,6 +110,7 @@ export function ImageReferenceUpload({
 						compact && 'h-8 rounded-xl bg-foreground/15 px-2 text-sm',
 					)}
 					disabled={disabled}
+					aria-describedby={describedBy}
 					onClick={fileInput.open}
 				>
 					{value ? '이미지 변경' : 'Upload Image'}
@@ -132,6 +135,7 @@ export function ImageReferenceUpload({
 					ref={fileInput.ref}
 					type="file"
 					aria-label="참조 이미지 파일"
+					aria-describedby={describedBy}
 					disabled={disabled}
 					className="sr-only"
 					accept={IMAGE_REFERENCE_UPLOAD_MIME_TYPES.join(',')}
@@ -143,7 +147,7 @@ export function ImageReferenceUpload({
 					}}
 				/>
 			</fieldset>
-			{error && <FieldError>{error}</FieldError>}
+			{error && <FieldError id={errorId}>{error}</FieldError>}
 		</div>
 	)
 }

@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { isPayloadUser } from '@/lib/auth'
 import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
 
 /**
@@ -22,7 +21,7 @@ export async function POST(request: Request) {
 	}
 
 	const { payload, user } = await authenticateRequest()
-	if (!isPayloadUser(user)) {
+	if (!user) {
 		return Response.json({ message: 'Unauthorized' }, { status: 401 })
 	}
 

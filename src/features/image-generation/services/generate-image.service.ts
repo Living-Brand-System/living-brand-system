@@ -40,7 +40,7 @@ import {
 	normalizeImageProfilePrompt,
 } from '@/features/image-generation/services/normalize-image-profile-prompt.service'
 import type { AiUsageSource, AiUsageStudio, AiUsageTokens } from '@/modules/ai-usage/ai-usage'
-import { recordAiUsage } from '@/modules/ai-usage/repositories/ai-usage.payload.repository'
+import { recordAiUsage } from '@/modules/ai-usage/services/record-ai-usage.service'
 import { assertWithinTokenLimit } from '@/modules/ai-usage/services/token-limit.service'
 import { acceptsControllerExecutionValue } from '@/modules/studio-controller/controller-definition'
 import { IMAGE_REFERENCE_MAX_BYTES } from '../domain/reference-image/contract'

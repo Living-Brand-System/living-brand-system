@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { hasGuidelineDocumentSlugConflict } from './guideline-document.payload.repository'
+import {
+	findGuidelineDocumentRuleReferences,
+	hasGuidelineDocumentSlugConflict,
+} from './guideline-document.payload.repository'
 
 describe('guideline-document Payload repository', () => {
 	beforeEach(() => {
@@ -42,6 +45,25 @@ describe('guideline-document Payload repository', () => {
 		expect(find).toHaveBeenCalledWith(
 			expect.objectContaining({
 				where: { and: [{ slug: { equals: 'draft' } }, { chapter: { exists: false } }] },
+			}),
+		)
+	})
+
+	// Rule 삭제 가드(quality-rule)가 쓴다 — 문서 레벨과 섹션 레벨 관계를 모두 세고, 초안도 포함한다.
+	it('문서와 섹션의 Rule 관계를 문서별 id 목록으로 편다', async () => {
+		const find = vi.fn().mockResolvedValue({
+			docs: [{ id: 1, rules: [2], sections: [{ rules: [3, { id: 4 }] }] }],
+		})
+		const req = { payload: { find }, user: { id: 1 } } as never
+
+		await expect(findGuidelineDocumentRuleReferences(req)).resolves.toEqual([
+			{ id: 1, ruleIds: [2, 3, 4] },
+		])
+		expect(find).toHaveBeenCalledWith(
+			expect.objectContaining({
+				draft: true,
+				overrideAccess: false,
+				select: { sections: { rules: true }, rules: true },
 			}),
 		)
 	})

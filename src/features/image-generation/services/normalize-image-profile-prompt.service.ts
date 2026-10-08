@@ -6,7 +6,7 @@ import {
 } from '@/features/image-generation/domain/image-profile-prompt'
 import { normalizeImagePromptWithAi } from '@/features/image-generation/repositories/image-prompt-normalization.ai.repository'
 import type { AiUsageTokens } from '@/modules/ai-usage/ai-usage'
-import { recordAiUsage } from '@/modules/ai-usage/repositories/ai-usage.payload.repository'
+import { recordAiUsage } from '@/modules/ai-usage/services/record-ai-usage.service'
 import { assertWithinTokenLimit } from '@/modules/ai-usage/services/token-limit.service'
 
 /** Provider·정규화 모델 미설정을 route/agent 표면이 일반 생성 실패와 구분하기 위한 서비스 오류. */

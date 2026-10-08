@@ -4,13 +4,13 @@ import {
 	deleteDraftImportedApplicationImage,
 	storeDraftImportedApplicationImage,
 } from '@/features/application-image/repositories/imported-application-image.payload.repository'
+import { findFigmaToken } from '@/features/auth/services/user-settings.service'
 import {
 	downloadFigmaImage,
 	findFigmaImageFillUrls,
 	findFigmaImageUrls,
 	findFigmaNodeTree,
 } from '@/features/template-import/repositories/figma.rest.repository'
-import { findFigmaToken } from '@/features/template-import/repositories/figma-token.payload.repository'
 import type { FigmaTextStyle } from '@/features/template-import/utils/figma-ir'
 import type { User } from '@/payload-types'
 import { importFigmaHtml } from './import-figma-html.service'
@@ -22,7 +22,7 @@ vi.mock('@/features/template-import/repositories/figma.rest.repository', () => (
 	findFigmaNodeTree: vi.fn(),
 }))
 
-vi.mock('@/features/template-import/repositories/figma-token.payload.repository', () => ({
+vi.mock('@/features/auth/services/user-settings.service', () => ({
 	findFigmaToken: vi.fn(),
 }))
 

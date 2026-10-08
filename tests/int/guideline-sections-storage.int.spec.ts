@@ -131,7 +131,7 @@ describe.skipIf(!databaseURL)('신규 섹션 저장·미리보기', () => {
 		assert(mcpDocument?.sections?.[1])
 		expect(sectionFiles(mcpDocument.sections[1])).toHaveLength(1)
 		const { findAgentGuidelineDocument } = await import(
-			'@/features/agent-chat/repositories/agent-guideline-context.payload.repository'
+			'@/features/guideline/repositories/agent-guideline.payload.repository'
 		)
 		const agentDocument = await findAgentGuidelineDocument(manager, {
 			collection: 'guideline-documents',

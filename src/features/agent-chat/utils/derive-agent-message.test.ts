@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { AgentChatMessage } from '@/modules/agents/agent-chat.agent'
+import type { AgentChatMessage } from '@/features/agent-chat/agent-chat.agent'
 import {
 	getAgentSkillMarker,
 	getAgentTemplateAttachments,

@@ -9,7 +9,6 @@ import {
 	VectorPrintMixedModeError,
 	VectorPrintTextError,
 } from '@/features/studio-export/services/export-vector-print.service'
-import { isPayloadUser } from '@/lib/auth'
 import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
 import type { VectorScene } from '@/modules/studio-artifact/studio-artifact'
 
@@ -43,8 +42,8 @@ export async function POST(request: Request) {
 	if (isCrossOriginRequest(request)) {
 		return Response.json({ message: 'Invalid origin.' }, { status: 403 })
 	}
-	const { user } = await authenticateRequest()
-	if (!isPayloadUser(user)) return Response.json({ message: 'Unauthorized.' }, { status: 401 })
+	const { payload, user } = await authenticateRequest()
+	if (!user) return Response.json({ message: 'Unauthorized.' }, { status: 401 })
 
 	const body = await request.text()
 	if (body.length > MAX_SCENE_BYTES) {
@@ -109,7 +108,7 @@ export async function POST(request: Request) {
 		}
 		if (error instanceof VectorPrintMixedModeError) {
 			// 원인이 코드에 있으므로 서버 로그에 무엇이 남았는지 적는다.
-			console.error(`vector-print: CMYK 아닌 색이 남았습니다 — ${error.message}`)
+			payload.logger.error({ err: error }, 'vector-print.mixed-color-mode')
 			return Response.json(
 				{ code: 'mixed-color-mode', message: 'PDF still contains non-CMYK color.' },
 				{ status: 500 },

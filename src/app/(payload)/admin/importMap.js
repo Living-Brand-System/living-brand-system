@@ -3,9 +3,9 @@ import { BetterEditorPublishButton as BetterEditorPublishButton_e4a80c849de3e172
 import { ColorSwatchCell as ColorSwatchCell_88fca198b056ae91f3276aaa342114bd } from '../../../components/admin/brand-colors/color-swatch-cell'
 import { ImageProfileFeaturesField as ImageProfileFeaturesField_7bfadbf4609425feb60c9cc16350f523 } from '../../../components/admin/studio/image-profile-features-field'
 import { StudioControllerRestrictionsField as StudioControllerRestrictionsField_715c81ea8a3b886458ef2633d308523c } from '../../../components/admin/studio/studio-controller-restrictions-field'
-import { StudioControllerPresentationField as StudioControllerPresentationField_715c81ea8a3b886458ef2633d308523c } from '../../../components/admin/studio/studio-controller-restrictions-field'
 import { StudioExportPolicyField as StudioExportPolicyField_100bfeb2a58aa702365ab77b55c4baee } from '../../../components/admin/studio/studio-export-policy-field'
 import { ImageProfileTestPanel as ImageProfileTestPanel_4e5dbfcb16cbe71d2377850041f37640 } from '../../../components/admin/image-profiles/image-profile-test-panel'
+import { StudioControllerPresentationField as StudioControllerPresentationField_715c81ea8a3b886458ef2633d308523c } from '../../../components/admin/studio/studio-controller-restrictions-field'
 import { TemplateLayersField as TemplateLayersField_50c68c65c3e705e4e610557c8a05e5e6 } from '../../../components/admin/templates/template-layers-field'
 import { TemplateBackgroundPolicyField as TemplateBackgroundPolicyField_db5e24a3a4d2a7d4f0c86814bf290e5c } from '../../../components/admin/templates/template-background-policy-field'
 import { TemplateSizeUnit as TemplateSizeUnit_811e1ae0b0fa04312c1ddc5411ed36e0 } from '../../../components/admin/templates/template-size-unit'
@@ -23,9 +23,9 @@ import { SettingsBanner as SettingsBanner_d26de2934fab2f5e50b16fb3e402473a } fro
 import { AdminIcon as AdminIcon_4f65402b63e32c200eaebfffc82692d5 } from '../../../components/admin/shell/admin-icon'
 import { AdminLogo as AdminLogo_b128a563ad49bc8ad325bf59906df38b } from '../../../components/admin/shell/admin-logo'
 import { AdminDialKitProvider as AdminDialKitProvider_2809bec1466a2967300927dd21f321ee } from '../../../components/admin/shell/admin-dialkit-provider'
-import { VercelBlobClientUploadHandler as VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e } from '@payloadcms/storage-vercel-blob/client'
 import { AdminDashboard as AdminDashboard_adf1a76d71cf28463d12de604eddd5a4 } from '../../../components/admin/shell/admin-dashboard'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
+import { VercelBlobClientUploadHandler as VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e } from '@payloadcms/storage-vercel-blob/client'
 
 /** @type import('payload').ImportMap */
 export const importMap = {
@@ -34,9 +34,9 @@ export const importMap = {
   "/components/admin/brand-colors/color-swatch-cell#ColorSwatchCell": ColorSwatchCell_88fca198b056ae91f3276aaa342114bd,
   "/components/admin/studio/image-profile-features-field#ImageProfileFeaturesField": ImageProfileFeaturesField_7bfadbf4609425feb60c9cc16350f523,
   "/components/admin/studio/studio-controller-restrictions-field#StudioControllerRestrictionsField": StudioControllerRestrictionsField_715c81ea8a3b886458ef2633d308523c,
-  "/components/admin/studio/studio-controller-restrictions-field#StudioControllerPresentationField": StudioControllerPresentationField_715c81ea8a3b886458ef2633d308523c,
   "/components/admin/studio/studio-export-policy-field#StudioExportPolicyField": StudioExportPolicyField_100bfeb2a58aa702365ab77b55c4baee,
   "/components/admin/image-profiles/image-profile-test-panel#ImageProfileTestPanel": ImageProfileTestPanel_4e5dbfcb16cbe71d2377850041f37640,
+  "/components/admin/studio/studio-controller-restrictions-field#StudioControllerPresentationField": StudioControllerPresentationField_715c81ea8a3b886458ef2633d308523c,
   "/components/admin/templates/template-layers-field#TemplateLayersField": TemplateLayersField_50c68c65c3e705e4e610557c8a05e5e6,
   "/components/admin/templates/template-background-policy-field#TemplateBackgroundPolicyField": TemplateBackgroundPolicyField_db5e24a3a4d2a7d4f0c86814bf290e5c,
   "/components/admin/templates/template-size-unit#TemplateSizeUnit": TemplateSizeUnit_811e1ae0b0fa04312c1ddc5411ed36e0,
@@ -54,7 +54,7 @@ export const importMap = {
   "/components/admin/shell/admin-icon#AdminIcon": AdminIcon_4f65402b63e32c200eaebfffc82692d5,
   "/components/admin/shell/admin-logo#AdminLogo": AdminLogo_b128a563ad49bc8ad325bf59906df38b,
   "/components/admin/shell/admin-dialkit-provider#AdminDialKitProvider": AdminDialKitProvider_2809bec1466a2967300927dd21f321ee,
-  "@payloadcms/storage-vercel-blob/client#VercelBlobClientUploadHandler": VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e,
   "/components/admin/shell/admin-dashboard#AdminDashboard": AdminDashboard_adf1a76d71cf28463d12de604eddd5a4,
-  "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
+  "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1,
+  "@payloadcms/storage-vercel-blob/client#VercelBlobClientUploadHandler": VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e
 }

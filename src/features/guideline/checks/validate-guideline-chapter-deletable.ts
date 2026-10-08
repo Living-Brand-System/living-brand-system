@@ -1,4 +1,5 @@
 import { APIError, type PayloadRequest } from 'payload'
+import { countGuidelineDocumentsInChapter } from '../repositories/guideline-document.payload.repository'
 
 /**
  * 토픽이 남아 있는 챕터의 삭제를 막는다.
@@ -10,12 +11,7 @@ export async function assertGuidelineChapterDeletable(
 	req: PayloadRequest,
 	chapterId: number,
 ): Promise<void> {
-	const { totalDocs } = await req.payload.count({
-		collection: 'guideline-documents',
-		overrideAccess: true,
-		req,
-		where: { chapter: { equals: chapterId } },
-	})
+	const totalDocs = await countGuidelineDocumentsInChapter(req, chapterId)
 
 	if (totalDocs > 0) {
 		throw new APIError(

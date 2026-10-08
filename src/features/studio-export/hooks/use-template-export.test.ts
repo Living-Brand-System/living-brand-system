@@ -6,8 +6,15 @@ import {
 	type TemplateVideoArtifact,
 } from '@/features/template-customization/runtime/template-runtime.client'
 import type { StudioOutputFormat } from '../export-contract'
+import type { StudioOutputView } from '../output-view'
 import { executeArtifactExport } from '../services/export-artifact.client'
 import { useTemplateExport } from './use-template-export'
+
+/** 단일 저장을 실행한다 — Template은 선택·전체로 갈리지 않는다. */
+function runSave(save: StudioOutputView['save']) {
+	if (!('run' in save)) throw new Error('Template 저장은 단일 실행이어야 한다')
+	save.run()
+}
 
 vi.mock('../adapters/download-export-result.client', () => ({
 	downloadExportResult: vi.fn(),
@@ -52,7 +59,7 @@ describe('useTemplateExport', () => {
 			}),
 		)
 
-		act(() => result.current.run())
+		act(() => runSave(result.current.view.save))
 		await waitFor(() => expect(executeArtifactExport).toHaveBeenCalledOnce())
 		expect(executeArtifactExport).toHaveBeenCalledWith(
 			expect.objectContaining({
@@ -100,7 +107,7 @@ describe('useTemplateExport', () => {
 			}),
 		)
 
-		act(() => result.current.run())
+		act(() => runSave(result.current.view.save))
 		await waitFor(() => expect(executeArtifactExport).toHaveBeenCalledOnce())
 		// 판 전체를 굽는 래스터 PDF가 아니라 도형을 싣는 벡터 PDF로 가야 한다.
 		expect(executeArtifactExport).toHaveBeenCalledWith(
@@ -109,9 +116,9 @@ describe('useTemplateExport', () => {
 				request: expect.objectContaining({ artifact: 'vector', format: 'pdf' }),
 			}),
 		)
-		await waitFor(() => expect(result.current.vectorWarnings).toHaveLength(2))
-		expect(result.current.vectorWarnings[0]).toContain('그림자')
-		expect(result.current.vectorWarnings[1]).toContain('Pretendard')
+		await waitFor(() => expect(result.current.view.notices).toHaveLength(2))
+		expect(result.current.view.notices[0]).toContain('그림자')
+		expect(result.current.view.notices[1]).toContain('Pretendard')
 	})
 
 	const MP4_CAPABILITY = {
@@ -151,7 +158,7 @@ describe('useTemplateExport', () => {
 			}),
 		)
 
-		act(() => result.current.run())
+		act(() => runSave(result.current.view.save))
 		await waitFor(() => expect(executeArtifactExport).toHaveBeenCalledOnce())
 		expect(executeArtifactExport).toHaveBeenCalledWith(
 			expect.objectContaining({
@@ -179,8 +186,8 @@ describe('useTemplateExport', () => {
 			}),
 		)
 
-		act(() => result.current.setScale(2))
-		act(() => result.current.run())
+		act(() => result.current.scale?.set(2))
+		act(() => runSave(result.current.view.save))
 		await waitFor(() => expect(produce).toHaveBeenCalledOnce())
 		expect(produce).toHaveBeenCalledWith({ width: 1200, height: 600 })
 		expect(result.current.outputSize).toEqual({ width: 1200, height: 600 })
@@ -202,9 +209,9 @@ describe('useTemplateExport', () => {
 		)
 
 		// MP4는 인코더 예산에 걸린다 — 이 캔버스는 1배가 상한이다.
-		expect(result.current.scaleOptions).toEqual([1])
-		act(() => result.current.setScale(3))
-		expect(result.current.scale).toBe(1)
+		expect(result.current.scale?.options).toEqual([1])
+		act(() => result.current.scale?.set(3))
+		expect(result.current.scale?.value).toBe(1)
 	})
 
 	it('인쇄 형식에도 배율이 그대로 먹는다', () => {
@@ -227,11 +234,11 @@ describe('useTemplateExport', () => {
 			}),
 		)
 
-		act(() => result.current.setScale(4))
-		expect(result.current.scaleApplies).toBe(true)
+		act(() => result.current.scale?.set(4))
+		expect(result.current.scale !== null).toBe(true)
 		expect(result.current.outputSize).toEqual({ width: 2400, height: 1200 })
 		// 인쇄 배율 상한은 영상 예산이 아니라 캔버스·총 픽셀이 정한다 — 4배를 훨씬 넘겨 갈 수 있다.
-		expect(result.current.scaleOptions.length).toBeGreaterThan(4)
+		expect(result.current.scale?.options.length).toBeGreaterThan(4)
 	})
 
 	it('MP4 Size는 짝수 내림까지 거친 실제 프레임 크기를 안내한다', () => {
@@ -270,16 +277,16 @@ describe('useTemplateExport', () => {
 			}),
 		)
 
-		act(() => result.current.setFps(24))
-		expect(result.current.scaleOptions).toEqual([1, 2, 3, 4])
+		act(() => result.current.view.video?.setFps(24))
+		expect(result.current.scale?.options).toEqual([1, 2, 3, 4])
 
-		act(() => result.current.setScale(4))
-		expect(result.current.scale).toBe(4)
+		act(() => result.current.scale?.set(4))
+		expect(result.current.scale?.value).toBe(4)
 
 		// 60fps로 올리면 4배는 초당 처리량 예산을 넘는다 — 1로 떨어지지 않고 3으로 붙는다.
-		act(() => result.current.setFps(60))
-		expect(result.current.scaleOptions).toEqual([1, 2, 3])
-		expect(result.current.scale).toBe(3)
+		act(() => result.current.view.video?.setFps(60))
+		expect(result.current.scale?.options).toEqual([1, 2, 3])
+		expect(result.current.scale?.value).toBe(3)
 	})
 
 	it('PNG는 영상 예산이 아니라 인쇄·캔버스 한도까지 커진다', () => {
@@ -298,7 +305,7 @@ describe('useTemplateExport', () => {
 		)
 
 		// 🔴 정지 이미지에 H.264 매크로블록 예산을 씌우면 A4 300ppi가 막힌다.
-		expect(result.current.scaleOptions.length).toBeGreaterThan(4)
+		expect(result.current.scale?.options.length).toBeGreaterThan(4)
 	})
 
 	it('시간축이 없어도 MP4는 Raster Artifact로 반드시 나온다', async () => {
@@ -317,7 +324,7 @@ describe('useTemplateExport', () => {
 		)
 
 		expect(result.current.canExportFormat('mp4')).toBe(true)
-		act(() => result.current.run())
+		act(() => runSave(result.current.view.save))
 		await waitFor(() => expect(executeArtifactExport).toHaveBeenCalledOnce())
 		expect(executeArtifactExport).toHaveBeenCalledWith(
 			expect.objectContaining({
@@ -362,11 +369,11 @@ describe('useTemplateExport', () => {
 			const { result } = printHook(['png'], { width: 297, height: 420 })
 
 			expect(result.current.sizeMm).toEqual({ width: 297, height: 420 })
-			expect(result.current.scaleApplies).toBe(false)
+			expect(result.current.scale !== null).toBe(false)
 			expect(result.current.ppiApplies).toBe(true)
 			// A3 @300ppi = 3508 × 4961px
 			expect(result.current.outputSize).toEqual({ width: 3508, height: 4961 })
-			act(() => result.current.setPpi(150))
+			act(() => result.current.view.print?.set(150))
 			expect(result.current.outputSize).toEqual({ width: 1754, height: 2480 })
 		})
 
@@ -391,7 +398,7 @@ describe('useTemplateExport', () => {
 				}),
 			)
 
-			expect(result.current.scaleApplies).toBe(false)
+			expect(result.current.scale !== null).toBe(false)
 			expect(result.current.sizeMm).toBeNull()
 			expect(result.current.outputSize).toEqual({ width: 2160, height: 2700 })
 		})
@@ -399,13 +406,15 @@ describe('useTemplateExport', () => {
 		it('브라우저가 그릴 수 없는 ppi는 빼고, 하나도 없으면 이미지 파일을 내지 않는다', () => {
 			// Banner 600×1800mm는 300에서 세로가 21,260px라 16,384px를 넘는다.
 			expect(
-				printHook(['png'], { width: 600, height: 1800 }).result.current.ppiOptions,
+				printHook(['png'], { width: 600, height: 1800 }).result.current.view.print
+					?.options ?? [],
 			).toEqual([72, 150])
 			// Media Wall 6144mm는 72에서도 가로 17,418px라 하나도 안 남는다.
 			const wall = printHook(['png'], { width: 6144, height: 1312 }).result.current
-			expect(wall.ppiOptions).toEqual([])
+			// 고를 해상도가 없으니 행 자체가 서지 않는다.
+			expect(wall.view.print).toBeNull()
 			expect(wall.printTooLarge).toBe(true)
-			expect(wall.canExport).toBe(false)
+			expect('canExport' in wall.view.save && wall.view.save.canExport).toBe(false)
 		})
 
 		it('선언이 없으면 디지털판이라 배율과 해상도를 창작자가 고른다', () => {
@@ -427,7 +436,7 @@ describe('useTemplateExport', () => {
 				}),
 			)
 
-			expect(result.current.scaleApplies).toBe(true)
+			expect(result.current.scale !== null).toBe(true)
 			expect(result.current.ppiApplies).toBe(true)
 			expect(result.current.sizeMm).toBeNull()
 		})

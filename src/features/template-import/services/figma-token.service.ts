@@ -3,7 +3,7 @@ import {
 	deleteFigmaToken,
 	findFigmaToken,
 	saveFigmaToken,
-} from '@/features/template-import/repositories/figma-token.payload.repository'
+} from '@/features/auth/services/user-settings.service'
 import type { User } from '@/payload-types'
 
 /**

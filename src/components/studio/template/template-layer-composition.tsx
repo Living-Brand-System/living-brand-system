@@ -1,19 +1,14 @@
 'use client'
 
 import { useEffect } from 'react'
-import type {
-	ControllerWidgetProps,
-	ControllerWidgetRegistry,
-} from '@/components/studio/shared/studio-panel-slot'
-import { TemplateColorSwatches } from '@/components/studio/template/template-color-swatches'
 import type { TemplateTargetPanel } from '@/components/studio/template/template-panel'
-import { rowFocusProps, sectionProps } from '@/components/studio/template/template-section-focus'
-import { TextSlotInput } from '@/components/studio/template/text-slot-input'
+import { sectionProps } from '@/components/studio/template/template-section-focus'
+import { TEMPLATE_LAYER_WIDGETS } from '@/components/studio/template/widgets/registry'
 import { Typography } from '@/components/ui/typography'
-import { usePublishedBrandColorValues } from '@/features/template-core/hooks/use-published-brand-color-values'
-import type {
-	TemplateFocusTarget,
-	TemplateStudioValue,
+import {
+	TEMPLATE_TEXT_SECTION_ID,
+	type TemplateFocusTarget,
+	type TemplateStudioValue,
 } from '@/features/template-customization/contexts/template-studio-context'
 import {
 	deriveTemplateSymbolComposition,
@@ -21,15 +16,13 @@ import {
 	templateSymbolColorId,
 } from '@/features/template-customization/domain/template-layer-composition'
 import { partitionTemplateSlots } from '@/features/template-customization/domain/template-studio-config'
-import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import {
 	arrangeStudioPanel,
 	type StudioPanelPolicy,
 } from '@/modules/studio-controller/controller-composition'
-import {
-	type ControllerControlValue,
-	type ControllerValues,
-	resolveControllerAvailability,
+import type {
+	ControllerControlValue,
+	ControllerValues,
 } from '@/modules/studio-controller/controller-definition'
 
 /**
@@ -43,80 +36,6 @@ export const TEMPLATE_LAYER_PANEL_POLICY: StudioPanelPolicy = {
 /**
  * 노드에서 오지 않는 섹션의 식별자. 🔴 Figma 노드 id는 `82:11` 꼴이라 이 값과 겹치지 않는다.
  */
-const TEXT_SECTION_ID = 'section:text'
-
-/** 브랜드 색 하나를 스와치로 고른다 — 정본 밖 색은 열지 않는다(Custom 잠금). 제목은 접근성 이름의 대상이다. */
-function SwatchesWidget({ cluster, controls, values, bindings, onChange }: ControllerWidgetProps) {
-	const { config, focus } = useTemplateStudio()
-	// 색의 정본은 CMS의 brand-colors다 — 텍스트·심볼이 같은 목록을 본다.
-	const { values: brandColorValues } = usePublishedBrandColorValues()
-	const control = controls.value
-	if (control?.kind !== 'color') return null
-	const colors = control.values ?? brandColorValues
-	const symbol = partitionTemplateSlots(config.template.slots).vector.find(
-		(slot) => templateSymbolColorId(slot.id) === control.id,
-	)
-	const value = values[control.id]
-	return (
-		<div
-			{...(symbol
-				? rowFocusProps(focus, {
-						sectionId: symbol.id,
-						kind: 'nodes',
-						nodeIds: [symbol.id],
-					})
-				: {})}
-		>
-			<TemplateColorSwatches
-				subject={cluster.title}
-				colors={colors}
-				value={typeof value === 'string' ? value : null}
-				onChange={(hex) => onChange(control.id, hex)}
-				disabled={
-					resolveControllerAvailability(
-						control.availability,
-						bindings?.[control.id]?.availability,
-					) !== 'enabled' || colors.length === 0
-				}
-			/>
-		</div>
-	)
-}
-
-/** 텍스트 슬롯 하나 — 발행 정의에 슬롯의 입력 제약(형식·줄 수)을 얹은 행. 행을 만지면 그 상자를 집는다. */
-function TextFieldWidget({ controls, values, onChange }: ControllerWidgetProps) {
-	const { config, focus } = useTemplateStudio()
-	const definition = controls.value
-	const slot = partitionTemplateSlots(config.template.slots).text.find(
-		(item) => item.controlId === definition?.id,
-	)
-	if (definition?.kind !== 'text' || !slot) return null
-	const value = values[definition.id]
-	return (
-		<div
-			data-text-slot={slot.id}
-			className="flex flex-col gap-1"
-			{...rowFocusProps(focus, {
-				sectionId: TEXT_SECTION_ID,
-				kind: 'nodes',
-				nodeIds: [slot.id],
-			})}
-		>
-			<TextSlotInput
-				definition={definition}
-				input={slot.input}
-				value={typeof value === 'string' ? value : (definition.defaultValue ?? '')}
-				onChange={(next) => onChange(definition.id, next)}
-			/>
-		</div>
-	)
-}
-
-export const TEMPLATE_LAYER_WIDGETS: ControllerWidgetRegistry = {
-	swatches: SwatchesWidget,
-	'text-field': TextFieldWidget,
-}
-
 /** 텍스트·심볼 레이어의 패널 — 값은 레이어 세션이 갖고, 바꾸기는 세션 액션으로 보낸다(순수, 훅 없음). */
 export function buildTemplateLayerPanel(
 	kind: 'text' | 'vector',
@@ -156,7 +75,7 @@ export function buildTemplateLayerPanel(
 		if (symbol && typeof next === 'string') vectors.setColor(symbol.id, next)
 	}
 	const textSection: TemplateFocusTarget = {
-		sectionId: TEXT_SECTION_ID,
+		sectionId: TEMPLATE_TEXT_SECTION_ID,
 		kind: 'nodes',
 		// 섹션 헤더를 누르면 이 섹션이 다루는 텍스트 상자를 **전부** 집는다.
 		nodeIds: textSlots.map((slot) => slot.id),

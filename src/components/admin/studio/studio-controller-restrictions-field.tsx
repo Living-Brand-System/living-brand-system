@@ -4,10 +4,12 @@ import { FieldDescription, FieldError, useField } from '@payloadcms/ui'
 import type { JSONFieldClientComponent } from 'payload'
 import { type ComponentProps, useState } from 'react'
 import { AdminSectionHeading } from '@/components/admin/shared/admin-section-heading'
-import { Controller } from '@/components/shared/controller'
+import { CONTROLLER_TOGGLE_OPTIONS, Controller } from '@/components/shared/controller'
 import {
 	type ControllerControlDefinition,
 	type ControllerControlRestriction,
+	type ControllerPadValue,
+	isControllerPadPairValue,
 	isControllerPadValue,
 	type StudioControllerRestrictions,
 } from '@/modules/studio-controller/controller-definition'
@@ -26,11 +28,6 @@ type ControllerAdminFieldProps = ComponentProps<JSONFieldClientComponent> & {
 type StoredControllerPresentation = {
 	groups: { groupId: string; collapsible?: boolean; defaultOpen?: boolean }[]
 }
-
-const ON_OFF = [
-	{ value: 'on', label: 'On' },
-	{ value: 'off', label: 'Off' },
-] as const
 
 const AVAILABILITY_OPTIONS = [
 	{ value: 'default', label: '원본 사용' },
@@ -196,7 +193,7 @@ export function StudioControllerPresentationField({
 									<Controller.Row label="접기 허용" disabled={disabled}>
 										<Controller.Segmented
 											aria-label={`${group.title} 접기 허용`}
-											options={ON_OFF}
+											options={CONTROLLER_TOGGLE_OPTIONS}
 											value={collapsible ? 'on' : 'off'}
 											onChange={(next) =>
 												update(group.id, { collapsible: next === 'on' })
@@ -209,7 +206,7 @@ export function StudioControllerPresentationField({
 									>
 										<Controller.Segmented
 											aria-label={`${group.title} 처음 열기`}
-											options={ON_OFF}
+											options={CONTROLLER_TOGGLE_OPTIONS}
 											value={defaultOpen ? 'on' : 'off'}
 											onChange={(next) =>
 												update(group.id, { defaultOpen: next === 'on' })
@@ -277,7 +274,7 @@ function ControlRestrictionEditor({
 			<Controller.Row label="기본값 재정의" disabled={disabled}>
 				<Controller.Segmented
 					aria-label={`${control.label} 기본값 재정의`}
-					options={ON_OFF}
+					options={CONTROLLER_TOGGLE_OPTIONS}
 					value={overridesDefault ? 'on' : 'off'}
 					onChange={(next) =>
 						onChange({
@@ -435,7 +432,7 @@ function DefaultValueEditor({
 			<Controller.Row label="기본값" disabled={disabled}>
 				<Controller.Segmented
 					aria-label={`${control.label} 기본값`}
-					options={ON_OFF}
+					options={CONTROLLER_TOGGLE_OPTIONS}
 					value={value === true ? 'on' : 'off'}
 					onChange={(next) => onChange(next === 'on')}
 				/>
@@ -463,26 +460,39 @@ function DefaultValueEditor({
 		const point =
 			value !== undefined && isControllerPadValue(value) ? value : control.defaultValue
 		return (
-			<div className="grid grid-cols-1 gap-1 md:grid-cols-2">
-				{(['x', 'y'] as const).map((axis) => (
-					<Controller.Row
-						key={axis}
-						label={`기본값 ${axis.toUpperCase()}`}
+			<PadPointEditor label="기본값" point={point} disabled={disabled} onChange={onChange} />
+		)
+	}
+	if (control.kind === 'pad-pair') {
+		const pair =
+			value !== undefined && isControllerPadPairValue(value) ? value : control.defaultValue
+		return (
+			<>
+				{(['a', 'b'] as const).map((key) => (
+					<PadPointEditor
+						key={key}
+						label={`기본값 ${key.toUpperCase()}`}
+						point={pair[key]}
 						disabled={disabled}
-					>
-						<Controller.Input
-							type="number"
-							min={-1}
-							max={1}
-							step="any"
-							value={point[axis]}
-							onChange={(event) =>
-								onChange({ ...point, [axis]: Number(event.currentTarget.value) })
-							}
-						/>
-					</Controller.Row>
+						onChange={(point) => onChange({ ...pair, [key]: point })}
+					/>
 				))}
-			</div>
+			</>
+		)
+	}
+	if (control.kind === 'range') {
+		return (
+			<Controller.Row label="기본값" disabled={disabled}>
+				<Controller.NumberInput
+					min={control.min}
+					max={control.max}
+					step={control.step}
+					value={typeof value === 'number' ? value : null}
+					placeholder={String(control.defaultValue)}
+					isValid={(next) => next >= control.min && next <= control.max}
+					onCommit={(next) => onChange(next)}
+				/>
+			</Controller.Row>
 		)
 	}
 	if (control.kind === 'color') {
@@ -499,17 +509,44 @@ function DefaultValueEditor({
 	return (
 		<Controller.Row label="기본값" disabled={disabled}>
 			<Controller.Input
-				type={control.kind === 'range' ? 'number' : 'text'}
-				value={typeof value === 'string' || typeof value === 'number' ? value : ''}
-				onChange={(event) =>
-					onChange(
-						control.kind === 'range'
-							? Number(event.currentTarget.value)
-							: event.currentTarget.value,
-					)
-				}
+				value={typeof value === 'string' ? value : ''}
+				onChange={(event) => onChange(event.currentTarget.value)}
 			/>
 		</Controller.Row>
+	)
+}
+
+/** 패드 점 하나(x·y, -1~1). 칸을 비우거나 범위 밖이면 반영하지 않고 직전 값으로 돌아간다. */
+function PadPointEditor({
+	label,
+	point,
+	disabled,
+	onChange,
+}: {
+	label: string
+	point: ControllerPadValue
+	disabled?: boolean
+	onChange: (point: ControllerPadValue) => void
+}) {
+	return (
+		<div className="grid grid-cols-1 gap-1 md:grid-cols-2">
+			{(['x', 'y'] as const).map((axis) => (
+				<Controller.Row
+					key={axis}
+					label={`${label} ${axis.toUpperCase()}`}
+					disabled={disabled}
+				>
+					<Controller.NumberInput
+						min={-1}
+						max={1}
+						step="any"
+						value={point[axis]}
+						isValid={(next) => next >= -1 && next <= 1}
+						onCommit={(next) => onChange({ ...point, [axis]: next })}
+					/>
+				</Controller.Row>
+			))}
+		</div>
 	)
 }
 

@@ -1,4 +1,5 @@
-import type { PayloadRequest } from 'payload'
+import config from '@payload-config'
+import { getPayload, type PayloadRequest } from 'payload'
 import type { Guideline, Rule } from '@/payload-types'
 import { collectGuidelineCheckSources } from '../checks/collect-guideline-check-sources'
 import { formatCheckEvidence } from '../checks/format-check-evidence'
@@ -73,6 +74,15 @@ export async function listPublishedMcpGuidelineChecks(
 			source,
 		})),
 	)
+}
+
+/** Agent 도구처럼 요청 컨텍스트가 없는 서버 호출자용 — payload를 여기서 얻고 접근 제어는 user로 그대로 건다. */
+export async function listPublishedMcpGuidelineChecksForUser(
+	user: unknown,
+	locale: 'en' | 'ko',
+): Promise<McpGuidelineCheck[]> {
+	const payload = await getPayload({ config })
+	return listPublishedMcpGuidelineChecks({ payload, user } as PayloadRequest, locale)
 }
 
 /** live Guideline global을 MCP 응답 DTO로 변환한다. */

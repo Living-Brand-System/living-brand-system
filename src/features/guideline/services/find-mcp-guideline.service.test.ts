@@ -16,6 +16,7 @@ import {
 vi.mock('../repositories/mcp-guideline.payload.repository', () => ({
 	findPublishedMcpGuideline: vi.fn(),
 	listPublishedMcpGuidelineChecks: vi.fn(),
+	listPublishedMcpGuidelineChecksForUser: vi.fn(),
 	listPublishedMcpGuidelineDocuments: vi.fn(),
 }))
 

@@ -2,6 +2,7 @@
 
 import { Copy } from '@carbon/icons-react'
 import { Controller } from '@/components/shared/controller'
+import { PageCard } from '@/components/shared/page-card'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { Typography } from '@/components/ui/typography'
@@ -56,15 +57,8 @@ export function McpKeyIssuer({ issuedAt = null }: { issuedAt?: string | null }) 
 
 	return (
 		// 카드는 세로로 자란다 — 패널용 lg:h-full을 되돌리지 않으면 발급 전에도 화면 높이를 다 먹는다.
-		<Controller.Root className="gap-3 px-3 pt-6 pb-3 lg:h-auto">
-			<header className="flex flex-col gap-1 px-2">
-				<Typography as="h2" size="2xl" weight="medium">
-					MCP
-				</Typography>
-				<Typography size="sm" tone="muted">
-					외부 환경에서 사용할 키를 발급합니다.
-				</Typography>
-			</header>
+		<PageCard.Root>
+			<PageCard.Header title="MCP" description="외부 환경에서 사용할 키를 발급합니다." />
 
 			{credential ? (
 				<>
@@ -192,6 +186,6 @@ export function McpKeyIssuer({ issuedAt = null }: { issuedAt?: string | null }) 
 			<Typography aria-live="polite" className="sr-only" size="sm">
 				{copyMessage}
 			</Typography>
-		</Controller.Root>
+		</PageCard.Root>
 	)
 }

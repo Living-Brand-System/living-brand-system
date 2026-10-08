@@ -10,11 +10,13 @@ import {
 	VectorPrintTextError,
 } from './export-vector-print.service'
 
-// 정본 조회는 Payload를 부팅하므로 repository를 세운다. HD HERITAGE GREEN에 ICC 계산값과 절대
-// 겹치지 않는 잉크를 심어, 어느 쪽이 찍혔는지 바이트로 가를 수 있게 한다(계산값은 C76 M0 Y95 K1).
-vi.mock('../repositories/brand-ink.payload.repository', () => ({
-	listBrandInks: () =>
-		Promise.resolve(new Map([['#00af41', { c: 0.5, k: 0.3, m: 0.1, y: 0.2 }]])),
+// 정본 조회는 Payload를 부팅하므로 소유자(guideline) 서비스를 세운다. HD HERITAGE GREEN에 ICC 계산값과
+// 절대 겹치지 않는 잉크를 심어, 어느 쪽이 찍혔는지 바이트로 가를 수 있게 한다(계산값은 C76 M0 Y95 K1).
+vi.mock('@/features/guideline/services/list-brand-colors.service', () => ({
+	listPublishedBrandColors: () =>
+		Promise.resolve([
+			{ name: 'HD HERITAGE GREEN', hex: '#00af41', cmyk: 'C 50 M 10 Y 20 K 30' },
+		]),
 }))
 
 /** 압축된 content stream을 펼쳐 그리기 연산자를 읽는다. */
