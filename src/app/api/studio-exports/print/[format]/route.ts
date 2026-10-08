@@ -9,7 +9,6 @@ import {
 	exportPrint,
 	PrintExportInputError,
 } from '@/features/studio-export/services/export-print.service'
-import { isPayloadUser } from '@/lib/auth'
 import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
 
 export const maxDuration = 30
@@ -82,7 +81,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ for
 		return Response.json({ message: 'Invalid origin.' }, { status: 403 })
 	}
 	const { user } = await authenticateRequest()
-	if (!isPayloadUser(user)) return Response.json({ message: 'Unauthorized.' }, { status: 401 })
+	if (!user) return Response.json({ message: 'Unauthorized.' }, { status: 401 })
 
 	const routeParams = routeParamsSchema.safeParse(await params)
 	if (!routeParams.success) {

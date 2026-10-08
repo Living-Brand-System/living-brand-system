@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import { saveAgentChatReaction } from '@/features/agent-chat/services/save-agent-chat-reaction.service'
-import { isPayloadUser } from '@/lib/auth'
 import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
 
 const reactionSchema = z.object({
@@ -18,7 +17,7 @@ export async function POST(req: Request) {
 	}
 
 	const { user } = await authenticateRequest()
-	if (!isPayloadUser(user)) {
+	if (!user) {
 		return Response.json({ message: 'Unauthorized' }, { status: 401 })
 	}
 

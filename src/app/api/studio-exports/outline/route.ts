@@ -3,7 +3,6 @@ import {
 	type OutlineTextResult,
 	outlineTextRun,
 } from '@/features/studio-export/services/outline-text.service'
-import { isPayloadUser } from '@/lib/auth'
 import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
 
 export const maxDuration = 30
@@ -37,7 +36,7 @@ export async function POST(request: Request) {
 		return Response.json({ message: 'Invalid origin.' }, { status: 403 })
 	}
 	const { user } = await authenticateRequest()
-	if (!isPayloadUser(user)) return Response.json({ message: 'Unauthorized.' }, { status: 401 })
+	if (!user) return Response.json({ message: 'Unauthorized.' }, { status: 401 })
 
 	const body = requestSchema.safeParse(await request.json().catch(() => null))
 	if (!body.success) return Response.json({ message: 'Invalid request.' }, { status: 400 })
