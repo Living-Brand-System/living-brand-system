@@ -2,10 +2,10 @@
 
 import { WarningAlt } from '@carbon/icons-react'
 import { Controller } from '@/components/shared/controller'
+import { PageCard } from '@/components/shared/page-card'
 import { Alert, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
-import { Typography } from '@/components/ui/typography'
 import { useLoginForm } from '@/features/auth/hooks/use-login-form'
 import { cn } from '@/lib/utils'
 
@@ -30,15 +30,12 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
 				submit()
 			}}
 		>
-			<Controller.Root className="gap-3 px-3 pt-6 pb-3 lg:h-auto">
-				<header className="flex flex-col gap-1 px-2">
-					<Typography as="h1" size="2xl" weight="medium">
-						로그인
-					</Typography>
-					<Typography size="sm" tone="muted">
-						발급받은 계정으로 로그인합니다.
-					</Typography>
-				</header>
+			<PageCard.Root>
+				<PageCard.Header
+					as="h1"
+					title="로그인"
+					description="발급받은 계정으로 로그인합니다."
+				/>
 
 				<div className="flex flex-col gap-1">
 					<Controller.Field label="이메일">
@@ -98,7 +95,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
 						'로그인'
 					)}
 				</Button>
-			</Controller.Root>
+			</PageCard.Root>
 		</form>
 	)
 }

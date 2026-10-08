@@ -2,6 +2,7 @@
 
 import { Information } from '@carbon/icons-react'
 import { Controller } from '@/components/shared/controller'
+import { PageCard } from '@/components/shared/page-card'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Typography } from '@/components/ui/typography'
@@ -17,13 +18,11 @@ export function FigmaTokenCard({ connected: initialConnected }: { connected: boo
 		useFigmaToken(initialConnected)
 
 	return (
-		<Controller.Root className="gap-3 px-3 pt-6 pb-3 lg:h-auto">
-			<header className="flex flex-col gap-1 px-2">
-				<div className="flex items-center gap-1">
-					<Typography as="h2" size="2xl" weight="medium">
-						Figma
-					</Typography>
-					{/* 발급 방법은 한 번만 필요한 도움말이라 본문이 아니라 툴팁에 둔다(content-heading과 같은 표면). */}
+		<PageCard.Root>
+			<PageCard.Header
+				title="Figma"
+				adornment={
+					// 발급 방법은 한 번만 필요한 도움말이라 본문이 아니라 툴팁에 둔다(content-heading과 같은 표면).
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button
@@ -42,11 +41,9 @@ export function FigmaTokenCard({ connected: initialConnected }: { connected: boo
 							암호화해 저장하고 다시 표시하지 않습니다.
 						</TooltipContent>
 					</Tooltip>
-				</div>
-				<Typography size="sm" tone="muted">
-					템플릿 가져오기에 사용할 토큰을 등록합니다.
-				</Typography>
-			</header>
+				}
+				description="템플릿 가져오기에 사용할 토큰을 등록합니다."
+			/>
 
 			<Controller.Row readonly label="상태">
 				<span className="text-sm">{connected ? '연결됨' : '연결 안 됨'}</span>
@@ -94,6 +91,6 @@ export function FigmaTokenCard({ connected: initialConnected }: { connected: boo
 					{error}
 				</Typography>
 			)}
-		</Controller.Root>
+		</PageCard.Root>
 	)
 }

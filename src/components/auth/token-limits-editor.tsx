@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Controller } from '@/components/shared/controller'
+import { PageCard } from '@/components/shared/page-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -14,7 +15,6 @@ import {
 	TableRow,
 } from '@/components/ui/table'
 import { Toggle } from '@/components/ui/toggle'
-import { Typography } from '@/components/ui/typography'
 import { cn } from '@/lib/utils'
 import {
 	saveAccountTokenLimits,
@@ -96,16 +96,12 @@ function DefaultsPanel({ defaults }: { defaults: Limits }) {
 	}
 
 	return (
-		<Controller.Root className="gap-3 px-3 pt-6 pb-3 lg:h-auto">
-			<header className="flex flex-col gap-1 px-2">
-				<Typography as="h1" size="2xl" weight="medium">
-					AI 토큰 한도
-				</Typography>
-				<Typography size="sm" tone="muted">
-					모든 계정의 기본값입니다(합계 토큰). 일 한도는 한국 시간 0시에 다시 시작합니다.
-					저장한 적이 없으면 LBS 기본값(일 1만·월 10만)이 걸립니다.
-				</Typography>
-			</header>
+		<PageCard.Root>
+			<PageCard.Header
+				as="h1"
+				title="AI 토큰 한도"
+				description="모든 계정의 기본값입니다(합계 토큰). 일 한도는 한국 시간 0시에 다시 시작합니다. 저장한 적이 없으면 LBS 기본값(일 1만·월 10만)이 걸립니다."
+			/>
 			<div className="flex flex-col gap-1">
 				{TOKEN_LIMIT_PERIODS.map((period) => (
 					<Controller.Row key={period} label={PERIOD_TITLES[period]}>
@@ -127,7 +123,7 @@ function DefaultsPanel({ defaults }: { defaults: Limits }) {
 					기본값 저장
 				</Button>
 			</div>
-		</Controller.Root>
+		</PageCard.Root>
 	)
 }
 
@@ -170,23 +166,20 @@ function AccountsPanel({
 	}
 
 	return (
-		<Controller.Root className="gap-3 px-3 pt-6 pb-3 lg:h-auto">
-			<header className="flex items-start justify-between gap-3 px-2">
-				<div className="flex flex-col gap-1">
-					<Typography as="h2" size="xl" weight="medium">
-						계정별 한도
-					</Typography>
-					<Typography size="sm" tone="muted">
-						칸을 비우면 기본값을 따릅니다. 한도에 닿으면 새 AI 요청이 막힙니다.
-					</Typography>
-				</div>
-				<Button
-					disabled={dirtyIds.length === 0 || savingIds.length > 0}
-					onClick={() => save(dirtyIds)}
-				>
-					모두 저장
-				</Button>
-			</header>
+		<PageCard.Root>
+			<PageCard.Header
+				size="xl"
+				title="계정별 한도"
+				description="칸을 비우면 기본값을 따릅니다. 한도에 닿으면 새 AI 요청이 막힙니다."
+				action={
+					<Button
+						disabled={dirtyIds.length === 0 || savingIds.length > 0}
+						onClick={() => save(dirtyIds)}
+					>
+						모두 저장
+					</Button>
+				}
+			/>
 			{/* 🔑 열 폭은 내용이 아니라 화면 폭이 정한다(table-fixed + 비율) — 값을 고치거나 버튼이 켜져도 표가 흔들리지 않는다. */}
 			<Table className="table-fixed">
 				<colgroup>
@@ -297,7 +290,7 @@ function AccountsPanel({
 					})}
 				</TableBody>
 			</Table>
-		</Controller.Root>
+		</PageCard.Root>
 	)
 }
 
