@@ -12,6 +12,8 @@ export type ControllerStackItem = {
 	children: ReactNode
 	disabled?: boolean
 	readonly?: boolean
+	/** 칸 안 오류 문구의 id — `ControllerRow`의 `errorId`로 넘어가 입력에 연결된다. */
+	errorId?: string
 }
 
 type ControllerStackProps = Omit<ComponentProps<'div'>, 'children'> & {
@@ -37,13 +39,14 @@ export function ControllerStack({
 			className={cn('grid min-w-0 auto-cols-fr grid-flow-col gap-1', className)}
 			{...props}
 		>
-			{items.map(({ id, label, icon, children, disabled, readonly }) => (
+			{items.map(({ id, label, icon, children, disabled, readonly, errorId }) => (
 				<Tooltip key={id}>
 					<TooltipTrigger asChild>
 						<ControllerRow
 							data-slot="controller-row"
 							disabled={disabled}
 							readonly={readonly}
+							errorId={errorId}
 							className={cn(
 								'min-w-0 gap-2',
 								items.length === 3 && 'px-2.5 [--controller-row-px:0.625rem]',
