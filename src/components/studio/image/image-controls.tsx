@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { CONTROLLER_TOGGLE_OPTIONS } from '@/components/shared/controller'
 import { ControllerCompound } from '@/components/shared/controller/compound'
 import { ControllerSegmented } from '@/components/shared/controller/segmented'
 import { ControllerControlRenderer } from '@/components/shared/controller-renderer'
@@ -29,13 +30,10 @@ import {
 	arrangeStudioPanel,
 	type StudioPanelPolicy,
 } from '@/modules/studio-controller/controller-composition'
-import type { ControllerValues } from '@/modules/studio-controller/controller-definition'
-import { resolveControllerAvailability } from '@/modules/studio-controller/controller-definition'
-
-const TOGGLE = [
-	{ value: 'on', label: 'On' },
-	{ value: 'off', label: 'Off' },
-] as const
+import {
+	type ControllerValues,
+	resolveControlAvailability,
+} from '@/modules/studio-controller/controller-definition'
 
 /**
  * 이미지 패널의 배치 정책 — 역할을 자리에 놓는다(docs/10 §3.7). Figma 529:19999·529:25129 — Basic은 생성 입력,
@@ -132,10 +130,7 @@ export function ImageColor({
 		fields.every(
 			(field) =>
 				!field.values &&
-				resolveControllerAvailability(
-					field.availability,
-					controls.bindings[field.id]?.availability,
-				) === 'enabled',
+				resolveControlAvailability(field, controls.bindings[field.id]) === 'enabled',
 		)
 	if (!freePair)
 		return (
@@ -189,7 +184,7 @@ function ImageReference({
 				<ControllerSegmented
 					compact
 					aria-label="Reference Image 사용"
-					options={TOGGLE}
+					options={CONTROLLER_TOGGLE_OPTIONS}
 					value={enabled ? 'on' : 'off'}
 					disabled={generation.busy}
 					onChange={(value) => onChange(value === 'on')}
@@ -239,7 +234,7 @@ function ImageCamera({
 				<ControllerSegmented
 					compact
 					aria-label="Camera Control 사용"
-					options={TOGGLE}
+					options={CONTROLLER_TOGGLE_OPTIONS}
 					disabled={generation.busy || !camera.seedImage}
 					value={enabled && camera.seedImage ? 'on' : 'off'}
 					onChange={(value) => onChange(value === 'on')}

@@ -24,7 +24,7 @@ import { ControllerPresence, ControllerReveal } from './presence'
 import { ControllerPreviewChips } from './preview-chips'
 import { ControllerRange } from './range'
 import { ControllerRow } from './row'
-import { ControllerSegmented } from './segmented'
+import { CONTROLLER_TOGGLE_OPTIONS, ControllerSegmented } from './segmented'
 import { ControllerSelect } from './select'
 import { ControllerStack } from './stack'
 import { ControllerStatus } from './status'
@@ -87,6 +87,7 @@ export const Controller = {
 
 // RSC에서 네임스페이스 객체의 점 접근은 client reference 제약으로 깨질 수 있다 — 개별 export가 안전판.
 export {
+	CONTROLLER_TOGGLE_OPTIONS,
 	ControllerAction,
 	ControllerAssetCard,
 	ControllerBar,

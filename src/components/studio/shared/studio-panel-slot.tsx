@@ -14,13 +14,14 @@ import type {
 	StudioPanelClusterEntry,
 	StudioPanelEntry,
 } from '@/modules/studio-controller/controller-composition'
-import type {
-	ControllerControlDefinition,
-	ControllerControlValue,
-	ControllerGroupDefinition,
-	ControllerGroupPresentation,
-	ControllerRuntimeBindings,
-	ControllerValues,
+import {
+	type ControllerControlDefinition,
+	type ControllerControlValue,
+	type ControllerGroupDefinition,
+	type ControllerGroupPresentation,
+	type ControllerRuntimeBindings,
+	type ControllerValues,
+	resolveControlValue,
 } from '@/modules/studio-controller/controller-definition'
 
 export type ControllerWidgetProps = {
@@ -89,11 +90,7 @@ export function StudioPanelSlot({
 									<ControllerControlRenderer
 										key={control.id}
 										definition={control}
-										value={
-											control.id in props.values
-												? props.values[control.id]
-												: control.defaultValue
-										}
+										value={resolveControlValue(control, props.values)}
 										binding={props.bindings?.[control.id]}
 										assetSources={props.assetSources}
 										onChange={(value) => props.onChange(control.id, value)}

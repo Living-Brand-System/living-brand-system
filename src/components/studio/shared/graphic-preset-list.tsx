@@ -1,11 +1,11 @@
 import { Controller } from '@/components/shared/controller'
 import { Button } from '@/components/ui/button'
-import type {
-	ControllerControlDefinition,
-	ControllerControlValue,
-	ControllerRuntimeBinding,
+import {
+	type ControllerControlDefinition,
+	type ControllerControlValue,
+	type ControllerRuntimeBinding,
+	resolveControlAvailability,
 } from '@/modules/studio-controller/controller-definition'
-import { resolveControllerAvailability } from '@/modules/studio-controller/controller-definition'
 
 export function GraphicPresetList({
 	definition,
@@ -31,10 +31,7 @@ export function GraphicPresetList({
 						className="h-auto min-h-16 whitespace-normal aria-pressed:ring-2 aria-pressed:ring-ring"
 						disabled={
 							disabled ||
-							resolveControllerAvailability(
-								definition.availability,
-								binding?.availability,
-							) !== 'enabled'
+							resolveControlAvailability(definition, binding) !== 'enabled'
 						}
 						aria-pressed={value === option.value}
 						onClick={() => onChange(option.value)}

@@ -3,12 +3,7 @@
 import { FieldDescription, useForm, useFormFields } from '@payloadcms/ui'
 import { getDataByPath } from 'payload/shared'
 import { AdminSectionHeading } from '@/components/admin/shared/admin-section-heading'
-import { Controller } from '@/components/shared/controller'
-
-const ON_OFF = [
-	{ value: 'on', label: 'On' },
-	{ value: 'off', label: 'Off' },
-] as const
+import { CONTROLLER_TOGGLE_OPTIONS, Controller } from '@/components/shared/controller'
 
 type FeatureRow = {
 	blockType: string
@@ -59,7 +54,7 @@ export function ImageProfileFeaturesField({
 		return (
 			<Controller.Segmented
 				aria-label={`${label} 사용`}
-				options={ON_OFF}
+				options={CONTROLLER_TOGGLE_OPTIONS}
 				disabled={disabled}
 				value={indexOf(blockType) === -1 ? 'off' : 'on'}
 				onChange={(next) => setEnabled(blockType, next === 'on')}
@@ -108,7 +103,7 @@ export function ImageProfileFeaturesField({
 						<Controller.Row label="배경 색상 조정" disabled={disabled}>
 							<Controller.Segmented
 								aria-label="배경 색상 조정"
-								options={ON_OFF}
+								options={CONTROLLER_TOGGLE_OPTIONS}
 								value={background ? 'on' : 'off'}
 								onChange={(next) =>
 									updateSubfield('colorAdjustment', 'background', next === 'on')

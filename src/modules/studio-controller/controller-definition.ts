@@ -411,6 +411,41 @@ export function projectPayloadControllerRestrictions(
 	return { controls: record.controls.map(projectControllerRestriction) }
 }
 
+type ColorControl = Extract<ControllerControlDefinition, { kind: 'color' }>
+type SelectControl = Extract<ControllerControlDefinition, { kind: 'select' }>
+
+/**
+ * 🔑 그룹의 컨트롤이 전부 색이면 그 그룹은 「색 조합」이다 — 행으로 쌓지 않고 한 띠로 그린다.
+ *
+ * 데이터 모양으로 판정하는 것은 「선택지가 전부 색이면 칩 그리드」와 같은 방식이다(렌더러의 select).
+ * 계약에 표현 플래그를 더하지 않는 이유가 그것이다 — 색만 모인 그룹은 이미 조합을 뜻한다.
+ * 칸이 하나뿐이면 띠가 될 것이 없으므로 평소의 색 행으로 떨어진다.
+ *
+ * 🔑 색 칸 앞에 **조합을 고르는 select 하나**가 서 있어도 같은 그룹이다. 그때는 칩 그리드가 띠 위에
+ *    서고, 고르면 선택지의 `colors`가 **칸 순서대로** 띠를 채운다 — 고르기와 편집이 한 자리에 있고
+ *    띠는 언제나 화면에 그려지는 색을 보여준다. 선택지의 색 개수가 칸 수와 어긋나면 채울 짝이
+ *    없으므로 조합으로 보지 않는다(평소의 행으로 떨어진다).
+ * 🔴 렌더러(띠로 그린다)와 `applyControllerRestrictions`(띠 칸에 허용 색 금지)가 이 한 판정을 쓴다 —
+ *    둘이 따로 판정하면 어긋나는 순간 띠가 조용히 깨진다.
+ */
+export function resolveColorCombinationGroup(group: ControllerGroupDefinition): {
+	palette: SelectControl | null
+	colors: readonly ColorControl[]
+} | null {
+	const colors = group.controls.filter(
+		(control): control is ColorControl => control.kind === 'color' && !control.values?.length,
+	)
+	if (colors.length < 2) return null
+	const rest = group.controls.filter((control) => !colors.includes(control as ColorControl))
+	if (rest.length === 0) return { palette: null, colors }
+	if (rest.length > 1) return null
+	const [palette] = rest
+	if (palette.kind !== 'select') return null
+	return palette.options.every((option) => option.colors?.length === colors.length)
+		? { palette: palette as SelectControl, colors }
+		: null
+}
+
 /** Admin Restrictions를 stable control id로 찾아 Base Definition보다 좁은 값만 적용한다. */
 export function applyControllerRestrictions(
 	baseGroups: readonly ControllerGroupDefinition[],
@@ -441,15 +476,10 @@ export function applyControllerRestrictions(
 	//    팔레트 칩이 채울 짝을 잃고 — 칩은 눌리고 선택 링도 옮겨가는데 색과 화면이 하나도 안 바뀌는
 	//    조용한 사망이 된다. 창작자 화면에서 조용히 죽는 대신 admin 저장에서 거부한다.
 	for (const group of baseGroups) {
-		const hasPalette = group.controls.some(
-			(control) =>
-				control.kind === 'select' &&
-				control.options.every((option) => option.colors?.length),
-		)
-		if (!hasPalette) continue
-		const restricted = group.controls.find(
-			(control) =>
-				control.kind === 'color' && restrictionsById.get(control.id)?.colorValues?.length,
+		const combination = resolveColorCombinationGroup(group)
+		if (!combination?.palette) continue
+		const restricted = combination.colors.find(
+			(control) => restrictionsById.get(control.id)?.colorValues?.length,
 		)
 		if (restricted) {
 			throw new Error(
@@ -489,7 +519,7 @@ export function acceptsControllerDraftValue(
 	value: ControllerControlValue,
 	binding?: ControllerRuntimeBinding,
 ): boolean {
-	if (resolveControllerAvailability(control.availability, binding?.availability) !== 'enabled') {
+	if (resolveControlAvailability(control, binding) !== 'enabled') {
 		return false
 	}
 	return isControllerValueShape(control, value, false)
@@ -529,6 +559,22 @@ export function resolveControllerAvailability(
 	if (published === 'disabled' || runtime === 'disabled') return 'disabled'
 	if (published === 'readonly' || runtime === 'readonly') return 'readonly'
 	return 'enabled'
+}
+
+/** 컨트롤 하나의 실효 availability — 발행 정의와 런타임 binding 중 더 좁은 쪽이다. */
+export function resolveControlAvailability(
+	control: Pick<ControllerControlDefinition, 'availability'>,
+	binding?: ControllerRuntimeBinding,
+): ControllerAvailability {
+	return resolveControllerAvailability(control.availability, binding?.availability)
+}
+
+/** 세션에 값이 없으면 발행 기본값으로 읽는다 — 렌더러·패널 슬롯·위젯이 같은 규칙을 쓴다. */
+export function resolveControlValue(
+	control: Pick<ControllerControlDefinition, 'id' | 'defaultValue'>,
+	values: ControllerValues,
+): ControllerControlValue {
+	return control.id in values ? values[control.id] : control.defaultValue
 }
 
 function isControllerValueShape(

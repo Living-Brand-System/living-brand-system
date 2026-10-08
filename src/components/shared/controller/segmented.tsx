@@ -9,6 +9,15 @@ import { cn } from '@/lib/utils'
 import type { ControllerOption } from '@/modules/studio-controller/controller-definition'
 import { useRowControl } from './row'
 
+/**
+ * toggle(boolean)의 표현은 세그먼트 On|Off 하나뿐이다 — 계약 밖 boolean 행(레이어 가시성·어드민 스위치)도 이걸 쓴다.
+ * 순서는 디자인 SSOT(Figma HD_LBS_UI 4:5822 "Toggle")가 정한다 — On이 왼쪽이다.
+ */
+export const CONTROLLER_TOGGLE_OPTIONS = [
+	{ value: 'on', label: 'On' },
+	{ value: 'off', label: 'Off' },
+] as const
+
 type ControllerSegmentedProps<T extends string> = {
 	options: readonly ControllerOption<T>[]
 	value: T

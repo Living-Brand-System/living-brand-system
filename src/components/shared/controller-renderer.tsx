@@ -2,32 +2,24 @@
 
 import { Reset } from '@carbon/icons-react'
 import type { ReactNode } from 'react'
-import { Controller } from '@/components/shared/controller'
+import { CONTROLLER_TOGGLE_OPTIONS, Controller } from '@/components/shared/controller'
 import type { ControllerGroupSectionProps } from '@/components/shared/controller/group'
 import { FieldError } from '@/components/ui/field'
-import type {
-	ControllerControlDefinition,
-	ControllerControlValue,
-	ControllerGroupDefinition,
-	ControllerGroupPresentation,
-	ControllerRuntimeBinding,
-	ControllerRuntimeBindings,
-	ControllerValues,
-} from '@/modules/studio-controller/controller-definition'
 import {
+	type ControllerAvailability,
+	type ControllerControlDefinition,
+	type ControllerControlValue,
+	type ControllerGroupDefinition,
+	type ControllerGroupPresentation,
+	type ControllerRuntimeBinding,
+	type ControllerRuntimeBindings,
+	type ControllerValues,
 	isControllerPadPairValue,
 	isControllerPadValue,
-	resolveControllerAvailability,
+	resolveColorCombinationGroup,
+	resolveControlAvailability,
+	resolveControlValue,
 } from '@/modules/studio-controller/controller-definition'
-
-/**
- * toggle(boolean)의 표현은 세그먼트 On|Off 하나뿐이다 — 계약 밖 boolean 행(레이어 가시성)도 이걸 쓴다.
- * 순서는 디자인 SSOT(Figma HD_LBS_UI 4:5822 "Toggle")가 정한다 — On이 왼쪽이다.
- */
-export const CONTROLLER_TOGGLE_OPTIONS = [
-	{ value: 'on', label: 'On' },
-	{ value: 'off', label: 'Off' },
-] as const
 
 /**
  * `asset` control의 출처별 화면. 🔴 킷은 목록을 모른다 — 도메인을 아는 쪽이 이 맵으로 주입한다.
@@ -106,7 +98,7 @@ export function ControllerDefinitionGroup({
 			<ControllerControlRenderer
 				key={control.id}
 				definition={control}
-				value={control.id in values ? values[control.id] : control.defaultValue}
+				value={resolveControlValue(control, values)}
 				binding={bindings?.[control.id]}
 				assetSources={assetSources}
 				onChange={(value) => onChange(control.id, value)}
@@ -128,33 +120,6 @@ export function ControllerDefinitionGroup({
 type ColorControl = Extract<ControllerControlDefinition, { kind: 'color' }>
 type SelectControl = Extract<ControllerControlDefinition, { kind: 'select' }>
 
-/**
- * 🔑 그룹의 컨트롤이 전부 색이면 그 그룹은 「색 조합」이다 — 행으로 쌓지 않고 한 띠로 그린다.
- *
- * 데이터 모양으로 판정하는 것은 「선택지가 전부 색이면 칩 그리드」와 같은 방식이다(아래 select).
- * 계약에 표현 플래그를 더하지 않는 이유가 그것이다 — 색만 모인 그룹은 이미 조합을 뜻한다.
- * 칸이 하나뿐이면 띠가 될 것이 없으므로 평소의 색 행으로 떨어진다.
- *
- * 🔑 색 칸 앞에 **조합을 고르는 select 하나**가 서 있어도 같은 그룹이다. 그때는 칩 그리드가 띠 위에
- *    서고, 고르면 선택지의 `colors`가 **칸 순서대로** 띠를 채운다 — 고르기와 편집이 한 자리에 있고
- *    띠는 언제나 화면에 그려지는 색을 보여준다. 선택지의 색 개수가 칸 수와 어긋나면 채울 짝이
- *    없으므로 조합으로 보지 않는다(평소의 행으로 떨어진다).
- */
-function resolveColorCombinationGroup(group: ControllerGroupDefinition) {
-	const colors = group.controls.filter(
-		(control): control is ColorControl => control.kind === 'color' && !control.values?.length,
-	)
-	if (colors.length < 2) return null
-	const rest = group.controls.filter((control) => !colors.includes(control as ColorControl))
-	if (rest.length === 0) return { palette: null, colors }
-	if (rest.length > 1) return null
-	const [palette] = rest
-	if (palette.kind !== 'select') return null
-	return palette.options.every((option) => option.colors?.length === colors.length)
-		? { palette: palette as SelectControl, colors }
-		: null
-}
-
 /** 색 조합 그룹을 「팔레트 칩 + 한 띠」로 투영한다. 되돌리기는 조합을 한 번에 비운다. */
 function ColorStripGroup({
 	palette,
@@ -172,13 +137,10 @@ function ColorStripGroup({
 	onChange: (controlId: string, value: ControllerControlValue) => void
 }) {
 	const resolved = colors.map((control) => {
-		const value = control.id in values ? values[control.id] : control.defaultValue
+		const value = resolveControlValue(control, values)
 		return {
 			control,
-			availability: resolveControllerAvailability(
-				control.availability,
-				bindings?.[control.id]?.availability,
-			),
+			availability: resolveControlAvailability(control, bindings?.[control.id]),
 			color: typeof value === 'string' ? value : null,
 		}
 	})
@@ -314,10 +276,7 @@ export function ControllerControlRenderer({
 			<ControllerControl
 				definition={definition}
 				value={value}
-				availability={resolveControllerAvailability(
-					definition.availability,
-					binding?.availability,
-				)}
+				availability={resolveControlAvailability(definition, binding)}
 				padAspectRatio={binding?.padAspectRatio}
 				assetSources={assetSources}
 				onChange={onChange}
@@ -330,7 +289,7 @@ export function ControllerControlRenderer({
 type ControllerControlProps = {
 	definition: ControllerControlDefinition
 	value: ControllerControlValue
-	availability: ReturnType<typeof resolveControllerAvailability>
+	availability: ControllerAvailability
 	padAspectRatio?: number
 	assetSources?: ControllerAssetSources
 	onChange: (value: ControllerControlValue) => void

@@ -19,7 +19,7 @@ import {
 	type ControllerControlDefinition,
 	isControllerPadPairValue,
 	isControllerPadValue,
-	resolveControllerAvailability,
+	resolveControlAvailability,
 } from '@/modules/studio-controller/controller-definition'
 
 /**
@@ -40,8 +40,7 @@ const enabled = (
 	bindings: ControllerWidgetProps['bindings'],
 ) =>
 	control !== undefined &&
-	resolveControllerAvailability(control.availability, bindings?.[control.id]?.availability) ===
-		'enabled'
+	resolveControlAvailability(control, bindings?.[control.id]) === 'enabled'
 
 const hasColors = (control: ControllerControlDefinition) =>
 	control.kind === 'color' ||

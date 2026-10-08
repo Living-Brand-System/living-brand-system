@@ -29,7 +29,7 @@ import {
 import {
 	type ControllerControlValue,
 	type ControllerValues,
-	resolveControllerAvailability,
+	resolveControlAvailability,
 } from '@/modules/studio-controller/controller-definition'
 
 /**
@@ -73,10 +73,8 @@ function SwatchesWidget({ cluster, controls, values, bindings, onChange }: Contr
 				value={typeof value === 'string' ? value : null}
 				onChange={(hex) => onChange(control.id, hex)}
 				disabled={
-					resolveControllerAvailability(
-						control.availability,
-						bindings?.[control.id]?.availability,
-					) !== 'enabled' || colors.length === 0
+					resolveControlAvailability(control, bindings?.[control.id]) !== 'enabled' ||
+					colors.length === 0
 				}
 			/>
 		</div>

@@ -4,7 +4,7 @@ import { FieldDescription, FieldError, useField } from '@payloadcms/ui'
 import type { JSONFieldClientComponent } from 'payload'
 import { type ComponentProps, useState } from 'react'
 import { AdminSectionHeading } from '@/components/admin/shared/admin-section-heading'
-import { Controller } from '@/components/shared/controller'
+import { CONTROLLER_TOGGLE_OPTIONS, Controller } from '@/components/shared/controller'
 import {
 	type ControllerControlDefinition,
 	type ControllerControlRestriction,
@@ -26,11 +26,6 @@ type ControllerAdminFieldProps = ComponentProps<JSONFieldClientComponent> & {
 type StoredControllerPresentation = {
 	groups: { groupId: string; collapsible?: boolean; defaultOpen?: boolean }[]
 }
-
-const ON_OFF = [
-	{ value: 'on', label: 'On' },
-	{ value: 'off', label: 'Off' },
-] as const
 
 const AVAILABILITY_OPTIONS = [
 	{ value: 'default', label: '원본 사용' },
@@ -196,7 +191,7 @@ export function StudioControllerPresentationField({
 									<Controller.Row label="접기 허용" disabled={disabled}>
 										<Controller.Segmented
 											aria-label={`${group.title} 접기 허용`}
-											options={ON_OFF}
+											options={CONTROLLER_TOGGLE_OPTIONS}
 											value={collapsible ? 'on' : 'off'}
 											onChange={(next) =>
 												update(group.id, { collapsible: next === 'on' })
@@ -209,7 +204,7 @@ export function StudioControllerPresentationField({
 									>
 										<Controller.Segmented
 											aria-label={`${group.title} 처음 열기`}
-											options={ON_OFF}
+											options={CONTROLLER_TOGGLE_OPTIONS}
 											value={defaultOpen ? 'on' : 'off'}
 											onChange={(next) =>
 												update(group.id, { defaultOpen: next === 'on' })
@@ -277,7 +272,7 @@ function ControlRestrictionEditor({
 			<Controller.Row label="기본값 재정의" disabled={disabled}>
 				<Controller.Segmented
 					aria-label={`${control.label} 기본값 재정의`}
-					options={ON_OFF}
+					options={CONTROLLER_TOGGLE_OPTIONS}
 					value={overridesDefault ? 'on' : 'off'}
 					onChange={(next) =>
 						onChange({
@@ -435,7 +430,7 @@ function DefaultValueEditor({
 			<Controller.Row label="기본값" disabled={disabled}>
 				<Controller.Segmented
 					aria-label={`${control.label} 기본값`}
-					options={ON_OFF}
+					options={CONTROLLER_TOGGLE_OPTIONS}
 					value={value === true ? 'on' : 'off'}
 					onChange={(next) => onChange(next === 'on')}
 				/>

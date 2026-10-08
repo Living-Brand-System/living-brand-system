@@ -180,7 +180,7 @@ type StudioRuntimeManifest = {
 }
 
 type StudioControllerConfig = StudioRuntimeManifest & {
-	studio: 'template' | 'image' | 'graphic'
+	studio: 'template' | 'image' | 'graphic' | 'graph'
 	id: string | number
 	version: 1
 	name: string
@@ -206,7 +206,7 @@ Template·Image·Graphic Config는 이 Manifest 구조를 그대로 쓰고, 실�
 </Controller.Group>
 ```
 
-`GroupHeader`와 `Section`은 공개 API에 두지 않습니다. `Group`이 제목·구분선·Chevron·접힘 상태를 내부에서 그립니다. `ControllerRenderer`는 첫 그룹의 상단 구분선만 제거합니다. 잠긴 동안에는 강제로 닫지만 사용자의 이전 열림 상태는 보존해, 잠금이 풀리면 원래 상태로 복귀합니다. 레이아웃 공개 API는 `Root`·`Header`·`Content`·`Group`·`Footer`입니다.
+`GroupHeader`와 `Section`은 공개 API에 두지 않습니다. `Group`이 제목·Chevron·접힘 상태를 내부에서 그립니다(구분선은 없습니다 — 위 `GroupList` 문단). 잠긴 동안에는 강제로 닫지만 사용자의 이전 열림 상태는 보존해, 잠금이 풀리면 원래 상태로 복귀합니다. 레이아웃 공개 API는 `Root`·`Header`·`Content`·`Group`·`Footer`입니다.
 
 Controller 사용 구조는 다섯 책임으로 나눕니다.
 
@@ -220,7 +220,7 @@ Controller 사용 구조는 다섯 책임으로 나눕니다.
 
 별도 `ControllerProvider`는 두지 않습니다. 편집 계약과 세션 값은 화면의 Studio Provider가 소유하고, Controller 컴파운드는 표현 레이아웃만 소유합니다. 여러 Controller Root 사이에서 공유할 표현 상태가 실제로 생길 때만 Provider를 추가합니다.
 
-세 Studio의 Admin UI는 Runtime Manifest를 읽기 전용으로 보여주되, Image는 Profile이 선택한 feature로 좁힌 Controller projection을 보여줍니다. Image·Graphic Admin은 `{ controlId, availability, defaultValue, maxLength, optionValues, min, max }`만 sparse JSON `controllerRestrictions`로 저장하고(Image는 장수·비율·해상도만 좁히며 프롬프트·색은 제한하지 않고, `controllerPresentation`은 Template처럼 계산된 기본값입니다) `kind`·label·placeholder·display·aspectRatio·group title·collapsible·defaultOpen을 입력하지 않습니다. Template Admin은 `controllerRestrictions`를 쓰지 않고 배경(`backgroundPolicy`)·레이어별 `overrides[nodeId]`·출력(`exportPolicy`)만 저장하며, `controllerPresentation`은 계산된 기본값입니다. Draft는 작성 중인 불완전 상태를 허용하지만 publish는 공통 parser로 unknown field·중복 id·kind별 기본값과 제약을 엄격하게 검증합니다. 세 Studio는 legacy Controller/Policy 저장을 읽지 않고 Effective `config.controller.groups`만 소비합니다.
+세 Studio의 Admin UI는 Runtime Manifest를 읽기 전용으로 보여주되, Image는 Profile이 선택한 feature로 좁힌 Controller projection을 보여줍니다. Image·Graphic Admin은 `{ controlId, availability, defaultValue, maxLength, optionValues, colorValues, min, max }`만 sparse JSON `controllerRestrictions`로 저장하고(Image는 장수·비율·해상도만 좁히며 프롬프트·색은 제한하지 않고, `controllerPresentation`은 Template처럼 계산된 기본값입니다) `kind`·label·placeholder·display·aspectRatio·group title·collapsible·defaultOpen을 입력하지 않습니다. Template Admin은 `controllerRestrictions`를 쓰지 않고 배경(`backgroundPolicy`)·레이어별 `overrides[nodeId]`·출력(`exportPolicy`)만 저장하며, `controllerPresentation`은 계산된 기본값입니다. Draft는 작성 중인 불완전 상태를 허용하지만 publish는 공통 parser로 unknown field·중복 id·kind별 기본값과 제약을 엄격하게 검증합니다. 세 Studio는 legacy Controller/Policy 저장을 읽지 않고 Effective `config.controller.groups`만 소비합니다.
 
 어드민은 화면 패널을 구성하지 않고 기본값·선택지·범위·availability만 `controllerRestrictions`로 저작합니다(Template은 예외 — 위 문단 참고). Image Runtime Manifest의 control 종류·그룹·표현·stable ID와 전체 supported feature는 Generation Model capability가 소유하고, Image Profile은 feature를 선택합니다. Restrictions를 여러 번 적용해도 같은 Effective Definition이 나와야 합니다. `enabled`로의 잠금 해제, select 선택지 추가, range 확장, 알 수 없는 ID는 발행 시 거부합니다. Graphic의 서버 안전 Manifest Catalog는 직렬화 가능한 Runtime Manifest만 소유하고, Artifact 생성 runtime과 파일 변환 adapter는 각각 runtime/client와 studio-export 모듈이 소유합니다. `Visibility`는 Controller 계약에 두지 않습니다. 현재 렌더러는 Effective Definition에 들어 있는 control을 모두 표시합니다.
 
@@ -256,17 +256,17 @@ type ControllerInteraction = 'idle' | 'hover' | 'focused' | 'error'
 | text | `string \| null` | `maxLength`(카운터 `n/max`로 표시), `multiline` | `Controller.Row`+`Controller.Input` / `Controller.Field`+`Controller.Textarea` |
 | toggle | `boolean` | — | `Controller.Segmented` (On/Off) |
 | select | `string \| null` | `options[]`(선택지별 `colors[]`), `variant`(`list` 기본 / `segmented`) | `Controller.Row`+`Controller.Select`, `segmented`면 `Controller.Segmented`, 선택지가 전부 색이면 `Controller.ColorChips` |
-| color | `#rrggbb \| null` | — | `Controller.ColorRow` |
+| color | `#rrggbb \| null` | `values`(허용 색 목록 — 있으면 그 안에서만 고른다) | `Controller.ColorRow` |
 | range | `number` | `min`/`max`/`step`, 표기 포맷 | `Controller.Range` (채움 폭=값) |
 | pad | `{ x, y }` (-1~1) | `aspectRatio`(Wide/Portrait/Square) | `Controller.Pad` |
-| orbit | `{ azimuthDeg, elevationDeg }` | 스냅 스텝 | `Controller.CameraControl` + 오빗 프리뷰 |
-| asset | 자산 참조 `\| null` | 소스(브랜드 이미지 등) | `Controller.AssetCard`(카드 + 열기 버튼), 패널은 `Controller.Browser` |
+| pad-pair | `{ a: {x,y}, b: {x,y} }` | `aspectRatio` | `Controller.PadPair` |
+| asset | 자산 URL `\| null` | `source`(출처 — 목록은 싣지 않는다) | 화면이 `assetSources`로 주입한 피커(`Controller.AssetCard` + `Controller.Browser`), 없으면 읽기 전용 행 |
 
 `select`의 `variant`는 **표현이 아니라 선택지 성격**을 말합니다. 기본 `list`는 드롭다운이라 누르기 전까지 무엇이 있는지 보이지 않고, `segmented`는 선택지를 한 줄에 펴 놓습니다 — 정본이 **세트로** 제시해 몇 가지인지가 곧 정보인 축에만 씁니다(CI 락업의 「꼴」이 첫 소비자). 선택지가 많으면 폭을 먹으므로 목록형이 기본입니다.
 
 선택지 자체가 **색 조합**인 축은 새 kind나 새 variant를 만들지 않고 `options[].colors`(#rrggbb 목록)에 그 색을 싣습니다 — `variant`는 선택지의 **성격**이고 `colors`는 선택지의 **내용**이라 표현은 렌더러가 정합니다. 전 선택지가 `colors`를 가지면 `variant`를 덮고 `Controller.ColorChips`(라벨 아래 3열 칩 그리드)로 그립니다. 하나라도 없으면 `variant`가 정한 표현(`segmented`면 세그먼트, 아니면 목록)으로 떨어집니다(Key Visual Pattern의 컬러웨이가 첫 소비자, hex가 `style`로 흐르는 근거는 `docs/09` §4의 색-데이터 예외).
 
-현재 공용 `ControllerControlDefinition`은 데이터만으로 바로 그릴 수 있는 `text`·`toggle`·`select`·`color`·`range`·`pad`를 제공합니다. `orbit`은 도메인 프리뷰 슬롯이 필요하고 `asset`은 대응 primitive가 아직 없어 화면 컴포지션에 남깁니다. 두 종류는 실제 공용 renderer가 생길 때 Definition에 합류합니다.
+카메라 시점(방위·고도)은 kind가 아닙니다 — 프리뷰가 도메인 슬롯이라 `camera` 묶음 위젯(§3.7)이 `gate`와 축 컨트롤을 묶어 그립니다. `asset`의 목록은 환경(업로드된 자산)에 묶이므로 계약은 `source`만 싣고, 피커는 화면이 주입합니다.
 
 읽기·탐색 파츠 6종 — 값을 조작하지 않고 결과를 보여주거나 위치를 옮기는 자리입니다. 검수 화면이 첫 소비자이고(디자인 `56:2` "Review Usecase"), 리프 컨트롤과 달리 직렬화 Definition의 어휘가 아니라 **컴포지션 파츠**입니다.
 
