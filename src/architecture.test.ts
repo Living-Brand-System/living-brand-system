@@ -76,8 +76,6 @@ const ALLOWLIST: readonly string[] = [
 	'R2 app/api/auth/password/route.ts',
 	'R2 collections/Users.ts',
 	'R2 collections/revalidate.ts',
-	'R3 rules <- features/guideline',
-	'R3 templates <- features/agent-chat',
 ]
 
 type SourceFile = { rel: string; text: string }

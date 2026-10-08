@@ -1,6 +1,6 @@
 import type { PayloadRequest } from 'payload'
 import { expect, test, vi } from 'vitest'
-import { findPublishedRules } from './rules.payload.repository'
+import { findPublishedRules, findRuleSummaries } from './rules.payload.repository'
 
 const req = (user?: unknown): PayloadRequest => ({ payload: { find }, user }) as never
 const find = vi.fn()
@@ -26,4 +26,15 @@ test('요청자가 없는 서버 호출만 access를 연다', async () => {
 	find.mockResolvedValue({ docs: [] })
 	await findPublishedRules(req())
 	expect(find).toHaveBeenCalledWith(expect.objectContaining({ overrideAccess: true }))
+})
+
+test('id 목록 요약 조회는 호출자의 req(트랜잭션)를 그대로 넘긴다', async () => {
+	find.mockResolvedValue({ docs: [{ id: 3, key: 'logo.size', title: '로고', extra: 1 }] })
+	const request = req()
+	await expect(findRuleSummaries(request, [3])).resolves.toEqual([
+		{ id: 3, key: 'logo.size', title: '로고' },
+	])
+	expect(find).toHaveBeenCalledWith(
+		expect.objectContaining({ collection: 'rules', req: request, where: { id: { in: [3] } } }),
+	)
 })

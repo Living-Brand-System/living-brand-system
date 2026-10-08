@@ -45,7 +45,7 @@ import { TemplateCategories } from './collections/TemplateCategories'
 import { Templates } from './collections/Templates'
 import { Users } from './collections/Users'
 import { env } from './env'
-import { listGuidelineSearchRules } from './features/guideline/repositories/guideline-search-rules.payload.repository'
+import { listGuidelineSearchRules } from './features/guideline/services/list-guideline-search-rules.service'
 import { buildGuidelineSearchText } from './features/guideline/utils/guideline-search-text'
 import { customMcpTools } from './features/mcp-access/mcp-tools'
 import { AgentSettings } from './globals/AgentSettings'
@@ -238,13 +238,13 @@ export default buildConfig({
 			collections: ['guideline-documents'],
 			// beforeSync는 문서 저장 트랜잭션 안에서 돈다 — req를 넘겨 같은 트랜잭션으로 조회해야 한다.
 			// 넘기지 않으면 풀에서 커넥션을 하나 더 요구해 저장이 자기를 기다리는 교착이 생긴다.
-			beforeSync: async ({ originalDoc, payload, req, searchDoc }) => {
+			beforeSync: async ({ originalDoc, req, searchDoc }) => {
 				const document = originalDoc as GuidelineDocument
 				return {
 					...searchDoc,
 					searchText: buildGuidelineSearchText(
 						document,
-						await listGuidelineSearchRules(payload, document, req),
+						await listGuidelineSearchRules(document, req),
 					),
 				}
 			},
