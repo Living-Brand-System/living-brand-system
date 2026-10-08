@@ -1,10 +1,10 @@
 'use client'
 
 import { useId } from 'react'
-import { cn } from '@/lib/utils'
 import type { ControllerOption } from '@/modules/studio-controller/controller-definition'
 import { ControllerField } from '../compose/field'
 import { useRowControl } from '../compose/row'
+import { ControllerSwatch } from './swatch'
 
 type ControllerColorChipsProps = {
 	label: string
@@ -18,7 +18,7 @@ type ControllerColorChipsProps = {
 /**
  * 색 조합을 고르는 칩 그리드 — 선택지의 정보가 라벨이 아니라 **색 자체**인 축에 쓴다.
  * 36px 한 줄 행에 조합을 밀어 넣으면 칩이 점이 되므로 라벨 아래 3열로 펴는 Field 골격을 쓴다.
- * 라디오 패턴·클래스는 `color-row.tsx`의 ColorPalette와 같다(방향키 이동을 브라우저가 준다).
+ * 칩 하나는 `ControllerSwatch`다(방향키 이동을 브라우저가 준다).
  */
 export function ControllerColorChips({
 	label,
@@ -57,9 +57,9 @@ function ColorChipGrid({
 			className="grid grid-cols-3 gap-1.5"
 		>
 			{options.map((option) => (
-				<input
+				<ControllerSwatch
 					key={option.value}
-					type="radio"
+					shape="chip"
 					name={groupName}
 					// 사람이 읽는 이름을 읽어준다 — hex는 조합의 이름이 아니다.
 					aria-label={option.label}
@@ -68,12 +68,8 @@ function ColorChipGrid({
 					checked={value === option.value}
 					disabled={row?.disabled || undefined}
 					onChange={() => onChange?.(option.value)}
-					// 색은 데이터라 style로 흐른다(docs/09 §4 예외 — color-row.tsx의 팔레트와 같은 근거).
 					style={{ backgroundImage: chipBackground(option.colors ?? []) }}
-					className={cn(
-						'aspect-square w-full cursor-pointer appearance-none rounded-md border border-border outline-none disabled:cursor-not-allowed',
-						'checked:ring-2 checked:ring-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30',
-					)}
+					className="aspect-square w-full"
 				/>
 			))}
 		</div>

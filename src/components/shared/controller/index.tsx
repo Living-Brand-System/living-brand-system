@@ -18,6 +18,7 @@ import { ControllerPreviewChips } from './controls/preview-chips'
 import { ControllerRange } from './controls/range'
 import { CONTROLLER_TOGGLE_OPTIONS, ControllerSegmented } from './controls/segmented'
 import { ControllerSelect } from './controls/select'
+import { ControllerSwatch } from './controls/swatch'
 import { ControllerBar } from './layout/bar'
 import { ControllerGroup } from './layout/group'
 import { ControllerGroupList } from './layout/group-list'
@@ -82,6 +83,7 @@ export const Controller = {
 	ColorRow: ControllerColorRow,
 	PreviewChips: ControllerPreviewChips,
 	Select: ControllerSelect,
+	Swatch: ControllerSwatch,
 	Input: ControllerInput,
 	Textarea: ControllerTextarea,
 	Range: ControllerRange,
@@ -134,6 +136,7 @@ export {
 	ControllerSelect,
 	ControllerStack,
 	ControllerStatus,
+	ControllerSwatch,
 	ControllerTabPanel,
 	ControllerTextarea,
 }

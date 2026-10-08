@@ -8,6 +8,7 @@ import {
 	ControllerReveal,
 	ControllerRow,
 	ControllerSegmented,
+	ControllerSwatch,
 } from '@/components/shared/controller'
 import {
 	type BrandColorPairSwatch,
@@ -98,12 +99,13 @@ function ColorCompound({
 						className="grid grid-cols-5 gap-1.5 px-3 pt-2 pb-3"
 					>
 						{swatches.map((swatch) => (
-							<label
+							// 라디오가 칸 전체를 덮고 안쪽 점은 포인터를 통과시키므로 감싸는 요소는 라벨일 필요가 없다.
+							<div
 								key={swatch.id}
-								className="relative grid aspect-square cursor-pointer place-items-center rounded-full has-focus-visible:ring-2 has-focus-visible:ring-ring/50"
+								className="relative grid aspect-square place-items-center"
 							>
-								<input
-									type="radio"
+								<ControllerSwatch
+									shape="round"
 									name={swatchName}
 									disabled={disabled}
 									aria-label={swatch.label}
@@ -116,7 +118,7 @@ function ColorCompound({
 											background: swatch.background,
 										})
 									}
-									className="absolute inset-0 size-full cursor-pointer appearance-none rounded-full border border-foreground/15 outline-none checked:ring-2 checked:ring-foreground/40"
+									className="absolute inset-0 size-full"
 									style={{ backgroundColor: swatch.background }}
 								/>
 								<span
@@ -124,7 +126,7 @@ function ColorCompound({
 									className="pointer-events-none relative size-6 rounded-full"
 									style={{ backgroundColor: swatch.foreground }}
 								/>
-							</label>
+							</div>
 						))}
 					</div>
 				) : (
@@ -171,16 +173,15 @@ function ColorWithPalette({
 				className="flex justify-between gap-1 border-t border-border px-3 py-1.5"
 			>
 				{palette.map((hex) => (
-					<input
+					<ControllerSwatch
 						key={hex}
-						type="radio"
 						name={name}
 						aria-label={hex}
 						title={hex}
 						checked={value.toLowerCase() === hex.toLowerCase()}
 						onChange={() => onChange(hex)}
 						style={{ backgroundColor: hex }}
-						className="size-6 shrink-0 cursor-pointer appearance-none rounded-sm border border-foreground/15 outline-none checked:ring-2 checked:ring-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/50"
+						className="size-6"
 					/>
 				))}
 			</div>

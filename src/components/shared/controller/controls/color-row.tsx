@@ -3,6 +3,7 @@
 import { useId } from 'react'
 import { cn } from '@/lib/utils'
 import { ControllerRow, useRowControl } from '../compose/row'
+import { ControllerSwatch } from './swatch'
 
 type ControllerColorRowProps = {
 	label: string
@@ -105,20 +106,15 @@ function ColorPalette({
 			className="flex min-w-0 items-center gap-1 overflow-x-auto"
 		>
 			{values.map((candidate) => (
-				<input
+				<ControllerSwatch
 					key={candidate}
-					type="radio"
 					name={groupName}
 					aria-label={candidate}
 					checked={selected === candidate.toLowerCase()}
 					disabled={row?.disabled || undefined}
 					onChange={() => onChange?.(candidate)}
-					// 색은 데이터라 style로 흐른다(docs/09 §4 예외 — 아래 스와치 input과 같은 근거).
 					style={{ backgroundColor: candidate }}
-					className={cn(
-						'size-5 shrink-0 cursor-pointer appearance-none rounded-sm border border-foreground/15 outline-none disabled:cursor-not-allowed',
-						'checked:ring-2 checked:ring-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30',
-					)}
+					className="size-5"
 				/>
 			))}
 		</span>
