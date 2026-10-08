@@ -227,8 +227,8 @@ scripts/
 | `guideline-documents` | `features/guideline` | `domain/reading`이 이미 MCP·Agent 공통 읽기 모델을 소유합니다 |
 | `templates` | `features/template-core` | |
 | `rules` | `features/quality-rule` | |
-| `agent-skills` | `modules/agents` | 스킬은 에이전트의 설정이지 채팅 화면의 것이 아닙니다 — 저장소를 `agent-chat`에서 옮깁니다 |
-| `users` | `features/auth` | 계정 문서. 기능별 설정 필드(`tokenLimits`·Figma 토큰)를 ai-usage·template-import 저장소가 직접 읽고 있어, auth가 읽기·쓰기 서비스를 열면 그쪽으로 옮깁니다 |
+| `agent-skills` | `modules/agents` | 스킬은 에이전트의 설정이지 채팅 화면의 것이 아닙니다 — 저장소는 `modules/agents/repositories`에 있습니다 |
+| `users` | `features/auth` | 계정 문서. 기능별 설정 필드(`tokenLimits`·Figma 토큰)는 auth의 `user-settings.service`로만 읽고 씁니다 — ai-usage·template-import는 그 서비스를 부릅니다 |
 - 일반 React 컴포넌트는 `src/components/<surface>`에 둡니다. 컴포넌트가 기능 hook이나 client service를 사용할 수 있지만, 기능 로직이 표현 컴포넌트를 import하면 안 됩니다.
 - 둘 이상의 화면 표면이 쓰는 컴포넌트만 `src/components/shared`로 승격합니다. 한 표면 안의 여러 화면이 공유하면 `<surface>/shared`에 둡니다.
 - Repository Interface 파일(`*.repository.ts`)은 구현체가 2개 이상 필요해지는 시점에 만듭니다. 단일 구현 단계에서는 Service가 구현 파일을 직접 import합니다.

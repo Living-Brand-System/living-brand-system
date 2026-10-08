@@ -70,17 +70,12 @@ const ALLOWLIST: readonly string[] = [
 	'R1 features/template-customization/runtime/template-runtime.client.ts -> features/template-core/runtime/compose-template-html.client',
 	'R1 features/template-import/services/import-figma-html.service.ts -> features/application-image/repositories/imported-application-image.payload.repository',
 	'R1 features/template-import/services/prepare-template-save.service.ts -> features/application-image/repositories/imported-application-image.payload.repository',
-	'R1 modules/agents/agent-chat-tools.agent.ts -> features/agent-chat/repositories/agent-skill.payload.repository',
 	'R1 modules/agents/agent-chat-tools.agent.ts -> features/asset-check/utils/check-display-status',
 	'R1 modules/agents/agent-chat-tools.agent.ts -> features/asset-check/utils/format-check-detail',
-	'R1 modules/agents/agent-chat.agent.ts -> features/agent-chat/repositories/agent-skill.payload.repository',
 	'R2 app/(frontend)/account/token-limits/page.tsx',
 	'R2 app/api/auth/password/route.ts',
 	'R2 collections/Users.ts',
 	'R2 collections/revalidate.ts',
-	'R3 agent-skills <- features/agent-chat',
-	'R3 users <- features/template-import',
-	'R3 users <- modules/ai-usage',
 ]
 
 type SourceFile = { rel: string; text: string }

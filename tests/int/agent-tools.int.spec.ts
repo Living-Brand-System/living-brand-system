@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import * as agentSkillRepository from '@/features/agent-chat/repositories/agent-skill.payload.repository'
 import * as agentGuidelineContext from '@/features/agent-chat/services/get-agent-guideline-context.service'
 import {
 	getAgentCitations,
@@ -11,6 +10,7 @@ import * as checkScenarioRepository from '@/features/quality-rule/repositories/c
 import * as agentTemplateRepository from '@/features/template-core/services/read-agent-template.service'
 import type { AgentChatMessage } from '@/modules/agents/agent-chat.agent'
 import { getAgentTools } from '@/modules/agents/agent-chat-tools.agent'
+import * as agentSkillRepository from '@/modules/agents/repositories/agent-skill.payload.repository'
 import { validateAgentChatMessages } from '@/modules/agents/validate-agent-chat-messages.agent'
 
 // payload 초기화를 끊는 안전망 — 도구가 부르는 repository 진입점은 아래에서 spy로 가로채 검증한다.

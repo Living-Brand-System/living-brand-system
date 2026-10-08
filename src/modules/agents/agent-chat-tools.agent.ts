@@ -2,10 +2,6 @@ import { type ToolSet, tool } from 'ai'
 import { z } from 'zod'
 import { agentSkillSelectionSchema } from '@/features/agent-chat/domain/agent-skill-tool-policy'
 import {
-	type AgentSkillDetail,
-	findEnabledAgentSkillByName,
-} from '@/features/agent-chat/repositories/agent-skill.payload.repository'
-import {
 	findTemplatesForRequest,
 	prepareTemplateImage,
 	templateSlotValueSchema,
@@ -30,6 +26,10 @@ import { listPublishedCheckScenarios } from '@/features/quality-rule/services/li
 import { AgentConfigurationError } from '@/lib/errors'
 import { TokenLimitExceededError } from '@/modules/ai-usage/services/token-limit.service'
 import type { User } from '@/payload-types'
+import {
+	type AgentSkillDetail,
+	findEnabledAgentSkillByName,
+} from './repositories/agent-skill.payload.repository'
 
 const guidelineToolContextSchema = z.object({
 	agentChatSessionId: z.number().int().positive().optional(),

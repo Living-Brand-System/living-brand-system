@@ -1,4 +1,5 @@
-import { findTokenLimitSources } from '../repositories/token-limit.payload.repository'
+import { findUserTokenLimits } from '@/features/auth/services/user-settings.service'
+import { findDefaultTokenLimits } from '../repositories/token-limit.payload.repository'
 import { findTokenUsage } from '../repositories/token-usage.payload.repository'
 import {
 	exceededTokenPeriod,
@@ -39,13 +40,14 @@ export async function assertWithinTokenLimit(userId: number): Promise<void> {
 /**
  * 한 계정의 유효 한도와 오늘·이번 달 사용량. 🔑 막는 판정(`assertWithinTokenLimit`)과 본인 화면(내 사용량)이
  * 같은 값을 본다 — 화면이 따로 세면 「아직 남았다」고 보이는데 막히는 어긋남이 생긴다.
- * 🔑 한도 필드는 본인에게도 숨겨져 있어 저장소가 overrideAccess로 읽는다 — 호출부가 본인 id만 넘긴다.
+ * 🔑 한도 필드는 본인에게도 숨겨져 있어 소유자(auth) 저장소가 overrideAccess로 읽는다 — 호출부가 본인 id만 넘긴다.
  */
 export async function getTokenLimitStatus(
 	userId: number,
 ): Promise<{ limits: TokenLimits; usage: TokenUsage }> {
-	const [{ account, defaults }, usage] = await Promise.all([
-		findTokenLimitSources(userId),
+	const [account, defaults, usage] = await Promise.all([
+		findUserTokenLimits(userId),
+		findDefaultTokenLimits(),
 		findTokenUsage([userId]),
 	])
 	return {
