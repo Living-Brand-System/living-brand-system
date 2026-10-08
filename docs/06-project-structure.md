@@ -123,8 +123,10 @@ src/
       panel/                  # 패널 런타임(ControlPanel·슬롯·위젯 계약)
       shared/
         widgets/              # 도메인 무지·여러 스튜디오 공용 묶음 위젯
+        studio-output.tsx     # Output 카드 공용 부품(Root·Format·Print·Video·Actions·Messages)
       <studio>/
         widgets/              # 스튜디오 전용 위젯 + registry
+        output/               # 스튜디오 Output 카드 조립 + 고유 행
     ui/
   features/
     graphic-generation/
