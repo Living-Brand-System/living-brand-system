@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
 import type { GraphicBrowserArtifacts } from '@/features/graphic-generation/runtime/client/graphic-runtime.client'
 import { getGraphicStudioVectorArtifact } from '@/features/graphic-generation/runtime/graphic-studio-runtime'
@@ -12,8 +12,6 @@ import {
 	fitsPrintOutput,
 	PRINT_PPI_VALUES,
 	type PrintPpi,
-	pixelsToMillimeters,
-	printablePpiOptions,
 	resolveDefaultPrintPpi,
 } from '../print-policy'
 import { createRasterExportRequest } from '../services/create-raster-export-request'
@@ -45,7 +43,7 @@ export type GraphicOutputDraft =
 			height: number | null
 	  }
 
-export type GraphicExportView = ReturnType<typeof useGraphicExport>['output']
+export type GraphicExportView = ReturnType<typeof useGraphicExport>
 type GraphicExportRequest =
 	| Extract<ExportRequest, { artifact: 'vector' | 'video' }>
 	| (Extract<ExportRequest, { artifact: 'raster' }> & {
@@ -70,31 +68,6 @@ export function useGraphicExport({
 	}))
 	const draft =
 		draftState.profileId === config.id ? draftState.draft : createGraphicOutputDraft(config)
-
-	/**
-	 * 고를 수 있는 해상도. **현재 판형에서 실제로 만들 수 있는 것만** 남긴다.
-	 * 🔴 좁히지 않으면 배너에서 300ppi를 고를 수 있는데 그 픽셀을 브라우저가 못 만든다 —
-	 *    예전에는 그 상태로 서버까지 가서 400 「Invalid PNG」로 돌아왔다.
-	 */
-	const ppiOptions = useMemo(() => {
-		if (
-			!draft ||
-			!isPrintFormat(draft.format) ||
-			draft.width === null ||
-			draft.height === null
-		) {
-			return basePpiOptions
-		}
-		const narrowed = printablePpiOptions(
-			pixelsToMillimeters(draft.width, ppi),
-			pixelsToMillimeters(draft.height, ppi),
-			basePpiOptions,
-		)
-		// 🔴 하나도 안 남으면 **빈 목록을 그대로 돌려준다.** 원래 목록으로 되돌리면 못 만드는 값이
-		//    다시 떠서 목록이 거짓말을 한다 — 화면은 「고를 수 있다」고 하고 실제로는 거부된다.
-		//    비었을 때 무엇을 보여줄지는 그래픽 크기 편집기가 정한다.
-		return narrowed
-	}, [basePpiOptions, draft, ppi])
 
 	const setDraft = useCallback(
 		(update: (current: GraphicOutputDraft | null) => GraphicOutputDraft | null) => {
@@ -227,7 +200,9 @@ export function useGraphicExport({
 		},
 		// 🔑 그래픽은 해상도를 쓸지가 화면의 모드(Print/Digital)에 달려 있어 훅이 정할 수 없다 — 인쇄 계약이
 		//    있으면 내주고, 보일지는 크기 편집기가 모드로 정한다.
-		print: config.output.print ? { ppi, options: ppiOptions, set: changePpi } : null,
+		// 선택지는 계약 프리셋 그대로다 — 그래픽 화면은 범위 숫자 칸이라 목록을 띄우지 않고, 판에서 실제로 만들 수
+		// 있는지는 크기를 다시 잡을 때 `fitsPrintOutput`(서버와 같은 기준)이 거른다.
+		print: config.output.print ? { ppi, options: basePpiOptions, set: changePpi } : null,
 		video:
 			draft?.format === 'mp4' && config.output.video
 				? {
@@ -251,12 +226,10 @@ export function useGraphicExport({
 	}
 
 	return {
-		output: {
-			view,
-			/** 지금 출력 초안 — 캔버스가 판 비율을 맞추고, 크기 편집기가 W/H를 그린다. */
-			draft,
-			setSize,
-		},
+		view,
+		/** 지금 출력 초안 — 캔버스가 판 비율을 맞추고, 크기 편집기가 W/H를 그린다. */
+		draft,
+		setSize,
 	}
 }
 

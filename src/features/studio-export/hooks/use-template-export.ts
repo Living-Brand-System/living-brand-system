@@ -16,12 +16,11 @@ import { exportFileName } from '../export-file-name'
 import type { StudioOutputView } from '../output-view'
 import {
 	isPrintPpi,
-	MAX_PRINT_PIXELS,
-	MAX_PRINT_SIDE_PIXELS,
 	maxPrintSize,
 	millimetersToPixels,
 	PRINT_PPI_VALUES,
 	type PrintPpi,
+	printablePpiOptions,
 	resolveDefaultPrintPpi,
 } from '../print-policy'
 import { createRasterExportRequest } from '../services/create-raster-export-request'
@@ -80,17 +79,6 @@ type TemplateExportRequest = Extract<ExportRequest, { artifact: 'raster' | 'vide
 
 const MILLIMETERS_PER_INCH = 25.4
 
-/** 판형(mm)을 이 ppi로 채운 크기를 브라우저 캔버스가 그릴 수 있는지. */
-function fitsPrintCanvas(sizeMm: { width: number; height: number }, ppi: PrintPpi): boolean {
-	const width = millimetersToPixels(sizeMm.width, ppi)
-	const height = millimetersToPixels(sizeMm.height, ppi)
-	return (
-		width <= MAX_PRINT_SIDE_PIXELS &&
-		height <= MAX_PRINT_SIDE_PIXELS &&
-		width * height <= MAX_PRINT_PIXELS
-	)
-}
-
 /** Template Raster Artifact를 공통 ExportRequest와 Artifact executor에 연결한다. */
 export function useTemplateExport({
 	artifact,
@@ -124,8 +112,10 @@ export function useTemplateExport({
 	//    없는 크기가 되는 ppi는 선택지에서 뺀다 — 한 변 16,384px를 넘으면 캔버스가 조용히 줄여 버린다.
 	const printSize = metadata?.printSizeMm ?? null
 	const printPpiOptions = printSize
-		? (capability.print?.ppi ?? PRINT_PPI_VALUES).filter((candidate) =>
-				fitsPrintCanvas(printSize, candidate),
+		? printablePpiOptions(
+				printSize.width,
+				printSize.height,
+				capability.print?.ppi ?? PRINT_PPI_VALUES,
 			)
 		: (capability.print?.ppi ?? [])
 	const effectivePpi = printSize

@@ -67,7 +67,7 @@ function GraphicWorkspace({
 		},
 		[config.id],
 	)
-	const { output } = useGraphicExport({
+	const output = useGraphicExport({
 		artifacts: browser?.artifacts ?? null,
 		config,
 		values: controls.values,

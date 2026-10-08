@@ -26,7 +26,7 @@ export function WorkspaceLayout({ left, right, children }: WorkspaceLayoutProps)
 type PanelProps = { top: ReactNode; bottom: ReactNode }
 
 /** 왼쪽은 카드 묶음 전체가 스크롤된다. 콘텐츠가 비어도 두 카드는 남는다. */
-export function SelectionPanel({ top, settings, bottom }: PanelProps & { settings?: ReactNode }) {
+export function SelectionPanel({ top, bottom }: PanelProps) {
 	return (
 		<aside
 			aria-label="작업 대상과 출력"
@@ -39,7 +39,6 @@ export function SelectionPanel({ top, settings, bottom }: PanelProps & { setting
 			>
 				{top}
 			</ControllerRoot>
-			{settings}
 			<ControllerRoot
 				data-slot="studio-layout-output"
 				className="shrink-0 px-4 pt-1 pb-4 lg:h-auto"
@@ -50,10 +49,8 @@ export function SelectionPanel({ top, settings, bottom }: PanelProps & { setting
 	)
 }
 
-type WorkspaceCanvasProps = { children: ReactNode; controls?: ReactNode }
-
-/** 출력물과 보기 도구는 별도 행이다. 도구 높이를 제외한 공간에서 출력물을 맞춘다. */
-export function WorkspaceCanvas({ children, controls }: WorkspaceCanvasProps) {
+/** 가운데 작업 결과 — 출력물을 남은 공간 안에 맞춘다. */
+export function WorkspaceCanvas({ children }: { children: ReactNode }) {
 	return (
 		<section
 			aria-label="작업 결과"
@@ -66,14 +63,6 @@ export function WorkspaceCanvas({ children, controls }: WorkspaceCanvasProps) {
 			>
 				{children}
 			</div>
-			{controls && (
-				<div
-					data-slot="studio-layout-canvas-controls"
-					className="flex shrink-0 justify-center"
-				>
-					{controls}
-				</div>
-			)}
 		</section>
 	)
 }
