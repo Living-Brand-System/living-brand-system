@@ -1,12 +1,19 @@
 import { listGraphicStudioConfigs } from '@/features/graphic-generation/services/list-graphic-studio-configs.service'
+import { listPublishedBrandColors } from '@/features/guideline/services/list-brand-colors.service'
 import { listImageStudioConfigs } from '@/features/image-generation/services/list-image-studio-configs.service'
+import { pickTemplateHighlightColor } from '@/features/template-customization/domain/template-highlight-color'
 import {
 	deriveTemplateStudioConfig,
 	type PublishedTemplateView,
 	type TemplateStudioConfig,
 } from '@/features/template-customization/domain/template-studio-config'
-import { getTemplateHighlightColor } from '@/features/template-customization/repositories/brand-highlight-color.payload.repository'
 import { getPublishedTemplate } from '@/features/template-customization/services/get-published-template.service'
+
+/** 캔버스 강조색을 브랜드 정본에서 읽는다. 조회가 실패해도 스튜디오는 열려야 하므로 null로 폴백한다. */
+const getTemplateHighlightColor = () =>
+	listPublishedBrandColors()
+		.then(pickTemplateHighlightColor)
+		.catch(() => null)
 
 export type GetTemplateStudioOutput = {
 	config: TemplateStudioConfig

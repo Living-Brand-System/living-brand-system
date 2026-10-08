@@ -1,3 +1,4 @@
+import { listPublishedBrandColors } from '@/features/guideline/services/list-brand-colors.service'
 import type { VectorScene } from '@/modules/studio-artifact/studio-artifact'
 import { type CmykSamples, imageToCmykSamples } from '../adapters/image-to-cmyk-samples.sharp'
 import { type CmykColor, convertRgbToCmyk } from '../adapters/rgb-to-cmyk.sharp'
@@ -7,11 +8,11 @@ import {
 	parseColor,
 	vectorSceneToPdf,
 } from '../adapters/vector-scene-to-pdf.pdf-lib'
+import { toBrandInks } from '../brand-inks'
 import { findNonCmykColors } from '../cmyk-only'
 import { readCmykIccProfile, resolveCmykIccProfilePath } from '../color-profile.server'
 import type { CmykIccProfile } from '../export-contract'
 import type { PrintPpi } from '../print-policy'
-import { listBrandInks } from '../repositories/brand-ink.payload.repository'
 
 export class VectorPrintInputError extends Error {}
 
@@ -92,7 +93,7 @@ export async function exportVectorPrint({
 	// 색 실패와 따로 던진다 — 사람이 고칠 곳이 다르므로 문구가 갈려야 한다.
 	if (unconvertibleImages > 0) throw new VectorPrintImageError(String(unconvertibleImages))
 
-	const canon = await listBrandInks()
+	const canon = toBrandInks(await listPublishedBrandColors())
 	// 어댑터는 씬에 적힌 표기 그대로 잉크를 찾으므로, 키는 원본 표기이고 값만 정규화한 hex로 잰다.
 	const colors = new Map<string, CmykColor>()
 	const toCompute = new Map<string, string>()
