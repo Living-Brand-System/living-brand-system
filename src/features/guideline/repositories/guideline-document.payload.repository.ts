@@ -1,5 +1,19 @@
 import type { PayloadRequest } from 'payload'
 
+/** 챕터에 속한 문서 수 — 초안·게시 가리지 않는다(어느 쪽이든 챕터가 사라지면 갈 곳을 잃는다). */
+export async function countGuidelineDocumentsInChapter(
+	req: PayloadRequest,
+	chapterId: number,
+): Promise<number> {
+	const { totalDocs } = await req.payload.count({
+		collection: 'guideline-documents',
+		overrideAccess: true,
+		req,
+		where: { chapter: { equals: chapterId } },
+	})
+	return totalDocs
+}
+
 /** 같은 챕터 안에 slug가 이미 있는지 조회한다. slug는 언어 공통이라 locale을 가리지 않는다. */
 export async function hasGuidelineDocumentSlugConflict(
 	req: PayloadRequest,
