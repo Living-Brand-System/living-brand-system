@@ -12,6 +12,7 @@ import { ControllerColorRow } from './controls/color-row'
 import { ControllerColorStrip } from './controls/color-strip'
 import { ControllerDataGrid } from './controls/data-grid'
 import { ControllerInput, ControllerTextarea } from './controls/input'
+import { ControllerNumberInput } from './controls/number-input'
 import { ControllerPad } from './controls/pad'
 import { ControllerPadPair } from './controls/pad-pair'
 import { ControllerPreviewChips } from './controls/preview-chips'
@@ -85,6 +86,7 @@ export const Controller = {
 	Select: ControllerSelect,
 	Swatch: ControllerSwatch,
 	Input: ControllerInput,
+	NumberInput: ControllerNumberInput,
 	Textarea: ControllerTextarea,
 	Range: ControllerRange,
 	Pad: ControllerPad,
@@ -123,6 +125,7 @@ export {
 	ControllerInput,
 	ControllerItem,
 	ControllerListRow,
+	ControllerNumberInput,
 	ControllerPad,
 	ControllerPadPair,
 	ControllerPagination,
