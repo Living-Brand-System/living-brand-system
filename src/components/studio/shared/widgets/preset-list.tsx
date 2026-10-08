@@ -1,4 +1,7 @@
+'use client'
+
 import { Controller } from '@/components/shared/controller'
+import type { ControllerWidgetProps } from '@/components/studio/panel/studio-panel-slot'
 import { Button } from '@/components/ui/button'
 import {
 	type ControllerControlDefinition,
@@ -7,7 +10,21 @@ import {
 	resolveControlAvailability,
 } from '@/modules/studio-controller/controller-definition'
 
-export function GraphicPresetList({
+/** 프리셋 select 하나를 카드 목록으로 그린다(`preset-list` 묶음 — 결정 2026-10-02). */
+export function PresetListWidget({ controls, values, bindings, onChange }: ControllerWidgetProps) {
+	const preset = controls.value
+	if (!preset) return null
+	return (
+		<PresetList
+			definition={preset}
+			binding={bindings?.[preset.id]}
+			value={values[preset.id]}
+			onChange={(next) => onChange(preset.id, next)}
+		/>
+	)
+}
+
+function PresetList({
 	definition,
 	binding,
 	value,
