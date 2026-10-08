@@ -13,7 +13,7 @@ import type { AgentChatMessage } from '@/modules/agents/agent-chat.agent'
 import { getAgentTools } from '@/modules/agents/agent-chat-tools.agent'
 import { validateAgentChatMessages } from '@/modules/agents/validate-agent-chat-messages.agent'
 
-// getCheckCatalog tool이 req 조립용으로만 쓰는 getPayload를 스텁한다 — repository 호출은 spy로 검증한다.
+// payload 초기화를 끊는 안전망 — 도구가 부르는 repository 진입점은 아래에서 spy로 가로채 검증한다.
 vi.mock('payload', async (importOriginal) => ({
 	...(await importOriginal<typeof import('payload')>()),
 	getPayload: vi.fn(async () => ({}) as never),
@@ -137,7 +137,7 @@ describe('agent tools', () => {
 
 	it('gets Check catalog through the guideline MCP repository', async () => {
 		const getChecks = vi
-			.spyOn(mcpGuidelineRepository, 'listPublishedMcpGuidelineChecks')
+			.spyOn(mcpGuidelineRepository, 'listPublishedMcpGuidelineChecksForUser')
 			.mockResolvedValue([
 				{
 					evidence: 'Use the legal name.',
@@ -160,7 +160,7 @@ describe('agent tools', () => {
 			context: { user: { id: 1 } },
 		} as never)
 
-		expect(getChecks).toHaveBeenCalledWith(expect.objectContaining({ user: { id: 1 } }), 'ko')
+		expect(getChecks).toHaveBeenCalledWith({ id: 1 }, 'ko')
 		// source를 벗기고 tier를 null로 정규화해 key 순으로 정렬한 기존 카탈로그 DTO 그대로다.
 		expect(result).toEqual([
 			{
