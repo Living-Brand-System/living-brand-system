@@ -7,8 +7,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Typography } from '@/components/ui/typography'
 import { cn } from '@/lib/utils'
 import type { StudioPreviewImage } from '@/modules/studio-controller/controller-definition'
+import { useRowControl } from '../compose/row'
 import { ControllerBrowser } from './browser'
-import { useRowControl } from './row'
 
 type ControllerAssetCardProps = {
 	/** 현재 값의 이름, 또는 아직 고르지 않았다면 고르라는 안내. */

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
-import { ControllerPresence } from './presence'
+import { ControllerPresence } from '../layout/presence'
 import { ControllerRow } from './row'
 
 /** 헤더의 제어와 본문을 한 표면으로 결합한다. 값·모드·On/Off는 소비자가 소유한다. */

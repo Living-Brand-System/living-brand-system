@@ -6,9 +6,9 @@ import type {
 	ControllerOption,
 	ControllerPreviewCircle,
 } from '@/modules/studio-controller/controller-definition'
-import { ControllerCompound } from './compound'
-import { ControllerField } from './field'
-import { useRowControl } from './row'
+import { ControllerCompound } from '../compose/compound'
+import { ControllerField } from '../compose/field'
+import { useRowControl } from '../compose/row'
 
 type ControllerPreviewChipsProps = {
 	label: string

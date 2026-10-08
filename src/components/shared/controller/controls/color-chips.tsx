@@ -3,8 +3,8 @@
 import { useId } from 'react'
 import { cn } from '@/lib/utils'
 import type { ControllerOption } from '@/modules/studio-controller/controller-definition'
-import { ControllerField } from './field'
-import { useRowControl } from './row'
+import { ControllerField } from '../compose/field'
+import { useRowControl } from '../compose/row'
 
 type ControllerColorChipsProps = {
 	label: string

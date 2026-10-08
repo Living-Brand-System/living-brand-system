@@ -8,8 +8,8 @@ import {
 	SelectValue,
 } from '@/components/ui/select'
 import type { ControllerOption } from '@/modules/studio-controller/controller-definition'
-import { ROW_SELECT_CONTENT, ROW_SELECT_ITEM, ROW_SELECT_TRIGGER } from './classes'
-import { useRowControl } from './row'
+import { useRowControl } from '../compose/row'
+import { ROW_SELECT_CONTENT, ROW_SELECT_ITEM, ROW_SELECT_TRIGGER } from '../internal/classes'
 
 type ControllerSelectProps = {
 	options: readonly ControllerOption[]

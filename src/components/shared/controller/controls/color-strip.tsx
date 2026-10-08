@@ -1,8 +1,8 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { ControllerField } from './field'
-import { useRowControl } from './row'
+import { ControllerField } from '../compose/field'
+import { useRowControl } from '../compose/row'
 
 export type ControllerColorStripSwatch = {
 	/** 이 칸이 대표하는 control의 id — 값 변경이 그 control로 돌아간다. */

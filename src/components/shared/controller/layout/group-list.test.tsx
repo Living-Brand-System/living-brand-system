@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { afterEach, expect, it } from 'vitest'
-import { Controller } from './index'
+import { Controller } from '../index'
 
 afterEach(cleanup)
 

@@ -2,8 +2,7 @@
 
 import { Slot } from 'radix-ui'
 import type { ComponentProps, ReactNode } from 'react'
-import { ControllerBrowser } from '@/components/shared/controller/browser'
-import { ControllerRoot } from '@/components/shared/controller/layout'
+import { ControllerBrowser, ControllerRoot } from '@/components/shared/controller'
 import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
 import { cn } from '@/lib/utils'

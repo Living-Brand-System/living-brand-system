@@ -1,8 +1,7 @@
 'use client'
 
 import { Copy, Crop, SquareOutline } from '@carbon/icons-react'
-import { Controller } from '@/components/shared/controller'
-import { ControllerStack } from '@/components/shared/controller/stack'
+import { Controller, ControllerStack } from '@/components/shared/controller'
 import { PrintControls, VideoControls } from '@/components/studio/shared/output-controls'
 import { StudioOutputModule } from '@/components/studio/shared/output-module'
 import { Button } from '@/components/ui/button'

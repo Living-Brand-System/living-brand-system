@@ -2,7 +2,7 @@
 
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
-import { ControllerRow } from './row'
+import { ControllerRow } from '../compose/row'
 import { ControllerSelect } from './select'
 
 type ControllerCameraAxis = {

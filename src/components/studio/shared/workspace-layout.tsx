@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { ControllerRoot } from '@/components/shared/controller/layout'
+import { ControllerRoot } from '@/components/shared/controller'
 
 type WorkspaceLayoutProps = {
 	left: ReactNode

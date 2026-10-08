@@ -3,7 +3,7 @@
 import type * as React from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { ROW_ACTION } from './classes'
+import { ROW_ACTION } from '../internal/classes'
 
 /**
  * Row/Field 면 위에 앉는 아이콘 버튼 — 값을 바꾸지 않고 값에 무언가를 하는 자리(복사 등).

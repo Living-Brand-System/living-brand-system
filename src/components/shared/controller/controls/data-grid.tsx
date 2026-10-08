@@ -3,9 +3,9 @@
 import { Add, TrashCan } from '@carbon/icons-react'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import { ControllerAction } from './action'
-import { BARE_INPUT } from './classes'
-import { useRowControl } from './row'
+import { ControllerAction } from '../compose/action'
+import { useRowControl } from '../compose/row'
+import { BARE_INPUT } from '../internal/classes'
 
 /**
  * 줄·칸으로 이루어진 텍스트 값을 격자로 편집한다.

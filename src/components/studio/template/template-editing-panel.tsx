@@ -3,7 +3,7 @@
 import { AnimatePresence, domAnimation, LazyMotion, useReducedMotion } from 'motion/react'
 import * as m from 'motion/react-m'
 import { type ReactNode, useEffect, useRef } from 'react'
-import { ControllerRoot } from '@/components/shared/controller/layout'
+import { ControllerRoot } from '@/components/shared/controller'
 import type { ControlPanelComposition } from '@/components/studio/shared/control-panel'
 import {
 	StudioSelectionCard,

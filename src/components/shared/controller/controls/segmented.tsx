@@ -7,7 +7,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useMotionTransition } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import type { ControllerOption } from '@/modules/studio-controller/controller-definition'
-import { useRowControl } from './row'
+import { useRowControl } from '../compose/row'
 
 /**
  * toggle(boolean)의 표현은 세그먼트 On|Off 하나뿐이다 — 계약 밖 boolean 행(레이어 가시성·어드민 스위치)도 이걸 쓴다.

@@ -1,8 +1,7 @@
 'use client'
 
 import { useId } from 'react'
-import { Controller } from '@/components/shared/controller'
-import { ControllerCompound } from '@/components/shared/controller/compound'
+import { Controller, ControllerCompound } from '@/components/shared/controller'
 
 /**
  * 텍스트·심볼 색이 함께 쓰는 Solid 스와치 그리드(Figma 350:9318). 색은 호출부가 CMS 정본에서 넘긴다.

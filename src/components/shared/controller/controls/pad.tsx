@@ -3,7 +3,7 @@
 import type { KeyboardEvent } from 'react'
 import { cn } from '@/lib/utils'
 import type { ControllerPadValue } from '@/modules/studio-controller/controller-definition'
-import { clampControllerValue, useControllerPointerDrag } from './pointer-drag'
+import { clampControllerValue, useControllerPointerDrag } from '../internal/pointer-drag'
 
 type ControllerPadProps = {
 	/** 중심 기준 오프셋, -1(왼/위) ~ 1(오른/아래). */

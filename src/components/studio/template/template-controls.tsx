@@ -2,7 +2,7 @@
 
 import { ColorPalette, Image, Shapes, TextFont, View, ViewOff } from '@carbon/icons-react'
 import type { ReactNode } from 'react'
-import { ControllerRoot } from '@/components/shared/controller/layout'
+import { ControllerRoot } from '@/components/shared/controller'
 import type { ControlPanelComposition } from '@/components/studio/shared/control-panel'
 import { StudioPanelSlot } from '@/components/studio/shared/studio-panel-slot'
 import { Button } from '@/components/ui/button'

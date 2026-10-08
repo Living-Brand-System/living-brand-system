@@ -1,39 +1,46 @@
-import { ControllerAction } from './action'
-import { ControllerAssetCard } from './asset-card'
-import { ControllerBar } from './bar'
-import { ControllerBrowser } from './browser'
-import { ControllerCameraControl } from './camera-control'
-import { ControllerCard } from './card'
-import { ControllerChips } from './chips'
-import { ControllerColorChips } from './color-chips'
-import { ControllerColorRow } from './color-row'
-import { ControllerColorStrip } from './color-strip'
-import { ControllerCompound } from './compound'
-import { ControllerDataGrid } from './data-grid'
-import { ControllerField } from './field'
-import { ControllerGroup } from './group'
-import { ControllerGroupList } from './group-list'
-import { ControllerInput, ControllerTextarea } from './input'
-import { ControllerItem } from './item'
-import { ControllerContent, ControllerFooter, ControllerHeader, ControllerRoot } from './layout'
-import { ControllerListRow } from './list-row'
-import { ControllerPad } from './pad'
-import { ControllerPadPair } from './pad-pair'
-import { ControllerPagination } from './pagination'
-import { ControllerPresence, ControllerReveal } from './presence'
-import { ControllerPreviewChips } from './preview-chips'
-import { ControllerRange } from './range'
-import { ControllerRow } from './row'
-import { CONTROLLER_TOGGLE_OPTIONS, ControllerSegmented } from './segmented'
-import { ControllerSelect } from './select'
-import { ControllerStack } from './stack'
-import { ControllerStatus } from './status'
-import { ControllerTabPanel } from './tab-panel'
+import { ControllerAssetCard } from './asset/asset-card'
+import { ControllerBrowser } from './asset/browser'
+import { ControllerAction } from './compose/action'
+import { ControllerCompound } from './compose/compound'
+import { ControllerField } from './compose/field'
+import { ControllerRow } from './compose/row'
+import { ControllerStack } from './compose/stack'
+import { ControllerCameraControl } from './controls/camera-control'
+import { ControllerChips } from './controls/chips'
+import { ControllerColorChips } from './controls/color-chips'
+import { ControllerColorRow } from './controls/color-row'
+import { ControllerColorStrip } from './controls/color-strip'
+import { ControllerDataGrid } from './controls/data-grid'
+import { ControllerInput, ControllerTextarea } from './controls/input'
+import { ControllerPad } from './controls/pad'
+import { ControllerPadPair } from './controls/pad-pair'
+import { ControllerPreviewChips } from './controls/preview-chips'
+import { ControllerRange } from './controls/range'
+import { CONTROLLER_TOGGLE_OPTIONS, ControllerSegmented } from './controls/segmented'
+import { ControllerSelect } from './controls/select'
+import { ControllerBar } from './layout/bar'
+import { ControllerGroup } from './layout/group'
+import { ControllerGroupList } from './layout/group-list'
+import {
+	ControllerContent,
+	ControllerFooter,
+	ControllerHeader,
+	ControllerRoot,
+} from './layout/layout'
+import { ControllerPresence, ControllerReveal } from './layout/presence'
+import { ControllerTabPanel } from './layout/tab-panel'
+import { ControllerCard } from './read/card'
+import { ControllerItem } from './read/item'
+import { ControllerListRow } from './read/list-row'
+import { ControllerPagination } from './read/pagination'
+import { ControllerStatus } from './read/status'
 
 export type {
 	ControllerAvailability,
 	ControllerInteraction,
 } from '@/modules/studio-controller/controller-definition'
+export { snapCameraAngle } from './controls/camera-orbit'
+export type { ControllerGroupSectionProps } from './layout/group'
 
 /**
  * 컨트롤러 킷 — 디자인 SSOT(Figma HD_LBS_UI 4:5578 "Controller API")의 dialkit 기반
@@ -45,6 +52,11 @@ export type {
  * 표현 컨텍스트: Row/Field가 { controlId, disabled }를 내려 안의 킷 컨트롤
  * (Select·Input·Textarea·Segmented·ColorRow 스와치)이 라벨 연결과 비활성을 자동으로 잇는다.
  * 도메인 상태 컨텍스트는 여기 두지 않는다 — Provider가 필요하면 features의 훅으로(docs/10 §3.5).
+ *
+ * 폴더는 역할이다 — layout(패널·그룹 골격과 펼침) · controls(값을 바꾸는 리프) · compose(라벨 행·
+ * 묶음 표면) · read(값을 보여주기만 하는 파츠) · asset(자산 브라우저) · internal(킷 안에서만 쓰는 도구).
+ * 🔴 킷 밖에서는 이 index로만 import한다. 예외는 `controls/camera-orbit-control` 하나 — 3D 모듈이라
+ *    `dynamic()`으로 따로 불러야 index에 섞이지 않는다.
  */
 export const Controller = {
 	Root: ControllerRoot,

@@ -1,8 +1,8 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import type { ControllerGroupSectionProps } from '@/components/shared/controller'
 import { Controller } from '@/components/shared/controller'
-import type { ControllerGroupSectionProps } from '@/components/shared/controller/group'
 import {
 	type ControllerAssetSources,
 	ControllerControlRenderer,

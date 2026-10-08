@@ -2,7 +2,7 @@
 
 import { useId } from 'react'
 import { cn } from '@/lib/utils'
-import { ControllerRow, useRowControl } from './row'
+import { ControllerRow, useRowControl } from '../compose/row'
 
 type ControllerColorRowProps = {
 	label: string

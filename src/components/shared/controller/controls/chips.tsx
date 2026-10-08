@@ -2,7 +2,7 @@
 
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { ControllerOption } from '@/modules/studio-controller/controller-definition'
-import { useRowControl } from './row'
+import { useRowControl } from '../compose/row'
 
 type ControllerChipsProps<T extends string> = {
 	options: readonly ControllerOption<T>[]

@@ -1,12 +1,14 @@
 'use client'
 
 import { useId } from 'react'
-import { ControllerColorRow } from '@/components/shared/controller/color-row'
-import { ControllerCompound } from '@/components/shared/controller/compound'
-import { ControllerInput } from '@/components/shared/controller/input'
-import { ControllerReveal } from '@/components/shared/controller/presence'
-import { ControllerRow } from '@/components/shared/controller/row'
-import { ControllerSegmented } from '@/components/shared/controller/segmented'
+import {
+	ControllerColorRow,
+	ControllerCompound,
+	ControllerInput,
+	ControllerReveal,
+	ControllerRow,
+	ControllerSegmented,
+} from '@/components/shared/controller'
 import {
 	type BrandColorPairSwatch,
 	usePublishedBrandColorPairs,

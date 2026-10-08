@@ -1,10 +1,12 @@
 'use client'
 
 import { useId, useState } from 'react'
-import { ControllerCompound } from '@/components/shared/controller/compound'
-import { ControllerPad } from '@/components/shared/controller/pad'
-import { ControllerPadPair } from '@/components/shared/controller/pad-pair'
-import { ControllerPreviewChips } from '@/components/shared/controller/preview-chips'
+import {
+	ControllerCompound,
+	ControllerPad,
+	ControllerPadPair,
+	ControllerPreviewChips,
+} from '@/components/shared/controller'
 import { ControllerControlRenderer } from '@/components/shared/controller-renderer'
 import { StudioColorCompound } from '@/components/studio/shared/compound-controls'
 import { GraphicPresetList } from '@/components/studio/shared/graphic-preset-list'

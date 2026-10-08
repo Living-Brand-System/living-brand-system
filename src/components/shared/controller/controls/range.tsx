@@ -12,7 +12,11 @@ import * as m from 'motion/react-m'
 import { type KeyboardEvent, useEffect, useRef } from 'react'
 import { MOTION } from '@/lib/motion'
 import { cn } from '@/lib/utils'
-import { clampControllerValue, snapControllerValue, useControllerPointerDrag } from './pointer-drag'
+import {
+	clampControllerValue,
+	snapControllerValue,
+	useControllerPointerDrag,
+} from '../internal/pointer-drag'
 
 type ControllerRangeProps = {
 	label: string

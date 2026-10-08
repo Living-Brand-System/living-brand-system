@@ -6,7 +6,7 @@ import type {
 	ControllerPadPairValue,
 	ControllerPadValue,
 } from '@/modules/studio-controller/controller-definition'
-import { clampControllerValue, useControllerPointerDrag } from './pointer-drag'
+import { clampControllerValue, useControllerPointerDrag } from '../internal/pointer-drag'
 
 type ControllerPadPairProps = {
 	/** 판 하나 위의 두 점. 각각 중심 기준 오프셋, -1(왼/위) ~ 1(오른/아래). */

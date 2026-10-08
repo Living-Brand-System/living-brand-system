@@ -1,9 +1,11 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { CONTROLLER_TOGGLE_OPTIONS } from '@/components/shared/controller'
-import { ControllerCompound } from '@/components/shared/controller/compound'
-import { ControllerSegmented } from '@/components/shared/controller/segmented'
+import {
+	CONTROLLER_TOGGLE_OPTIONS,
+	ControllerCompound,
+	ControllerSegmented,
+} from '@/components/shared/controller'
 import { ControllerControlRenderer } from '@/components/shared/controller-renderer'
 import { ImageCameraControl } from '@/components/studio/image/image-camera-control'
 import { ImageReferenceUpload } from '@/components/studio/image/image-reference-upload'

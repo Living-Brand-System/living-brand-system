@@ -3,22 +3,15 @@
 import { Reset } from '@carbon/icons-react'
 import type { ReactNode } from 'react'
 import { CONTROLLER_TOGGLE_OPTIONS, Controller } from '@/components/shared/controller'
-import type { ControllerGroupSectionProps } from '@/components/shared/controller/group'
 import { FieldError } from '@/components/ui/field'
 import {
 	type ControllerAvailability,
 	type ControllerControlDefinition,
 	type ControllerControlValue,
-	type ControllerGroupDefinition,
-	type ControllerGroupPresentation,
 	type ControllerRuntimeBinding,
-	type ControllerRuntimeBindings,
-	type ControllerValues,
 	isControllerPadPairValue,
 	isControllerPadValue,
-	resolveColorCombinationGroup,
 	resolveControlAvailability,
-	resolveControlValue,
 } from '@/modules/studio-controller/controller-definition'
 
 /**
@@ -36,224 +29,6 @@ export type ControllerAssetSources = Partial<
 		}) => ReactNode
 	>
 >
-
-type ControllerRendererProps = {
-	className?: string
-	groups: readonly ControllerGroupDefinition[]
-	presentation?: { groups: readonly ControllerGroupPresentation[] }
-	values: ControllerValues
-	bindings?: ControllerRuntimeBindings
-	onChange: (controlId: string, value: ControllerControlValue) => void
-	assetSources?: ControllerAssetSources
-}
-
-/** 직렬화된 Definition과 세션 값을 도메인 지식 없이 Controller primitive로 투영한다. */
-export function ControllerRenderer({ className, groups, ...props }: ControllerRendererProps) {
-	return (
-		<Controller.GroupList className={className}>
-			{groups.map((group) => (
-				<ControllerDefinitionGroup key={group.id} group={group} {...props} />
-			))}
-		</Controller.GroupList>
-	)
-}
-
-export type ControllerDefinitionGroupProps = Omit<
-	ControllerRendererProps,
-	'className' | 'groups'
-> & {
-	group: ControllerGroupDefinition
-	/** 섹션 활성화 배선(캔버스 포커스 등) — 화면이 그룹마다 붙인다. */
-	section?: ControllerGroupSectionProps
-	/** 그룹 컨트롤 뒤에 같은 그룹 안으로 잇는 것(패널 슬롯의 그룹 소속 묶음). */
-	children?: ReactNode
-}
-
-/**
- * 그룹 하나를 제목과 컨트롤로 그린다 — `ControllerRenderer`와 패널 슬롯 렌더러가 같은 결과를 내도록
- * 이 한 곳을 함께 쓴다(docs/10 §3.7).
- */
-export function ControllerDefinitionGroup({
-	group,
-	presentation,
-	values,
-	bindings,
-	onChange,
-	assetSources,
-	section,
-	children,
-}: ControllerDefinitionGroupProps) {
-	const combination = resolveColorCombinationGroup(group)
-	const content = combination ? (
-		<ColorStripGroup
-			palette={combination.palette}
-			colors={combination.colors}
-			title={group.title}
-			values={values}
-			bindings={bindings}
-			onChange={onChange}
-		/>
-	) : (
-		group.controls.map((control) => (
-			<ControllerControlRenderer
-				key={control.id}
-				definition={control}
-				value={resolveControlValue(control, values)}
-				binding={bindings?.[control.id]}
-				assetSources={assetSources}
-				onChange={(value) => onChange(control.id, value)}
-			/>
-		))
-	)
-	return (
-		<ControllerGroupRenderer
-			definition={group}
-			presentation={presentation?.groups.find(({ groupId }) => groupId === group.id)}
-			section={section}
-		>
-			{content}
-			{children}
-		</ControllerGroupRenderer>
-	)
-}
-
-type ColorControl = Extract<ControllerControlDefinition, { kind: 'color' }>
-type SelectControl = Extract<ControllerControlDefinition, { kind: 'select' }>
-
-/** 색 조합 그룹을 「팔레트 칩 + 한 띠」로 투영한다. 되돌리기는 조합을 한 번에 비운다. */
-function ColorStripGroup({
-	palette,
-	colors,
-	title,
-	values,
-	bindings,
-	onChange,
-}: {
-	palette: SelectControl | null
-	colors: readonly ColorControl[]
-	title: string
-	values: ControllerValues
-	bindings?: ControllerRuntimeBindings
-	onChange: (controlId: string, value: ControllerControlValue) => void
-}) {
-	const resolved = colors.map((control) => {
-		const value = resolveControlValue(control, values)
-		return {
-			control,
-			availability: resolveControlAvailability(control, bindings?.[control.id]),
-			color: typeof value === 'string' ? value : null,
-		}
-	})
-	// 한 칸이라도 잠기면 띠를 통째로 잠근다 — 칸마다 다른 잠금은 띠 안에서 읽히지 않는다.
-	const disabled = resolved.some(({ availability }) => availability === 'disabled')
-	const readonly = resolved.some(({ availability }) => availability === 'readonly')
-	const selected = palette && typeof values[palette.id] === 'string' ? values[palette.id] : null
-	const selectedPalette =
-		palette && (selected ?? palette.defaultValue) !== null
-			? ((selected ?? palette.defaultValue) as string)
-			: undefined
-	if (!disabled && readonly) {
-		return (
-			<>
-				{palette && (
-					<ReadonlyRow
-						label={palette.label}
-						value={
-							palette.options.find((option) => option.value === selectedPalette)
-								?.label ?? '—'
-						}
-					/>
-				)}
-				{resolved.map(({ control, color }) => (
-					<ReadonlyRow key={control.id} label={control.label} value={color ?? '—'} />
-				))}
-			</>
-		)
-	}
-
-	return (
-		<>
-			{palette && (
-				<Controller.ColorChips
-					label={palette.label}
-					options={palette.options}
-					value={selectedPalette}
-					disabled={disabled}
-					onChange={(value) => {
-						onChange(palette.id, value)
-						// 고른 조합이 칸을 순서대로 채운다 — 띠가 화면의 색과 어긋나지 않는다.
-						const option = palette.options.find(
-							(candidate) => candidate.value === value,
-						)
-						for (const [index, hex] of (option?.colors ?? []).entries()) {
-							const control = colors[index]
-							if (control) onChange(control.id, hex)
-						}
-					}}
-				/>
-			)}
-			<Controller.ColorStrip
-				label={title}
-				disabled={disabled}
-				swatches={resolved.map(({ control, color }) => ({
-					id: control.id,
-					label: control.label,
-					value: color ?? '#000000',
-					isEmpty: color === null,
-				}))}
-				onChange={(id, hex) => onChange(id, hex)}
-				onReset={() => {
-					// 조합이 한 단위이므로 고른 조합까지 함께 되돌린다.
-					// 🔴 칸을 비우지 않고 **원래 색으로 채운다.** null은 「미설정」이라 띠가 흐린 검정이
-					//    되는데 화면에는 기본색이 그려져 띠가 거짓말을 한다. 되돌릴 색은 팔레트가 있으면
-					//    기본 조합이고, 없으면 각 칸이 선언한 기본값이다(팔레트 없는 런타임도 같아야 한다).
-					if (palette) onChange(palette.id, null)
-					const fallback = palette?.options.find(
-						(option) => option.value === palette.defaultValue,
-					)?.colors
-					for (const [index, { control }] of resolved.entries()) {
-						onChange(control.id, fallback?.[index] ?? control.defaultValue)
-					}
-				}}
-			/>
-		</>
-	)
-}
-
-/** bespoke slot/feature layout에서도 Definition의 그룹 제목·접힘 정책을 그대로 투영한다. */
-export function ControllerGroupRenderer({
-	definition,
-	presentation,
-	children,
-	attached = false,
-	section,
-}: {
-	definition: ControllerGroupDefinition
-	presentation?: ControllerGroupPresentation
-	children: ReactNode
-	/**
-	 * 앞 컨트롤을 소유하는 접이식 하위 그룹에 12px 간격을 확보한다.
-	 */
-	attached?: boolean
-	/** 섹션 활성화 배선 — `Controller.Group`에 그대로 얹힌다(계약은 그쪽이 갖는다). */
-	section?: ControllerGroupSectionProps
-}) {
-	return (presentation?.collapsible ?? true) ? (
-		<Controller.Group
-			title={definition.title}
-			collapsible
-			defaultOpen={presentation?.defaultOpen ?? true}
-			attached={attached}
-			{...section}
-		>
-			{children}
-		</Controller.Group>
-	) : (
-		<Controller.Group title={definition.title} collapsible={false} {...section}>
-			{children}
-		</Controller.Group>
-	)
-}
 
 type ControllerControlRendererProps = {
 	definition: ControllerControlDefinition
@@ -537,7 +312,7 @@ function formatPoint(point: { x: number; y: number }) {
 	return `${Math.round(point.x * 100)}, ${Math.round(point.y * 100)}`
 }
 
-function ReadonlyRow({ label, value }: { label: string; value: string }) {
+export function ReadonlyRow({ label, value }: { label: string; value: string }) {
 	return (
 		<Controller.Row label={label} readonly>
 			<span className="text-sm text-muted-foreground">{value}</span>

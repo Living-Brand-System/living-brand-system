@@ -2,7 +2,7 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { ControllerInput } from './input'
+import { ControllerInput } from '../controls/input'
 import { ControllerStack } from './stack'
 
 afterEach(cleanup)

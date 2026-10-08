@@ -3,8 +3,7 @@
 import { domAnimation, LazyMotion } from 'motion/react'
 import * as m from 'motion/react-m'
 import { type ReactNode, useId, useState } from 'react'
-import { ControllerRoot } from '@/components/shared/controller/layout'
-import { ControllerPresence } from '@/components/shared/controller/presence'
+import { ControllerPresence, ControllerRoot } from '@/components/shared/controller'
 import { PANEL_RENDER, useMotionTransition } from '@/lib/motion'
 import {
 	controllerStructureSignature,

@@ -2,8 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { useEffect } from 'react'
-import { Controller } from '@/components/shared/controller'
-import { snapCameraAngle } from '@/components/shared/controller/camera-orbit'
+import { Controller, snapCameraAngle } from '@/components/shared/controller'
 import { Button } from '@/components/ui/button'
 import {
 	type CameraAzimuth,
@@ -13,7 +12,7 @@ import {
 
 const CameraOrbitControl = dynamic(
 	() =>
-		import('@/components/shared/controller/camera-orbit-control').then(
+		import('@/components/shared/controller/controls/camera-orbit-control').then(
 			(module) => module.CameraOrbitControl,
 		),
 	{
