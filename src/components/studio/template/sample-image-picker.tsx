@@ -5,8 +5,8 @@ import { ControllerBrowser } from '@/components/shared/controller'
 import { browseEmptyMessage } from '@/components/studio/shared/browse-status'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Typography } from '@/components/ui/typography'
+import type { SampleImageOption } from '@/features/template-customization/domain/sample-image-option'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
-import type { SampleImageOption } from '@/features/template-customization/services/list-sample-images.client'
 import { cn } from '@/lib/utils'
 
 /** 빈 목록의 신원을 고정한다 — 렌더마다 새 배열을 만들면 useMemo가 매번 다시 돈다. */

@@ -3,6 +3,7 @@
 import { createContext, type RefObject } from 'react'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
 import type { ImageTransformValue } from '@/features/template-customization/domain/image-edit-transform'
+import type { SampleImageOption } from '@/features/template-customization/domain/sample-image-option'
 import type {
 	ResolvedTemplateImageConfig,
 	TemplateBackgroundType,
@@ -16,7 +17,6 @@ import type {
 	TemplateVideoArtifactProducer,
 } from '@/features/template-customization/runtime/template-runtime.client'
 import type { GetCreateNavigationOutput } from '@/features/template-customization/services/get-create-navigation.service'
-import type { SampleImageOption } from '@/features/template-customization/services/list-sample-images.client'
 import type { TemplateDraft } from '@/features/template-customization/services/template-draft.client'
 import type { LazyResource } from '@/hooks/use-lazy-resource'
 import type { CanvasVideoSource } from '@/modules/studio-artifact/studio-artifact'
