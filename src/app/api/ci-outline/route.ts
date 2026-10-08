@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import * as fontkit from 'fontkit'
+import { z } from 'zod'
 import { isCrossOriginRequest } from '@/lib/request-auth'
 
 /*
@@ -19,7 +20,16 @@ import { isCrossOriginRequest } from '@/lib/request-auth'
 /** 🔴 서체 파일의 정본 위치는 `ci-lockup/rules.ts`의 `FONT`가 갖는다. 서체가 바뀌면 함께 간다. */
 const FONT_PATH = path.join(process.cwd(), 'public', 'fonts', 'hd', 'Isamanru-Medium.woff2')
 
-type Run = { text: string; size?: number }
+/**
+ * 🔴 인증 없는 공개 경로다(가이드라인 페이지가 공개) — 그래서 상한이 유일한 방어선이다.
+ *    수치는 같은 일을 하는 `studio-exports/outline`과 맞춘다. 락업은 몇 줄뿐이라 여유가 크다.
+ */
+const requestSchema = z.object({
+	runs: z
+		.array(z.object({ text: z.string().max(2_000) }))
+		.min(1)
+		.max(500),
+})
 
 /** 파싱은 한 번만 — 요청마다 12,260자 폰트를 다시 열지 않는다. */
 let cached: Promise<fontkit.Font> | null = null
@@ -37,11 +47,11 @@ export async function POST(request: Request) {
 		return Response.json({ message: 'Invalid origin.' }, { status: 403 })
 	}
 
-	const body = (await request.json().catch(() => null)) as { runs?: Run[] } | null
-	const runs = body?.runs
-	if (!Array.isArray(runs) || runs.some((run) => typeof run?.text !== 'string')) {
+	const body = requestSchema.safeParse(await request.json().catch(() => null))
+	if (!body.success) {
 		return Response.json({ message: 'runs[].text is required.' }, { status: 400 })
 	}
+	const { runs } = body.data
 
 	const parsed = await font()
 	return Response.json({
