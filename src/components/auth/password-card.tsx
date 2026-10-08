@@ -2,10 +2,10 @@
 
 import { CheckmarkOutline, WarningAlt } from '@carbon/icons-react'
 import { Controller } from '@/components/shared/controller'
+import { PageCard } from '@/components/shared/page-card'
 import { Alert, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
-import { Typography } from '@/components/ui/typography'
 import { PASSWORD_MIN_LENGTH, usePasswordChange } from '@/features/auth/hooks/use-password-change'
 import { cn } from '@/lib/utils'
 
@@ -39,15 +39,11 @@ export function PasswordCard() {
 				submit()
 			}}
 		>
-			<Controller.Root className="gap-3 px-3 pt-6 pb-3 lg:h-auto">
-				<header className="flex flex-col gap-1 px-2">
-					<Typography as="h2" size="2xl" weight="medium">
-						비밀번호
-					</Typography>
-					<Typography size="sm" tone="muted">
-						{PASSWORD_MIN_LENGTH}자 이상으로 바꿀 수 있습니다.
-					</Typography>
-				</header>
+			<PageCard.Root>
+				<PageCard.Header
+					title="비밀번호"
+					description={`${PASSWORD_MIN_LENGTH}자 이상으로 바꿀 수 있습니다.`}
+				/>
 
 				<div className="flex flex-col gap-1">
 					<Controller.Field label="현재 비밀번호">
@@ -113,7 +109,7 @@ export function PasswordCard() {
 						'비밀번호 바꾸기'
 					)}
 				</Button>
-			</Controller.Root>
+			</PageCard.Root>
 		</form>
 	)
 }
