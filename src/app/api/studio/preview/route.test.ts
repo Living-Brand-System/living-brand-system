@@ -58,6 +58,18 @@ describe('POST /api/studio/preview', () => {
 		})
 	})
 
+	it('형식이 깨진 본문은 500이 아니라 400이다', async () => {
+		const broken = {
+			headers: new Headers(),
+			formData: async () => {
+				throw new TypeError('Could not parse content as FormData.')
+			},
+		} as unknown as Request
+		const response = await POST(broken)
+		expect(response.status).toBe(400)
+		expect(mocks.updateProfilePreview).not.toHaveBeenCalled()
+	})
+
 	it('매니저가 아니면 거부한다', async () => {
 		mocks.isManager.mockReturnValue(false)
 

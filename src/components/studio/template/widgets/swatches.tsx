@@ -1,7 +1,7 @@
 'use client'
 
 import type { ControllerWidgetProps } from '@/components/studio/panel/studio-panel-slot'
-import { TemplateColorSwatches } from '@/components/studio/template/template-color-swatches'
+import { StudioColorSwatches } from '@/components/studio/shared/color-swatches'
 import { rowFocusProps } from '@/components/studio/template/template-section-focus'
 import { usePublishedBrandColorValues } from '@/features/template-core/hooks/use-published-brand-color-values'
 import { templateSymbolColorId } from '@/features/template-customization/domain/template-layer-composition'
@@ -37,7 +37,7 @@ export function TemplateSwatchesWidget({
 					})
 				: {})}
 		>
-			<TemplateColorSwatches
+			<StudioColorSwatches
 				subject={cluster.title}
 				colors={colors}
 				value={typeof value === 'string' ? value : null}

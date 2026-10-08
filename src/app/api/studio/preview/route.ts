@@ -30,7 +30,9 @@ export async function POST(request: Request) {
 		return Response.json({ message: 'Forbidden' }, { status: 403 })
 	}
 
-	const form = await request.formData()
+	// 형식이 깨진 본문은 서버 오류가 아니라 잘못된 요청이다.
+	const form = await request.formData().catch(() => null)
+	if (!form) return Response.json({ message: 'Invalid form data.' }, { status: 400 })
 	const studio = form.get('studio')
 	const profileId = form.get('profileId')
 	const file = form.get('file')

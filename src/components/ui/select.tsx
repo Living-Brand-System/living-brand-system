@@ -78,7 +78,6 @@ function SelectContent({
 						// popper에서 높이를 트리거 높이로 묶지 않는다 — Viewport는 `overflow: hidden auto`라
 						// 그 값이 그대로 먹으면 목록이 한 줄로 잘린다(shadcn 기본값의 알려진 함정).
 						'data-[position=popper]:w-full data-[position=popper]:min-w-(--radix-select-trigger-width)',
-						position === 'popper' && '',
 					)}
 				>
 					{children}

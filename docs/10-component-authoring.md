@@ -158,7 +158,7 @@ studio·global·home 같은 표면의 화면 컴포넌트도 위 계약을 그�
 
 `ControllerControlRenderer`의 여러 줄 텍스트 입력은 본문 3줄 높이(`rows=3`, `field-sizing: fixed`)로 고정합니다. 긴 값은 내부 세로 스크롤로 읽고 스크롤바만 숨깁니다. 입력값과 키보드 편집은 제한하지 않습니다. 일반 `Textarea`와 직접 사용하는 `Controller.Textarea`의 크기 정책은 별도로 유지합니다.
 
-스튜디오 컨트롤러의 개별 컨트롤은 아래 계약을 따릅니다. 디자인 정본은 Figma HD_LBS_UI의 **Controller API**(node `4:5578`), 구현 원형은 `src/components/shared/controller/`의 **Controller 컴파운드 킷**입니다(Studio와 가이드라인이 함께 쓰므로 `components/shared/`에 있습니다). 킷은 역할별 폴더(`layout`·`controls`·`compose`·`read`·`asset`·`internal`)로 나뉘고 밖에서는 index로만 import합니다 — 예외는 `dynamic()`으로 따로 부르는 3D 모듈 `controls/camera-orbit-control` 하나입니다. 계약과 킷을 둘 다 아는 렌더러는 킷 옆 `components/shared/controller-renderer/`에, 패널 런타임(`ControlPanel`·`StudioPanelSlot`·`panel-render`·레일)은 `components/studio/panel/`에 둡니다. 색(조합) 하나를 고르는 라디오는 `Controller.Swatch`가 선택·포커스 표시를 소유합니다. 패널은 `Root` → `Header`·`Content`·`Footer`, 본문은 `Group` → 개별 컨트롤로 조합합니다. `Group`은 제목과 접힘 상태를 직접 소유합니다. 기존 `Panel`은 `Root`·`Content`·`Footer`를 묶은 호환 래퍼입니다.
+스튜디오 컨트롤러의 개별 컨트롤은 아래 계약을 따릅니다. 디자인 정본은 Figma HD_LBS_UI의 **Controller API**(node `4:5578`), 구현 원형은 `src/components/shared/controller/`의 **Controller 컴파운드 킷**입니다(Studio와 가이드라인이 함께 쓰므로 `components/shared/`에 있습니다). 킷은 역할별 폴더(`layout`·`controls`·`compose`·`read`·`asset`·`internal`)로 나뉘고 밖에서는 index로만 import합니다 — 예외는 `dynamic()`으로 따로 부르는 3D 모듈 `controls/camera-orbit-control` 하나입니다. 킷은 계약(`modules/studio-controller`)을 **타입으로만** 참조합니다 — 값 모양은 공유하되 판정·도메인(`features`)·화면(`components/studio`)·렌더러는 모릅니다. 계약과 킷을 둘 다 아는 렌더러는 킷 옆 `components/shared/controller-renderer/`에, 패널 런타임(`ControlPanel`·`StudioPanelSlot`·`panel-render`·레일)은 `components/studio/panel/`에 둡니다. 색(조합) 하나를 고르는 라디오는 `Controller.Swatch`가 선택·포커스 표시를 소유합니다. 패널은 `Root` → `Header`·`Content`·`Footer`, 본문은 `Group` → 개별 컨트롤로 조합합니다. `Group`은 제목과 접힘 상태를 직접 소유합니다. 기존 `Panel`은 `Root`·`Content`·`Footer`를 묶은 호환 래퍼입니다.
 
 `Controller.GroupList`는 세로 그룹 목록의 시작 여백 4px과 그룹 사이 간격 12px을 소유하며 끝 여백은 추가하지 않습니다(Figma `529:24992`). 단일 그룹에도 시작 여백만 적용합니다. `Group`은 높이 36px의 제목과 컨트롤 사이·컨트롤 사이의 간격 6px을 소유하고 배경·구분선·바깥 패딩을 갖지 않습니다. 접으면 제목 아래 간격과 본문이 함께 사라지고 목록 간격은 유지합니다. `attached` 하위 그룹은 부모 본문 간격에 6px을 더해 앞 컨트롤과 12px을 확보합니다. 접기 애니메이션은 포커스 링의 바깥 2px을 자르지 않습니다. 패널 패딩·카드 간격·Compound 내부 간격·오류 문구 간격은 별도 계약이며, 가로 배치용 `Controller.Stack`과 구분합니다.
 
@@ -228,7 +228,7 @@ Graphic Canvas는 `type`만 보고 공용 `P5Canvas`·`WebGLCanvas`를 선택합
 
 기존 `p5`·`shader` 엔진에 Graphic을 추가할 때는 `src/features/graphic-generation/graphic-runtimes/<id>` 아래 `definition.ts`·`model.ts`·`runtime.client.ts`를 기본 export로 추가하고 `pnpm generate:graphic-runtime-catalogs`를 실행합니다. `definition.ts`는 단일 authoring API `defineGraphicRuntime()`으로 Manifest를 정의하고, `model.ts`는 순수 계산, `runtime.client.ts`는 실제 P5/WebGL 실행을 소유합니다. 생성된 세 Catalog가 stable runtime ID로 자동 연결하므로 Provider·Sidebar·Canvas·중앙 Catalog를 수정하지 않습니다. 새로운 엔진 종류가 생길 때만 공용 Canvas host와 `GraphicStudioConfig.type`을 확장합니다.
 
-킷 배선 규칙: `Controller.Row`/`Controller.Field`가 `{ controlId, disabled }` 표현 컨텍스트를 내리고, 안의 킷 컨트롤(`Select`·`Input`·`Textarea`·`Segmented`·`ColorRow` 스와치)이 라벨 연결 id와 disabled를 자동으로 이어받습니다 — 소비자는 htmlFor를 배선하지 않습니다. 이 컨텍스트에 도메인 값을 넣지 않습니다(§3.5 — 도메인 Provider는 features의 훅으로).
+킷 배선 규칙: `Controller.Row`/`Controller.Field`가 `{ controlId, disabled }` 표현 컨텍스트를 내리고, 안의 킷 컨트롤(`Select`·`Input`·`Textarea`·`Segmented`·`ColorRow` 스와치)이 라벨 연결 id와 disabled를 자동으로 이어받습니다 — 소비자는 htmlFor를 배선하지 않습니다. 이 컨텍스트에 도메인 값을 넣지 않습니다(§3.5 — 도메인 Provider는 features의 훅으로). 행 아래 오류 문구가 있으면 그 id를 `errorId`로 넘깁니다 — 안의 킷 입력이 `aria-invalid`·`aria-describedby`로 잇고, 문구는 부르는 쪽이 그립니다. 숫자 하나를 고치는 칸은 `Controller.NumberInput`을 씁니다 — 입력 중간 상태(빈칸·`-`)를 값으로 쓰지 않도록 떠날 때 한 번 반영하고, 쓸 수 없는 값이면 직전 값으로 돌아갑니다(키마다 `Number()`로 반영하면 빈칸이 0으로 덮인다).
 
 컨트롤 슬롯의 공통 상태는 조작 가능 여부와 현재 표현 상태를 섞지 않고 두 타입으로 정의합니다.
 
@@ -341,7 +341,7 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 
 **묶음 위젯** — 컨트롤 여러 개가 위젯 하나로 섭니다. 매니페스트는 묶음(cluster)으로 멤버를 가리키고 값 계약을 복제하지 않습니다. `arrangeStudioPanel`이 멤버 이름 → **지금 계약의 컨트롤 정의**(런타임 제한이 좁힌 선택지 그대로)를 함께 실어 위젯에 넘기므로, 위젯은 정의를 다시 찾지 않습니다. 레지스트리에 없는 위젯은 렌더러가 개발 중 경고하고 그리지 않습니다. 위젯은 모듈 수준 컴포넌트여야 합니다 — 렌더마다 만들면 매번 다시 마운트됩니다. 런타임에 따라 달라지는 계산(조합 스와치, 색 펼침)은 레지스트리가 컴포지션 `scope`에서 읽어 위젯 props로 넘깁니다(그래픽: `GraphicColorPairWidget`이 공용 `ColorPairWidget`에 `spread`·`resolveControls`를 넘긴다).
 
-**위젯 위치** — 도메인을 모르는 위젯과 둘 이상의 스튜디오가 그리는 위젯 본체는 `components/studio/shared/widgets/<kind>.tsx`, 한 스튜디오 전용 위젯과 도메인 어댑터는 `components/studio/<studio>/widgets/<kind>.tsx`에 둡니다. 레지스트리는 각 스튜디오의 `widgets/registry`가 갖고 패널 빌더는 그것을 import만 합니다. 같은 위젯 종류를 스튜디오마다 다시 구현하지 않습니다 — 다른 것이 데이터 출처뿐이면 공용 본체에 어댑터 props로 넘깁니다.
+**위젯 위치** — 도메인을 모르는 위젯과 둘 이상의 스튜디오가 그리는 위젯 본체는 `components/studio/shared/widgets/<kind>.tsx`, 한 스튜디오 전용 위젯과 도메인 어댑터는 `components/studio/<studio>/widgets/<kind>.tsx`에 둡니다. 레지스트리는 각 스튜디오의 `widgets/registry`가 갖고 패널 빌더는 그것을 import만 합니다. 같은 위젯 종류를 스튜디오마다 다시 구현하지 않습니다 — 다른 것이 데이터 출처뿐이면 공용 본체에 어댑터 props로 넘깁니다. 스튜디오 폴더끼리는 **템플릿 → 그래픽·이미지** 방향만 import합니다(템플릿이 두 Config를 참조해 합성한다). 그 밖의 공유는 `studio/shared`·`studio/panel`을 거치고, 공용 층은 특정 스튜디오를 import하지 않습니다. 이 규칙과 킷 규칙은 `tests/int/layer-boundaries.int.spec.ts`가 집행합니다.
 
 | 레지스트리 | 위젯 | 쓰는 곳 |
 | --- | --- | --- |
@@ -498,7 +498,7 @@ const MAIN: Swatch[] = [
 - **키보드 조작**: 커스텀 인터랙션 요소는 `role`과 `aria-*`, 화살표 키 이동을 갖춥니다. 슬라이더면 `role="slider"` + `aria-valuenow`처럼 역할에 맞는 속성을 붙입니다.
 - **focus 가시성**: `focus-visible:ring` 계열로 포커스를 시각적으로 드러냅니다. `badge.tsx`의 `focus-visible:ring-[3px] focus-visible:ring-ring/50`이 참고입니다.
 - **색만으로 상태 구분 금지**: 판정·상태는 심볼 + 텍스트를 함께 씁니다. 검수 결과 배지처럼 kind별 심볼과 라벨을 같이 노출합니다.
-- **label 연결**: 입력 요소는 `label`/`aria-label`/`aria-labelledby`로 접근 가능한 이름을 갖습니다. `cards/displays/dynamics/type-specimen/component.tsx`의 textarea는 `aria-label="타입 견본 입력"`을 답니다.
+- **label 연결**: 입력 요소는 `label`/`aria-label`/`aria-labelledby`로 접근 가능한 이름을 갖습니다. 화면에 라벨이 없는 입력(채팅 입력창 `agent-chat-user-input.tsx`)은 `aria-label`을 달고, 킷 입력은 `Controller.Row`·`Field`의 라벨에 자동으로 연결됩니다. 오류 문구는 `errorId`로 넘겨 입력의 `aria-invalid`·`aria-describedby`에 잇습니다.
 - **실패 상태 텍스트 설명**: 검수 실패·저장 실패 같은 조치가 필요한 상태는 텍스트로 원인과 다음 행동을 설명합니다(`docs/08` §2).
 
 ## 7. 자기 검증

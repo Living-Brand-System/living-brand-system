@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
-import { ReviewSidebar } from '@/components/studio/sidebar/review-sidebar'
+import { ReviewSidebar } from '@/components/studio/review/review-sidebar'
 import { CheckImageProvider } from './use-check-images'
 
 describe('CheckImageProvider', () => {

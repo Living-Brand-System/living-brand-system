@@ -3,7 +3,7 @@
 import { ArrowsHorizontal, ArrowsVertical, Copy, Crop, SquareOutline } from '@carbon/icons-react'
 import type { ReactNode } from 'react'
 import {
-	ControllerInput,
+	ControllerNumberInput,
 	ControllerPresence,
 	ControllerRow,
 	ControllerSegmented,
@@ -246,7 +246,11 @@ export function StudioOutputModule({
 											icon: <Icon />,
 											children: (
 												<div className="flex min-w-0 flex-1 items-center justify-end gap-1 text-sm">
-													<OutputNumber
+													<ControllerNumberInput
+														min="0.1"
+														step="any"
+														className="w-full tabular-nums"
+														isValid={(next) => next > 0}
 														key={`${mode}-${value[id]}-${value.ppi}`}
 														value={dimension(id)}
 														onCommit={(next) =>
@@ -283,7 +287,11 @@ export function StudioOutputModule({
 							{kind === 'graphic' && physical && (
 								<ControllerRow label="Resolution">
 									<div className="flex min-w-0 items-center gap-1 text-sm">
-										<OutputNumber
+										<ControllerNumberInput
+											min="0.1"
+											step="any"
+											className="w-full tabular-nums"
+											isValid={(next) => next > 0}
 											key={value.ppi}
 											value={String(value.ppi)}
 											onCommit={(ppi) => {
@@ -354,36 +362,5 @@ export function StudioOutputModule({
 				</Typography>
 			)}
 		</section>
-	)
-}
-
-function OutputNumber({
-	value,
-	onCommit,
-	onInvalid,
-}: {
-	value: string
-	onCommit: (next: number) => void
-	onInvalid: () => void
-}) {
-	return (
-		<ControllerInput
-			type="number"
-			min="0.1"
-			step="any"
-			defaultValue={value}
-			className="w-full tabular-nums"
-			onBlur={(event) => {
-				const raw = event.currentTarget.value
-				const next = Number(raw)
-				event.currentTarget.value = value
-				if (raw === value) return
-				if (!raw.trim() || !Number.isFinite(next) || next <= 0) return onInvalid()
-				onCommit(next)
-			}}
-			onKeyDown={(event) => {
-				if (event.key === 'Enter') event.currentTarget.blur()
-			}}
-		/>
 	)
 }

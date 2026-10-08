@@ -135,6 +135,20 @@ describe('ControllerRenderer', () => {
 		})
 	})
 
+	it('runtime 오류를 입력에 연결한다 — 보조기기가 칸에서 바로 이유를 읽는다', () => {
+		render(
+			<ControllerControlRenderer
+				definition={{ id: 'prompt', kind: 'text', label: 'Prompt', defaultValue: '' }}
+				value="너무 긴 프롬프트"
+				binding={{ error: '500자까지 입력할 수 있어요.' }}
+				onChange={vi.fn()}
+			/>,
+		)
+		const input = screen.getByRole('textbox', { name: 'Prompt' })
+		expect(input).toHaveAttribute('aria-invalid', 'true')
+		expect(input).toHaveAccessibleDescription('500자까지 입력할 수 있어요.')
+	})
+
 	it('group 없이 단일 control에도 같은 runtime binding을 적용한다', () => {
 		const onChange = vi.fn()
 		render(

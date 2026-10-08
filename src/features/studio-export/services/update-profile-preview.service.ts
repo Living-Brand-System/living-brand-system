@@ -27,7 +27,8 @@ const PROFILE_TARGETS = {
 export type StudioPreviewKind = keyof typeof PROFILE_TARGETS
 
 export function isStudioPreviewKind(value: unknown): value is StudioPreviewKind {
-	return typeof value === 'string' && value in PROFILE_TARGETS
+	// `in`은 `toString` 같은 프로토타입 키도 통과시킨다 — 자기 키만 본다.
+	return typeof value === 'string' && Object.hasOwn(PROFILE_TARGETS, value)
 }
 
 export class StudioProfileNotFoundError extends Error {

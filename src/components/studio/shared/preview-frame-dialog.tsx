@@ -1,7 +1,7 @@
 'use client'
 
 import { type KeyboardEvent, type PointerEvent, useRef, useState } from 'react'
-import { TemplateColorSwatches } from '@/components/studio/template/template-color-swatches'
+import { StudioColorSwatches } from '@/components/studio/shared/color-swatches'
 import { Button } from '@/components/ui/button'
 import {
 	Dialog,
@@ -216,7 +216,7 @@ export function PreviewFrameDialog({
 					/>
 				)}
 				{backgrounds.length > 0 && (
-					<TemplateColorSwatches
+					<StudioColorSwatches
 						subject="배경"
 						colors={backgrounds}
 						value={fill}

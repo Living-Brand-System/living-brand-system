@@ -1,6 +1,7 @@
 'use client'
 
 import { Copy, Crop, SquareOutline } from '@carbon/icons-react'
+import { useId } from 'react'
 import { Controller, ControllerStack } from '@/components/shared/controller'
 import { PrintControls, VideoControls } from '@/components/studio/shared/output-controls'
 import { StudioOutputModule } from '@/components/studio/shared/output-module'
@@ -23,6 +24,7 @@ import { resolveControlAvailability } from '@/modules/studio-controller/controll
  */
 export function ImageSettingPanel({ download }: { download: ImageExportView; title?: string }) {
 	const { config, controls, generation, camera } = useImageStudio()
+	const errorIdPrefix = useId()
 	// 시점 변경이 켜져 있으면 같은 버튼이 참조 이미지를 다른 각도로 다시 그린다.
 	const canRun = camera.enabled ? Boolean(camera.seedImage) : generation.canRun
 	const { batch, ratio, resolution } = getImageStudioControls(config)
@@ -92,8 +94,12 @@ export function ImageSettingPanel({ download }: { download: ImageExportView; tit
 						const readonly =
 							availability === 'readonly' ||
 							(availability !== 'disabled' && definition.options.length <= 1)
+						const errorId = binding?.error
+							? `${errorIdPrefix}-${definition.id}`
+							: undefined
 						return {
 							id: definition.id,
+							errorId,
 							label: definition.label,
 							icon,
 							disabled: availability === 'disabled',
@@ -111,7 +117,9 @@ export function ImageSettingPanel({ download }: { download: ImageExportView; tit
 											onChange={onChange}
 										/>
 									)}
-									{binding?.error && <FieldError>{binding.error}</FieldError>}
+									{binding?.error && (
+										<FieldError id={errorId}>{binding.error}</FieldError>
+									)}
 								</>
 							),
 						}
