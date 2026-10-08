@@ -4,10 +4,11 @@ import { useId } from 'react'
 import { Controller, ControllerCompound, ControllerSwatch } from '@/components/shared/controller'
 
 /**
- * 텍스트·심볼 색이 함께 쓰는 Solid 스와치 그리드(Figma 350:9318). 색은 호출부가 CMS 정본에서 넘긴다.
+ * Solid 스와치 그리드(Figma 350:9318) — 템플릿 텍스트·심볼 색 위젯과 미리보기 배경 색이 함께 쓴다.
+ * 색은 호출부가 CMS 정본에서 넘긴다.
  * ponytail: 정본 밖 색을 막으려고 Custom은 잠근 채 그린다 — 자유 입력이 필요해지면 여기에 모드를 연다.
  */
-export function TemplateColorSwatches({
+export function StudioColorSwatches({
 	subject,
 	colors,
 	value,

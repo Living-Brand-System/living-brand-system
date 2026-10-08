@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 import { Controller } from '@/components/shared/controller'
-import { StudioPanel, StudioPanelScroll } from '@/components/studio/sidebar/studio-panel'
+import { StudioPanel, StudioPanelScroll } from '@/components/studio/review/studio-panel'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 
 /**
