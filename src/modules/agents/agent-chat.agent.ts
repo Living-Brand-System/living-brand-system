@@ -8,11 +8,11 @@ import {
 } from '@/features/agent-chat/cache-breakpoint'
 import { getAgentExecutionPolicy } from '@/features/agent-chat/domain/agent-skill-tool-policy'
 import { prunePriorTurns } from '@/features/agent-chat/prune-prior-turns'
-import { findEnabledAgentSkillSummaries } from '@/features/agent-chat/repositories/agent-skill.payload.repository'
 import { getAgentDefaultInstructions } from '@/features/agent-chat/services/get-agent-default-instructions.service'
 import type { AgentChatReaction } from '@/features/agent-chat/types'
 import { AgentConfigurationError } from '@/lib/errors'
 import { getAgentTools } from '@/modules/agents/agent-chat-tools.agent'
+import { findEnabledAgentSkillSummaries } from './repositories/agent-skill.payload.repository'
 
 const DEFAULT_MODEL = 'claude-sonnet-5'
 const DEFAULT_PROVIDER_OPTIONS = {

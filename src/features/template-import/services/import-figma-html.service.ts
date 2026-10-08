@@ -4,13 +4,13 @@ import {
 	deleteDraftImportedApplicationImage,
 	storeDraftImportedApplicationImage,
 } from '@/features/application-image/repositories/imported-application-image.payload.repository'
+import { findFigmaToken } from '@/features/auth/services/user-settings.service'
 import {
 	downloadFigmaImage,
 	findFigmaImageFillUrls,
 	findFigmaImageUrls,
 	findFigmaNodeTree,
 } from '@/features/template-import/repositories/figma.rest.repository'
-import { findFigmaToken } from '@/features/template-import/repositories/figma-token.payload.repository'
 import {
 	convertFigmaNodeToHtml,
 	type FigmaHtmlResult,
