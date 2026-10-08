@@ -1,17 +1,17 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { AgentChatMessage } from '@/features/agent-chat/agent-chat.agent'
+import { getAgentTools } from '@/features/agent-chat/agent-chat-tools.agent'
+import * as agentSkillRepository from '@/features/agent-chat/repositories/agent-skill.payload.repository'
 import * as agentGuidelineContext from '@/features/agent-chat/services/get-agent-guideline-context.service'
 import {
 	getAgentCitations,
 	getAgentMessageText,
 } from '@/features/agent-chat/utils/derive-agent-message'
+import { validateAgentChatMessages } from '@/features/agent-chat/validate-agent-chat-messages.agent'
 import * as checkSessionService from '@/features/asset-check/services/start-check-session.service'
 import * as mcpGuidelineRepository from '@/features/guideline/repositories/mcp-guideline.payload.repository'
 import * as checkScenarioRepository from '@/features/quality-rule/repositories/check-scenario.payload.repository'
 import * as agentTemplateRepository from '@/features/template-core/services/read-agent-template.service'
-import type { AgentChatMessage } from '@/modules/agents/agent-chat.agent'
-import { getAgentTools } from '@/modules/agents/agent-chat-tools.agent'
-import * as agentSkillRepository from '@/modules/agents/repositories/agent-skill.payload.repository'
-import { validateAgentChatMessages } from '@/modules/agents/validate-agent-chat-messages.agent'
 
 // payload 초기화를 끊는 안전망 — 도구가 부르는 repository 진입점은 아래에서 spy로 가로채 검증한다.
 vi.mock('payload', async (importOriginal) => ({

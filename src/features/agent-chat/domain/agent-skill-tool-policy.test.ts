@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { getAgentTools } from '@/modules/agents/agent-chat-tools.agent'
+import type { getAgentTools } from '@/features/agent-chat/agent-chat-tools.agent'
 import {
 	type AgentTaskToolName,
 	agentSkillSelectionSchema,

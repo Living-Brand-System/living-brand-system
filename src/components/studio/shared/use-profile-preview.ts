@@ -5,7 +5,7 @@ import {
 	captureProfilePreview,
 	type StudioPreviewKind,
 	uploadProfilePreview,
-} from '@/features/studio-preview/services/update-profile-preview.client'
+} from '@/features/studio-export/services/update-profile-preview.client'
 import type {
 	RasterArtifact,
 	StudioArtifactProducer,
@@ -21,7 +21,7 @@ import { useStudioCapabilities } from './studio-capabilities'
  *
  * 🔴 `features/`가 아니라 여기 사는 이유: 권한 컨텍스트(`useStudioCapabilities`)를 읽는데
  * features는 components를 import할 수 없다(`tests/int/layer-boundaries.int.spec.ts`).
- * 순수 계산·I/O는 `features/studio-preview/services/`가 갖는다.
+ * 순수 계산·I/O는 `features/studio-export/services/`가 갖는다.
  *
  * 🔑 화면에 붙일 조건이 세 가지다: 권한이 있고(매니저), 그릴 Raster Artifact가 있고, 크기를 안다.
  * 하나라도 없으면 `canRefresh`가 false이고 소비자는 버튼 자체를 두지 않는다.

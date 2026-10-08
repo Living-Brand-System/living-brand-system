@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
-import { listGraphStudioConfigs } from '@/features/graph-generation/services/list-graph-studio-configs.service'
+import { listGraphStudioConfigs } from '@/features/graphic-generation/services/list-graph-studio-configs.service'
 import { isAdmin } from '@/lib/auth'
 import { requireUser } from '@/lib/request-auth'
 import { getStudioGraphRoute, routes } from '@/lib/routes'

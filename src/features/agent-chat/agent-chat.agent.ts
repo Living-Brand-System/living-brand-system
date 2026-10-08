@@ -2,6 +2,7 @@ import { anthropic } from '@ai-sdk/anthropic'
 import { type InferAgentUIMessage, isStepCount, ToolLoopAgent } from 'ai'
 import { z } from 'zod'
 import { env } from '@/env'
+import { getAgentTools } from '@/features/agent-chat/agent-chat-tools.agent'
 import {
 	CACHE_BREAKPOINT_PROVIDER_OPTIONS,
 	withHistoryCacheBreakpoint,
@@ -11,7 +12,6 @@ import { prunePriorTurns } from '@/features/agent-chat/prune-prior-turns'
 import { getAgentDefaultInstructions } from '@/features/agent-chat/services/get-agent-default-instructions.service'
 import type { AgentChatReaction } from '@/features/agent-chat/types'
 import { AgentConfigurationError } from '@/lib/errors'
-import { getAgentTools } from '@/modules/agents/agent-chat-tools.agent'
 import { findEnabledAgentSkillSummaries } from './repositories/agent-skill.payload.repository'
 
 const DEFAULT_MODEL = 'claude-sonnet-5'

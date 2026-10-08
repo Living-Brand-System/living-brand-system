@@ -30,7 +30,7 @@ const CLIENT_FOLDERS = new Set([
 
 /** R3 — 소유자가 둘 이상이던 컬렉션의 확정 소유자(2026-10-08). 그 밖의 컬렉션은 저장소가 한 경계에만 있으면 된다. */
 const COLLECTION_OWNERS: Record<string, string> = {
-	'agent-skills': 'modules/agents',
+	'agent-skills': 'features/agent-chat',
 	'brand-colors': 'features/guideline',
 	'guideline-documents': 'features/guideline',
 	rules: 'features/quality-rule',
@@ -54,11 +54,6 @@ const ALLOWLIST: readonly string[] = [
 	'R1 collections/Rules.ts -> features/quality-rule/repositories/rule-checker.payload.repository',
 	'R1 features/asset-check/repositories/check-ruleset.payload.repository.ts -> features/guideline/checks/collect-guideline-check-sources',
 	'R1 features/asset-check/repositories/check-ruleset.payload.repository.ts -> features/guideline/repositories/published-guideline-checks.payload.repository',
-	'R1 features/graph-generation/graph-runtimes/infographic/definition.ts -> features/graphic-generation/graphic-runtimes/define-graphic-runtime',
-	'R1 features/graph-generation/graph-runtimes/infographic/runtime.client.ts -> features/graphic-generation/runtime/client/graphic-runtime.client',
-	'R1 features/graph-generation/repositories/graph-profile.payload.repository.ts -> features/graphic-generation/repositories/canvas-profile.payload.repository',
-	'R1 features/graphic-generation/runtime/client/graphic-runtime.client.ts -> features/graph-generation/graph-runtimes/catalog/runtime.generated.client',
-	'R1 features/graphic-generation/runtime/graphic-studio-runtime.ts -> features/graph-generation/graph-runtimes/catalog/model.generated',
 	'R1 features/guideline/services/download-section-assets.client.ts -> features/studio-export/adapters/export-results-to-zip.client',
 	'R1 features/mcp-access/mcp-tools.ts -> features/asset-check/repositories/ai-check.ai.repository',
 	'R1 features/mcp-access/mcp-tools.ts -> features/asset-check/repositories/image-decoder.sharp.repository',
@@ -70,8 +65,8 @@ const ALLOWLIST: readonly string[] = [
 	'R1 features/template-customization/runtime/template-runtime.client.ts -> features/template-core/runtime/compose-template-html.client',
 	'R1 features/template-import/services/import-figma-html.service.ts -> features/application-image/repositories/imported-application-image.payload.repository',
 	'R1 features/template-import/services/prepare-template-save.service.ts -> features/application-image/repositories/imported-application-image.payload.repository',
-	'R1 modules/agents/agent-chat-tools.agent.ts -> features/asset-check/utils/check-display-status',
-	'R1 modules/agents/agent-chat-tools.agent.ts -> features/asset-check/utils/format-check-detail',
+	'R1 features/agent-chat/agent-chat-tools.agent.ts -> features/asset-check/utils/check-display-status',
+	'R1 features/agent-chat/agent-chat-tools.agent.ts -> features/asset-check/utils/format-check-detail',
 	'R2 app/(frontend)/account/token-limits/page.tsx',
 	'R2 app/api/auth/password/route.ts',
 	'R2 collections/Users.ts',

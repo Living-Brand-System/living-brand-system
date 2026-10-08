@@ -1,5 +1,5 @@
+import type { AgentChatMessage } from '@/features/agent-chat/agent-chat.agent'
 import { agentToolTable, readSkillName } from '@/features/agent-chat/domain/agent-skill-tool-policy'
-import type { AgentChatMessage } from '@/modules/agents/agent-chat.agent'
 
 export function getAgentMessageText(message: AgentChatMessage) {
 	return message.parts.reduce(

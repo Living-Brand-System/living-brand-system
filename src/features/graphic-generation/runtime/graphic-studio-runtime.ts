@@ -1,5 +1,5 @@
-import { graphStudioPlugins } from '@/features/graph-generation/graph-runtimes/catalog/model.generated'
 import type { GraphicRuntimeManifest } from '@/features/graphic-generation/domain/graphic-studio-config'
+import { graphStudioPlugins } from '@/features/graphic-generation/graph-runtimes/catalog/model.generated'
 import { graphicStudioPlugins } from '@/features/graphic-generation/graphic-runtimes/catalog/model.generated'
 import {
 	createGraphicStudioPluginCatalog,

@@ -1,13 +1,13 @@
-import type {
-	GraphRuntimeManifest,
-	GraphStudioConfig,
-	PublishedGraphProfileDefinition,
-} from '@/features/graph-generation/domain/graph-studio-config'
-import { graphRuntimeManifests } from '@/features/graph-generation/graph-runtimes/catalog/manifest.generated'
 import {
 	deriveCanvasStudioConfig,
 	toCanvasRuntimeOptions,
 } from '@/features/graphic-generation/domain/canvas-studio-manifest'
+import type {
+	GraphRuntimeManifest,
+	GraphStudioConfig,
+	PublishedGraphProfileDefinition,
+} from '@/features/graphic-generation/domain/graph-studio-config'
+import { graphRuntimeManifests } from '@/features/graphic-generation/graph-runtimes/catalog/manifest.generated'
 
 export { graphRuntimeManifests }
 

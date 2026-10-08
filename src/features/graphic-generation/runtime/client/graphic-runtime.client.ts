@@ -1,7 +1,7 @@
 'use client'
 
-import { graphRuntimeCatalog } from '@/features/graph-generation/graph-runtimes/catalog/runtime.generated.client'
 import type { GraphicRuntimeManifest } from '@/features/graphic-generation/domain/graphic-studio-config'
+import { graphRuntimeCatalog } from '@/features/graphic-generation/graph-runtimes/catalog/runtime.generated.client'
 import { graphicRuntimeCatalog } from '@/features/graphic-generation/graphic-runtimes/catalog/runtime.generated.client'
 import type {
 	CanvasVideoSource,
