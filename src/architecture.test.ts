@@ -78,7 +78,6 @@ const ALLOWLIST: readonly string[] = [
 	'R1 modules/agents/agent-chat.agent.ts -> features/agent-chat/repositories/agent-skill.payload.repository',
 	'R2 app/(frontend)/account/token-limits/page.tsx',
 	'R2 app/api/auth/password/route.ts',
-	'R2 app/api/studio/preview/route.ts',
 	'R2 collections/Users.ts',
 	'R2 collections/revalidate.ts',
 	'R3 agent-skills <- features/agent-chat',
@@ -183,11 +182,11 @@ function collectViolations(files: SourceFile[]): string[] {
 			if (owner !== 'components' && !isClientFile(file) && /\.client$/.test(target)) {
 				violations.push(`R1 ${file.rel} -> ${target}`)
 			}
-			// R1 — 화면·라우트·컬렉션은 저장소를 모른다. lib는 경계를 모른다.
+			// R1 — 화면·라우트·컬렉션은 저장소를 모른다(경계 안의 것도, src/repositories의 것도). lib는 경계를 모른다.
 			if (
 				['app', 'components', 'collections'].includes(owner) &&
-				isBoundary(targetOwner) &&
-				folder === 'repositories'
+				((isBoundary(targetOwner) && folder === 'repositories') ||
+					targetOwner === 'repositories')
 			) {
 				violations.push(`R1 ${file.rel} -> ${target}`)
 			}
@@ -210,10 +209,11 @@ function collectViolations(files: SourceFile[]): string[] {
 		}
 	}
 
-	// R3 — 컬렉션 하나는 경계 하나가 소유한다.
+	// R3 — 컬렉션 하나는 경계 하나가 소유한다. `src/repositories`는 경계가 아니라 cross-domain 저장소
+	//      (여러 컬렉션에 같은 동작)의 자리이므로 소유자로 세지 않는다 — 도메인 조회를 거기 두면 안 된다.
 	const ownersBySlug = new Map<string, Set<string>>()
 	for (const file of files) {
-		if (!/\.repository\.ts$/.test(file.rel)) continue
+		if (!/\.repository\.ts$/.test(file.rel) || !isBoundary(ownerOf(file.rel))) continue
 		for (const m of file.text.matchAll(/\bcollection:\s*'([a-z-]+)'/g)) {
 			const owners = ownersBySlug.get(m[1]) ?? new Set<string>()
 			owners.add(ownerOf(file.rel))

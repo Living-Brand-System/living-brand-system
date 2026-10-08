@@ -3,6 +3,7 @@
 import { renderRasterArtifactToPng } from '@/features/studio-export/services/export-artifact.client'
 import type { RasterArtifact } from '@/modules/studio-artifact/studio-artifact'
 import type { StudioPreviewImage } from '@/modules/studio-controller/controller-definition'
+import type { StudioPreviewKind } from './update-profile-preview.service'
 
 /**
  * 캡처를 요청할 긴 변 길이(CSS px). 정사각 틀은 캡처 뒤에 사람이 맞춘다.
@@ -13,7 +14,7 @@ import type { StudioPreviewImage } from '@/modules/studio-controller/controller-
  */
 const PREVIEW_MAX_DIM = 1024
 
-export type StudioPreviewKind = 'graphic' | 'graph' | 'image' | 'template'
+export type { StudioPreviewKind }
 
 /**
  * 지금 화면의 Raster Artifact를 판 비율 그대로 캡처한다 — 정사각 틀에 맞추는 것은 다음 단계(사람)의 몫이다.
