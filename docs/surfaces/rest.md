@@ -46,6 +46,7 @@ BFF는 `/api/studio/*`처럼 컬렉션 이름이 아닌 네임스페이스 아�
 ## 3. 공통 규칙
 
 - Route Handler는 origin, 인증·인가, 입력을 검증한 뒤 Feature Service를 호출합니다.
+- 인증은 `authenticateRequest()`의 `user`가 있는지(`if (!user)`) 하나로 판정합니다. `users` 문서만 돌아오고 MCP API 키는 `null`로 걸러지므로(docs/07 「인증과 인가」), 라우트가 `isPayloadUser`를 다시 부르지 않습니다.
 - JSON 요청은 구조와 값 범위를 검증하고, 파일 요청은 크기와 실제 형식을 서버에서 확인합니다.
 - 오류 응답은 안전한 `message`만 노출하고 상세 오류는 서버 로그에 기록합니다.
 - 같은 Use Case의 후속 단계는 첫 응답의 식별자를 URL path로 전달합니다.

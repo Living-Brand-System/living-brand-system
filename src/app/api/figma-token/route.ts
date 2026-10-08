@@ -3,7 +3,7 @@ import {
 	registerFigmaToken,
 	removeFigmaToken,
 } from '@/features/template-import/services/figma-token.service'
-import { isManager, isPayloadUser } from '@/lib/auth'
+import { isManager } from '@/lib/auth'
 import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
 
 const bodySchema = z.object({ token: z.string().trim().min(1).max(256) })
@@ -19,7 +19,7 @@ async function authorize(request: Request) {
 	}
 	const { payload, user } = await authenticateRequest()
 	if (!user) return Response.json({ message: 'Unauthorized' }, { status: 401 })
-	if (!isPayloadUser(user) || !isManager(user)) {
+	if (!isManager(user)) {
 		return Response.json({ message: 'Forbidden' }, { status: 403 })
 	}
 	return { payload, user }

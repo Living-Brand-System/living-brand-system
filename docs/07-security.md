@@ -58,6 +58,7 @@
 - 모든 관리자와 내부 사용자는 Payload `users` collection을 통해 인증합니다.
 - Collection별 `access` 함수를 기본 보안 경계로 사용합니다.
 - Route Handler와 Server Action은 요청마다 현재 사용자를 확인합니다.
+- Route Handler의 `user`는 `users` 문서만이며 `authenticateRequest`가 보장합니다 — API 키(`payload-mcp-api-keys`)로 인증된 요청은 `user: null`로 떨어집니다. 키는 `/api/mcp`에서만 자격이고, 라우트는 `if (!user)` 하나로 판정합니다.
 - Payload Local API를 사용할 때는 가능한 `user`와 `overrideAccess: false`를 전달합니다.
 - `overrideAccess: true`는 migration, seed, 관리성 batch처럼 명확한 예외에서만 사용합니다.
 - 발행 흐름이 있는 스튜디오 컬렉션(템플릿·그래픽·그래프·이미지 프로파일)은 worker에게 발행본만 읽히고, 초안과 버전 이력(`readVersions`)은 manager 이상만 읽습니다. manager 전용 필드(이미지 프로파일의 시스템 프롬프트·모델)는 생성 응답·채팅 첨부·MCP 결과에도 싣지 않습니다.
