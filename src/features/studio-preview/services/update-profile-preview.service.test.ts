@@ -15,6 +15,7 @@ vi.mock('@/features/application-image/services/store-application-image.service',
 }))
 
 import {
+	isStudioPreviewKind,
 	StudioProfileDraftPendingError,
 	StudioProfileNotFoundError,
 	updateProfilePreview,
@@ -103,5 +104,13 @@ describe('updateProfilePreview', () => {
 			updateProfilePreview({ studio: 'graphic', profileId: 'nope', png, user }),
 		).rejects.toBeInstanceOf(StudioProfileNotFoundError)
 		expect(mocks.storePublishedApplicationImage).not.toHaveBeenCalled()
+	})
+})
+
+describe('isStudioPreviewKind', () => {
+	it('🔴 프로토타입 키는 스튜디오가 아니다', () => {
+		expect(isStudioPreviewKind('graphic')).toBe(true)
+		expect(isStudioPreviewKind('toString')).toBe(false)
+		expect(isStudioPreviewKind('constructor')).toBe(false)
 	})
 })
