@@ -9,9 +9,9 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@payload-config', () => ({ default: {} }))
 vi.mock('payload', () => ({ getPayload: mocks.getPayload }))
 
-import { recordAiUsage } from './ai-usage.payload.repository'
+import { createAiUsageEvent } from './ai-usage.payload.repository'
 
-describe('recordAiUsage', () => {
+describe('createAiUsageEvent', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		mocks.getPayload.mockResolvedValue({
@@ -21,7 +21,7 @@ describe('recordAiUsage', () => {
 	})
 
 	it('컬렉션 create가 닫혀 있으므로 trusted write로 남긴다', async () => {
-		await recordAiUsage({
+		await createAiUsageEvent({
 			createdBy: 7,
 			feature: 'image-generation',
 			model: 'gemini-3.1-flash-image',
@@ -45,7 +45,7 @@ describe('recordAiUsage', () => {
 	})
 
 	it('provider가 토큰을 하나도 안 주면 빈 행을 쌓지 않는다', async () => {
-		await recordAiUsage({ createdBy: 7, feature: 'agent-chat', model: 'claude-opus-5' })
+		await createAiUsageEvent({ createdBy: 7, feature: 'agent-chat', model: 'claude-opus-5' })
 
 		expect(mocks.create).not.toHaveBeenCalled()
 	})
@@ -55,7 +55,7 @@ describe('recordAiUsage', () => {
 		mocks.create.mockRejectedValue(new Error('db down'))
 
 		await expect(
-			recordAiUsage({
+			createAiUsageEvent({
 				createdBy: 7,
 				feature: 'asset-check',
 				model: 'claude-opus-5',

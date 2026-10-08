@@ -17,6 +17,10 @@ import { Toggle } from '@/components/ui/toggle'
 import { Typography } from '@/components/ui/typography'
 import { cn } from '@/lib/utils'
 import {
+	saveAccountTokenLimits,
+	saveDefaultTokenLimits,
+} from '@/modules/ai-usage/services/save-token-limits.client'
+import {
 	type AccountTokenLimits,
 	parseTokenInput,
 	resolveTokenLimits,
@@ -55,29 +59,9 @@ const toDraft = (limits: AccountTokenLimits): AccountDraft => ({
 const sameDraft = (a: AccountDraft, b: AccountDraft) =>
 	a.unlimited === b.unlimited && a.daily === b.daily && a.monthly === b.monthly
 
-/** Payload REST 응답에서 사람이 읽을 오류 문구를 꺼낸다. 성공이면 null. */
-async function failureOf(response: Response | null): Promise<string | null> {
-	if (response?.ok) return null
-	const body = response
-		? ((await response.json().catch(() => null)) as {
-				errors?: { message?: string; data?: { errors?: { message?: string }[] } }[]
-			} | null)
-		: null
-	const first = body?.errors?.[0]
-	return first?.data?.errors?.[0]?.message ?? first?.message ?? '저장하지 못했습니다.'
-}
-
-const sendJson = (url: string, method: 'POST' | 'PATCH', body: unknown) =>
-	fetch(url, {
-		method,
-		credentials: 'include',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify(body),
-	}).catch(() => null)
-
 /**
  * 계정별 AI 토큰 한도 — 전체 기본값과 계정별 설정을 고친다(manager 이상).
- * 저장은 Payload REST로 바로 간다 — 필드 권한(manager 이상)과 검증을 Payload가 그대로 강제한다.
+ * 저장은 Payload REST로 바로 간다(`save-token-limits.client`) — 필드 권한(manager 이상)과 검증을 Payload가 그대로 강제한다.
  * 🔑 저장 버튼은 바뀐 것이 있을 때만 켜진다 — 저장이 끝나 서버 값이 편집 값과 같아지면 다시 꺼진다.
  */
 export function TokenLimitsEditor({
@@ -105,9 +89,7 @@ function DefaultsPanel({ defaults }: { defaults: Limits }) {
 
 	const save = async () => {
 		setSaving(true)
-		const failure = await failureOf(
-			await sendJson('/api/globals/ai-token-limits', 'POST', draft),
-		)
+		const failure = await saveDefaultTokenLimits(draft)
 		setSaving(false)
 		setError(failure)
 		if (!failure) router.refresh()
@@ -171,11 +153,7 @@ function AccountsPanel({
 			ids.map(async (id) => {
 				const account = accounts.find((candidate) => candidate.id === id)
 				const draft = account ? draftOf(account) : undefined
-				const failure = draft
-					? await failureOf(
-							await sendJson(`/api/users/${id}`, 'PATCH', { tokenLimits: draft }),
-						)
-					: null
+				const failure = draft ? await saveAccountTokenLimits(id, draft) : null
 				return [id, failure] as const
 			}),
 		)

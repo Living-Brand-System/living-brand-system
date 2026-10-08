@@ -19,10 +19,6 @@ const mocks = vi.hoisted(() => ({
 	readCheckImage: vi.fn(),
 }))
 
-vi.mock('@/lib/auth', async (importOriginal) => ({
-	...(await importOriginal<typeof import('@/lib/auth')>()),
-	isPayloadUser: () => true,
-}))
 vi.mock('@/lib/request-auth', () => ({
 	authenticateRequest: mocks.authenticateRequest,
 	isCrossOriginRequest: mocks.isCrossOriginRequest,

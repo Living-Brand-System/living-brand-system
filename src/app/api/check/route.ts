@@ -1,5 +1,5 @@
 import { startCheckSession } from '@/features/asset-check/services/start-check-session.service'
-import { isAdmin, isPayloadUser } from '@/lib/auth'
+import { isAdmin } from '@/lib/auth'
 import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
 import { TokenLimitExceededError } from '@/modules/ai-usage/services/token-limit.service'
 import { readCheckImage } from './read-check-image'
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 	}
 
 	const { payload, user } = await authenticateRequest()
-	if (!isPayloadUser(user)) {
+	if (!user) {
 		return Response.json({ message: 'Unauthorized' }, { status: 401 })
 	}
 	// ponytail: 미개발 표면 — 검수 화면과 함께 admin 전용이다. 개발이 끝나면 이 검사를 지운다.

@@ -1,7 +1,7 @@
 import { draftMode } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getGuidelineDocumentPreviewTarget } from '@/features/guideline/services/get-guideline-document-preview.service'
-import { isManager, isPayloadUser } from '@/lib/auth'
+import { isManager } from '@/lib/auth'
 import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
 
 /**
@@ -15,7 +15,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ document
 
 	const { user } = await authenticateRequest()
 
-	if (!isPayloadUser(user)) {
+	if (!user) {
 		return new Response('Unauthorized', { status: 401 })
 	}
 	if (!isManager(user)) {

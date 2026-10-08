@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { contrastOptionsSchema } from '@/features/quality-rule/contrast-options'
 import { relationshipId } from '@/features/quality-rule/relationship-id'
+import { fetchRuleChecker } from '@/features/quality-rule/services/get-rule-checker.client'
 import { siblingPath } from '../shared/sibling-path'
 
 type ResolvedChecker = { id: number; key: string | null }
@@ -32,15 +33,12 @@ export const CheckOptionsField: JSONFieldClientComponent = (props) => {
 	useEffect(() => {
 		if (typeof populatedCheckerKey === 'string' || checkerId === null) return
 		const controller = new AbortController()
-		void fetch(`/api/rule-checkers/${checkerId}?depth=0`, { signal: controller.signal })
-			.then((response) => (response.ok ? response.json() : null))
-			.then((checker: { checkerKey?: unknown } | null) => {
-				setResolvedChecker({
-					id: checkerId,
-					key: typeof checker?.checkerKey === 'string' ? checker.checkerKey : null,
-				})
+		void fetchRuleChecker(checkerId, controller.signal).then((checker) => {
+			setResolvedChecker({
+				id: checkerId,
+				key: typeof checker?.checkerKey === 'string' ? checker.checkerKey : null,
 			})
-			.catch(() => undefined)
+		})
 		return () => controller.abort()
 	}, [checkerId, populatedCheckerKey])
 
