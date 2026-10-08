@@ -83,7 +83,6 @@ const ALLOWLIST: readonly string[] = [
 	'R3 agent-skills <- features/agent-chat',
 	'R3 guideline-documents <- features/agent-chat',
 	'R3 guideline-documents <- features/quality-rule',
-	'R3 rules <- features/guideline',
 	'R3 templates <- features/agent-chat',
 	'R3 users <- features/template-import',
 	'R3 users <- modules/ai-usage',
