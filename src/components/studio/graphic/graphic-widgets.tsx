@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, useState } from 'react'
+import { useId } from 'react'
 import {
 	ControllerCompound,
 	ControllerPad,
@@ -14,6 +14,7 @@ import type {
 } from '@/components/studio/panel/studio-panel-slot'
 import { StudioColorCompound } from '@/components/studio/shared/compound-controls'
 import { GraphicPresetList } from '@/components/studio/shared/graphic-preset-list'
+import { ColorPairWidget, ColorRows } from '@/components/studio/shared/widgets/color-pair'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
 import { playgroundGraphicColors } from '@/features/graphic-generation/domain/playground-graphics'
 import { getGraphicStudioRuntimeGroups } from '@/features/graphic-generation/runtime/graphic-studio-runtime'
@@ -44,134 +45,23 @@ const enabled = (
 	control !== undefined &&
 	resolveControlAvailability(control, bindings?.[control.id]) === 'enabled'
 
-const hasColors = (control: ControllerControlDefinition) =>
-	control.kind === 'color' ||
-	(control.kind === 'select' && control.options.some((option) => option.colors?.length))
-
-/**
- * 전경·배경 한 쌍. 자유 색이면 Custom까지 열고 런타임 입력으로 펼친다. 둘 다 색 선택지면 런타임이 허용하는
- * 조합만 스와치로 만든다(Figma 529:23010 — 선의 허용 범위가 면을 따른다). 어느 쪽도 아니면 멤버 행을 그대로 둔다.
- */
-function ColorPairWidget({
-	cluster,
-	controls,
-	values,
-	bindings,
-	onChange,
-	scope,
-}: ControllerWidgetProps) {
-	const config = graphicConfig(scope)
-	// 고른 모드·색은 그래픽마다다 — 패널이 그래픽을 바꿔도 남아 있으므로(템플릿 배경) 다른 그래픽이면 처음부터 본다.
-	const [stored, setStored] = useState<{
-		configId: string
-		colorMode: 'swatch' | 'custom'
-		swatch: string
-		foreground?: string
-	}>({ configId: config.id, colorMode: 'swatch', swatch: '' })
-	const palette =
-		stored.configId === config.id
-			? stored
-			: { configId: config.id, colorMode: 'swatch' as const, swatch: '' }
-	const foregroundId = cluster.members.foreground
-	const backgroundId = cluster.members.background
-	const background = controls.background
-	const colors = Object.values(controls).filter((control) => control.kind === 'color')
-	const free =
-		colors.length > 0 &&
-		colors.every((control) => !control.values && enabled(control, bindings))
-	const back = String(values[backgroundId] ?? '#ffffff')
-	if (free) {
-		const spread = (foreground: string, next: string) =>
-			playgroundGraphicColors(
-				config.id as Parameters<typeof playgroundGraphicColors>[0],
-				foreground,
-				next,
-			)
-		// 런타임이 전경을 다른 색으로 펼치면(Fluted Glass 스펙트럼) 저장값은 고른 색이 아니다 — 고른 색이
-		// 지금 값을 낸 그대로일 때만 고른 색을 보여 준다(리셋·프리셋 뒤에는 저장값으로 돌아간다).
-		const foreground =
-			palette.foreground !== undefined &&
-			spread(palette.foreground, back)[foregroundId] === values[foregroundId]
-				? palette.foreground
-				: String(values[foregroundId] ?? '#000000')
-		return (
-			<StudioColorCompound
-				showDate={false}
-				value={{
-					date: '',
-					colorMode: palette.colorMode,
-					swatch: palette.swatch,
-					foreground,
-					background: back,
-				}}
-				onChange={(patch) => {
-					setStored({
-						configId: config.id,
-						colorMode: patch.colorMode ?? palette.colorMode,
-						swatch: patch.swatch ?? palette.swatch,
-						foreground: patch.foreground ?? palette.foreground,
-					})
-					if (patch.foreground === undefined && patch.background === undefined) return
-					for (const [id, next] of Object.entries(
-						spread(patch.foreground ?? foreground, patch.background ?? back),
-					))
-						onChange(id, next)
-				}}
-			/>
-		)
-	}
-	const swatches =
-		background?.kind === 'select'
-			? background.options.flatMap((plane) => {
-					const line = getGraphicStudioRuntimeGroups(config, {
-						...values,
-						[backgroundId]: plane.value,
-					})
-						.flatMap((group) => group.controls)
-						.find((control) => control.id === foregroundId)
-					const fill = plane.colors?.[0]
-					if (line?.kind !== 'select' || !fill) return []
-					return line.options.flatMap((option) =>
-						option.colors?.[0]
-							? [
-									{
-										id: `${plane.value}:${option.value}`,
-										label: `${plane.label} · ${option.label}`,
-										background: fill,
-										foreground: option.colors[0],
-									},
-								]
-							: [],
-					)
-				})
-			: []
-	if (!swatches.length)
-		return <ColorRows {...{ cluster, controls, values, bindings, onChange }} />
-	const current = swatches.find(
-		(swatch) => swatch.id === `${values[backgroundId]}:${values[foregroundId]}`,
-	)
+/** 그래픽 런타임이 아는 것(전경 펼침·면에 따른 선의 범위)만 공용 color-pair에 넘긴다. */
+function GraphicColorPairWidget(props: ControllerWidgetProps) {
+	const config = graphicConfig(props.scope)
 	return (
-		<StudioColorCompound
-			showDate={false}
-			allowCustom={false}
-			swatches={swatches}
-			disabled={
-				![background, controls.foreground].every((control) => enabled(control, bindings))
+		<ColorPairWidget
+			{...props}
+			identity={config.id}
+			spread={(foreground, background) =>
+				playgroundGraphicColors(
+					config.id as Parameters<typeof playgroundGraphicColors>[0],
+					foreground,
+					background,
+				)
 			}
-			value={{
-				date: '',
-				colorMode: 'swatch',
-				swatch: current?.id ?? '',
-				foreground: current?.foreground ?? '#000000',
-				background: current?.background ?? back,
-			}}
-			onChange={(patch) => {
-				if (!patch.swatch) return
-				const [plane, line] = patch.swatch.split(':')
-				// 면을 먼저 바꾼다 — 선의 허용 범위가 면을 따른다.
-				onChange(backgroundId, plane)
-				onChange(foregroundId, line)
-			}}
+			resolveControls={(values) =>
+				getGraphicStudioRuntimeGroups(config, values).flatMap((group) => group.controls)
+			}
 		/>
 	)
 }
@@ -199,12 +89,10 @@ function ColorwayWidget(props: ControllerWidgetProps) {
 	const current = swatches.find((swatch) => swatch.id === values[colorway.id])
 	return (
 		<StudioColorCompound
-			showDate={false}
 			allowCustom={false}
 			swatches={swatches}
 			disabled={!enabled(colorway, bindings)}
 			value={{
-				date: '',
 				colorMode: 'swatch',
 				swatch: current?.id ?? '',
 				foreground: current?.foreground ?? '#000000',
@@ -214,27 +102,6 @@ function ColorwayWidget(props: ControllerWidgetProps) {
 				if (patch.swatch !== undefined) onChange(colorway.id, patch.swatch)
 			}}
 		/>
-	)
-}
-
-/** 프로파일이 색을 좁혀 스와치를 만들 수 없을 때 — 색 멤버를 행으로 둔다. 색 멤버가 없으면 그리지 않는다. */
-function ColorRows({ cluster, controls, values, bindings, onChange }: ControllerWidgetProps) {
-	const rows = Object.values(controls).filter(hasColors)
-	if (!rows.length) return null
-	return (
-		<ControllerCompound label={cluster.title}>
-			<div className="flex flex-col gap-1 p-1.5">
-				{rows.map((control) => (
-					<ControllerControlRenderer
-						key={control.id}
-						definition={control}
-						value={values[control.id]}
-						binding={bindings?.[control.id]}
-						onChange={(next) => onChange(control.id, next)}
-					/>
-				))}
-			</div>
-		</ControllerCompound>
 	)
 }
 
@@ -328,7 +195,7 @@ function PresetListWidget({ controls, values, bindings, onChange }: ControllerWi
 }
 
 export const GRAPHIC_WIDGETS: ControllerWidgetRegistry = {
-	'color-pair': ColorPairWidget,
+	'color-pair': GraphicColorPairWidget,
 	colorway: ColorwayWidget,
 	position: PositionWidget,
 	compound: CompoundWidget,

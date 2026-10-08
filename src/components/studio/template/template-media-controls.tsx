@@ -3,13 +3,13 @@
 import { Controller } from '@/components/shared/controller'
 import { buildGraphicPanelComposition } from '@/components/studio/graphic/graphic-editing-controls'
 import { graphicProfileCard } from '@/components/studio/graphic/graphic-profile-picker'
-import { ImageColor } from '@/components/studio/image/image-controls'
 import { imageProfileCard } from '@/components/studio/image/image-profile-picker'
 import type {
 	ControllerWidgetProps,
 	ControllerWidgetRegistry,
 } from '@/components/studio/panel/studio-panel-slot'
 import { StudioProfileCards } from '@/components/studio/shared/studio-profile-cards'
+import { ColorPairWidget } from '@/components/studio/shared/widgets/color-pair'
 import {
 	IMAGE_TRANSFORM_DEFAULT,
 	ImageTransformControl,
@@ -149,36 +149,10 @@ function SamplesWidget({ scope }: ControllerWidgetProps) {
 	)
 }
 
-function ColorWidget({ scope }: ControllerWidgetProps) {
-	const target = imageTarget(scope)
-	const { state } = target
-	const contract = target.contracts.find((item) => item.config.id === state.profileId)
-	const definitions = contract ? resolveTemplateImageColorControls(state, contract.config) : null
-	if (!contract || !definitions) return null
-	const foreground = state.featureValues[definitions.line.id]
-	const background = definitions.background && state.featureValues[definitions.background.id]
-	const value =
-		typeof foreground === 'string'
-			? { line: foreground, ...(typeof background === 'string' ? { background } : {}) }
-			: null
+/** 프로파일이 바뀌면 고른 모드·스와치를 처음부터 본다 — 슬롯 패널은 남은 채 계약만 바뀐다. */
+function ColorWidget(props: ControllerWidgetProps) {
 	return (
-		<ImageColor
-			key={contract.config.id}
-			config={contract.config}
-			controls={{
-				values: state.featureValues,
-				bindings: target.bindings,
-				update: target.onFeature,
-			}}
-			color={{
-				value,
-				update: (patch) => {
-					if (patch.line !== undefined) target.onFeature(definitions.line.id, patch.line)
-					if (patch.background !== undefined && definitions.background)
-						target.onFeature(definitions.background.id, patch.background)
-				},
-			}}
-		/>
+		<ColorPairWidget {...props} identity={String(imageTarget(props.scope).state.profileId)} />
 	)
 }
 

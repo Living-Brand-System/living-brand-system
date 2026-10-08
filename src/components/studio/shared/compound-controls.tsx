@@ -4,9 +4,7 @@ import { useId } from 'react'
 import {
 	ControllerColorRow,
 	ControllerCompound,
-	ControllerInput,
 	ControllerReveal,
-	ControllerRow,
 	ControllerSegmented,
 	ControllerSwatch,
 } from '@/components/shared/controller'
@@ -16,7 +14,6 @@ import {
 } from '@/features/template-core/hooks/use-published-brand-color-pairs'
 
 export type StudioCompound = {
-	date: string
 	colorMode: 'swatch' | 'custom'
 	swatch: string
 	foreground: string
@@ -29,13 +26,8 @@ const COLOR_MODES = [
 ] as const
 
 type ColorCompoundProps = {
-	value: Pick<StudioCompound, 'date' | 'colorMode' | 'swatch' | 'foreground' | 'background'>
-	onChange: (
-		patch: Partial<
-			Pick<StudioCompound, 'date' | 'colorMode' | 'swatch' | 'foreground' | 'background'>
-		>,
-	) => void
-	showDate?: boolean
+	value: StudioCompound
+	onChange: (patch: Partial<StudioCompound>) => void
 	/** 없으면 CMS `brand-color-pairs` 정본을 쓴다. 런타임이 조합을 정하는 그래픽만 직접 넘긴다. */
 	swatches?: readonly BrandColorPairSwatch[]
 	allowCustom?: boolean
@@ -57,7 +49,6 @@ function BrandColorCompound(props: ColorCompoundProps) {
 function ColorCompound({
 	value,
 	onChange,
-	showDate = true,
 	swatches,
 	allowCustom = true,
 	disabled = false,
@@ -69,16 +60,6 @@ function ColorCompound({
 	]
 	return (
 		<ControllerReveal gap={4}>
-			{showDate && (
-				<ControllerRow label="Date">
-					<ControllerInput
-						type="date"
-						value={value.date}
-						onChange={(event) => onChange({ date: event.target.value })}
-						className="w-auto rounded-lg bg-foreground/5 px-1.5 font-mono text-xs"
-					/>
-				</ControllerRow>
-			)}
 			<ControllerCompound
 				label="Color"
 				control={
