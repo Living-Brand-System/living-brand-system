@@ -9,11 +9,11 @@ import {
 import { ControllerControlRenderer } from '@/components/shared/controller-renderer'
 import { ImageCameraControl } from '@/components/studio/image/image-camera-control'
 import { ImageReferenceUpload } from '@/components/studio/image/image-reference-upload'
-import { StudioColorCompound } from '@/components/studio/shared/compound-controls'
 import type {
 	ControllerWidgetProps,
 	ControllerWidgetRegistry,
-} from '@/components/studio/shared/studio-panel-slot'
+} from '@/components/studio/panel/studio-panel-slot'
+import { StudioColorCompound } from '@/components/studio/shared/compound-controls'
 import type { StudioSurface } from '@/components/studio/shared/studio-shell'
 import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'

@@ -4,7 +4,7 @@ import {
 	GRAPHIC_WIDGETS,
 	type GraphicWidgetScope,
 } from '@/components/studio/graphic/graphic-widgets'
-import type { ControlPanelComposition } from '@/components/studio/shared/control-panel'
+import type { ControlPanelComposition } from '@/components/studio/panel/control-panel'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
 import { toFlutedGlassInput } from '@/features/graphic-generation/graphic-runtimes/fluted-glass/model'
 import { getGraphicStudioRuntimeGroups } from '@/features/graphic-generation/runtime/graphic-studio-runtime'

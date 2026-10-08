@@ -8,7 +8,7 @@ import { imageProfileCard } from '@/components/studio/image/image-profile-picker
 import type {
 	ControllerWidgetProps,
 	ControllerWidgetRegistry,
-} from '@/components/studio/shared/studio-panel-slot'
+} from '@/components/studio/panel/studio-panel-slot'
 import { StudioProfileCards } from '@/components/studio/shared/studio-profile-cards'
 import {
 	IMAGE_TRANSFORM_DEFAULT,

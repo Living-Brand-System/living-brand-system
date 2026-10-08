@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import type {
 	ControllerWidgetProps,
 	ControllerWidgetRegistry,
-} from '@/components/studio/shared/studio-panel-slot'
+} from '@/components/studio/panel/studio-panel-slot'
 import { TemplateColorSwatches } from '@/components/studio/template/template-color-swatches'
 import type { TemplateTargetPanel } from '@/components/studio/template/template-panel'
 import { rowFocusProps, sectionProps } from '@/components/studio/template/template-section-focus'

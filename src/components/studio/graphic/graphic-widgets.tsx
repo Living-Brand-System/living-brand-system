@@ -8,12 +8,12 @@ import {
 	ControllerPreviewChips,
 } from '@/components/shared/controller'
 import { ControllerControlRenderer } from '@/components/shared/controller-renderer'
-import { StudioColorCompound } from '@/components/studio/shared/compound-controls'
-import { GraphicPresetList } from '@/components/studio/shared/graphic-preset-list'
 import type {
 	ControllerWidgetProps,
 	ControllerWidgetRegistry,
-} from '@/components/studio/shared/studio-panel-slot'
+} from '@/components/studio/panel/studio-panel-slot'
+import { StudioColorCompound } from '@/components/studio/shared/compound-controls'
+import { GraphicPresetList } from '@/components/studio/shared/graphic-preset-list'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
 import { playgroundGraphicColors } from '@/features/graphic-generation/domain/playground-graphics'
 import { getGraphicStudioRuntimeGroups } from '@/features/graphic-generation/runtime/graphic-studio-runtime'

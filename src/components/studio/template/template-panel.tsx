@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import type {
 	ControlPanelComposition,
 	ControlPanelExtras,
-} from '@/components/studio/shared/control-panel'
+} from '@/components/studio/panel/control-panel'
 import type { StudioSurface } from '@/components/studio/shared/studio-shell'
 import { buildTemplateBackgroundComposition } from '@/components/studio/template/template-background-composition'
 import {
