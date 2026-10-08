@@ -52,7 +52,7 @@ vi.mock('@/features/studio-export/services/export-artifact.client', () => ({
 vi.mock('@/features/studio-export/adapters/download-export-result.client', () => ({
 	downloadExportResult: mocks.download,
 }))
-vi.mock('@/components/shared/controller/camera-orbit-control', () => ({
+vi.mock('@/components/shared/controller/controls/camera-orbit-control', () => ({
 	CameraOrbitControl: () => <div>카메라 미리보기</div>,
 }))
 

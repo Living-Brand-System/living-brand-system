@@ -1,8 +1,7 @@
 'use client'
 
 import { useId } from 'react'
-import { Controller } from '@/components/shared/controller'
-import { ControllerCompound } from '@/components/shared/controller/compound'
+import { Controller, ControllerCompound, ControllerSwatch } from '@/components/shared/controller'
 
 /**
  * 텍스트·심볼 색이 함께 쓰는 Solid 스와치 그리드(Figma 350:9318). 색은 호출부가 CMS 정본에서 넘긴다.
@@ -46,16 +45,16 @@ export function TemplateColorSwatches({
 				className="grid grid-cols-5 gap-1.5 px-3 pt-2 pb-3"
 			>
 				{colors.map((hex) => (
-					<input
+					<ControllerSwatch
 						key={hex}
-						type="radio"
+						shape="round"
 						name={name}
 						aria-label={`${subject} 색상 ${hex}`}
 						checked={value?.toLowerCase() === hex.toLowerCase()}
 						disabled={disabled}
 						onChange={() => onChange(hex)}
 						style={{ backgroundColor: hex }}
-						className="aspect-square w-full cursor-pointer appearance-none rounded-full border border-foreground/15 outline-none checked:ring-2 checked:ring-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed"
+						className="aspect-square w-full"
 					/>
 				))}
 			</div>

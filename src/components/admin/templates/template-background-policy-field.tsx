@@ -5,7 +5,7 @@ import type { JSONFieldClientComponent } from 'payload'
 import type { ComponentProps } from 'react'
 import { useEffect, useState } from 'react'
 import { AdminSectionHeading } from '@/components/admin/shared/admin-section-heading'
-import { Controller } from '@/components/shared/controller'
+import { CONTROLLER_TOGGLE_OPTIONS, Controller } from '@/components/shared/controller'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
 import { fetchCanvasStudioConfigs } from '@/features/graphic-generation/services/list-canvas-studio-configs.client'
 import {
@@ -23,11 +23,6 @@ const TYPE_ROWS: readonly { value: TemplateBackgroundType; label: string }[] = [
 	{ value: 'image', label: '이미지' },
 	{ value: 'graphic', label: '그래픽' },
 ]
-
-const ON_OFF = [
-	{ value: 'on', label: 'On' },
-	{ value: 'off', label: 'Off' },
-] as const
 
 type Props = ComponentProps<JSONFieldClientComponent>
 
@@ -59,7 +54,7 @@ function AllowedProfileRows<T extends string | number>({
 					<Controller.Row key={item.id} label={item.name} disabled={disabled}>
 						<Controller.Segmented
 							aria-label={`${item.name} 허용`}
-							options={ON_OFF}
+							options={CONTROLLER_TOGGLE_OPTIONS}
 							value={on ? 'on' : 'off'}
 							onChange={() => onToggle(all, item.id)}
 						/>
@@ -156,7 +151,7 @@ export function TemplateBackgroundPolicyField({ path }: Props) {
 					<Controller.Row label="허용">
 						<Controller.Segmented
 							aria-label="디머 허용"
-							options={ON_OFF}
+							options={CONTROLLER_TOGGLE_OPTIONS}
 							disabled={disabled}
 							value={policy.dimmer === false ? 'off' : 'on'}
 							onChange={(next) => patch({ dimmer: next === 'on' })}

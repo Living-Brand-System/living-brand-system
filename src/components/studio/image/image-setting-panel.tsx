@@ -1,8 +1,7 @@
 'use client'
 
 import { Copy, Crop, SquareOutline } from '@carbon/icons-react'
-import { Controller } from '@/components/shared/controller'
-import { ControllerStack } from '@/components/shared/controller/stack'
+import { Controller, ControllerStack } from '@/components/shared/controller'
 import { PrintControls, VideoControls } from '@/components/studio/shared/output-controls'
 import { StudioOutputModule } from '@/components/studio/shared/output-module'
 import { Button } from '@/components/ui/button'
@@ -14,7 +13,7 @@ import type {
 import { getImageStudioControls } from '@/features/image-generation/domain/image-studio-config'
 import { useImageStudio } from '@/features/image-generation/hooks/use-image-studio'
 import type { ImageExportView } from '@/features/studio-export/hooks/use-image-export'
-import { resolveControllerAvailability } from '@/modules/studio-controller/controller-definition'
+import { resolveControlAvailability } from '@/modules/studio-controller/controller-definition'
 
 /**
  * Setting 패널 — 좌측 세 상자 중 맨 아래(사용자 지시, 2026-09-21).
@@ -89,10 +88,7 @@ export function ImageSettingPanel({ download }: { download: ImageExportView; tit
 				<ControllerStack
 					items={fields.map(({ definition, icon, value, onChange }) => {
 						const binding = controls.bindings[definition.id]
-						const availability = resolveControllerAvailability(
-							definition.availability,
-							binding?.availability,
-						)
+						const availability = resolveControlAvailability(definition, binding)
 						const readonly =
 							availability === 'readonly' ||
 							(availability !== 'disabled' && definition.options.length <= 1)

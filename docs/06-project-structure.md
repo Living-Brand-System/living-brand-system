@@ -117,8 +117,14 @@ src/
       playground/
     shared/
       navigation/
+      controller/             # 컨트롤러 킷 — layout·controls·compose·read·asset·internal
+      controller-renderer/    # Definition → 킷 투영
     studio/
+      panel/                  # 패널 런타임(ControlPanel·슬롯·위젯 계약)
       shared/
+        widgets/              # 도메인 무지·여러 스튜디오 공용 묶음 위젯
+      <studio>/
+        widgets/              # 스튜디오 전용 위젯 + registry
     ui/
   features/
     graphic-generation/

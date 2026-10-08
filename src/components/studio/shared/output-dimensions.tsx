@@ -1,5 +1,5 @@
 import { ArrowsHorizontal, ArrowsVertical } from '@carbon/icons-react'
-import { ControllerStack } from '@/components/shared/controller/stack'
+import { ControllerStack } from '@/components/shared/controller'
 /** 샘플·실제 템플릿이 공유하는 고정 출력 크기 표면. 치수와 단위는 호출자가 정한다. */
 export function OutputDimensions({
 	width,

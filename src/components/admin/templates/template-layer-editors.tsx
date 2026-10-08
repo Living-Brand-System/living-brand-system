@@ -2,7 +2,7 @@
 
 import { toast } from '@payloadcms/ui'
 import { type ReactNode, useEffect, useState } from 'react'
-import { Controller } from '@/components/shared/controller'
+import { CONTROLLER_TOGGLE_OPTIONS, Controller } from '@/components/shared/controller'
 import {
 	type ImageProfileOption,
 	requestPublishedImageProfiles,
@@ -10,11 +10,6 @@ import {
 import type { TemplateLayerAccess, TemplateNodeConfig, TemplateSlotSpec } from '@/types/template'
 import { canAssignImage, type LayerRow, toggleAllowedId } from './template-layers'
 import { VectorLayerEditor } from './vector-layer-editor'
-
-const ON_OFF = [
-	{ value: 'on', label: 'On' },
-	{ value: 'off', label: 'Off' },
-] as const
 
 function usePublishedImageProfiles() {
 	const [profiles, setProfiles] = useState<ImageProfileOption[] | null>(null)
@@ -199,7 +194,7 @@ function ImageSlotSpecEditor({
 				<Controller.Row label="변형 허용">
 					<Controller.Segmented
 						aria-label="변형 허용"
-						options={ON_OFF}
+						options={CONTROLLER_TOGGLE_OPTIONS}
 						value={(imageInput.transform?.enabled ?? true) ? 'on' : 'off'}
 						onChange={(next) =>
 							onChange({ ...imageInput, transform: { enabled: next === 'on' } })
@@ -220,7 +215,7 @@ function ImageSlotSpecEditor({
 						<Controller.Row key={profile.id} label={profile.name}>
 							<Controller.Segmented
 								aria-label={`${profile.name} 허용`}
-								options={ON_OFF}
+								options={CONTROLLER_TOGGLE_OPTIONS}
 								value={on ? 'on' : 'off'}
 								onChange={() => {
 									const { profileId: _legacy, ...rest } = imageInput

@@ -158,7 +158,7 @@ studio·global·home 같은 표면의 화면 컴포넌트도 위 계약을 그�
 
 `ControllerControlRenderer`의 여러 줄 텍스트 입력은 본문 3줄 높이(`rows=3`, `field-sizing: fixed`)로 고정합니다. 긴 값은 내부 세로 스크롤로 읽고 스크롤바만 숨깁니다. 입력값과 키보드 편집은 제한하지 않습니다. 일반 `Textarea`와 직접 사용하는 `Controller.Textarea`의 크기 정책은 별도로 유지합니다.
 
-스튜디오 컨트롤러의 개별 컨트롤은 아래 계약을 따릅니다. 디자인 정본은 Figma HD_LBS_UI의 **Controller API**(node `4:5578`), 구현 원형은 `src/components/shared/controller/`의 **Controller 컴파운드 킷**입니다(Studio와 가이드라인이 함께 쓰므로 `components/shared/`에 있습니다). 패널은 `Root` → `Header`·`Content`·`Footer`, 본문은 `Group` → 개별 컨트롤로 조합합니다. `Group`은 제목과 접힘 상태를 직접 소유합니다. 기존 `Panel`은 `Root`·`Content`·`Footer`를 묶은 호환 래퍼입니다.
+스튜디오 컨트롤러의 개별 컨트롤은 아래 계약을 따릅니다. 디자인 정본은 Figma HD_LBS_UI의 **Controller API**(node `4:5578`), 구현 원형은 `src/components/shared/controller/`의 **Controller 컴파운드 킷**입니다(Studio와 가이드라인이 함께 쓰므로 `components/shared/`에 있습니다). 킷은 역할별 폴더(`layout`·`controls`·`compose`·`read`·`asset`·`internal`)로 나뉘고 밖에서는 index로만 import합니다 — 예외는 `dynamic()`으로 따로 부르는 3D 모듈 `controls/camera-orbit-control` 하나입니다. 계약과 킷을 둘 다 아는 렌더러는 킷 옆 `components/shared/controller-renderer/`에, 패널 런타임(`ControlPanel`·`StudioPanelSlot`·`panel-render`·레일)은 `components/studio/panel/`에 둡니다. 색(조합) 하나를 고르는 라디오는 `Controller.Swatch`가 선택·포커스 표시를 소유합니다. 패널은 `Root` → `Header`·`Content`·`Footer`, 본문은 `Group` → 개별 컨트롤로 조합합니다. `Group`은 제목과 접힘 상태를 직접 소유합니다. 기존 `Panel`은 `Root`·`Content`·`Footer`를 묶은 호환 래퍼입니다.
 
 `Controller.GroupList`는 세로 그룹 목록의 시작 여백 4px과 그룹 사이 간격 12px을 소유하며 끝 여백은 추가하지 않습니다(Figma `529:24992`). 단일 그룹에도 시작 여백만 적용합니다. `Group`은 높이 36px의 제목과 컨트롤 사이·컨트롤 사이의 간격 6px을 소유하고 배경·구분선·바깥 패딩을 갖지 않습니다. 접으면 제목 아래 간격과 본문이 함께 사라지고 목록 간격은 유지합니다. `attached` 하위 그룹은 부모 본문 간격에 6px을 더해 앞 컨트롤과 12px을 확보합니다. 접기 애니메이션은 포커스 링의 바깥 2px을 자르지 않습니다. 패널 패딩·카드 간격·Compound 내부 간격·오류 문구 간격은 별도 계약이며, 가로 배치용 `Controller.Stack`과 구분합니다.
 
@@ -180,7 +180,7 @@ type StudioRuntimeManifest = {
 }
 
 type StudioControllerConfig = StudioRuntimeManifest & {
-	studio: 'template' | 'image' | 'graphic'
+	studio: 'template' | 'image' | 'graphic' | 'graph'
 	id: string | number
 	version: 1
 	name: string
@@ -206,7 +206,7 @@ Template·Image·Graphic Config는 이 Manifest 구조를 그대로 쓰고, 실�
 </Controller.Group>
 ```
 
-`GroupHeader`와 `Section`은 공개 API에 두지 않습니다. `Group`이 제목·구분선·Chevron·접힘 상태를 내부에서 그립니다. `ControllerRenderer`는 첫 그룹의 상단 구분선만 제거합니다. 잠긴 동안에는 강제로 닫지만 사용자의 이전 열림 상태는 보존해, 잠금이 풀리면 원래 상태로 복귀합니다. 레이아웃 공개 API는 `Root`·`Header`·`Content`·`Group`·`Footer`입니다.
+`GroupHeader`와 `Section`은 공개 API에 두지 않습니다. `Group`이 제목·Chevron·접힘 상태를 내부에서 그립니다(구분선은 없습니다 — 위 `GroupList` 문단). 잠긴 동안에는 강제로 닫지만 사용자의 이전 열림 상태는 보존해, 잠금이 풀리면 원래 상태로 복귀합니다. 레이아웃 공개 API는 `Root`·`Header`·`Content`·`Group`·`Footer`입니다.
 
 Controller 사용 구조는 다섯 책임으로 나눕니다.
 
@@ -220,7 +220,7 @@ Controller 사용 구조는 다섯 책임으로 나눕니다.
 
 별도 `ControllerProvider`는 두지 않습니다. 편집 계약과 세션 값은 화면의 Studio Provider가 소유하고, Controller 컴파운드는 표현 레이아웃만 소유합니다. 여러 Controller Root 사이에서 공유할 표현 상태가 실제로 생길 때만 Provider를 추가합니다.
 
-세 Studio의 Admin UI는 Runtime Manifest를 읽기 전용으로 보여주되, Image는 Profile이 선택한 feature로 좁힌 Controller projection을 보여줍니다. Image·Graphic Admin은 `{ controlId, availability, defaultValue, maxLength, optionValues, min, max }`만 sparse JSON `controllerRestrictions`로 저장하고(Image는 장수·비율·해상도만 좁히며 프롬프트·색은 제한하지 않고, `controllerPresentation`은 Template처럼 계산된 기본값입니다) `kind`·label·placeholder·display·aspectRatio·group title·collapsible·defaultOpen을 입력하지 않습니다. Template Admin은 `controllerRestrictions`를 쓰지 않고 배경(`backgroundPolicy`)·레이어별 `overrides[nodeId]`·출력(`exportPolicy`)만 저장하며, `controllerPresentation`은 계산된 기본값입니다. Draft는 작성 중인 불완전 상태를 허용하지만 publish는 공통 parser로 unknown field·중복 id·kind별 기본값과 제약을 엄격하게 검증합니다. 세 Studio는 legacy Controller/Policy 저장을 읽지 않고 Effective `config.controller.groups`만 소비합니다.
+세 Studio의 Admin UI는 Runtime Manifest를 읽기 전용으로 보여주되, Image는 Profile이 선택한 feature로 좁힌 Controller projection을 보여줍니다. Image·Graphic Admin은 `{ controlId, availability, defaultValue, maxLength, optionValues, colorValues, min, max }`만 sparse JSON `controllerRestrictions`로 저장하고(Image는 장수·비율·해상도만 좁히며 프롬프트·색은 제한하지 않고, `controllerPresentation`은 Template처럼 계산된 기본값입니다) `kind`·label·placeholder·display·aspectRatio·group title·collapsible·defaultOpen을 입력하지 않습니다. Template Admin은 `controllerRestrictions`를 쓰지 않고 배경(`backgroundPolicy`)·레이어별 `overrides[nodeId]`·출력(`exportPolicy`)만 저장하며, `controllerPresentation`은 계산된 기본값입니다. Draft는 작성 중인 불완전 상태를 허용하지만 publish는 공통 parser로 unknown field·중복 id·kind별 기본값과 제약을 엄격하게 검증합니다. 세 Studio는 legacy Controller/Policy 저장을 읽지 않고 Effective `config.controller.groups`만 소비합니다.
 
 어드민은 화면 패널을 구성하지 않고 기본값·선택지·범위·availability만 `controllerRestrictions`로 저작합니다(Template은 예외 — 위 문단 참고). Image Runtime Manifest의 control 종류·그룹·표현·stable ID와 전체 supported feature는 Generation Model capability가 소유하고, Image Profile은 feature를 선택합니다. Restrictions를 여러 번 적용해도 같은 Effective Definition이 나와야 합니다. `enabled`로의 잠금 해제, select 선택지 추가, range 확장, 알 수 없는 ID는 발행 시 거부합니다. Graphic의 서버 안전 Manifest Catalog는 직렬화 가능한 Runtime Manifest만 소유하고, Artifact 생성 runtime과 파일 변환 adapter는 각각 runtime/client와 studio-export 모듈이 소유합니다. `Visibility`는 Controller 계약에 두지 않습니다. 현재 렌더러는 Effective Definition에 들어 있는 control을 모두 표시합니다.
 
@@ -256,17 +256,17 @@ type ControllerInteraction = 'idle' | 'hover' | 'focused' | 'error'
 | text | `string \| null` | `maxLength`(카운터 `n/max`로 표시), `multiline` | `Controller.Row`+`Controller.Input` / `Controller.Field`+`Controller.Textarea` |
 | toggle | `boolean` | — | `Controller.Segmented` (On/Off) |
 | select | `string \| null` | `options[]`(선택지별 `colors[]`), `variant`(`list` 기본 / `segmented`) | `Controller.Row`+`Controller.Select`, `segmented`면 `Controller.Segmented`, 선택지가 전부 색이면 `Controller.ColorChips` |
-| color | `#rrggbb \| null` | — | `Controller.ColorRow` |
+| color | `#rrggbb \| null` | `values`(허용 색 목록 — 있으면 그 안에서만 고른다) | `Controller.ColorRow` |
 | range | `number` | `min`/`max`/`step`, 표기 포맷 | `Controller.Range` (채움 폭=값) |
 | pad | `{ x, y }` (-1~1) | `aspectRatio`(Wide/Portrait/Square) | `Controller.Pad` |
-| orbit | `{ azimuthDeg, elevationDeg }` | 스냅 스텝 | `Controller.CameraControl` + 오빗 프리뷰 |
-| asset | 자산 참조 `\| null` | 소스(브랜드 이미지 등) | `Controller.AssetCard`(카드 + 열기 버튼), 패널은 `Controller.Browser` |
+| pad-pair | `{ a: {x,y}, b: {x,y} }` | `aspectRatio` | `Controller.PadPair` |
+| asset | 자산 URL `\| null` | `source`(출처 — 목록은 싣지 않는다) | 화면이 `assetSources`로 주입한 피커(`Controller.AssetCard` + `Controller.Browser`), 없으면 읽기 전용 행 |
 
 `select`의 `variant`는 **표현이 아니라 선택지 성격**을 말합니다. 기본 `list`는 드롭다운이라 누르기 전까지 무엇이 있는지 보이지 않고, `segmented`는 선택지를 한 줄에 펴 놓습니다 — 정본이 **세트로** 제시해 몇 가지인지가 곧 정보인 축에만 씁니다(CI 락업의 「꼴」이 첫 소비자). 선택지가 많으면 폭을 먹으므로 목록형이 기본입니다.
 
 선택지 자체가 **색 조합**인 축은 새 kind나 새 variant를 만들지 않고 `options[].colors`(#rrggbb 목록)에 그 색을 싣습니다 — `variant`는 선택지의 **성격**이고 `colors`는 선택지의 **내용**이라 표현은 렌더러가 정합니다. 전 선택지가 `colors`를 가지면 `variant`를 덮고 `Controller.ColorChips`(라벨 아래 3열 칩 그리드)로 그립니다. 하나라도 없으면 `variant`가 정한 표현(`segmented`면 세그먼트, 아니면 목록)으로 떨어집니다(Key Visual Pattern의 컬러웨이가 첫 소비자, hex가 `style`로 흐르는 근거는 `docs/09` §4의 색-데이터 예외).
 
-현재 공용 `ControllerControlDefinition`은 데이터만으로 바로 그릴 수 있는 `text`·`toggle`·`select`·`color`·`range`·`pad`를 제공합니다. `orbit`은 도메인 프리뷰 슬롯이 필요하고 `asset`은 대응 primitive가 아직 없어 화면 컴포지션에 남깁니다. 두 종류는 실제 공용 renderer가 생길 때 Definition에 합류합니다.
+카메라 시점(방위·고도)은 kind가 아닙니다 — 프리뷰가 도메인 슬롯이라 `camera` 묶음 위젯(§3.7)이 `gate`와 축 컨트롤을 묶어 그립니다. `asset`의 목록은 환경(업로드된 자산)에 묶이므로 계약은 `source`만 싣고, 피커는 화면이 주입합니다.
 
 읽기·탐색 파츠 6종 — 값을 조작하지 않고 결과를 보여주거나 위치를 옮기는 자리입니다. 검수 화면이 첫 소비자이고(디자인 `56:2` "Review Usecase"), 리프 컨트롤과 달리 직렬화 Definition의 어휘가 아니라 **컴포지션 파츠**입니다.
 
@@ -339,11 +339,20 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 
 `target`(무엇을 편집하나)·`visibility`(레이어 표시·숨김)·`action`(생성·저장·초기화·완료/취소)은 셸 어휘라 매니페스트에 넣지 않습니다. **Output 카드(모드·크기·형식·ppi·배율·영상)는 이 계약 밖입니다** — `StudioOutput`과 출력 정책(`print-policy`)이 규칙을 소유하고, 조건부 행의 펼침은 `ControllerPresence`를 그대로 씁니다.
 
-**묶음 위젯** — 컨트롤 여러 개가 위젯 하나로 섭니다. 매니페스트는 묶음(cluster)으로 멤버를 가리키고 값 계약을 복제하지 않습니다. `arrangeStudioPanel`이 멤버 이름 → **지금 계약의 컨트롤 정의**(런타임 제한이 좁힌 선택지 그대로)를 함께 실어 위젯에 넘기므로, 위젯은 정의를 다시 찾지 않습니다. 레지스트리에 없는 위젯은 렌더러가 개발 중 경고하고 그리지 않습니다. 위젯은 모듈 수준 컴포넌트여야 합니다 — 렌더마다 만들면 매번 다시 마운트됩니다. 런타임에 따라 달라지는 계산(조합 스와치, 색 펼침)은 화면이 컨텍스트로 넘깁니다(그래픽: `GraphicWidgetConfigProvider`).
+**묶음 위젯** — 컨트롤 여러 개가 위젯 하나로 섭니다. 매니페스트는 묶음(cluster)으로 멤버를 가리키고 값 계약을 복제하지 않습니다. `arrangeStudioPanel`이 멤버 이름 → **지금 계약의 컨트롤 정의**(런타임 제한이 좁힌 선택지 그대로)를 함께 실어 위젯에 넘기므로, 위젯은 정의를 다시 찾지 않습니다. 레지스트리에 없는 위젯은 렌더러가 개발 중 경고하고 그리지 않습니다. 위젯은 모듈 수준 컴포넌트여야 합니다 — 렌더마다 만들면 매번 다시 마운트됩니다. 런타임에 따라 달라지는 계산(조합 스와치, 색 펼침)은 레지스트리가 컴포지션 `scope`에서 읽어 위젯 props로 넘깁니다(그래픽: `GraphicColorPairWidget`이 공용 `ColorPairWidget`에 `spread`·`resolveControls`를 넘긴다).
+
+**위젯 위치** — 도메인을 모르는 위젯과 둘 이상의 스튜디오가 그리는 위젯 본체는 `components/studio/shared/widgets/<kind>.tsx`, 한 스튜디오 전용 위젯과 도메인 어댑터는 `components/studio/<studio>/widgets/<kind>.tsx`에 둡니다. 레지스트리는 각 스튜디오의 `widgets/registry`가 갖고 패널 빌더는 그것을 import만 합니다. 같은 위젯 종류를 스튜디오마다 다시 구현하지 않습니다 — 다른 것이 데이터 출처뿐이면 공용 본체에 어댑터 props로 넘깁니다.
+
+| 레지스트리 | 위젯 | 쓰는 곳 |
+| --- | --- | --- |
+| `GRAPHIC_WIDGETS` | color-pair(어댑터) · colorway · position · compound · preset-list | 그래픽, 템플릿 배경 그래픽 |
+| `IMAGE_WIDGETS` | color-pair · reference · camera | 이미지 |
+| `TEMPLATE_IMAGE_WIDGETS` | asset-browser · color-pair(어댑터) · transform | 템플릿 이미지 슬롯·배경 이미지 |
+| `TEMPLATE_LAYER_WIDGETS` | swatches · text-field | 템플릿 텍스트·심볼, 배경 Dimming |
 
 | 위젯 | 멤버 |
 | --- | --- |
-| `color-pair` | 전경·배경 색(또는 그로 펼쳐지는 여럿) + `mode`(Swatch/Custom) |
+| `color-pair` | 전경·배경 색(또는 그로 펼쳐지는 여럿). 자유 색이면 Swatch/Custom, 색 선택지끼리면 허용 조합 스와치, 그 외엔 행 |
 | `colorway` | 2색 선택지 select 1개 |
 | `position` | pad / pad-pair / 사분면 select |
 | `compound` | 같은 역할의 행 몇 개를 한 표면으로(방향 + 시점 등) |
@@ -357,7 +366,7 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 
 **그룹 소속 `cluster.group`** — 묶음이 그 그룹 **안**, 그룹 컨트롤 뒤에 섭니다(Figma 529:19999 — Generate 안의 Reference Image). 자리가 아니라 소속이라 그룹이 어느 슬롯에 서든 따라가고, 그룹이 보이지 않으면 자기 역할대로 섭니다. 묶음을 품은 그룹은 자기 행이 모두 묶음으로 가도 제목·섹션째 섭니다(텍스트 슬롯 목록). 구조 서명에도 실립니다. 미지 그룹은 `parseStudioControllerConfig`가 거부합니다.
 
-켜기/끄기와 모드는 역할이 아니라 **묶음의 면**입니다 — 레퍼런스·카메라·Dimming Use·가변 두께의 On/Off는 `gate`, 색의 Swatch/Custom은 `mode` 멤버로 선언합니다.
+켜기/끄기와 모드는 역할이 아니라 **묶음의 면**입니다 — 레퍼런스·카메라·Dimming Use·가변 두께의 On/Off는 `gate` 멤버로 선언합니다. 색의 Swatch/Custom은 값이 아니라 위젯 안의 표현 상태입니다 — 고른 색만 멤버 값으로 갑니다.
 
 **노출 조건 `visibleWhen`** — 값끼리의 관계라 매니페스트가 갖습니다. 그룹·묶음·컨트롤에 붙입니다. 문법은 `{ control, equals }`·`{ control, in }`·`{ control, not }`·`{ all }`·`{ any }` 다섯 가지이고, 수치 비교는 생산자가 생길 때 더합니다.
 
@@ -389,7 +398,7 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 **공통 셸 `StudioShell` (2026-10-02)**: 스튜디오 화면의 왼쪽(대상 카드·Output)·가운데(캔버스)·오른쪽(패널)은 셸이 **한 번만** 조립하고, 스튜디오는 세션에서 표면 모델(`StudioSurface` — `selection`·`output`·`canvas`·`panel{identity, composition, extras}`)을 만들기만 합니다.
 - 패널은 셸이 소유하는 인스턴스 하나입니다. 🔴 화면 갈래마다 `ControlPanel`을 따로 그리지 않습니다 — 갈래가 바뀔 때 패널·레일·고정 카드·자산 브라우저가 통째로 다시 마운트됩니다(템플릿에서 실측).
 - `panel.identity`가 바뀔 때만(프로파일 교체) 패널을 새로 시작합니다 — 위젯 내부 상태·탭 선택이 다른 대상으로 이어지지 않게.
-- 위젯이 읽는 화면 데이터는 컴포지션의 `scope`로 싣습니다(`ControllerWidgetProps.scope`). 위젯 context provider를 패널 안쪽 갈래에 두면 패널을 하나로 둘 수 없습니다. 페이지 전체를 감싸는 세션 provider(`useImageStudio` 등)는 그대로 읽어도 됩니다.
+- 위젯이 읽는 화면 데이터는 컴포지션의 `scope`로 싣습니다(`ControllerWidgetProps.scope`). 위젯 context provider를 패널 안쪽 갈래에 두면 패널을 하나로 둘 수 없습니다. 페이지 전체를 감싸는 세션 provider(`useImageStudio` 등)는 계약 밖 본문(첨부·시드 이미지·각도처럼 세션만 아는 것)을 그릴 때만 읽습니다 — 계약 컨트롤의 값은 언제나 위젯 입력(`values`·`onChange`)으로 받습니다. 같은 값을 두 경로로 받으면 한쪽만 고쳐지는 순간 어긋납니다.
 - 컴포지션 우선순위는 `panel.compositions` 배열 순서뿐입니다(자리마다 앞쪽부터 먼저 채운 것). context로 공급하는 길은 없습니다.
 - 템플릿은 `useTemplatePanel()` 하나가 선택한 대상(레이어·배경 방식)에 맞는 순수 빌더(`buildTemplateLayerPanel`·`buildTemplateImagePanel`·`buildTemplateGraphicPanel`·`buildTemplateBackgroundComposition`)를 고릅니다. 오른쪽 패널과 왼쪽 설정 카드(settings 슬롯 — 배경 방식·이미지 슬롯 방식)가 이 한 번의 계산을 씁니다. 대상이 바뀌면 `panel.target`이 바뀌어 탭 선택만 Basic으로 돌아갑니다.
 - 왼쪽 겹침(템플릿 편집 오버레이)은 `surface.frame`이 기본 카드 묶음을 감쌉니다.

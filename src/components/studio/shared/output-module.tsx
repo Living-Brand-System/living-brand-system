@@ -2,12 +2,14 @@
 
 import { ArrowsHorizontal, ArrowsVertical, Copy, Crop, SquareOutline } from '@carbon/icons-react'
 import type { ReactNode } from 'react'
-import { ControllerInput } from '@/components/shared/controller/input'
-import { ControllerPresence } from '@/components/shared/controller/presence'
-import { ControllerRow } from '@/components/shared/controller/row'
-import { ControllerSegmented } from '@/components/shared/controller/segmented'
-import { ControllerSelect } from '@/components/shared/controller/select'
-import { ControllerStack } from '@/components/shared/controller/stack'
+import {
+	ControllerInput,
+	ControllerPresence,
+	ControllerRow,
+	ControllerSegmented,
+	ControllerSelect,
+	ControllerStack,
+} from '@/components/shared/controller'
 import {
 	type ArtboardKey,
 	matchArtboard,

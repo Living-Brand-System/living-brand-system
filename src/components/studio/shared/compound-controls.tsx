@@ -1,19 +1,19 @@
 'use client'
 
 import { useId } from 'react'
-import { ControllerColorRow } from '@/components/shared/controller/color-row'
-import { ControllerCompound } from '@/components/shared/controller/compound'
-import { ControllerInput } from '@/components/shared/controller/input'
-import { ControllerReveal } from '@/components/shared/controller/presence'
-import { ControllerRow } from '@/components/shared/controller/row'
-import { ControllerSegmented } from '@/components/shared/controller/segmented'
+import {
+	ControllerColorRow,
+	ControllerCompound,
+	ControllerReveal,
+	ControllerSegmented,
+	ControllerSwatch,
+} from '@/components/shared/controller'
 import {
 	type BrandColorPairSwatch,
 	usePublishedBrandColorPairs,
 } from '@/features/template-core/hooks/use-published-brand-color-pairs'
 
 export type StudioCompound = {
-	date: string
 	colorMode: 'swatch' | 'custom'
 	swatch: string
 	foreground: string
@@ -26,13 +26,8 @@ const COLOR_MODES = [
 ] as const
 
 type ColorCompoundProps = {
-	value: Pick<StudioCompound, 'date' | 'colorMode' | 'swatch' | 'foreground' | 'background'>
-	onChange: (
-		patch: Partial<
-			Pick<StudioCompound, 'date' | 'colorMode' | 'swatch' | 'foreground' | 'background'>
-		>,
-	) => void
-	showDate?: boolean
+	value: StudioCompound
+	onChange: (patch: Partial<StudioCompound>) => void
 	/** 없으면 CMS `brand-color-pairs` 정본을 쓴다. 런타임이 조합을 정하는 그래픽만 직접 넘긴다. */
 	swatches?: readonly BrandColorPairSwatch[]
 	allowCustom?: boolean
@@ -54,7 +49,6 @@ function BrandColorCompound(props: ColorCompoundProps) {
 function ColorCompound({
 	value,
 	onChange,
-	showDate = true,
 	swatches,
 	allowCustom = true,
 	disabled = false,
@@ -66,16 +60,6 @@ function ColorCompound({
 	]
 	return (
 		<ControllerReveal gap={4}>
-			{showDate && (
-				<ControllerRow label="Date">
-					<ControllerInput
-						type="date"
-						value={value.date}
-						onChange={(event) => onChange({ date: event.target.value })}
-						className="w-auto rounded-lg bg-foreground/5 px-1.5 font-mono text-xs"
-					/>
-				</ControllerRow>
-			)}
 			<ControllerCompound
 				label="Color"
 				control={
@@ -96,12 +80,13 @@ function ColorCompound({
 						className="grid grid-cols-5 gap-1.5 px-3 pt-2 pb-3"
 					>
 						{swatches.map((swatch) => (
-							<label
+							// 라디오가 칸 전체를 덮고 안쪽 점은 포인터를 통과시키므로 감싸는 요소는 라벨일 필요가 없다.
+							<div
 								key={swatch.id}
-								className="relative grid aspect-square cursor-pointer place-items-center rounded-full has-focus-visible:ring-2 has-focus-visible:ring-ring/50"
+								className="relative grid aspect-square place-items-center"
 							>
-								<input
-									type="radio"
+								<ControllerSwatch
+									shape="round"
 									name={swatchName}
 									disabled={disabled}
 									aria-label={swatch.label}
@@ -114,7 +99,7 @@ function ColorCompound({
 											background: swatch.background,
 										})
 									}
-									className="absolute inset-0 size-full cursor-pointer appearance-none rounded-full border border-foreground/15 outline-none checked:ring-2 checked:ring-foreground/40"
+									className="absolute inset-0 size-full"
 									style={{ backgroundColor: swatch.background }}
 								/>
 								<span
@@ -122,7 +107,7 @@ function ColorCompound({
 									className="pointer-events-none relative size-6 rounded-full"
 									style={{ backgroundColor: swatch.foreground }}
 								/>
-							</label>
+							</div>
 						))}
 					</div>
 				) : (
@@ -169,16 +154,15 @@ function ColorWithPalette({
 				className="flex justify-between gap-1 border-t border-border px-3 py-1.5"
 			>
 				{palette.map((hex) => (
-					<input
+					<ControllerSwatch
 						key={hex}
-						type="radio"
 						name={name}
 						aria-label={hex}
 						title={hex}
 						checked={value.toLowerCase() === hex.toLowerCase()}
 						onChange={() => onChange(hex)}
 						style={{ backgroundColor: hex }}
-						className="size-6 shrink-0 cursor-pointer appearance-none rounded-sm border border-foreground/15 outline-none checked:ring-2 checked:ring-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/50"
+						className="size-6"
 					/>
 				))}
 			</div>
