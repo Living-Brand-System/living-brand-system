@@ -1,7 +1,7 @@
 'use client'
 
 import { Reset } from '@carbon/icons-react'
-import type { ReactNode } from 'react'
+import { type ReactNode, useId } from 'react'
 import { CONTROLLER_TOGGLE_OPTIONS, Controller } from '@/components/shared/controller'
 import { FieldError } from '@/components/ui/field'
 import {
@@ -46,22 +46,26 @@ export function ControllerControlRenderer({
 	assetSources,
 	onChange,
 }: ControllerControlRendererProps) {
+	const errorId = useId()
 	return (
 		<div data-slot="controller-renderer-control" className="flex flex-col gap-1">
 			<ControllerControl
 				definition={definition}
 				value={value}
+				errorId={binding?.error ? errorId : undefined}
 				availability={resolveControlAvailability(definition, binding)}
 				padAspectRatio={binding?.padAspectRatio}
 				assetSources={assetSources}
 				onChange={onChange}
 			/>
-			{binding?.error && <FieldError>{binding.error}</FieldError>}
+			{binding?.error && <FieldError id={errorId}>{binding.error}</FieldError>}
 		</div>
 	)
 }
 
 type ControllerControlProps = {
+	/** 오류 문구 id — 입력이 `aria-describedby`로 잇는다. 오류가 없으면 없다. */
+	errorId?: string
 	definition: ControllerControlDefinition
 	value: ControllerControlValue
 	availability: ControllerAvailability
@@ -76,6 +80,7 @@ function ControllerControl({
 	availability,
 	padAspectRatio,
 	assetSources,
+	errorId,
 	onChange,
 }: ControllerControlProps) {
 	const disabled = availability === 'disabled'
@@ -91,6 +96,7 @@ function ControllerControl({
 				return (
 					<Controller.Field
 						label={definition.label}
+						errorId={errorId}
 						counter={
 							definition.maxLength
 								? `${text.length}/${definition.maxLength}`
@@ -129,7 +135,7 @@ function ControllerControl({
 				)
 			}
 			return (
-				<Controller.Row label={definition.label} disabled={disabled}>
+				<Controller.Row label={definition.label} disabled={disabled} errorId={errorId}>
 					<Controller.Input
 						value={text}
 						maxLength={definition.maxLength}

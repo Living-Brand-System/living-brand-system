@@ -487,31 +487,18 @@ function NumberRow({
 	return (
 		<Controller.Row label={label}>
 			<div className="flex items-center gap-1 text-muted-foreground">
-				<Controller.Input
-					key={`${label}-${value ?? 'empty'}`}
-					type="number"
+				<Controller.NumberInput
 					inputMode="numeric"
 					min={min}
 					max={max}
 					step={1}
-					defaultValue={value ?? ''}
+					value={value}
 					placeholder="—"
 					className="w-20 text-right"
-					onBlur={(event) => {
-						const next = event.currentTarget.valueAsNumber
-						if (
-							Number.isInteger(next) &&
-							next >= min &&
-							(max === undefined || next <= max)
-						) {
-							onChange(next)
-						} else {
-							event.currentTarget.value = value === null ? '' : String(value)
-						}
-					}}
-					onKeyDown={(event) => {
-						if (event.key === 'Enter') event.currentTarget.blur()
-					}}
+					isValid={(next) =>
+						Number.isInteger(next) && next >= min && (max === undefined || next <= max)
+					}
+					onCommit={onChange}
 				/>
 				<span className="text-sm">{suffix}</span>
 			</div>

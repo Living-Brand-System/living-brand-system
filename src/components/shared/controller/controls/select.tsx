@@ -33,6 +33,8 @@ export function ControllerSelect({
 		<Select value={value} onValueChange={(next) => onChange?.(next)}>
 			<SelectTrigger
 				id={row?.controlId}
+				aria-invalid={row?.errorId ? true : undefined}
+				aria-describedby={row?.errorId}
 				size="sm"
 				disabled={disabled || row?.disabled}
 				className={ROW_SELECT_TRIGGER}

@@ -7,6 +7,8 @@ type RowControlValue = {
 	/** 행 라벨이 가리키는 컨트롤 id — 킷 컨트롤이 자기 id로 쓴다. */
 	controlId: string
 	disabled: boolean
+	/** 이 행의 오류 문구 id — 있으면 안의 킷 입력이 `aria-invalid`·`aria-describedby`로 잇는다. */
+	errorId?: string
 }
 
 const RowControlContext = React.createContext<RowControlValue | null>(null)
@@ -35,6 +37,8 @@ type ControllerRowProps = React.ComponentProps<'div'> & {
 	/** 어드민이 고정해 조정 불가한 행(디자인의 Admin Fixed) — 행 전체가 흐려지고 포인터가 막히며,
 	 *  안의 킷 컨트롤은 컨텍스트로 함께 비활성된다. */
 	disabled?: boolean
+	/** 행 아래 오류 문구의 id. 문구는 부르는 쪽이 그리고, 행은 입력에 연결만 한다. */
+	errorId?: string
 }
 
 /** 한 줄 행 — 왼쪽 라벨, 오른쪽 값/컨트롤. dialkit의 36px 행 대응. */
@@ -43,6 +47,7 @@ export function ControllerRow({
 	htmlFor,
 	readonly = false,
 	disabled = false,
+	errorId,
 	className,
 	children,
 	...props
@@ -70,7 +75,9 @@ export function ControllerRow({
 			>
 				{label}
 			</LabelTag>
-			<RowControlProvider value={{ controlId, disabled }}>{children}</RowControlProvider>
+			<RowControlProvider value={{ controlId, disabled, errorId }}>
+				{children}
+			</RowControlProvider>
 		</div>
 	)
 }

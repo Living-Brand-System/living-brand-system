@@ -67,7 +67,8 @@ export const CheckScenarioChecksField: JSONFieldClientComponent = ({ path }) => 
 
 	return (
 		<div className="field-type json mb-5">
-			<FieldLabel htmlFor={`${path}-search`} label="포함된 Check" path={path} required />
+			{/* 🔑 제목은 아래 표의 이름이다 — 검색 칸 라벨은 따로 있어 같은 칸을 두 라벨이 가리키지 않게 span으로 둔다. */}
+			<FieldLabel as="span" label="포함된 Check" path={path} required />
 			<FieldError message={errorMessage} path={path} showError={showError} />
 			{loadError ? <p role="alert">{loadError}</p> : null}
 

@@ -15,6 +15,8 @@ export function ControllerInput({ className, ...props }: React.ComponentProps<ty
 		<Input
 			id={row?.controlId}
 			disabled={row?.disabled || undefined}
+			aria-invalid={row?.errorId ? true : undefined}
+			aria-describedby={row?.errorId}
 			className={cn(BARE_INPUT, 'text-right', className)}
 			{...props}
 		/>
@@ -28,6 +30,8 @@ export function ControllerTextarea({ className, ...props }: React.ComponentProps
 		<Textarea
 			id={row?.controlId}
 			disabled={row?.disabled || undefined}
+			aria-invalid={row?.errorId ? true : undefined}
+			aria-describedby={row?.errorId}
 			className={cn(BARE_INPUT, 'min-h-12', className)}
 			{...props}
 		/>

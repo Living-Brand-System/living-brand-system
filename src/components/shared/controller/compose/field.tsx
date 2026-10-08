@@ -17,6 +17,8 @@ type ControllerFieldProps = React.ComponentProps<'div'> & {
 	 */
 	action?: React.ReactNode
 	disabled?: boolean
+	/** 필드 아래 오류 문구의 id — `ControllerRow`의 `errorId`와 같다. */
+	errorId?: string
 }
 
 /** 여러 줄 필드 — 라벨 위, 컨트롤 아래로 쌓이는 행. */
@@ -26,6 +28,7 @@ export function ControllerField({
 	counter,
 	action,
 	disabled = false,
+	errorId,
 	className,
 	children,
 	...props
@@ -60,7 +63,9 @@ export function ControllerField({
 				)}
 				{action}
 			</span>
-			<RowControlProvider value={{ controlId, disabled }}>{children}</RowControlProvider>
+			<RowControlProvider value={{ controlId, disabled, errorId }}>
+				{children}
+			</RowControlProvider>
 		</div>
 	)
 }

@@ -228,7 +228,7 @@ Graphic Canvas는 `type`만 보고 공용 `P5Canvas`·`WebGLCanvas`를 선택합
 
 기존 `p5`·`shader` 엔진에 Graphic을 추가할 때는 `src/features/graphic-generation/graphic-runtimes/<id>` 아래 `definition.ts`·`model.ts`·`runtime.client.ts`를 기본 export로 추가하고 `pnpm generate:graphic-runtime-catalogs`를 실행합니다. `definition.ts`는 단일 authoring API `defineGraphicRuntime()`으로 Manifest를 정의하고, `model.ts`는 순수 계산, `runtime.client.ts`는 실제 P5/WebGL 실행을 소유합니다. 생성된 세 Catalog가 stable runtime ID로 자동 연결하므로 Provider·Sidebar·Canvas·중앙 Catalog를 수정하지 않습니다. 새로운 엔진 종류가 생길 때만 공용 Canvas host와 `GraphicStudioConfig.type`을 확장합니다.
 
-킷 배선 규칙: `Controller.Row`/`Controller.Field`가 `{ controlId, disabled }` 표현 컨텍스트를 내리고, 안의 킷 컨트롤(`Select`·`Input`·`Textarea`·`Segmented`·`ColorRow` 스와치)이 라벨 연결 id와 disabled를 자동으로 이어받습니다 — 소비자는 htmlFor를 배선하지 않습니다. 이 컨텍스트에 도메인 값을 넣지 않습니다(§3.5 — 도메인 Provider는 features의 훅으로).
+킷 배선 규칙: `Controller.Row`/`Controller.Field`가 `{ controlId, disabled }` 표현 컨텍스트를 내리고, 안의 킷 컨트롤(`Select`·`Input`·`Textarea`·`Segmented`·`ColorRow` 스와치)이 라벨 연결 id와 disabled를 자동으로 이어받습니다 — 소비자는 htmlFor를 배선하지 않습니다. 이 컨텍스트에 도메인 값을 넣지 않습니다(§3.5 — 도메인 Provider는 features의 훅으로). 행 아래 오류 문구가 있으면 그 id를 `errorId`로 넘깁니다 — 안의 킷 입력이 `aria-invalid`·`aria-describedby`로 잇고, 문구는 부르는 쪽이 그립니다. 숫자 하나를 고치는 칸은 `Controller.NumberInput`을 씁니다 — 입력 중간 상태(빈칸·`-`)를 값으로 쓰지 않도록 떠날 때 한 번 반영하고, 쓸 수 없는 값이면 직전 값으로 돌아갑니다(키마다 `Number()`로 반영하면 빈칸이 0으로 덮인다).
 
 컨트롤 슬롯의 공통 상태는 조작 가능 여부와 현재 표현 상태를 섞지 않고 두 타입으로 정의합니다.
 
@@ -498,7 +498,7 @@ const MAIN: Swatch[] = [
 - **키보드 조작**: 커스텀 인터랙션 요소는 `role`과 `aria-*`, 화살표 키 이동을 갖춥니다. 슬라이더면 `role="slider"` + `aria-valuenow`처럼 역할에 맞는 속성을 붙입니다.
 - **focus 가시성**: `focus-visible:ring` 계열로 포커스를 시각적으로 드러냅니다. `badge.tsx`의 `focus-visible:ring-[3px] focus-visible:ring-ring/50`이 참고입니다.
 - **색만으로 상태 구분 금지**: 판정·상태는 심볼 + 텍스트를 함께 씁니다. 검수 결과 배지처럼 kind별 심볼과 라벨을 같이 노출합니다.
-- **label 연결**: 입력 요소는 `label`/`aria-label`/`aria-labelledby`로 접근 가능한 이름을 갖습니다. `cards/displays/dynamics/type-specimen/component.tsx`의 textarea는 `aria-label="타입 견본 입력"`을 답니다.
+- **label 연결**: 입력 요소는 `label`/`aria-label`/`aria-labelledby`로 접근 가능한 이름을 갖습니다. 화면에 라벨이 없는 입력(채팅 입력창 `agent-chat-user-input.tsx`)은 `aria-label`을 달고, 킷 입력은 `Controller.Row`·`Field`의 라벨에 자동으로 연결됩니다. 오류 문구는 `errorId`로 넘겨 입력의 `aria-invalid`·`aria-describedby`에 잇습니다.
 - **실패 상태 텍스트 설명**: 검수 실패·저장 실패 같은 조치가 필요한 상태는 텍스트로 원인과 다음 행동을 설명합니다(`docs/08` §2).
 
 ## 7. 자기 검증
