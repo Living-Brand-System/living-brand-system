@@ -168,7 +168,7 @@ config.output
 
 ### 출력 크기와 해상도
 
-값의 정본은 언제나 px입니다. `px`와 `mm`는 대등한 두 모드이고 표시 설정이 아닙니다 — px 모드는 mm를 보여주지 않고, mm 모드는 px를 보여주지 않습니다. 해상도(ppi)는 두 모드를 잇는 값이라 mm 입력이 있는 컨트롤(`SizingControls`)에서만 묻습니다.
+값의 정본은 언제나 px입니다. `px`와 `mm`는 대등한 두 모드이고 표시 설정이 아닙니다 — px 모드는 mm를 보여주지 않고, mm 모드는 px를 보여주지 않습니다. 해상도(ppi)는 두 모드를 잇는 값이라 mm 입력이 있는 곳 — 그래픽 Output의 Print 모드(`graphic/output/size-editor`) — 에서만 묻습니다.
 
 Template의 판형은 문서가 소유하고, 템플릿마다 `templates.outputKind`로 **디지털(px)과 인쇄(mm) 중 하나만** 고릅니다. 판형 크기는 두 종류 모두 `templates.size`(가로·세로, 정수)가 정본이고 단위만 다릅니다. 디지털판은 px이고(비워 두면 Figma 판 크기로 채움) PNG·JPG·MP4를 그 크기 그대로 냅니다. 인쇄판은 mm이고 PDF·TIFF·SVG만 냅니다. 디지털을 mm로 인쇄하는 길은 없습니다. 인쇄판의 해상도는 창작자가 `exportPolicy.print.allowedPpi`(72·150·300 중 켠 값)에서 고르고, 래스터(TIFF) px는 `mm ÷ 25.4 × ppi`로 계산합니다 — 브라우저 캔버스 한도를 넘는 ppi는 선택지에서 빠지고, 하나도 안 남으면 SVG·PDF로만 냅니다. 벡터(PDF·SVG)는 ppi와 상관없이 판형 mm 그대로 나갑니다. Figma 판(`width·height` px)은 디자인 좌표계라 admin에서 숨기고, 판형 크기와 가로세로 비율은 저장 검증이 1% 안으로 맞춥니다. 출력 설정 형식 칩은 고른 종류의 형식만 보여 줍니다. 🔴 Figma 재import는 `baseHtml`·`html`·`overrides`·`width`·`height`·`sourceUrl`을 덮으므로 판형 선언을 그 축에 얹으면 안 됩니다. (옛 `canvasPpi`는 숨긴 채 남아 있고 다음 정리에서 지웁니다.)
 

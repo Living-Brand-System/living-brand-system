@@ -81,6 +81,8 @@ backups/
 
 # Local build output
 output/
+# 소스 안의 `output/`(스튜디오 Output 카드 조립 폴더)은 산출물이 아니다.
+!src/**/output/
 temp/
 .superpowers
 .pnpm-store/

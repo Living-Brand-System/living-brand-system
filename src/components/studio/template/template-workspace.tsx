@@ -1,22 +1,20 @@
 'use client'
 
 import { useEffect } from 'react'
-import { OutputDimensions } from '@/components/studio/shared/output-dimensions'
 import { PreviewRefreshButton } from '@/components/studio/shared/preview-refresh-button'
 import { StudioSelectionChange } from '@/components/studio/shared/studio-selection-card'
 import { StudioShell } from '@/components/studio/shared/studio-shell'
 import { useProfilePreview } from '@/components/studio/shared/use-profile-preview'
+import { TemplateOutput } from '@/components/studio/template/output/template-output'
 import { TemplateCanvas } from '@/components/studio/template/template-canvas'
 import {
 	TemplateDefaultsButton,
 	useTemplateDefaults,
 } from '@/components/studio/template/template-defaults-button'
 import { TemplateEditingPanel } from '@/components/studio/template/template-editing-panel'
-import { TemplateOutputControls } from '@/components/studio/template/template-output-controls'
 import { useTemplatePanel } from '@/components/studio/template/template-panel'
 import { Typography } from '@/components/ui/typography'
 import { useTemplateExport } from '@/features/studio-export/hooks/use-template-export'
-import { formatMillimeters } from '@/features/studio-export/print-policy'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import { TemplateLayerGroups } from './template-controls'
 import { TemplateProfilePicker } from './template-profile-picker'
@@ -59,9 +57,6 @@ export function TemplateWorkspace({
 	})
 	const defaults = useTemplateDefaults()
 
-	const size = exporting.sizeMm ?? exporting.outputSize ?? config.template.exportOption.canvas
-	const dimension = (value: number) =>
-		exporting.sizeMm ? formatMillimeters(value) : String(value)
 	return (
 		<div data-slot="template-panel-navigation" className="flex min-h-0 flex-col lg:flex-row">
 			<div className="min-h-0 min-w-0 flex-1">
@@ -93,17 +88,7 @@ export function TemplateWorkspace({
 									<TemplateLayerGroups />
 								</div>
 								<hr className="my-1 border-border" />
-								<TemplateOutputControls
-									title="Output"
-									exporting={exporting}
-									sizeControl={
-										<OutputDimensions
-											width={dimension(size.width)}
-											height={dimension(size.height)}
-											unit={exporting.sizeMm ? 'mm' : 'px'}
-										/>
-									}
-								/>
+								<TemplateOutput exporting={exporting} />
 							</>
 						),
 						// 편집 오버레이가 기본 카드 묶음(마스터)을 감싸고 그 위로 대상 카드·설정 카드를 띄운다.

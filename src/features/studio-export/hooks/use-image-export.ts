@@ -11,6 +11,7 @@ import type {
 	StudioOutputFormat,
 	VideoExportSpec,
 } from '../export-contract'
+import type { StudioOutputView } from '../output-view'
 import { type PrintPpi, resolveDefaultPrintPpi } from '../print-policy'
 import { createRasterExportRequest } from '../services/create-raster-export-request'
 import { executeArtifactExport } from '../services/export-artifact.client'
@@ -108,29 +109,52 @@ export function useImageExport({
 	const selectedOriginalRequest = createOriginalRequest('selected')
 	const allOriginalRequest = createOriginalRequest('all')
 
-	return {
+	const view: StudioOutputView = {
+		format: {
+			value: format,
+			options: formats,
+			set: (next) => {
+				if (formats.includes(next)) setSelectedFormat(next)
+			},
+		},
+		// 인쇄 해상도는 TIFF·PDF만 쓴다 — 결과를 만든 프로파일(capability)의 인쇄 계약 기준이다.
+		print:
+			capability.print && (format === 'tiff' || format === 'pdf')
+				? {
+						ppi: effectivePpi,
+						options: capability.print.ppi,
+						set: (next) => {
+							if (acceptsPrintPpi(capability, next)) setPpi(next)
+						},
+					}
+				: null,
+		video:
+			format === 'mp4' && capability.video && effectiveFps
+				? {
+						fps: effectiveFps,
+						fpsOptions: capability.video.mp4.fps,
+						durationSeconds: effectiveDuration,
+						maxDurationSeconds: capability.video.mp4.maxDurationSeconds,
+						setFps: (next) => {
+							if (capability.video?.mp4.fps.includes(next)) setFps(next)
+						},
+						setDuration: (next) => {
+							const max = capability.video?.mp4.maxDurationSeconds
+							if (max && next > 0 && next <= max) setDurationSeconds(next)
+						},
+					}
+				: null,
+		save: {
+			selected: exportAction(imageExport, selectedRequest),
+			all: exportAction(imageExport, allRequest),
+		},
 		busy: imageExport.exporting !== null,
 		error: imageExport.error,
-		formats,
-		format,
-		setFormat: (next: StudioOutputFormat) => {
-			if (formats.includes(next)) setSelectedFormat(next)
-		},
-		ppi: effectivePpi,
-		setPpi: (next: PrintPpi) => {
-			if (acceptsPrintPpi(capability, next)) setPpi(next)
-		},
-		fps: effectiveFps ?? null,
-		setFps: (next: VideoExportSpec['fps']) => {
-			if (capability.video?.mp4.fps.includes(next)) setFps(next)
-		},
-		durationSeconds: effectiveDuration,
-		setDuration: (next: number) => {
-			const max = capability.video?.mp4.maxDurationSeconds
-			if (max && next > 0 && next <= max) setDurationSeconds(next)
-		},
-		selected: exportAction(imageExport, selectedRequest),
-		all: exportAction(imageExport, allRequest),
+		notices: [],
+	}
+
+	return {
+		view,
 		original: {
 			available:
 				imageExport.canExport(selectedOriginalRequest) ||
