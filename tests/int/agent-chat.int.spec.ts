@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import type { AgentChatMessage } from '@/features/agent-chat/agent-chat.agent'
 import { getAgentChatErrorMessage } from '@/features/agent-chat/hooks/use-agent-chat'
 import {
 	getAgentReasoningMarker,
 	getAgentSkillMarker,
 	getAgentToolMarker,
 } from '@/features/agent-chat/utils/derive-agent-message'
-import type { AgentChatMessage } from '@/modules/agents/agent-chat.agent'
 
 describe('agent chat errors', () => {
 	it('uses JSON response messages', async () => {

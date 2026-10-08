@@ -6,7 +6,7 @@
 
 ## 2. 어댑터 계약
 
-- agent는 `src/modules/agents/agent-chat.agent.ts`(ToolLoopAgent)가 소유하고, 도구는 `src/modules/agents/agent-chat-tools.agent.ts`에 등록합니다. 진입점은 `src/app/api/agent-chat/route.ts`입니다.
+- agent는 `src/features/agent-chat/agent-chat.agent.ts`(ToolLoopAgent)가 소유하고, 도구는 `src/features/agent-chat/agent-chat-tools.agent.ts`에 등록합니다. 진입점은 `src/app/api/agent-chat/route.ts`입니다.
 - 첫 `loadSkill`은 skill 이름만 선택하고, Sonnet 5와 선택된 skill의 도구 허용 목록을 사용합니다.
 - Skill별 도구 허용 목록은 서버가 소유합니다. 등록되지 않은 Skill은 어떤 도구도 허용하지 않으며, 허용된 도구만 AI SDK `activeTools`에 전달합니다.
 - 한 턴에 여러 모델을 사용하면 실행 기록의 `model`에 사용 순서대로 중복 없이 남기고, `rawUsage.steps`에는 단계별 모델과 provider usage를 함께 저장합니다.

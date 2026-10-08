@@ -1,4 +1,4 @@
-import { listGraphStudioConfigs } from '@/features/graph-generation/services/list-graph-studio-configs.service'
+import { listGraphStudioConfigs } from '@/features/graphic-generation/services/list-graph-studio-configs.service'
 import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
 
 // 렌더링: 매 요청. 사용자별 published 프로파일을 읽으므로 캐시하지 않는다.

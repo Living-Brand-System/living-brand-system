@@ -97,11 +97,11 @@ describe('agent chat route request parsing', () => {
 			consumeStream: vi.fn(),
 			createAgentUIStreamResponse: onEndResponse,
 		}))
-		vi.doMock('@/modules/agents/agent-chat.agent', () => ({
+		vi.doMock('@/features/agent-chat/agent-chat.agent', () => ({
 			agentChatAgent: {},
 			assertAgentChatProviderConfigured: vi.fn(),
 		}))
-		vi.doMock('@/modules/agents/validate-agent-chat-messages.agent', () => ({
+		vi.doMock('@/features/agent-chat/validate-agent-chat-messages.agent', () => ({
 			validateAgentChatMessages: vi.fn().mockResolvedValue({
 				data: [{ id: '1', role: 'user', parts: [{ type: 'text', text: '질문' }] }],
 				success: true,

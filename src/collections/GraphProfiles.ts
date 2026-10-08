@@ -3,7 +3,7 @@ import {
 	deriveGraphStudioConfig,
 	GRAPH_RUNTIME_OPTIONS,
 	graphRuntimeManifests,
-} from '@/features/graph-generation/domain/graph-studio-manifest'
+} from '@/features/graphic-generation/domain/graph-studio-manifest'
 import { managerManagedPublishedAccess } from '@/lib/auth'
 import { previewImageField } from './fields/preview-image-field'
 import {

@@ -1,5 +1,5 @@
 import { safeValidateUIMessages } from 'ai'
-import { type AgentChatMessage, agentChatAgent } from '@/modules/agents/agent-chat.agent'
+import { type AgentChatMessage, agentChatAgent } from '@/features/agent-chat/agent-chat.agent'
 
 /**
  * Route Handler가 받은 UI message가 현재 agent tool schema와 맞는지 검증한다.

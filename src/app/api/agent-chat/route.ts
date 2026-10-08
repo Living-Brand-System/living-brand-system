@@ -1,13 +1,13 @@
 import { consumeStream, createAgentUIStreamResponse } from 'ai'
 import { parseAgentChatRequest } from '@/app/api/agent-chat/parse-agent-chat-request'
-import { startAgentChatSession } from '@/features/agent-chat/services/start-agent-chat-session.service'
-import { AgentConfigurationError } from '@/lib/errors'
-import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
 import {
 	agentChatAgent,
 	assertAgentChatProviderConfigured,
-} from '@/modules/agents/agent-chat.agent'
-import { validateAgentChatMessages } from '@/modules/agents/validate-agent-chat-messages.agent'
+} from '@/features/agent-chat/agent-chat.agent'
+import { startAgentChatSession } from '@/features/agent-chat/services/start-agent-chat-session.service'
+import { validateAgentChatMessages } from '@/features/agent-chat/validate-agent-chat-messages.agent'
+import { AgentConfigurationError } from '@/lib/errors'
+import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
 import {
 	assertWithinTokenLimit,
 	TokenLimitExceededError,

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { AgentChatMessage } from '@/features/agent-chat/agent-chat.agent'
 import type { AgentChatSessionUsageStep } from '@/features/agent-chat/domain/agent-chat-session-usage'
 import {
 	createAgentChatSessionRecord,
@@ -10,7 +11,6 @@ import {
 	startAgentChatSession,
 } from '@/features/agent-chat/services/start-agent-chat-session.service'
 import type { AgentChatSessionMessageInput } from '@/features/agent-chat/types'
-import type { AgentChatMessage } from '@/modules/agents/agent-chat.agent'
 import type { User } from '@/payload-types'
 
 vi.mock('@/features/agent-chat/repositories/agent-chat-session.payload.repository', () => ({

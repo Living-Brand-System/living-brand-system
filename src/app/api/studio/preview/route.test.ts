@@ -19,7 +19,7 @@ vi.mock('@/lib/request-auth', () => ({
 	authenticateRequest: mocks.authenticateRequest,
 	isCrossOriginRequest: mocks.isCrossOriginRequest,
 }))
-vi.mock('@/features/studio-preview/services/update-profile-preview.service', () => ({
+vi.mock('@/features/studio-export/services/update-profile-preview.service', () => ({
 	isStudioPreviewKind: (value: unknown) =>
 		['graphic', 'graph', 'image', 'template'].includes(value as string),
 	updateProfilePreview: mocks.updateProfilePreview,

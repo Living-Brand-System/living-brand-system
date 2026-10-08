@@ -1,6 +1,7 @@
 import { Ai, Catalog, Search } from '@carbon/icons-react'
 import Link from 'next/link'
 import { Spinner } from '@/components/ui/spinner'
+import type { AgentChatMessage } from '@/features/agent-chat/agent-chat.agent'
 import {
 	getAgentCitations,
 	getAgentGeneratedImages,
@@ -10,7 +11,6 @@ import {
 	getAgentTemplateAttachments,
 	getAgentToolMarker,
 } from '@/features/agent-chat/utils/derive-agent-message'
-import type { AgentChatMessage } from '@/modules/agents/agent-chat.agent'
 import { AgentChatAgentBubble, AgentChatUserBubble } from './agent-chat-bubbles'
 import { AgentChatGeneratedImages } from './agent-chat-generated-images'
 import { AgentChatTemplateAttachment } from './agent-chat-template-attachment'

@@ -71,7 +71,7 @@ Graphic과 Graph는 **실행 계약이 한 벌입니다**(`CANVAS_STUDIO_KINDS`)
 
 | 갈리는 것 | Graphic | Graph |
 | --- | --- | --- |
-| 런타임 카탈로그 | `graphic-generation/graphic-runtimes` | `graph-generation/graph-runtimes` |
+| 런타임 카탈로그 | `graphic-generation/graphic-runtimes` | `graphic-generation/graph-runtimes` |
 | 프로파일 컬렉션 | `graphic-profiles` | `graph-profiles` |
 
 🔴 카탈로그를 합치면 Graph 화면에서 Graphic 런타임이 열리고, 컬렉션을 합치면 admin 목록이 섞이며 한쪽 런타임을 더할 때 상대의 enum 마이그레이션이 따라옵니다. 그래서 이 둘만 가릅니다. 새 캔버스 스튜디오를 세울 때 필요한 것도 이 둘과 라우트·API뿐이고, 카탈로그는 `scripts/generate-graphic-runtime-catalogs.ts`의 `CATALOG_TARGETS`에 한 줄을 더하면 생성됩니다.

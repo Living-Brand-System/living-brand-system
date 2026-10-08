@@ -32,7 +32,7 @@ Creator UI -> Route Handler -> PublishGuidelineService -> GuidelineRepository ->
 | Collections | `src/collections` | Payload collection schema, access, hook 진입점을 둡니다. |
 | Guideline Sections | `src/features/guideline/sections` | 섹션·컨테이너·카드 CMS 스키마와 투영·표현 어댑터를 둡니다. |
 | Globals | `src/globals` | Payload global schema를 둡니다. |
-| Modules | `src/modules` | 기능 자체가 아닌 UI 비종속 공통 계약과 Agent 실행 모듈을 둡니다. |
+| Modules | `src/modules` | 기능 자체가 아닌 UI 비종속 공통 계약을 둡니다. |
 | Services | `src/features/*/services`, `src/modules/*/services`, `src/services` | Service는 사용처 수와 관계없이 소유 기능이나 모듈 안에 둡니다. 소유 경계가 없는 cross-domain orchestration만 `src/services`에 둡니다. |
 | Repositories | `src/features/*/repositories`, `src/modules/*/repositories`, `src/repositories` | Repository는 여러 기능이 사용해도 데이터의 소유 기능이나 모듈 안에 둡니다. 소유 경계가 없는 저장소만 `src/repositories`에 둡니다. |
 | Tests | `tests` | e2e, integration, helper를 둡니다. |
@@ -227,7 +227,7 @@ scripts/
 | `guideline-documents` | `features/guideline` | `domain/reading`이 이미 MCP·Agent 공통 읽기 모델을 소유합니다 |
 | `templates` | `features/template-core` | |
 | `rules` | `features/quality-rule` | |
-| `agent-skills` | `modules/agents` | 스킬은 에이전트의 설정이지 채팅 화면의 것이 아닙니다 — 저장소는 `modules/agents/repositories`에 있습니다 |
+| `agent-skills` | `features/agent-chat` | 에이전트 실행 단위(`*.agent.ts`)와 스킬 저장소가 같은 경계에 있습니다 |
 | `users` | `features/auth` | 계정 문서. 기능별 설정 필드(`tokenLimits`·Figma 토큰)는 auth의 `user-settings.service`로만 읽고 씁니다 — ai-usage·template-import는 그 서비스를 부릅니다 |
 - 일반 React 컴포넌트는 `src/components/<surface>`에 둡니다. 컴포넌트가 기능 hook이나 client service를 사용할 수 있지만, 기능 로직이 표현 컴포넌트를 import하면 안 됩니다.
 - 둘 이상의 화면 표면이 쓰는 컴포넌트만 `src/components/shared`로 승격합니다. 한 표면 안의 여러 화면이 공유하면 `<surface>/shared`에 둡니다.
@@ -238,7 +238,7 @@ scripts/
 - 가이드라인은 `sections/schema.ts`·`display-schema.ts`의 단일 저장 계약을 사용합니다. 스키마·투영은 Node에서 읽을 수 있어야 하며 표현 연결은 `sections/render.tsx`·`display-render.tsx`가 소유합니다.
 - 신규 가이드라인 CMS 본문은 `features/guideline/sections`가 같은 경계를 따릅니다. `schema.ts`·`display-schema.ts`는 저장 필드, `model.ts`는 공통 위계·파일 해석, `projection.ts`는 검색·검수 투영, `render.tsx`·`display-render.tsx`는 공통 표현 API 연결입니다. schema/model은 React 렌더러를 import하지 않습니다. 기존 blocks는 호환 경로로 유지합니다([기능 계약 §2.6](features/guideline.md#26-신규-cms-계약--2026-09-21)).
 - 가이드라인의 MCP·Agent 공통 읽기 모델은 `features/guideline/domain/reading`이 소유합니다. `read-document.ts`는 원본→읽기 문서 변환과 레거시 호환 분기, `read-visual.ts`는 활성 도판·조작·동작 해석, `format-document.ts`는 읽기 모델→텍스트 표현을 담당합니다. 이 계층은 DB·네트워크를 호출하지 않으며, 응답 길이와 페이지 처리는 각 서비스에 둡니다.
-- Agent는 별도 사용자 역할이 아니라 `src/modules/agents`의 실행 모듈입니다.
+- Agent는 별도 사용자 역할이 아니라 `src/features/agent-chat`의 실행 단위(`*.agent.ts`, 경계 루트)입니다. 2026-10-08까지 `src/modules/agents`였으나 feature 6개를 import하는 모듈은 아래층이 아니라 agent-chat의 엔진이라 합쳤습니다.
 - 실제 폴더 구조를 개선할 때는 `src/features`, `src/modules`, `src/components`, `src/lib`, `src/services`, `src/repositories`, `src/types`를 이 순서로 추가합니다.
 
 예시:
@@ -262,7 +262,7 @@ src/features/guideline/repositories/guideline.payload.repository.ts
 | Service | `src/features/*/services`, `src/modules/*/services`, 소유 경계가 없을 때 `src/services` | Use Case 실행, Input / Output 계약, 상태 전이 판단, 기능 전용 published 조회 |
 | Repository Interface | `src/features/*/repositories/*.repository.ts`, `src/modules/*/repositories/*.repository.ts`, 소유 경계가 없을 때 `src/repositories` | Service가 필요한 저장소 계약 (구현체 2개 이상일 때) |
 | Repository Implementation | `src/features/*/repositories/*.payload.repository.ts`, `src/modules/*/repositories/*.payload.repository.ts`, 소유 경계가 없을 때 `src/repositories` | Payload Local API, Drizzle ORM, CMS SDK 호출 |
-| Agent | `src/modules/agents` | 검색, Answer, Recommendation 생성 |
+| Agent | `src/features/agent-chat/*.agent.ts` | 검색, Answer, Recommendation 생성 |
 | 공통 유틸 | `src/lib` | 에러, 인증 helper처럼 실제 공유되는 코드 |
 
 예시:

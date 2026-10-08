@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/lib/request-auth', () => ({ requireUser: mocks.requireUser }))
-vi.mock('@/features/graph-generation/services/list-graph-studio-configs.service', () => ({
+vi.mock('@/features/graphic-generation/services/list-graph-studio-configs.service', () => ({
 	listGraphStudioConfigs: mocks.listGraphStudioConfigs,
 }))
 

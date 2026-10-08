@@ -3,7 +3,7 @@ import {
 	StudioProfileDraftPendingError,
 	StudioProfileNotFoundError,
 	updateProfilePreview,
-} from '@/features/studio-preview/services/update-profile-preview.service'
+} from '@/features/studio-export/services/update-profile-preview.service'
 import { isManager } from '@/lib/auth'
 import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
 
@@ -14,7 +14,7 @@ const MAX_UPLOAD_BYTES = 8 * 1024 * 1024
 
 /**
  * 스튜디오에서 지금 보고 있는 화면을 그 프로파일의 미리보기 이미지로 박는다.
- * 어느 컬렉션에 어떻게 쓰는지는 studio-preview 서비스가 소유한다 — 여기는 폼을 풀고 결과를 HTTP로 옮길 뿐이다.
+ * 어느 컬렉션에 어떻게 쓰는지는 studio-export의 update-profile-preview 서비스가 소유한다 — 여기는 폼을 풀고 결과를 HTTP로 옮길 뿐이다.
  */
 export async function POST(request: Request) {
 	if (isCrossOriginRequest(request)) {
