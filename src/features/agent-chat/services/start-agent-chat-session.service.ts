@@ -12,7 +12,7 @@ import {
 import type { AgentChatAiUsage, AgentChatSessionMessageInput } from '@/features/agent-chat/types'
 import { getAgentMessageText } from '@/features/agent-chat/utils/derive-agent-message'
 import type { AgentChatMessage } from '@/modules/agents/agent-chat.agent'
-import { recordAiUsage } from '@/modules/ai-usage/repositories/ai-usage.payload.repository'
+import { recordAiUsage } from '@/modules/ai-usage/services/record-ai-usage.service'
 import type { User } from '@/payload-types'
 
 export interface StartAgentChatSessionInput {

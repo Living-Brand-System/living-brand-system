@@ -1,7 +1,6 @@
 import { consumeStream, createAgentUIStreamResponse } from 'ai'
 import { parseAgentChatRequest } from '@/app/api/agent-chat/parse-agent-chat-request'
 import { startAgentChatSession } from '@/features/agent-chat/services/start-agent-chat-session.service'
-import { isPayloadUser } from '@/lib/auth'
 import { AgentConfigurationError } from '@/lib/errors'
 import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
 import {
@@ -32,7 +31,7 @@ export async function POST(req: Request) {
 	const { payload, user } = await authenticateRequest()
 
 	// Agent 질의도 내부 사용자 요청만 허용한다.
-	if (!isPayloadUser(user)) {
+	if (!user) {
 		return Response.json({ message: 'Unauthorized' }, { status: 401 })
 	}
 

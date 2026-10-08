@@ -1,5 +1,5 @@
 import type { AiUsage } from '@/features/asset-check/checkers/types'
-import { recordAiUsage } from '@/modules/ai-usage/repositories/ai-usage.payload.repository'
+import { recordAiUsage } from '@/modules/ai-usage/services/record-ai-usage.service'
 import type { User } from '@/payload-types'
 
 /**

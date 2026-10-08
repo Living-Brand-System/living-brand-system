@@ -35,7 +35,7 @@ import {
 } from '@/features/asset-check/services/run-check.service'
 import { detectCheckImageMediaType } from '@/features/asset-check/utils/image-format'
 import { type CheckScenario, getCheckScenario } from '@/features/quality-rule/check-scenario'
-import { findPublishedCheckScenarios } from '@/features/quality-rule/repositories/check-scenario.payload.repository'
+import { listPublishedCheckScenarios } from '@/features/quality-rule/services/list-published-check-scenarios.service'
 import { assertWithinTokenLimit } from '@/modules/ai-usage/services/token-limit.service'
 import type { AgentChatSession, User } from '@/payload-types'
 import { recordCheckAiUsage } from './record-check-ai-usage'
@@ -94,7 +94,7 @@ export async function startCheckSession(input: StartCheckSessionInput) {
 	const inputSnapshot = await snapshotInput(input.buffer)
 	const scenario =
 		input.scenario ??
-		getCheckScenario(await findPublishedCheckScenarios(input.user), input.scenarioKey)
+		getCheckScenario(await listPublishedCheckScenarios(input.user), input.scenarioKey)
 	const rulesetSnapshot = await getRuntimeChecks(scenario.checkKeys)
 	const session = await createCheckSessionRecord({
 		agentChatSessionId: input.agentChatSessionId,

@@ -13,6 +13,7 @@ import { Typography } from '@/components/ui/typography'
 import { acceptsImagePromptExecution } from '@/features/image-generation/domain/image-studio-config'
 import type { TemplateStudioValue } from '@/features/template-customization/contexts/template-studio-context'
 import { resolveTemplateImageColorControls } from '@/features/template-customization/domain/image-colorize'
+import type { SampleImageOption } from '@/features/template-customization/domain/sample-image-option'
 import {
 	deriveTemplateImageComposition,
 	TEMPLATE_IMAGE_DIMMER,
@@ -21,7 +22,6 @@ import {
 } from '@/features/template-customization/domain/template-image-composition'
 import { partitionTemplateSlots } from '@/features/template-customization/domain/template-studio-config'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
-import type { SampleImageOption } from '@/features/template-customization/services/list-sample-images.client'
 import {
 	arrangeStudioPanel,
 	type StudioPanelPolicy,

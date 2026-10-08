@@ -28,7 +28,7 @@ import {
 } from '@/features/image-generation/services/generate-image.service'
 import { listAvailableImageProfiles } from '@/features/image-generation/services/list-image-profiles.service'
 import { type CheckScenario, getCheckScenario } from '@/features/quality-rule/check-scenario'
-import { findPublishedCheckScenarios } from '@/features/quality-rule/repositories/check-scenario.payload.repository'
+import { listPublishedCheckScenarios } from '@/features/quality-rule/services/list-published-check-scenarios.service'
 import { AgentConfigurationError } from '@/lib/errors'
 import { TokenLimitExceededError } from '@/modules/ai-usage/services/token-limit.service'
 import type { User } from '@/payload-types'
@@ -117,7 +117,7 @@ export function getAgentTools() {
 			inputSchema: z.object({}),
 			contextSchema: guidelineToolContextSchema,
 			execute: async (_input, { context }) =>
-				(await findPublishedCheckScenarios(context.user as User)).map(({ key, title }) => ({
+				(await listPublishedCheckScenarios(context.user as User)).map(({ key, title }) => ({
 					key,
 					title,
 				})),
@@ -226,7 +226,7 @@ export function getAgentTools() {
 			}),
 			contextSchema: guidelineToolContextSchema,
 			execute: async ({ scenarioKey }, { context, messages }) => {
-				const scenarios = await findPublishedCheckScenarios(context.user as User)
+				const scenarios = await listPublishedCheckScenarios(context.user as User)
 				const scenario = getCheckScenario(scenarios, scenarioKey)
 				const image = findLatestImage(messages)
 

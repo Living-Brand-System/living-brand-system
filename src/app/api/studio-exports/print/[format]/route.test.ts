@@ -4,10 +4,8 @@ const mocks = vi.hoisted(() => ({
 	authenticateRequest: vi.fn(),
 	exportPrint: vi.fn(),
 	isCrossOriginRequest: vi.fn(),
-	isPayloadUser: vi.fn(),
 }))
 
-vi.mock('@/lib/auth', () => ({ isPayloadUser: mocks.isPayloadUser }))
 vi.mock('@/lib/request-auth', () => ({
 	authenticateRequest: mocks.authenticateRequest,
 	isCrossOriginRequest: mocks.isCrossOriginRequest,
@@ -45,7 +43,6 @@ describe('POST /api/studio-exports/print/[format]', () => {
 		vi.clearAllMocks()
 		mocks.authenticateRequest.mockResolvedValue({ user: { collection: 'users' } })
 		mocks.isCrossOriginRequest.mockReturnValue(false)
-		mocks.isPayloadUser.mockReturnValue(true)
 		mocks.exportPrint.mockResolvedValue(Buffer.from('print'))
 	})
 
@@ -67,7 +64,7 @@ describe('POST /api/studio-exports/print/[format]', () => {
 	})
 
 	it('인증되지 않은 요청은 변환 전에 거부한다', async () => {
-		mocks.isPayloadUser.mockReturnValue(false)
+		mocks.authenticateRequest.mockResolvedValue({ user: null })
 		const POST = await loadPost()
 		const response = await POST(exportRequest(), { params: Promise.resolve({ format: 'pdf' }) })
 		expect(response.status).toBe(401)

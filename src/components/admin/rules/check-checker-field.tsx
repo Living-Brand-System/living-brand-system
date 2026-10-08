@@ -5,6 +5,7 @@ import type { RelationshipFieldClientComponent } from 'payload'
 import { useEffect } from 'react'
 import { relationshipId } from '@/features/guideline/utils/block-text'
 import type { RuleExecutor } from '@/features/quality-rule/rule-executor'
+import { fetchRuleChecker } from '@/features/quality-rule/services/get-rule-checker.client'
 import { siblingPath } from '../shared/sibling-path'
 
 const isCheckExecutor = (value: unknown): value is RuleExecutor =>
@@ -32,14 +33,11 @@ export const CheckCheckerField: RelationshipFieldClientComponent = (props) => {
 		if (checkerId === null) return
 
 		const controller = new AbortController()
-		void fetch(`/api/rule-checkers/${checkerId}?depth=0`, { signal: controller.signal })
-			.then((response) => (response.ok ? response.json() : null))
-			.then((checker: { executor?: unknown } | null) => {
-				if (isCheckExecutor(checker?.executor) && executorValue !== checker.executor) {
-					dispatchFields({ type: 'UPDATE', path: executorPath, value: checker.executor })
-				}
-			})
-			.catch(() => undefined)
+		void fetchRuleChecker(checkerId, controller.signal).then((checker) => {
+			if (isCheckExecutor(checker?.executor) && executorValue !== checker.executor) {
+				dispatchFields({ type: 'UPDATE', path: executorPath, value: checker.executor })
+			}
+		})
 		return () => controller.abort()
 	}, [checkerId, dispatchFields, executorPath, executorValue, populatedExecutor])
 

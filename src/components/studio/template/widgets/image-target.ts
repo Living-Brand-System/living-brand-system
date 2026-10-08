@@ -1,9 +1,9 @@
 import type { TemplateImageSlotState } from '@/features/template-customization/contexts/template-studio-context'
+import type { SampleImageOption } from '@/features/template-customization/domain/sample-image-option'
 import type {
 	ResolvedTemplateImageConfig,
 	TemplateImageConfigSlot,
 } from '@/features/template-customization/domain/template-studio-config'
-import type { SampleImageOption } from '@/features/template-customization/services/list-sample-images.client'
 import type {
 	ControllerControlValue,
 	ControllerRuntimeBindings,

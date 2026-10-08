@@ -2,6 +2,10 @@
 
 import { useState } from 'react'
 import { loginHref, routes } from '@/lib/routes'
+import {
+	requestFigmaTokenRegistration,
+	requestFigmaTokenRemoval,
+} from '../services/figma-token.client'
 
 /**
  * 계정 화면의 Figma 토큰 등록·삭제 상태. 서버가 준 연결 여부에서 시작하고, 원문 토큰은 입력칸에만 산다
@@ -17,20 +21,18 @@ export function useFigmaToken(initialConnected: boolean) {
 		if (pending) return
 		setError('')
 		setPending(true)
-		const response = await fetch('/api/figma-token', {
-			method,
-			headers: method === 'PUT' ? { 'Content-Type': 'application/json' } : undefined,
-			body: method === 'PUT' ? JSON.stringify({ token }) : undefined,
-		}).catch(() => null)
+		const result =
+			method === 'PUT'
+				? await requestFigmaTokenRegistration(token)
+				: await requestFigmaTokenRemoval()
 		setPending(false)
 
-		if (response?.status === 401) {
+		if (result.status === 'unauthorized') {
 			window.location.assign(loginHref(routes.account))
 			return
 		}
-		if (!response?.ok) {
-			const body = await response?.json().catch(() => null)
-			setError(body?.message || failMessage)
+		if (result.status === 'error') {
+			setError(result.message || failMessage)
 			return
 		}
 		setConnected(method === 'PUT')

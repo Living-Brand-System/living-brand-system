@@ -13,7 +13,6 @@ vi.mock('@/features/guideline/services/get-guideline-document-preview.service', 
 }))
 vi.mock('@/lib/auth', () => ({
 	isManager: () => true,
-	isPayloadUser: () => true,
 }))
 vi.mock('@/lib/request-auth', () => ({
 	authenticateRequest: mocks.authenticateRequest,

@@ -210,8 +210,24 @@ scripts/
 - `page.tsx`와 `layout.tsx`는 라우팅과 화면 조합만 담당합니다.
 - `route.ts`는 HTTP adapter로만 동작합니다.
 - Collection hook은 Service를 호출하고, 업무 규칙을 직접 길게 작성하지 않습니다.
-- Payload Local API, ORM, CMS SDK import는 `*.payload.repository.ts`, `*.drizzle.repository.ts` 구현 파일에만 허용합니다. Service는 기능 전용 read 조회라도 이 규칙을 따릅니다.
+- Payload Local API, ORM, CMS SDK import는 `*.payload.repository.ts`, `*.drizzle.repository.ts` 구현 파일에만 허용합니다. Service는 기능 전용 read 조회라도 이 규칙을 따릅니다. 예외는 인증 operation(`payload.auth`·`payload.login`) 하나이며, `lib/request-auth.ts`·`proxy.ts`·`/api/auth/login` 라우트가 직접 부릅니다 — 저장소가 아니라 인증 경계이기 때문입니다.
 - Service와 Repository는 사용처 수와 관계없이 그것을 소유하는 `src/features/<feature>` 또는 `src/modules/<module>` 안에 둡니다. 다른 기능은 소유 경계의 공개 계약을 소비합니다. 소유 경계가 없는 cross-domain orchestration이나 저장소만 `src/services`, `src/repositories`에 둡니다.
+
+#### 경계 규칙
+
+경계는 `src/features/<feature>`와 `src/modules/<module>` 하나하나입니다. `src/architecture.test.ts`가 아래 셋을 소스 전체에 대조하며, 기존 위반은 그 파일의 허용목록에 적혀 있고 고치면 지웁니다(래칫). 규칙을 바꾸려면 이 문서를 먼저 고칩니다.
+
+- **R1 — 경계 밖에서 import할 수 있는 것은 그 경계의 `services/`·`domain/`과 경계 루트의 파일뿐입니다.** `repositories/`·`runtime/`·`utils/`·`hooks/`·`providers/`·`contexts/`·`adapters/`·`checks/` 등은 경계 안에서만 씁니다. 같은 이유로 서버 코드(`.tsx`·`.client.ts`·`'use client'`·브라우저 폴더가 아닌 파일)는 `.client`를 import하지 않습니다 — 양쪽이 쓸 타입·순수 함수는 `domain/`에 둡니다. 화면(`components`·`app`)과 `collections`는 저장소를 import하지 않고, `lib`는 경계를 import하지 않습니다. `import type`은 런타임 결합이 없어 검사하지 않습니다.
+- **R2 — Payload 런타임(`getPayload`·`payload.*`·`req.payload.*`)은 `*.repository.ts`에서만 부릅니다.** 위 인증 예외만 있습니다.
+- **R3 — 컬렉션 하나는 경계 하나가 소유합니다.** 다른 경계는 소유자의 읽기 서비스를 부릅니다. 저장소가 둘 이상이던 컬렉션의 소유자는 아래와 같이 확정했습니다(2026-10-08). 표에 없는 컬렉션은 저장소가 한 경계에만 있으면 됩니다.
+
+| 컬렉션 | 소유자 | 비고 |
+| --- | --- | --- |
+| `brand-colors` | `features/guideline` | 발행 색 목록 읽기 서비스 하나를 열고 소비자가 자기 모양으로 좁힙니다 |
+| `guideline-documents` | `features/guideline` | `domain/reading`이 이미 MCP·Agent 공통 읽기 모델을 소유합니다 |
+| `templates` | `features/template-core` | |
+| `rules` | `features/quality-rule` | |
+| `agent-skills` | `modules/agents` | 스킬은 에이전트의 설정이지 채팅 화면의 것이 아닙니다 — 저장소를 `agent-chat`에서 옮깁니다 |
 - 일반 React 컴포넌트는 `src/components/<surface>`에 둡니다. 컴포넌트가 기능 hook이나 client service를 사용할 수 있지만, 기능 로직이 표현 컴포넌트를 import하면 안 됩니다.
 - 둘 이상의 화면 표면이 쓰는 컴포넌트만 `src/components/shared`로 승격합니다. 한 표면 안의 여러 화면이 공유하면 `<surface>/shared`에 둡니다.
 - Repository Interface 파일(`*.repository.ts`)은 구현체가 2개 이상 필요해지는 시점에 만듭니다. 단일 구현 단계에서는 Service가 구현 파일을 직접 import합니다.
@@ -485,7 +501,7 @@ export interface PublishGuidelineResponse {
 | `*.tsx` | React component 파일입니다. |
 | `use-*.ts` | React custom hook 파일입니다. JSX를 반환하면 `use-*.tsx`를 허용합니다. |
 | `*.service.ts` | Use Case service 함수 파일입니다. |
-| `*.client.ts` | Route Handler fetch, DOM, 다운로드처럼 브라우저 I/O를 소유하는 client service 파일입니다. 소유 기능의 `services` 폴더에 둡니다. |
+| `*.client.ts` | 브라우저 I/O를 소유하는 파일입니다. Route Handler·Payload REST fetch를 소유하는 client service는 소유 기능의 `services`에, 캔버스·DOM 변환·다운로드 같은 브라우저 실행 adapter는 `runtime`·`adapters`에 둡니다. 서버 코드는 이 파일을 import하지 않습니다(경계 규칙 R1). |
 | `*.repository.ts` | Service가 참조하는 repository interface 파일입니다. |
 | `*.payload.repository.ts` | Payload Local API 또는 CMS SDK 기반 repository 구현 파일입니다. |
 | `*.drizzle.repository.ts` | Drizzle ORM 기반 repository 구현 파일입니다. |

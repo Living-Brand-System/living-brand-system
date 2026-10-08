@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/modules/ai-usage/services/token-limit.service', () => ({
 	assertWithinTokenLimit: mocks.assertWithinTokenLimit,
 }))
-vi.mock('@/modules/ai-usage/repositories/ai-usage.payload.repository', () => ({
+vi.mock('@/modules/ai-usage/services/record-ai-usage.service', () => ({
 	recordAiUsage: mocks.recordAiUsage,
 }))
 

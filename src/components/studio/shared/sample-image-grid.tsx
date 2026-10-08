@@ -6,7 +6,7 @@ import { ControllerBrowser } from '@/components/shared/controller'
 import { browseEmptyMessage } from '@/components/studio/shared/browse-status'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Typography } from '@/components/ui/typography'
-import type { SampleImageOption } from '@/features/template-customization/services/list-sample-images.client'
+import type { SampleImageOption } from '@/features/template-customization/domain/sample-image-option'
 import type { LazyResource } from '@/hooks/use-lazy-resource'
 import { cn } from '@/lib/utils'
 

@@ -3,6 +3,7 @@ import { headers as getHeaders } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 import { cache } from 'react'
+import { isPayloadUser } from '@/lib/auth'
 import { loginHref } from '@/lib/routes'
 
 /**
@@ -14,12 +15,17 @@ import { loginHref } from '@/lib/routes'
  * 🔴 요청 하나 안에서는 한 번만 인증한다(`cache`) — 스튜디오는 layout과 page가 각각 부르므로
  *    감싸지 않으면 진입마다 `payload.auth()`가 두 번 돈다. 요청이 끝나면 캐시도 사라지므로
  *    세션이 요청을 넘어 재사용되지 않는다.
+ * 🔴 **`users` 문서만 사용자다.** MCP 키 컬렉션(`payload-mcp-api-keys`)이 `useAPIKey`라
+ *    `Authorization: payload-mcp-api-keys API-Key …` 헤더로 오면 `payload.auth`는 **키 문서**를
+ *    user로 돌려준다(payload-types의 `user: User | PayloadMcpApiKey`). 키는 `/api/mcp` 전용이고
+ *    그쪽은 플러그인의 `overrideAuth`가 따로 인증하므로, 여기서 버려야 라우트가 `!user` 하나로
+ *    판정해도 키 소지자가 사용자 자리로 들어오지 않는다.
  */
 export const authenticateRequest = cache(async () => {
 	const payload = await getPayload({ config })
 	const { user } = await payload.auth({ headers: await getHeaders() })
 
-	return { payload, user }
+	return { payload, user: isPayloadUser(user) ? user : null }
 })
 
 /**

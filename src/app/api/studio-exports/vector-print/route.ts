@@ -9,7 +9,6 @@ import {
 	VectorPrintMixedModeError,
 	VectorPrintTextError,
 } from '@/features/studio-export/services/export-vector-print.service'
-import { isPayloadUser } from '@/lib/auth'
 import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
 import type { VectorScene } from '@/modules/studio-artifact/studio-artifact'
 
@@ -44,7 +43,7 @@ export async function POST(request: Request) {
 		return Response.json({ message: 'Invalid origin.' }, { status: 403 })
 	}
 	const { user } = await authenticateRequest()
-	if (!isPayloadUser(user)) return Response.json({ message: 'Unauthorized.' }, { status: 401 })
+	if (!user) return Response.json({ message: 'Unauthorized.' }, { status: 401 })
 
 	const body = await request.text()
 	if (body.length > MAX_SCENE_BYTES) {

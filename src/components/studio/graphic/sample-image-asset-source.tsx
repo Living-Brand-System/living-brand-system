@@ -2,10 +2,8 @@
 
 import { Controller } from '@/components/shared/controller'
 import { SampleImageGrid } from '@/components/studio/shared/sample-image-grid'
-import {
-	fetchSampleImages,
-	type SampleImageOption,
-} from '@/features/template-customization/services/list-sample-images.client'
+import type { SampleImageOption } from '@/features/template-customization/domain/sample-image-option'
+import { fetchSampleImages } from '@/features/template-customization/services/list-sample-images.client'
 import { useLazyResource } from '@/hooks/use-lazy-resource'
 
 /** 빈 목록의 신원을 고정한다 — 렌더마다 새 배열을 만들면 useMemo가 매번 다시 돈다. */

@@ -35,6 +35,7 @@ import {
 	TemplateStudioContext,
 	type TemplateStudioValue,
 } from '@/features/template-customization/contexts/template-studio-context'
+import type { SampleImageOption } from '@/features/template-customization/domain/sample-image-option'
 import {
 	findTemplateControl,
 	isTemplateBackgroundVisible,
@@ -61,10 +62,7 @@ import {
 	type TemplateVideoArtifact,
 } from '@/features/template-customization/runtime/template-runtime.client'
 import { fetchCreateNavigation } from '@/features/template-customization/services/get-create-navigation.client'
-import {
-	fetchSampleImages,
-	type SampleImageOption,
-} from '@/features/template-customization/services/list-sample-images.client'
+import { fetchSampleImages } from '@/features/template-customization/services/list-sample-images.client'
 import {
 	pickKnownSlots,
 	readTemplateDraft,
