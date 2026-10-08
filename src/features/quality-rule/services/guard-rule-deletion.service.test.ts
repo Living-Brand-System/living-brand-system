@@ -1,13 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
+import { listGuidelineDocumentRuleReferences } from '@/features/guideline/services/list-guideline-rule-references.service'
 import {
 	getRuleKey,
-	listRuleReferenceSources,
+	listScenarioCheckKeys,
 } from '../repositories/rule-references.payload.repository'
 import { assertRuleDeletable, ruleReferenceMessage } from './guard-rule-deletion.service'
 
+vi.mock('@/features/guideline/services/list-guideline-rule-references.service', () => ({
+	listGuidelineDocumentRuleReferences: vi.fn(),
+}))
 vi.mock('../repositories/rule-references.payload.repository', () => ({
 	getRuleKey: vi.fn(),
-	listRuleReferenceSources: vi.fn(),
+	listScenarioCheckKeys: vi.fn(),
 }))
 
 describe('ruleReferenceMessage', () => {
@@ -49,10 +53,8 @@ describe('ruleReferenceMessage', () => {
 describe('assertRuleDeletable', () => {
 	it('참조 중인 Rule 삭제는 APIError로 거부한다', async () => {
 		vi.mocked(getRuleKey).mockResolvedValue('logo-size')
-		vi.mocked(listRuleReferenceSources).mockResolvedValue({
-			documents: [{ id: 1, ruleIds: [7] }],
-			scenarios: [{ id: 3, checkKeys: ['logo-size'] }],
-		})
+		vi.mocked(listGuidelineDocumentRuleReferences).mockResolvedValue([{ id: 1, ruleIds: [7] }])
+		vi.mocked(listScenarioCheckKeys).mockResolvedValue([{ id: 3, checkKeys: ['logo-size'] }])
 
 		await expect(assertRuleDeletable({} as never, 7)).rejects.toThrow(
 			'가이드라인 문서 1건, 검수 시나리오 1건이 이 규칙을 참조하고 있어 삭제할 수 없습니다.',
@@ -61,7 +63,8 @@ describe('assertRuleDeletable', () => {
 
 	it('참조가 없는 Rule은 삭제를 허용한다', async () => {
 		vi.mocked(getRuleKey).mockResolvedValue('unused')
-		vi.mocked(listRuleReferenceSources).mockResolvedValue({ documents: [], scenarios: [] })
+		vi.mocked(listGuidelineDocumentRuleReferences).mockResolvedValue([])
+		vi.mocked(listScenarioCheckKeys).mockResolvedValue([])
 
 		await expect(assertRuleDeletable({} as never, 7)).resolves.toBeUndefined()
 	})

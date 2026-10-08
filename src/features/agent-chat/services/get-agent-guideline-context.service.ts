@@ -9,7 +9,7 @@ import {
 	findGuidelineSearchPhraseCandidates,
 	findGuidelineSearchTermCandidates,
 	listGuidelineDocuments,
-} from '../repositories/agent-guideline-context.payload.repository'
+} from '@/features/guideline/services/read-agent-guideline.service'
 
 const MAX_DOCUMENT_CONTENT_LENGTH = 6000
 const SEARCH_RESULT_LIMIT = 10
