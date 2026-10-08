@@ -16,6 +16,10 @@ import { checkDisplayStatus } from '@/features/asset-check/utils/check-display-s
 import { formatCheckDetail } from '@/features/asset-check/utils/format-check-detail'
 import { findMcpChecksForUser } from '@/features/guideline/services/find-mcp-guideline.service'
 import {
+	IMAGE_BATCH_MAX,
+	IMAGE_PROMPT_MAX_LENGTH,
+} from '@/features/image-generation/domain/image-generation-limits'
+import {
 	type AgentGeneratedImagesAttachment,
 	generateImages,
 	ImageGenerationLimitError,
@@ -71,7 +75,7 @@ export function getAgentTools() {
 			description:
 				'Search published brand guideline titles, paths, descriptions, body content, and checks. Retry with shorter core terms when no useful result is returned.',
 			inputSchema: z.object({
-				query: z.string().min(1).max(120),
+				query: z.string().trim().min(1).max(120),
 			}),
 			contextSchema: guidelineToolContextSchema,
 			execute: ({ query }, { context }) => searchAgentGuidelines(context.user, { query }),
@@ -117,7 +121,7 @@ export function getAgentTools() {
 			description:
 				'Find or list published production templates and their open slots for asset creation requests or questions about what templates/assets can be made.',
 			inputSchema: z.object({
-				query: z.string().min(1).max(120).optional(),
+				query: z.string().trim().min(1).max(120).optional(),
 			}),
 			contextSchema: guidelineToolContextSchema,
 			execute: ({ query }, { context }) => findTemplatesForRequest(context.user, query),
@@ -161,9 +165,9 @@ export function getAgentTools() {
 			description:
 				'Generate NEW images from a text prompt. Call listImageProfiles first and pass the selected published profileId.',
 			inputSchema: z.object({
-				prompt: z.string().min(1).max(500),
+				prompt: z.string().trim().min(1).max(IMAGE_PROMPT_MAX_LENGTH),
 				profileId: z.number().int().positive(),
-				count: z.number().int().min(1).max(4).optional(),
+				count: z.number().int().min(1).max(IMAGE_BATCH_MAX).optional(),
 			}),
 			contextSchema: guidelineToolContextSchema,
 			execute: async ({ prompt, profileId, count }, { context }) => {
@@ -213,7 +217,7 @@ export function getAgentTools() {
 			description:
 				'Run a quality check on the latest image attached by the user in this chat. Use listCheckScenarios first when the matching scenarioKey is unknown.',
 			inputSchema: z.object({
-				scenarioKey: z.string().min(1).max(80).optional(),
+				scenarioKey: z.string().trim().min(1).max(80).optional(),
 			}),
 			contextSchema: guidelineToolContextSchema,
 			execute: async ({ scenarioKey }, { context, messages }) => {
