@@ -1,10 +1,10 @@
 import config from '@payload-config'
 import { getPayload, type Where } from 'payload'
-import type { PaletteCatalog } from '@/features/guideline/domain/contract/palette'
-import type { GuidelineSourceDocument } from '@/features/guideline/domain/reading/read-document'
-import { findPaletteCatalog } from '@/features/guideline/repositories/palette.payload.repository'
-import { needsPaletteCatalog } from '@/features/guideline/sections/model'
 import type { GuidelineDocument } from '@/payload-types'
+import type { PaletteCatalog } from '../domain/contract/palette'
+import type { GuidelineSourceDocument } from '../domain/reading/read-document'
+import { needsPaletteCatalog } from '../sections/model'
+import { findPaletteCatalog } from './palette.payload.repository'
 
 export interface AgentGuidelineListItem {
 	chapterId: number | null

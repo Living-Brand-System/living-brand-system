@@ -5,7 +5,7 @@ import {
 	findGuidelineSearchPhraseCandidates,
 	findGuidelineSearchTermCandidates,
 	listGuidelineDocuments,
-} from './agent-guideline-context.payload.repository'
+} from './agent-guideline.payload.repository'
 
 vi.mock('@payload-config', () => ({ default: {} }))
 vi.mock('payload', () => ({ getPayload: vi.fn() }))
