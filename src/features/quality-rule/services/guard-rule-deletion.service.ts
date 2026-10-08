@@ -1,20 +1,31 @@
 import { APIError, type PayloadRequest } from 'payload'
 import {
+	type GuidelineDocumentRuleReference,
+	listGuidelineDocumentRuleReferences,
+} from '@/features/guideline/services/list-guideline-rule-references.service'
+import {
 	getRuleKey,
-	listRuleReferenceSources,
-	type RuleReferenceSources,
+	listScenarioCheckKeys,
+	type ScenarioCheckKeys,
 } from '../repositories/rule-references.payload.repository'
+
+export interface RuleReferenceSources {
+	documents: GuidelineDocumentRuleReference[]
+	scenarios: ScenarioCheckKeys[]
+}
 
 /**
  * Rule 삭제 유스케이스의 참조 무결성 가드. 문서·블록·시나리오가 참조 중인 Rule의
- * 삭제를 거부한다. 참조 데이터 조회 I/O는 rule-references repository가 소유한다.
+ * 삭제를 거부한다. 문서 참조는 소유자(guideline)의 공개 서비스가, 시나리오·Rule 조회는
+ * rule-references repository가 준다.
  */
 export async function assertRuleDeletable(req: PayloadRequest, ruleId: number): Promise<void> {
-	const [key, sources] = await Promise.all([
+	const [key, documents, scenarios] = await Promise.all([
 		getRuleKey(req, ruleId),
-		listRuleReferenceSources(req),
+		listGuidelineDocumentRuleReferences(req),
+		listScenarioCheckKeys(req),
 	])
-	const message = ruleReferenceMessage(ruleId, key, sources)
+	const message = ruleReferenceMessage(ruleId, key, { documents, scenarios })
 	if (message) throw new APIError(message, 400)
 }
 

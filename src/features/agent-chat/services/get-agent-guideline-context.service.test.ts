@@ -6,14 +6,14 @@ import {
 	findGuidelineSearchPhraseCandidates,
 	findGuidelineSearchTermCandidates,
 	listGuidelineDocuments,
-} from '../repositories/agent-guideline-context.payload.repository'
+} from '@/features/guideline/services/read-agent-guideline.service'
 import {
 	listAgentGuidelineDocuments,
 	readAgentGuidelineDocument,
 	searchAgentGuidelines,
 } from './get-agent-guideline-context.service'
 
-vi.mock('../repositories/agent-guideline-context.payload.repository', () => ({
+vi.mock('@/features/guideline/services/read-agent-guideline.service', () => ({
 	findAgentGuidelineDocument: vi.fn(),
 	findGuidelineSearchPhraseCandidates: vi.fn(),
 	findGuidelineSearchTermCandidates: vi.fn(),

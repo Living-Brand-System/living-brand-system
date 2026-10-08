@@ -1,51 +1,29 @@
 import type { PayloadRequest } from 'payload'
-import { relationshipId } from '../relationship-id'
 
-export interface RuleReferenceSources {
-	documents: { id: number; ruleIds: number[] }[]
-	scenarios: { id: number; checkKeys: string[] }[]
+export interface ScenarioCheckKeys {
+	id: number
+	checkKeys: string[]
 }
 
-/** Rule 삭제 가드가 참조 여부를 판단할 문서·시나리오 데이터를 draft 포함으로 읽는다. */
-export async function listRuleReferenceSources(req: PayloadRequest): Promise<RuleReferenceSources> {
-	const readOptions = {
+/** 삭제 가드가 key로 대조할 시나리오별 Check key 목록(초안 포함). */
+export async function listScenarioCheckKeys(req: PayloadRequest): Promise<ScenarioCheckKeys[]> {
+	const { docs } = await req.payload.find({
+		collection: 'check-scenarios',
 		depth: 0,
 		draft: true,
 		limit: 0,
 		overrideAccess: !req.user,
-		pagination: false as const,
+		pagination: false,
 		req,
-		...(req.user ? { user: req.user } : {}),
-	}
-	const documents = await req.payload.find({
-		...readOptions,
-		collection: 'guideline-documents',
-		select: { sections: { rules: true }, rules: true },
-	})
-	const scenarios = await req.payload.find({
-		...readOptions,
-		collection: 'check-scenarios',
 		select: { checkKeys: true },
+		...(req.user ? { user: req.user } : {}),
 	})
-
-	return {
-		documents: documents.docs.map((document) => ({
-			id: document.id,
-			ruleIds: [
-				...(document.rules ?? []),
-				...(document.sections ?? []).flatMap((section) => section.rules ?? []),
-			].flatMap((rule) => {
-				const id = relationshipId(rule)
-				return id === null ? [] : [id]
-			}),
-		})),
-		scenarios: scenarios.docs.map((scenario) => ({
-			id: scenario.id,
-			checkKeys: Array.isArray(scenario.checkKeys)
-				? scenario.checkKeys.filter((key): key is string => typeof key === 'string')
-				: [],
-		})),
-	}
+	return docs.map((scenario) => ({
+		id: scenario.id,
+		checkKeys: Array.isArray(scenario.checkKeys)
+			? scenario.checkKeys.filter((key): key is string => typeof key === 'string')
+			: [],
+	}))
 }
 
 /** 삭제 가드가 대조할 Rule의 key를 읽는다. */

@@ -52,8 +52,6 @@ const PAYLOAD_RUNTIME =
 // 🔴 고친 항목은 지운다. 새 항목은 추가하지 않는다 — 추가해야 한다면 그 변경이 경계를 어기는 것이다.
 const ALLOWLIST: readonly string[] = [
 	'R1 collections/Rules.ts -> features/quality-rule/repositories/rule-checker.payload.repository',
-	'R1 features/agent-chat/repositories/agent-guideline-context.payload.repository.ts -> features/guideline/repositories/palette.payload.repository',
-	'R1 features/agent-chat/repositories/agent-guideline-context.payload.repository.ts -> features/guideline/sections/model',
 	'R1 features/asset-check/repositories/check-ruleset.payload.repository.ts -> features/guideline/checks/collect-guideline-check-sources',
 	'R1 features/asset-check/repositories/check-ruleset.payload.repository.ts -> features/guideline/repositories/published-guideline-checks.payload.repository',
 	'R1 features/graph-generation/graph-runtimes/infographic/definition.ts -> features/graphic-generation/graphic-runtimes/define-graphic-runtime',
@@ -81,8 +79,6 @@ const ALLOWLIST: readonly string[] = [
 	'R2 collections/Users.ts',
 	'R2 collections/revalidate.ts',
 	'R3 agent-skills <- features/agent-chat',
-	'R3 guideline-documents <- features/agent-chat',
-	'R3 guideline-documents <- features/quality-rule',
 	'R3 rules <- features/guideline',
 	'R3 templates <- features/agent-chat',
 	'R3 users <- features/template-import',
