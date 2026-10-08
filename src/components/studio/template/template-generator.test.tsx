@@ -244,11 +244,16 @@ function TemplateOutputProbe() {
 	const exporting = useTestTemplateExport()
 	return (
 		<>
-			<span data-testid="template-output-format">{exporting.format ?? 'none'}</span>
-			<span data-testid="template-output-formats">
-				{exporting.formats.join(',') || 'none'}
+			<span data-testid="template-output-format">
+				{exporting.view.format.value ?? 'none'}
 			</span>
-			<button type="button" onClick={exporting.run}>
+			<span data-testid="template-output-formats">
+				{exporting.view.format.options.join(',') || 'none'}
+			</span>
+			<button
+				type="button"
+				onClick={() => 'run' in exporting.view.save && exporting.view.save.run()}
+			>
 				export unsupported svg
 			</button>
 		</>

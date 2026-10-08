@@ -17,7 +17,7 @@ import { createImageArtifacts } from '@/features/image-generation/runtime/image-
 import { useImageExport } from '@/features/studio-export/hooks/use-image-export'
 import { useImagePanel } from './image-controls'
 import { ImageProfilePicker } from './image-profile-picker'
-import { ImageSettingPanel } from './image-setting-panel'
+import { ImageOutput } from './output/image-output'
 
 // 생성 표면: 편집 세션 소유는 ImageStudioProvider, 조작은 컨트롤러, 결과는 캔버스가 그린다.
 export function ImageGenerator({ config }: { config: ImageStudioConfig | null }) {
@@ -159,7 +159,7 @@ function ImageWorkspace({ onReset }: { onReset: (config: ImageStudioConfig) => v
 						</Typography>
 					),
 				},
-				output: <ImageSettingPanel title="Output" download={download} />,
+				output: <ImageOutput download={download} />,
 				canvas: (
 					<ImageCanvas
 						showingHistory={showingHistory}

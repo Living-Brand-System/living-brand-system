@@ -13,6 +13,7 @@ import {
 } from '@/modules/studio-controller/controller-definition'
 import type { ExportRequest, StudioOutputFormat, VideoExportSpec } from '../export-contract'
 import { exportFileName } from '../export-file-name'
+import type { StudioOutputView } from '../output-view'
 import {
 	isPrintPpi,
 	MAX_PRINT_PIXELS,
@@ -307,65 +308,105 @@ export function useTemplateExport({
 		if (candidateRequest) void output.run(candidateRequest)
 	}
 
-	return {
+	const vectorWarnings = describeVectorDiagnostics(vectorDiagnostics)
+	/** 이번 요청이 배율을 실제로 쓰는지 — 안 쓰면 Scale 행이 숨는다.
+	 *  🔑 TIFF·PDF 래스터도 배율을 쓴다. 벡터만 판 크기를 그대로 실어 배율이 들어갈 자리가 없다. */
+	const scaleApplies = !usesVector && !printSize && !digitalSize
+	/** 해상도 선택이 이번 요청에 쓰이는지. 인쇄판은 래스터(PNG·JPG·TIFF)의 px를 정하고, 벡터는 mm 그대로라
+	 *  쓰지 않는다. 디지털판은 인쇄 형식(TIFF·PDF·SVG)의 물리 크기를 정한다. */
+	const ppiApplies = printSize ? !usesVector && format !== 'mp4' : true
+	/** 인쇄판인데 판형이 너무 커서 이미지 파일로 낼 수 없는지. 벡터(SVG·PDF)로만 낼 수 있다. */
+	const printTooLarge = Boolean(printSize && printPpiOptions.length === 0)
+	/** 실제로 나올 픽셀 크기. MP4는 짝수 내림까지 거친 요청 값을 그대로 쓴다 —
+	 *  캔버스에 배율만 곱해 보여 주면 홀수 변에서 1px 어긋난 값을 안내하게 된다. */
+	const outputSize =
+		printPixels && !usesVector && format !== 'mp4'
+			? printPixels
+			: digitalSize && format !== 'mp4'
+				? digitalSize
+				: resolveOutputSize(request, metadata, effectiveScale)
+	const view: StudioOutputView = {
+		format: {
+			value: format,
+			options: formats,
+			set: (next) => {
+				if (formats.includes(next)) setSelectedFormat(next)
+			},
+		},
+		// 🔴 SVG도 포함한다 — SVG의 물리 크기(mm)도 ppi가 정한다. 빼 두면 SVG에는 행이 안 뜨는데 값은
+		//    살아 있어, 직전에 PDF를 만졌는지에 따라 같은 SVG가 53mm 또는 222mm로 나간다.
+		//    인쇄판은 PNG·JPG·TIFF의 px를 정하는 해상도라 형식과 상관없이 뜬다(ppiApplies가 벡터·MP4를 거른다).
+		print:
+			ppiApplies &&
+			effectivePpi !== null &&
+			printPpiOptions.length > 0 &&
+			(printSize || format === 'tiff' || format === 'pdf' || format === 'svg')
+				? {
+						ppi: effectivePpi,
+						/** 창작자가 고를 수 있는 해상도. 인쇄판은 브라우저가 그릴 수 있는 것만 남는다. */
+						options: printPpiOptions,
+						set: (next) => {
+							if (printPpiOptions.includes(next)) setPpi(next)
+						},
+					}
+				: null,
+		video:
+			format === 'mp4' && capability.video && effectiveFps
+				? {
+						fps: effectiveFps,
+						fpsOptions: capability.video.mp4.fps,
+						durationSeconds: effectiveDuration,
+						maxDurationSeconds: capability.video.mp4.maxDurationSeconds,
+						setFps: (next) => {
+							if (capability.video?.mp4.fps.includes(next)) setFps(next)
+						},
+						setDuration: (next) => {
+							const max = capability.video?.mp4.maxDurationSeconds
+							if (max && next > 0 && next <= max) setDurationSeconds(next)
+						},
+					}
+				: null,
+		save: {
+			canExport: Boolean(request && output.canExport(request)),
+			run: () => {
+				if (request) void output.run(request)
+			},
+		},
 		busy: output.exporting !== null,
 		error: output.error,
+		notices: [
+			...(printTooLarge
+				? ['이 판형은 너무 커서 이미지 파일로 낼 수 없어요. SVG·PDF로 저장해 주세요.']
+				: []),
+			...vectorWarnings,
+		],
+	}
+
+	return {
+		view,
 		/** 마지막 벡터 내보내기에서 옮기지 못한 것. 없으면 null이다. */
 		vectorDiagnostics,
-		vectorWarnings: describeVectorDiagnostics(vectorDiagnostics),
-		formats,
-		format,
-		setFormat: (next: StudioOutputFormat) => {
-			if (formats.includes(next)) setSelectedFormat(next)
-		},
-		ppi: effectivePpi,
-		/** 창작자가 고를 수 있는 해상도. 인쇄판은 브라우저가 그릴 수 있는 것만 남는다. */
-		ppiOptions: printPpiOptions,
-		setPpi: (next: PrintPpi) => {
-			if (printPpiOptions.includes(next)) setPpi(next)
-		},
-		fps: effectiveFps ?? null,
-		setFps: (next: VideoExportSpec['fps']) => {
-			if (capability.video?.mp4.fps.includes(next)) setFps(next)
-		},
-		durationSeconds: effectiveDuration,
-		setDuration: (next: number) => {
-			const max = capability.video?.mp4.maxDurationSeconds
-			if (max && next > 0 && next <= max) setDurationSeconds(next)
-		},
-		scale: effectiveScale,
-		scaleOptions,
-		/**
-		 * 이번 요청이 배율을 실제로 쓰는지 — 안 쓰면 사이드바가 Scale 행을 감춘다.
-		 * 🔑 TIFF·PDF 래스터도 이제 배율을 쓴다. 벡터만 판 크기를 그대로 실어 배율이 들어갈 자리가 없다.
-		 */
-		scaleApplies: !usesVector && !printSize && !digitalSize,
-		/**
-		 * 해상도 선택이 이번 요청에 쓰이는지. 인쇄판은 래스터(PNG·JPG·TIFF)의 px를 정하고, 벡터는 mm 그대로라
-		 * 쓰지 않는다. 디지털판은 인쇄 형식(TIFF·PDF·SVG)의 물리 크기를 정한다.
-		 */
-		ppiApplies: printSize ? !usesVector && format !== 'mp4' : true,
-		/** 인쇄판인데 판형이 너무 커서 이미지 파일로 낼 수 없는지. 벡터(SVG·PDF)로만 낼 수 있다. */
-		printTooLarge: Boolean(printSize && printPpiOptions.length === 0),
+		/** 배율 — 이번 요청이 배율을 쓰지 않으면 `null`(Template 고유 행). */
+		scale: scaleApplies
+			? {
+					value: effectiveScale,
+					options: scaleOptions,
+					set: (next: number) => {
+						if (scaleOptions.includes(next)) setScale(next)
+					},
+				}
+			: null,
+		ppiApplies,
+		printTooLarge,
 		/** 실제로 나갈 물리 크기(mm). 인쇄판에서만 값이 있다. */
 		sizeMm: printSize,
-		setScale: (next: number) => {
-			if (scaleOptions.includes(next)) setScale(next)
-		},
-		/**
-		 * 실제로 나올 픽셀 크기. MP4는 짝수 내림까지 거친 요청 값을 그대로 쓴다 —
-		 * 캔버스에 배율만 곱해 보여 주면 홀수 변에서 1px 어긋난 값을 안내하게 된다.
-		 */
-		outputSize:
-			printPixels && !usesVector && format !== 'mp4'
-				? printPixels
-				: digitalSize && format !== 'mp4'
-					? digitalSize
-					: resolveOutputSize(request, metadata, effectiveScale),
-		canExport: Boolean(request && output.canExport(request)),
-		run: () => {
-			if (request) void output.run(request)
-		},
+		outputSize,
+		/** 화면이 안내할 크기 — 인쇄판은 mm, 그 밖은 실제로 나올 px. */
+		sizeReadout: printSize
+			? { ...printSize, unit: 'mm' as const }
+			: outputSize
+				? { ...outputSize, unit: 'px' as const }
+				: null,
 		canExportFormat: (candidate: StudioOutputFormat) => {
 			const candidateRequest = createRequest(candidate)
 			return Boolean(candidateRequest && output.canExport(candidateRequest))

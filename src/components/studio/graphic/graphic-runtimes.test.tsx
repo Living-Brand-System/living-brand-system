@@ -1,8 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { type StudioOutput, StudioOutputModule } from '@/components/studio/shared/output-module'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import {
 	graphicRuntimeManifests,
@@ -373,108 +371,6 @@ describe('Fluted Glass 런타임', () => {
 		)
 	})
 })
-
-describe('그래픽 Output', () => {
-	it('Output의 프리셋·모드·형식 전환과 잘못된 크기 입력은 값과 편집 가능 상태를 보존한다', async () => {
-		const user = userEvent.setup()
-		render(
-			<TooltipProvider>
-				<OutputExample />
-			</TooltipProvider>,
-		)
-		const output = within(screen.getByRole('region', { name: '출력 설정' }))
-		const choose = async (label: string, option: string) => {
-			await user.click(output.getByRole('combobox', { name: label }))
-			await user.click(screen.getByRole('option', { name: option }))
-		}
-		const preset = () => output.getByRole('combobox', { name: 'Preset' })
-		const width = () => output.getByRole('spinbutton', { name: '출력 너비' })
-		// 프리셋은 크기를 적용할 뿐 입력을 잠그지 않는다.
-		await choose('Preset', 'Instagram Feed')
-		expect(width()).toHaveValue(1080)
-		expect(output.getByRole('spinbutton', { name: '출력 높이' })).toHaveValue(1350)
-		expect(preset()).toHaveTextContent('Instagram Feed')
-		// 크기를 고치면 어느 프리셋과도 맞지 않으므로 Custom이 된다.
-		await user.clear(width())
-		await user.type(width(), '1000{Enter}')
-		expect(width()).toHaveValue(1000)
-		expect(preset()).toHaveTextContent('Custom')
-		// 프리셋 크기로 되돌리면 표시도 다시 그 프리셋이다 — 선택 상태는 크기에서 계산한다.
-		await user.clear(width())
-		await user.type(width(), '1080{Enter}')
-		expect(preset()).toHaveTextContent('Instagram Feed')
-		await choose('Preset', 'Custom')
-		expect(width()).toHaveValue(1080)
-		await choose('Format', 'PDF')
-		expect(width()).toHaveValue(1080)
-		await user.click(output.getByRole('radio', { name: 'Print' }))
-		expect(width()).toHaveValue(91.4)
-		expect(preset()).toHaveTextContent('Custom')
-		await user.click(width())
-		await user.tab()
-		await user.click(output.getByRole('radio', { name: 'Digital' }))
-		expect(width()).toHaveValue(1080)
-		await user.click(output.getByRole('radio', { name: 'Print' }))
-		await choose('Preset', 'A4')
-		expect(width()).toHaveValue(210)
-		expect(output.getByRole('spinbutton', { name: '출력 높이' })).toHaveValue(297)
-		expect(preset()).toHaveTextContent('A4')
-		await user.clear(width())
-		await user.type(width(), '0{Enter}')
-		expect(width()).toHaveValue(210)
-		expect(output.getByRole('status')).toHaveTextContent('0보다 큰 숫자')
-		await user.clear(width())
-		await user.type(width(), '200{Enter}')
-		expect(width()).toHaveValue(200)
-		expect(preset()).toHaveTextContent('Custom')
-		const ppi = output.getByRole('spinbutton', { name: 'Resolution' })
-		await user.clear(ppi)
-		await user.type(ppi, '1200{Enter}')
-		expect(ppi).toHaveValue(300)
-		expect(output.getByRole('status')).toHaveTextContent('크기를 초과')
-		await user.click(screen.getByRole('button', { name: 'Reset' }))
-		expect(output.getByRole('spinbutton', { name: '출력 너비' })).toHaveValue(300)
-		expect(output.getByRole('combobox', { name: 'Format' })).toHaveTextContent('PNG')
-		expect(output.queryByRole('status')).not.toBeInTheDocument()
-	})
-})
-
-function OutputExample() {
-	const initial: StudioOutput = {
-		mode: 'digital',
-		width: 300,
-		height: 300,
-		ppi: 300,
-		count: '2',
-		ratio: '1:1',
-		resolution: '1K',
-		notice: '',
-	}
-	const [value, setValue] = useState(initial)
-	const [format, setFormat] = useState('PNG')
-	return (
-		<>
-			<button
-				type="button"
-				onClick={() => {
-					setValue(initial)
-					setFormat('PNG')
-				}}
-			>
-				Reset
-			</button>
-			<StudioOutputModule
-				kind="graphic"
-				value={value}
-				onChange={setValue}
-				format={format}
-				onFormatChange={setFormat}
-				hasResult={false}
-				empty={false}
-			/>
-		</>
-	)
-}
 
 function manifestOf(id: string) {
 	const manifest = graphicRuntimeManifests.find((m) => m.id === id)

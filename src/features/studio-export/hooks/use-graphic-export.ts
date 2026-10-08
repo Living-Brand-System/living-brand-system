@@ -7,6 +7,7 @@ import { getGraphicStudioVectorArtifact } from '@/features/graphic-generation/ru
 import type { ControllerValues } from '@/modules/studio-controller/controller-definition'
 import type { ExportRequest, StudioOutputFormat, VideoExportSpec } from '../export-contract'
 import { exportFileName } from '../export-file-name'
+import type { StudioOutputView } from '../output-view'
 import {
 	fitsPrintOutput,
 	PRINT_PPI_VALUES,
@@ -91,7 +92,7 @@ export function useGraphicExport({
 		)
 		// 🔴 하나도 안 남으면 **빈 목록을 그대로 돌려준다.** 원래 목록으로 되돌리면 못 만드는 값이
 		//    다시 떠서 목록이 거짓말을 한다 — 화면은 「고를 수 있다」고 하고 실제로는 거부된다.
-		//    비었을 때 무엇을 보여줄지는 `SizingControls`가 정한다.
+		//    비었을 때 무엇을 보여줄지는 그래픽 크기 편집기가 정한다.
 		return narrowed
 	}, [basePpiOptions, draft, ppi])
 
@@ -218,22 +219,43 @@ export function useGraphicExport({
 	})
 	const request = createGraphicExportRequest(config, draft, ppi)
 
-	return {
-		output: {
-			draft,
+	const view: StudioOutputView = {
+		format: {
+			value: draft?.format ?? null,
+			options: config.output.formats,
+			set: setFormat,
+		},
+		// 🔑 그래픽은 해상도를 쓸지가 화면의 모드(Print/Digital)에 달려 있어 훅이 정할 수 없다 — 인쇄 계약이
+		//    있으면 내주고, 보일지는 크기 편집기가 모드로 정한다.
+		print: config.output.print ? { ppi, options: ppiOptions, set: changePpi } : null,
+		video:
+			draft?.format === 'mp4' && config.output.video
+				? {
+						fps: draft.fps,
+						fpsOptions: config.output.video.mp4.fps,
+						durationSeconds: draft.durationSeconds,
+						maxDurationSeconds: config.output.video.mp4.maxDurationSeconds,
+						setFps,
+						setDuration,
+					}
+				: null,
+		save: {
 			canExport: Boolean(request && graphicExport.canExport(request)),
-			busy: graphicExport.exporting !== null,
-			error: graphicExport.error,
-			setFormat,
-			setSize,
-			setFps,
-			setDuration,
-			ppi,
-			ppiOptions,
-			setPpi: changePpi,
 			run: () => {
 				if (request) void graphicExport.run(request)
 			},
+		},
+		busy: graphicExport.exporting !== null,
+		error: graphicExport.error,
+		notices: [],
+	}
+
+	return {
+		output: {
+			view,
+			/** 지금 출력 초안 — 캔버스가 판 비율을 맞추고, 크기 편집기가 W/H를 그린다. */
+			draft,
+			setSize,
 		},
 	}
 }

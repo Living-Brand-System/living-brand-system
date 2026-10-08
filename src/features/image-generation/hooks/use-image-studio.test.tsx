@@ -235,6 +235,8 @@ function Probe() {
 		selected: results.selected,
 		size: { width: 832, height: 1248 },
 	})
+	// Image 저장은 선택·전체로 갈린다.
+	const save = 'all' in download.view.save ? download.view.save : null
 	return (
 		<div>
 			<output data-testid="browse">{`browse:${profiles.browse.status}`}</output>
@@ -255,10 +257,12 @@ function Probe() {
 			<output data-testid="result-color">
 				{results.color ? results.color.line : '결과 색 없음'}
 			</output>
-			<output data-testid="download-format">{download.format ?? '형식 없음'}</output>
+			<output data-testid="download-format">
+				{download.view.format.value ?? '형식 없음'}
+			</output>
 			<output data-testid="download-actions">
-				{download.selected.canExport ? 'selected:on' : 'selected:off'} /{' '}
-				{download.all.canExport ? 'all:on' : 'all:off'} /{' '}
+				{save?.selected.canExport ? 'selected:on' : 'selected:off'} /{' '}
+				{save?.all.canExport ? 'all:on' : 'all:off'} /{' '}
 				{download.original.selected.canExport
 					? 'original-selected:on'
 					: 'original-selected:off'}
@@ -283,13 +287,13 @@ function Probe() {
 			<button type="button" onClick={() => profiles.select(7)}>
 				교체
 			</button>
-			<button type="button" onClick={download.selected.run}>
+			<button type="button" onClick={() => save?.selected.run()}>
 				결과 저장
 			</button>
 			<button type="button" onClick={download.original.selected.run}>
 				원본 저장
 			</button>
-			<button type="button" onClick={() => download.setFormat('jpeg')}>
+			<button type="button" onClick={() => download.view.format.set('jpeg')}>
 				JPEG 선택
 			</button>
 		</div>

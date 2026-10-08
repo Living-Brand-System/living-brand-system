@@ -3,8 +3,15 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { ImageArtifacts } from '@/features/image-generation/runtime/image-artifact.client'
 import { exportResultsToZip } from '../adapters/export-results-to-zip.client'
+import type { StudioOutputView } from '../output-view'
 import { executeArtifactExport } from '../services/export-artifact.client'
 import { useImageExport } from './use-image-export'
+
+/** 전체 저장을 실행한다 — Image는 선택·전체로 갈린다. */
+function runAll(save: StudioOutputView['save']) {
+	if (!('all' in save)) throw new Error('Image 저장은 선택·전체여야 한다')
+	save.all.run()
+}
 
 vi.mock('../adapters/download-export-result.client', () => ({
 	downloadExportResult: vi.fn(),
@@ -40,7 +47,7 @@ describe('useImageExport', () => {
 			}),
 		)
 
-		act(() => result.current.all.run())
+		act(() => runAll(result.current.view.save))
 		await waitFor(() => expect(exportResultsToZip).toHaveBeenCalledOnce())
 
 		expect(executeArtifactExport).toHaveBeenCalledTimes(2)
@@ -76,7 +83,7 @@ describe('useImageExport', () => {
 			}),
 		)
 
-		act(() => result.current.all.run())
+		act(() => runAll(result.current.view.save))
 		await waitFor(() => expect(exportResultsToZip).toHaveBeenCalledOnce())
 
 		expect(executeArtifactExport).toHaveBeenCalledTimes(2)

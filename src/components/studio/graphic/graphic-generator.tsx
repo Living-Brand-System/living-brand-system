@@ -14,8 +14,8 @@ import { GraphicStudioProvider } from '@/features/graphic-generation/providers/g
 import type { GraphicRuntime } from '@/features/graphic-generation/runtime/client/graphic-runtime.client'
 import { useGraphicExport } from '@/features/studio-export/hooks/use-graphic-export'
 import { buildGraphicPanelComposition } from './graphic-editing-controls'
-import { GraphicOutput } from './graphic-output'
 import { GraphicProfilePicker } from './graphic-profile-picker'
+import { GraphicOutput } from './output/graphic-output'
 
 type GraphicGeneratorProps = {
 	config: GraphicStudioConfig
