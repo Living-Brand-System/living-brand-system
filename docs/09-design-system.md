@@ -281,6 +281,7 @@ look은 언젠가 전부 바뀝니다. 그러므로 **겉모습이 어설픈 것
 | 선택 컨트롤(토글·세그먼트) | `components/ui/toggle.tsx` (`toggle-group`이 공유) |
 | on/off 스위치 | `components/ui/switch.tsx` |
 | 패널 카드·알약 칩(어드민 대시보드) | `components/shared/panel-card.tsx` — Payload 어드민의 root가 13px이라 rem 유틸리티가 프런트(16px)와 다르게 그려지므로 수치를 px로 고정한 예외 |
+| 설정형 페이지 카드(계정·로그인·토큰 한도·MCP 키·AI 사용량) | `components/shared/page-card.tsx` — 컨트롤러 표면(`ControllerRoot`) 위에 제목 머리(`h1`/`h2`·장식·오른쪽 동작)와 본문 간격을 얹는다 |
 | 페이지 히어로 배너(shader 배경 + 락업) | `components/shared/page-hero.tsx` |
 | 표본 면(테마 면·브랜드 면) | `features/guideline/cards/displays/dynamics/surface.ts` |
 | 수치·캡션 줄 | `features/guideline/cards/displays/dynamics/readout.ts` |
