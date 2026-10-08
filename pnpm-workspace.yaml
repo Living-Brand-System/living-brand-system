@@ -15,4 +15,5 @@ minimumReleaseAgeExclude:
 trustPolicy: no-downgrade
 trustPolicyExclude:
   - semver@6.3.1
+  - pino@9.14.0
 blockExoticSubdeps: true
