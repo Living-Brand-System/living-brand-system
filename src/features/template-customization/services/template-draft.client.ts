@@ -25,7 +25,8 @@ export const TEMPLATE_DRAFT_TTL_MS = 24 * 60 * 60 * 1000
 export type TemplateDraft = {
 	text: Record<string, string>
 	textColor: string | null
-	vectorColors: Record<string, string | undefined>
+	/** CI 레이어마다 고른 색 버전(CI_VARIANTS 값). */
+	ciVariants: Record<string, string | undefined>
 	visibility: Record<string, boolean>
 	images: Record<string, TemplateImageSlotState>
 	background: TemplateBackgroundState

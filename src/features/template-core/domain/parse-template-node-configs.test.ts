@@ -76,15 +76,12 @@ describe('parseTemplateNodeConfigs imageColorize', () => {
 	})
 })
 
-describe('parseTemplateNodeConfigs vectorColor', () => {
-	it('6자리 hex를 허용한다', () => {
-		const parsed = parseTemplateNodeConfigs({ 'vector-1': { vectorColor: '#8FD6B8' } })
-
-		expect('blocker' in parsed).toBe(false)
-	})
-
-	it.each(['8fd6b8', '#abc', '#8fd6b8ff', 'url(x)'])('%s은 거부한다', (vectorColor) => {
-		const parsed = parseTemplateNodeConfigs({ 'vector-1': { vectorColor } })
+describe('parseTemplateNodeConfigs CI', () => {
+	it.each([
+		'vectorColor',
+		'vectorFit',
+	])('mask 시절 키(%s)는 거부한다 — CI 색은 칠된 로고 파일(vectorAsset)로만 바꾼다', (key) => {
+		const parsed = parseTemplateNodeConfigs({ 'vector-1': { [key]: '#8FD6B8' } })
 
 		expect('blocker' in parsed).toBe(true)
 	})

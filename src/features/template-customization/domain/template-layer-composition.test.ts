@@ -19,11 +19,17 @@ const template = {
 	kind: 'html',
 	id: 1,
 	name: '레이어',
-	html: '<div data-node-id="root" data-figma-type="FRAME"><p data-node-id="t1">제목</p><p data-node-id="t2">연도</p><img data-node-id="v1" data-figma-type="VECTOR" data-name="Logo" src="/logo.svg"></div>',
+	html: '<div data-node-id="root" data-figma-type="FRAME"><p data-node-id="t1">제목</p><p data-node-id="t2">연도</p><img data-node-id="v1" data-figma-type="VECTOR" data-name="Logo" data-asset-collection="brand-logos" data-asset-id="15" src="/mono.svg"></div>',
 	nodeConfigs: {
 		t1: { ...editable, input: { label: '제목' } },
 		t2: { ...editable, input: { label: '연도' } },
-		v1: { ...editable, vectorColor: '#112233' },
+		v1: editable,
+	},
+	ciVariants: {
+		v1: [
+			{ variant: 'default', id: 14, src: '/default.svg' },
+			{ variant: 'mono-black', id: 15, src: '/mono.svg' },
+		],
 	},
 	width: 100,
 	height: 100,
@@ -58,11 +64,19 @@ describe('템플릿 텍스트·심볼 컴포지션', () => {
 		])
 	})
 
-	it('심볼은 슬롯마다의 브랜드 색을 위 고정 카드에 세우고 Basic은 비운다(Figma 529:25611)', () => {
+	it('CI는 슬롯마다 그 로고가 가진 색 버전만 골라 위 고정 카드에 세우고 Basic은 비운다', () => {
 		const symbol = deriveTemplateSymbolComposition(config)
-		if (!symbol) throw new Error('심볼 컴포지션이 없습니다.')
+		if (!symbol) throw new Error('CI 컴포지션이 없습니다.')
 		const slots = arrangeStudioPanel(symbol, policy, {})
-		expect(shape(slots.fixed)).toEqual([{ cluster: 'swatches' }])
+		expect(shape(slots.fixed)).toEqual([{ group: 'symbol-color', rows: 1, clusters: [] }])
 		expect(slots.basic).toEqual([])
+		expect(symbol.groups[0].controls[0]).toMatchObject({
+			kind: 'select',
+			defaultValue: 'mono-black',
+			options: [
+				{ value: 'default', label: '기본형' },
+				{ value: 'mono-black', label: '단색(블랙)' },
+			],
+		})
 	})
 })

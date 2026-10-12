@@ -5,7 +5,7 @@ import {
 	storeDraftImportedApplicationImage,
 } from '@/features/application-image/repositories/imported-application-image.payload.repository'
 import { findFigmaToken } from '@/features/auth/services/user-settings.service'
-import { findPublishedBrandLogos } from '@/features/template-import/repositories/brand-logo.payload.repository'
+import { listPublishedBrandLogos } from '@/features/template-core/services/published-brand-logos.service'
 import {
 	downloadFigmaImage,
 	findFigmaImageFillUrls,
@@ -89,7 +89,7 @@ export async function importFigmaHtml(
 
 	const node = await findFigmaNodeTree(token, source.fileKey, source.nodeId)
 	const plan = planFigmaAssets(node)
-	const logos = await recognizeBrandLogos(token, source.fileKey, node, payload)
+	const logos = await recognizeBrandLogos(token, source.fileKey, node)
 	// 로고로 바뀐 서브트리의 조각은 굽지 않는다 — 저장해도 아무도 참조하지 않는 draft가 된다.
 	const keep = ({ nodeId }: { nodeId: string }) => !logos.replacedIds.has(nodeId)
 	const diagnostics = plan.diagnostics.filter(keep)
@@ -123,7 +123,6 @@ async function recognizeBrandLogos(
 	token: string,
 	fileKey: string,
 	root: FigmaSourceNode,
-	payload: Payload,
 ): Promise<{
 	renders: Record<string, FigmaRenderedAsset>
 	replacedIds: Set<string>
@@ -134,7 +133,7 @@ async function recognizeBrandLogos(
 		replacedIds: new Set<string>(),
 		diagnostics: [] as FigmaLogoDiagnostic[],
 	}
-	const logos = await findPublishedBrandLogos(payload)
+	const logos = await listPublishedBrandLogos()
 	const candidates = findFigmaLogoCandidates(root, (aspect) =>
 		logos.some((logo) => isLogoAspectClose(logo.width / logo.height, aspect)),
 	)

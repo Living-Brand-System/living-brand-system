@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { CI_VARIANTS } from '@/features/template-core/domain/ci-variants'
 import { templateAssetReferenceGuardHooks } from '@/features/template-core/services/guard-template-references.service'
 import { isManager, managerOrAdmin } from '@/lib/auth'
 import { draftVersions } from './shared'
@@ -24,7 +25,7 @@ export const BrandLogos: CollectionConfig = {
 	admin: {
 		group: '브랜드 자원',
 		useAsTitle: 'name',
-		defaultColumns: ['filename', 'name', 'alt', 'updatedAt'],
+		defaultColumns: ['filename', 'name', 'ciShape', 'ciVariant', 'updatedAt'],
 	},
 	versions: draftVersions,
 	fields: [
@@ -39,6 +40,21 @@ export const BrandLogos: CollectionConfig = {
 			type: 'text',
 			required: true,
 			localized: true,
+		},
+		// 템플릿 CI 레이어의 색 바꾸기 — 같은 모양끼리 색 버전을 묶는다. 둘 다 비면 CI 선택지에 안 나온다.
+		{
+			name: 'ciShape',
+			label: 'CI 모양',
+			type: 'text',
+			admin: {
+				description: '같은 로고의 색 버전끼리 같은 값을 적습니다(예: hd-horizontal).',
+			},
+		},
+		{
+			name: 'ciVariant',
+			label: 'CI 색상',
+			type: 'select',
+			options: CI_VARIANTS.map(({ value, label }) => ({ value, label })),
 		},
 	],
 	upload: {

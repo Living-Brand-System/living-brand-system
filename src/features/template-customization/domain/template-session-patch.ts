@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { CI_VARIANT_VALUES } from '@/features/template-core/domain/ci-variants'
 
 /**
  * 챗이 만들어 스튜디오 세션에 얹는 편집 패치 — 「자연어 한 번으로 템플릿을 채운다」의 계약이다.
@@ -48,8 +49,8 @@ export const templateSessionPatchSchema = z.object({
 	text: z.record(z.string(), z.string().max(2000)).optional(),
 	/** 텍스트 전역 색. `null`은 저작 색으로 되돌린다. */
 	textColor: z.string().nullable().optional(),
-	/** 벡터(로고) 슬롯의 색. */
-	vectorColor: z.record(z.string(), z.string()).optional(),
+	/** CI(로고) 슬롯의 색 버전. */
+	ciVariant: z.record(z.string(), z.enum(CI_VARIANT_VALUES)).optional(),
 	/** 레이어 표시 여부. 키는 슬롯 id이고 배경은 `background`다. 모르는 슬롯은 세션이 거부한다. */
 	visibility: z.record(z.string(), z.boolean()).optional(),
 	images: z.record(z.string(), templateImageSlotPatchSchema).optional(),

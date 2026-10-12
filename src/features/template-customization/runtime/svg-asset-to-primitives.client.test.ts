@@ -89,20 +89,19 @@ describe('svgAssetToPrimitives — 컴파운드 패스', () => {
 		expect(primitives).toHaveLength(2)
 	})
 
-	it('마스크로 얹힌 자산은 tint 하나로 칠해지므로 전부 한 패스가 된다', async () => {
+	it('Illustrator가 <style> class로 정한 색을 패스에 칠한다 — 화면과 같은 색이 PDF에 실린다', async () => {
 		serveSvg(
-			'<svg width="10" height="10" viewBox="0 0 10 10">' +
-				'<path d="M0 0H1V1H0Z" fill="black"/>' +
-				'<path d="M2 0H3V1H2Z" fill="red"/>' +
+			'<svg viewBox="0 0 10 10"><defs><style>.cls-1 {\n fill: #73d75a;\n}\n.cls-2, .cls-3 { fill: #003087; }</style></defs>' +
+				'<path class="cls-1" d="M0 0H1V1H0Z"/>' +
+				'<g class="cls-2"><path d="M2 0H3V1H2Z"/></g>' +
+				'<path class="cls-3" fill="#ffffff" d="M4 0H5V1H4Z"/>' +
 				'</svg>',
 		)
 
-		const primitives = await svgAssetToPrimitives(url(), BOX, {
-			fit: 'contain',
-			tint: '#00ff00',
-		})
+		const primitives = await svgAssetToPrimitives(url(), BOX, { fit: 'contain' })
 
-		expect(primitives).toHaveLength(1)
-		expect(primitives?.[0]).toMatchObject({ d: 'M0 0H1V1H0Z M2 0H3V1H2Z' })
+		expect(
+			primitives?.map((primitive) => (primitive.kind === 'path' ? primitive.fill : null)),
+		).toEqual(['#73d75a', '#003087', '#ffffff'])
 	})
 })

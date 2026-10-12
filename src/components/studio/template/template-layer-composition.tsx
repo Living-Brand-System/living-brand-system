@@ -62,7 +62,7 @@ export function buildTemplateLayerPanel(
 						(slot) =>
 							[
 								templateSymbolColorId(slot.id),
-								vectors.colors[slot.id] ?? null,
+								vectors.variants[slot.id] ?? null,
 							] as const,
 					),
 				)
@@ -72,7 +72,7 @@ export function buildTemplateLayerPanel(
 		const textSlot = textSlots.find((slot) => slot.controlId === id)
 		if (textSlot && typeof next === 'string') return text.setValue(textSlot.id, next)
 		const symbol = vectorSlots.find((slot) => templateSymbolColorId(slot.id) === id)
-		if (symbol && typeof next === 'string') vectors.setColor(symbol.id, next)
+		if (symbol && typeof next === 'string') vectors.setVariant(symbol.id, next)
 	}
 	const textSection: TemplateFocusTarget = {
 		sectionId: TEMPLATE_TEXT_SECTION_ID,

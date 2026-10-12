@@ -210,18 +210,15 @@ describe('Template 공통 Creator 레이어 정책', () => {
 		).toEqual([])
 		expect(
 			collectTemplateVectorSlots(html, {
-				'3:1': {
-					creator: { access: 'editable' },
-					vectorColor: '#112233',
-				},
+				'3:1': { creator: { access: 'editable' } },
 			}),
-		).toEqual([
-			{
-				nodeId: '3:1',
-				name: 'Vector',
-				color: '#112233',
-				policy: { access: 'editable' },
-			},
-		])
+		).toEqual([{ nodeId: '3:1', name: 'Vector', policy: { access: 'editable' } }])
+		// 브랜드 로고가 끼워진 벡터는 그 로고 id를 싣는다 — CI 색 버전을 찾는 열쇠다.
+		expect(
+			collectTemplateVectorSlots(
+				'<img data-node-id="4:1" data-figma-type="VECTOR" data-name="Logo" data-asset-collection="brand-logos" data-asset-id="35" src="/api/brand-logos/file/a.svg">',
+				{ '4:1': { creator: { access: 'editable' } } },
+			),
+		).toEqual([{ nodeId: '4:1', name: 'Logo', logoId: 35, policy: { access: 'editable' } }])
 	})
 })

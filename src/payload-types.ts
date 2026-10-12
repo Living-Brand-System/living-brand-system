@@ -626,6 +626,11 @@ export interface BrandLogo {
   id: number;
   name: string;
   alt: string;
+  /**
+   * 같은 로고의 색 버전끼리 같은 값을 적습니다(예: hd-horizontal).
+   */
+  ciShape?: string | null;
+  ciVariant?: ('default' | 'wordmark' | 'mono-black' | 'mono-white') | null;
   prefix?: string | null;
   _objectKey?: string | null;
   updatedAt: string;
@@ -2344,6 +2349,8 @@ export interface GuidelineDocumentsSelect<T extends boolean = true> {
 export interface BrandLogosSelect<T extends boolean = true> {
   name?: T;
   alt?: T;
+  ciShape?: T;
+  ciVariant?: T;
   prefix?: T;
   _objectKey?: T;
   updatedAt?: T;

@@ -24,6 +24,11 @@ import {
 	type StudioOutputCapability,
 } from '@/features/studio-export/studio-output'
 import {
+	CI_VARIANT_VALUES,
+	type CiVariant,
+	type CiVariantOption,
+} from '@/features/template-core/domain/ci-variants'
+import {
 	collectTemplateImageSlots,
 	collectTemplateSlots,
 	collectTemplateVectorSlots,
@@ -99,7 +104,10 @@ export type TemplateImageConfigSlot = TemplateEditableSlotBase & {
 
 export type TemplateVectorSlot = TemplateEditableSlotBase & {
 	kind: 'vector'
-	color?: string
+	/** 고를 수 있는 CI 색 버전(CI_VARIANTS 순서). 브랜드 로고가 아닌 벡터면 빈 배열이다. */
+	variants: readonly CiVariantOption[]
+	/** 발행본에 끼워진 색 버전 — 세션이 아무것도 고르지 않았을 때의 값이다. */
+	variant?: CiVariant
 }
 
 export type TemplateBackgroundSlot = TemplateSlotBindingBase & {
@@ -141,7 +149,6 @@ export type PublishedTemplateNodeConfig = {
 	imageInput?: TemplateNodeConfig['imageInput']
 	imageColorize?: TemplateNodeConfig['imageColorize']
 	creator?: TemplateNodeConfig['creator']
-	vectorColor?: TemplateNodeConfig['vectorColor']
 }
 
 /** Published Template을 Template Studio Config와 세션이 소비하는 read model로 투영한 계약. */
@@ -151,6 +158,8 @@ export type PublishedHtmlTemplate = {
 	name: string
 	html: string
 	nodeConfigs: Record<string, PublishedTemplateNodeConfig>
+	/** CI 레이어(nodeId)마다 바꿔 낄 수 있는 로고 색 버전. 서버가 「로고」의 CI 모양·색상으로 푼다. */
+	ciVariants?: Record<string, readonly CiVariantOption[]>
 	width: number
 	height: number
 	/** 인쇄 판형(mm) — 인쇄판의 정본. 없으면 디지털판이라 물리 크기가 없다. */
@@ -306,8 +315,29 @@ export function parseTemplateStudioConfig(input: unknown): TemplateStudioConfig 
 				break
 			}
 			case 'vector':
-				assertTemplateKeys(slot, ['id', 'layer', 'label', 'kind', 'access', 'color'])
-				if (slot.color !== undefined) assertTemplateString(slot.color, 'slot.color')
+				assertTemplateKeys(slot, [
+					'id',
+					'layer',
+					'label',
+					'kind',
+					'access',
+					'variants',
+					'variant',
+				])
+				if (!Array.isArray(slot.variants))
+					throw new Error('Template CI variants가 올바르지 않습니다.')
+				for (const option of slot.variants) {
+					const typed = templateRecord(option, 'Template CI variant')
+					assertTemplateKeys(typed, ['variant', 'id', 'src'])
+					if (!CI_VARIANT_VALUES.includes(typed.variant as CiVariant))
+						throw new Error('Template CI variant가 올바르지 않습니다.')
+					assertTemplateString(typed.src, 'variant.src')
+				}
+				if (
+					slot.variant !== undefined &&
+					!CI_VARIANT_VALUES.includes(slot.variant as CiVariant)
+				)
+					throw new Error('Template CI variant가 올바르지 않습니다.')
 				break
 			case 'background':
 				assertTemplateKeys(slot, [
@@ -826,16 +856,19 @@ export function deriveTemplateStudioConfig(
 				transform: { enabled: slot.transformEnabled, limits: IMAGE_EDIT_TRANSFORM_LIMITS },
 			}),
 		),
-		...vectorSlots.map(
-			(slot): TemplateVectorSlot => ({
+		...vectorSlots.map((slot): TemplateVectorSlot => {
+			const variants = template.ciVariants?.[slot.nodeId] ?? []
+			const variant = variants.find((option) => option.id === slot.logoId)?.variant
+			return {
 				id: slot.nodeId,
 				layer: slot.name,
 				label: slot.name,
 				kind: 'vector',
 				access: slot.policy.access,
-				...(slot.color ? { color: slot.color } : {}),
-			}),
-		),
+				variants,
+				...(variant ? { variant } : {}),
+			}
+		}),
 		{
 			id: TEMPLATE_BACKGROUND_SLOT_ID,
 			layer: 'background',

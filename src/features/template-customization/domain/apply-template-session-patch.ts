@@ -40,8 +40,8 @@ export function applyTemplateSessionPatch(
 	}
 	if (patch.textColor !== undefined) session.text.setColor(patch.textColor)
 
-	for (const [slotId, color] of Object.entries(patch.vectorColor ?? {})) {
-		session.vectors.setColor(slotId, color)
+	for (const [slotId, variant] of Object.entries(patch.ciVariant ?? {})) {
+		session.vectors.setVariant(slotId, variant)
 	}
 	for (const [slotId, visible] of Object.entries(patch.visibility ?? {})) {
 		session.layers.setVisible(slotId, visible)

@@ -5,16 +5,12 @@ import type { VectorPrimitive } from '@/modules/studio-artifact/studio-artifact'
 /**
  * 템플릿에 얹힌 SVG 자산(로고·심볼)을 **진짜 도형으로** 펼친다.
  *
- * 🔑 이것이 인쇄용 벡터의 핵심이다. 그대로 두면 로고는 `<image>` 한 장이거나(png로 구워지거나)
- *    CSS 마스크라 판정 불가한 사각형이 된다 — 어느 쪽이든 인쇄물에서 로고가 벡터가 아니게 된다.
- * 🔑 마스크로 얹힌 로고는 원본 색이 **의미가 없다.** 마스크는 모양만 쓰고 색은 `backgroundColor`가
- *    정하기 때문이다. 그래서 `tint`가 있으면 자산의 fill을 전부 무시한다.
+ * 🔑 이것이 인쇄용 벡터의 핵심이다. 그대로 두면 로고는 `<image>` 한 장이거나(png로 구워지면)
+ *    인쇄물에서 로고가 벡터가 아니게 된다. 색은 파일의 패스에 칠해진 그대로 싣는다.
  * 🔴 같은 출처만 받는다. 외부 URL은 export stage 계약이 이미 막고 있고, 여기서 다시 열지 않는다.
  */
 export type SvgAssetOptions = {
-	/** 마스크로 얹힌 자산의 단일 색. 있으면 자산 자신의 fill을 무시한다. */
-	tint?: string
-	/** CSS `mask-size`/`object-fit` 대응. `contain`은 비율을 지키고 `fill`은 상자를 채운다. */
+	/** CSS `object-fit` 대응. `contain`은 비율을 지키고 `fill`은 상자를 채운다. */
 	fit: 'contain' | 'fill'
 	opacity?: number
 	label?: string
@@ -32,10 +28,44 @@ const cache = new Map<string, Promise<Document | null>>()
 export function usesStyleSheetFill(document_: Document): boolean {
 	const root = document_.querySelector('svg')
 	if (!root) return false
-	return (
-		root.querySelector('style') !== null ||
-		[...root.querySelectorAll('[class]')].some((el) => !el.getAttribute('fill'))
+	const classFills = readClassFills(root)
+	return [...root.querySelectorAll('[class]')].some(
+		(el) => !el.getAttribute('fill') && !classFillOf(el, classFills),
 	)
+}
+
+/**
+ * `<style>`의 `.이름 { fill: 색 }` 규칙만 읽는다 — Illustrator가 내보내는 SVG가 색을 이렇게 싣는다
+ * (등록 로고의 기본형·워드마크형 전부, 2026-10-12 실측). 화면(브라우저)과 같은 색이 PDF 패스에 칠해진다.
+ * ponytail: 단일 클래스 선택자(쉼표 목록 포함)만. 그 밖의 선택자는 못 읽어 위의 경고로 남는다.
+ */
+function readClassFills(root: Element): Map<string, string> {
+	const fills = new Map<string, string>()
+	for (const style of Array.from(root.querySelectorAll('style'))) {
+		for (const [, selectors, body] of (style.textContent ?? '').matchAll(
+			/([^{}]+)\{([^}]*)\}/g,
+		)) {
+			const fill = /(?:^|;)\s*fill\s*:\s*([^;]+?)\s*(?:;|$)/.exec(body)?.[1]
+			if (!fill) continue
+			for (const selector of selectors.split(',')) {
+				const name = /^\.([\w-]+)$/.exec(selector.trim())?.[1]
+				if (name) fills.set(name, fill)
+			}
+		}
+	}
+	return fills
+}
+
+/** 요소의 class 중 칠이 정해진 마지막 것 — CSS처럼 뒤 규칙이 이긴다고 보지 않고 class 순서로 근사한다. */
+function classFillOf(
+	element: Element,
+	classFills: ReadonlyMap<string, string>,
+): string | undefined {
+	return (element.getAttribute('class') ?? '')
+		.split(/\s+/)
+		.map((name) => classFills.get(name))
+		.filter((fill): fill is string => fill !== undefined)
+		.at(-1)
 }
 
 export async function svgAssetUsesStyleSheetFill(url: string): Promise<boolean> {
@@ -62,7 +92,7 @@ export async function svgAssetToPrimitives(
 	const offsetX = box.x + (box.width - source.width * scale) / 2
 	const offsetY = box.y + (box.height - source.height * scale) / 2
 
-	const shapes = mergeCompoundPaths(collectShapes(root, options.tint))
+	const shapes = mergeCompoundPaths(collectShapes(root))
 	if (shapes.length === 0) return null
 
 	return shapes.map(({ d, fill, fillRule }) => ({
@@ -136,21 +166,22 @@ function mergeCompoundPaths(
  * 🔴 `transform` 속성이 붙은 노드는 건너뛴다 — 균등 배율 하나만 표현하는 계약이라 회전·기울임을
  *    실을 자리가 없고, 조용히 무시하면 로고가 어긋난 자리에 찍힌다.
  */
-function collectShapes(
-	root: Element,
-	tint?: string,
-): { d: string; fill: string; fillRule?: 'evenodd' }[] {
+function collectShapes(root: Element): { d: string; fill: string; fillRule?: 'evenodd' }[] {
 	const shapes: { d: string; fill: string; fillRule?: 'evenodd' }[] = []
+	const classFills = readClassFills(root)
+	// 칠 우선순위: fill 속성 → 스타일시트 class → 부모에게 물려받은 칠.
+	const fillOf = (element: Element) =>
+		element.getAttribute('fill') ?? classFillOf(element, classFills)
 
 	const visit = (element: Element, inheritedFill: string | null) => {
 		if (element.getAttribute('transform')) return
-		const own = element.getAttribute('fill')
-		const fill = tint ?? (own && own !== 'none' ? own : inheritedFill)
+		const own = fillOf(element)
+		const fill = own && own !== 'none' ? own : inheritedFill
 
 		for (const child of Array.from(element.children)) {
 			const d = shapeToPath(child)
 			if (d) {
-				const childFill = tint ?? child.getAttribute('fill') ?? fill
+				const childFill = fillOf(child) ?? fill
 				// 겹친 윤곽을 구멍으로 읽는 규칙. 안 읽으면 도넛·구멍 있는 로고가 메워진다.
 				// nonzero는 기본값이라 실을 필요가 없다.
 				const rule = child.getAttribute('fill-rule')
@@ -165,7 +196,7 @@ function collectShapes(
 			if (child.tagName === 'g') visit(child, fill)
 		}
 	}
-	visit(root, tint ?? '#000000')
+	visit(root, '#000000')
 
 	return shapes
 }

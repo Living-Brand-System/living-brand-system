@@ -5,7 +5,7 @@ import {
 	storeDraftImportedApplicationImage,
 } from '@/features/application-image/repositories/imported-application-image.payload.repository'
 import { findFigmaToken } from '@/features/auth/services/user-settings.service'
-import { findPublishedBrandLogos } from '@/features/template-import/repositories/brand-logo.payload.repository'
+import { listPublishedBrandLogos } from '@/features/template-core/services/published-brand-logos.service'
 import {
 	downloadFigmaImage,
 	findFigmaImageFillUrls,
@@ -24,8 +24,8 @@ vi.mock('@/features/template-import/repositories/figma.rest.repository', () => (
 	findFigmaNodeTree: vi.fn(),
 }))
 
-vi.mock('@/features/template-import/repositories/brand-logo.payload.repository', () => ({
-	findPublishedBrandLogos: vi.fn(),
+vi.mock('@/features/template-core/services/published-brand-logos.service', () => ({
+	listPublishedBrandLogos: vi.fn(),
 }))
 
 vi.mock('@/lib/fetch-app-file', () => ({ fetchAppFile: vi.fn() }))
@@ -55,7 +55,14 @@ const node = {
 			id: '1:2',
 			name: 'logo',
 			type: 'VECTOR',
-			absoluteBoundingBox: { x: 20, y: 30, width: 80, height: 40 },
+			absoluteBoundingBox: {
+				x: 20,
+				y: 30,
+				width: 80,
+				height: 40,
+				ciShape: null,
+				ciVariant: null,
+			},
 		},
 	],
 }
@@ -64,7 +71,7 @@ describe('importFigmaHtml', () => {
 	beforeEach(() => {
 		vi.resetAllMocks()
 		vi.mocked(findFigmaToken).mockResolvedValue('user-token')
-		vi.mocked(findPublishedBrandLogos).mockResolvedValue([])
+		vi.mocked(listPublishedBrandLogos).mockResolvedValue([])
 	})
 
 	it('요청한 사용자의 토큰으로 Figma를 읽는다', async () => {
@@ -485,13 +492,15 @@ describe('importFigmaHtml', () => {
 
 		function arrange(groupRender: Buffer) {
 			vi.mocked(findFigmaNodeTree).mockResolvedValue(group)
-			vi.mocked(findPublishedBrandLogos).mockResolvedValue([
+			vi.mocked(listPublishedBrandLogos).mockResolvedValue([
 				{
 					id: 6,
 					name: 'hd-horizontal-mono',
 					url: '/api/brand-logos/file/mono.svg',
 					width: 80,
 					height: 40,
+					ciShape: 'hd-horizontal',
+					ciVariant: 'mono-black',
 				},
 				{
 					id: 14,
@@ -499,6 +508,8 @@ describe('importFigmaHtml', () => {
 					url: '/api/brand-logos/file/default.svg',
 					width: 80,
 					height: 40,
+					ciShape: 'hd-horizontal',
+					ciVariant: 'default',
 				},
 			])
 			vi.mocked(fetchAppFile).mockImplementation(

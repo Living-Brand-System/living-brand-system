@@ -29,7 +29,7 @@ function writers() {
 			selectSampleImage: log('images.selectSampleImage'),
 			generate: vi.fn(),
 		},
-		vectors: { slots: [], colors: {}, setColor: log('vectors.setColor') },
+		vectors: { slots: [], variants: {}, setVariant: log('vectors.setVariant') },
 		layers: {
 			visibility: {},
 			setVisible: log('layers.setVisible'),
@@ -64,19 +64,19 @@ describe('applyTemplateSessionPatch', () => {
 		expect(calls).toEqual([])
 	})
 
-	it('텍스트·색·벡터·표시여부를 세션의 setter로 흘린다', () => {
+	it('텍스트·색·CI 색 버전·표시여부를 세션의 setter로 흘린다', () => {
 		const { session, calls } = writers()
 		applyTemplateSessionPatch(session, {
 			text: { t1: 'FUTURE', t2: 'BUILDERS' },
 			textColor: '#ffffff',
-			vectorColor: { logo: '#00af41' },
+			ciVariant: { logo: 'mono-white' },
 			visibility: { logo: false },
 		})
 		expect(calls).toEqual([
 			'text.setValue("t1","FUTURE")',
 			'text.setValue("t2","BUILDERS")',
 			'text.setColor("#ffffff")',
-			'vectors.setColor("logo","#00af41")',
+			'vectors.setVariant("logo","mono-white")',
 			'layers.setVisible("logo",false)',
 		])
 	})

@@ -5,38 +5,7 @@ const baseHtml =
 	'<img data-node-id="vector-1" data-figma-type="VECTOR" src="/api/template-assets/file/original.svg" style="width:120px;height:40px">'
 
 describe('composeTemplateHtml vector override', () => {
-	it('인가 자산·contain·브랜드 컬러를 벡터에 함께 적용한다', () => {
-		const html = composeTemplateHtml(baseHtml, {
-			'vector-1': {
-				vectorAsset: {
-					collection: 'brand-logos',
-					id: 7,
-					src: '/api/brand-logos/file/logo.svg',
-				},
-				vectorFit: 'contain',
-				vectorColor: '#112233',
-			},
-		})
-		const element = new DOMParser().parseFromString(html, 'text/html').body.firstElementChild
-
-		expect(element?.tagName).toBe('DIV')
-		expect(element?.getAttribute('data-asset-collection')).toBe('brand-logos')
-		expect(element?.getAttribute('data-asset-id')).toBe('7')
-		expect((element as HTMLElement).style.maskImage).toContain('/api/brand-logos/file/logo.svg')
-		expect((element as HTMLElement).style.maskSize).toBe('contain')
-		expect((element as HTMLElement).style.backgroundColor).toBe('rgb(17, 34, 51)')
-	})
-
-	it('색상이 없으면 img와 fill 맞춤을 유지한다', () => {
-		const html = composeTemplateHtml(baseHtml, {
-			'vector-1': { vectorFit: 'fill' },
-		})
-		const image = new DOMParser().parseFromString(html, 'text/html').querySelector('img')
-
-		expect(image?.style.objectFit).toBe('fill')
-	})
-
-	it('vectorFit이 없으면 objectFit을 기록하지 않는다 — base의 맞춤 유지', () => {
+	it('CI 색 버전은 그 로고 파일을 img에 그대로 끼운다 — mask를 쓰지 않는다', () => {
 		const html = composeTemplateHtml(baseHtml, {
 			'vector-1': {
 				vectorAsset: {
@@ -46,9 +15,14 @@ describe('composeTemplateHtml vector override', () => {
 				},
 			},
 		})
-		const image = new DOMParser().parseFromString(html, 'text/html').querySelector('img')
+		const element = new DOMParser().parseFromString(html, 'text/html').body
+			.firstElementChild as HTMLElement
 
-		expect(image?.style.objectFit).toBe('')
+		expect(element.tagName).toBe('IMG')
+		expect(element.getAttribute('src')).toBe('/api/brand-logos/file/logo.svg')
+		expect(element.getAttribute('data-asset-collection')).toBe('brand-logos')
+		expect(element.getAttribute('data-asset-id')).toBe('7')
+		expect(element.style.maskImage).toBe('')
 	})
 })
 
@@ -369,7 +343,7 @@ describe('composeTemplateHtml image carrier', () => {
 		expect(carrier.style.backgroundImage).toContain(generated)
 	})
 
-	it('캐리어 img는 imageColorize 시 vectorColor처럼 div 2겹으로 치환된다', () => {
+	it('캐리어 img는 imageColorize 시 div 2겹으로 치환된다', () => {
 		const frameHtml =
 			'<div data-node-id="frame-1" data-figma-type="FRAME">' +
 			'<img data-node-id="rect-1" data-figma-type="RECTANGLE" data-image-carrier=""' +

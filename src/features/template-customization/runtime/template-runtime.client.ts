@@ -206,7 +206,7 @@ export type TemplateSessionOverridesInput = {
 	imageSlots: readonly TemplateImageConfigSlot[]
 	imageContracts: Readonly<Record<string, readonly ResolvedTemplateImageConfig[]>>
 	vectorSlots: readonly TemplateVectorSlot[]
-	vectorColors: Readonly<Record<string, string | undefined>>
+	ciVariants: Readonly<Record<string, string | undefined>>
 	layerVisibility: Readonly<Record<string, boolean>>
 	width: number
 	height: number
@@ -223,7 +223,7 @@ function buildTemplateSessionOverrides({
 	imageSlots,
 	imageContracts,
 	vectorSlots,
-	vectorColors,
+	ciVariants,
 	layerVisibility,
 	width,
 	height,
@@ -285,8 +285,22 @@ function buildTemplateSessionOverrides({
 	)
 	const vectorOverrides = Object.fromEntries(
 		vectorSlots.flatMap((slot) => {
-			const vectorColor = vectorColors[slot.id]
-			return vectorColor ? [[slot.id, { vectorColor }] as const] : []
+			// 색 버전을 바꾸면 그 로고 파일을 그대로 끼운다 — 칠이 파일의 패스에 있어 PDF도 같은 것을 싣는다.
+			const option = slot.variants.find((item) => item.variant === ciVariants[slot.id])
+			return option
+				? [
+						[
+							slot.id,
+							{
+								vectorAsset: {
+									collection: 'brand-logos' as const,
+									id: option.id,
+									src: option.src,
+								},
+							},
+						] as const,
+					]
+				: []
 		}),
 	)
 	const visibilityOverrides = Object.fromEntries(

@@ -132,6 +132,7 @@ import * as migration_20261007_055710_template_output_size from './20261007_0557
 import * as migration_20261007_110418_template_default_session from './20261007_110418_template_default_session';
 import * as migration_20261008_015146_payload_3_90_security from './20261008_015146_payload_3_90_security';
 import * as migration_20261008_084610_blob_object_key from './20261008_084610_blob_object_key';
+import * as migration_20261012_054924_brand_logo_ci_variant from './20261012_054924_brand_logo_ci_variant';
 
 export const migrations = [
   {
@@ -802,6 +803,11 @@ export const migrations = [
   {
     up: migration_20261008_084610_blob_object_key.up,
     down: migration_20261008_084610_blob_object_key.down,
-    name: '20261008_084610_blob_object_key'
+    name: '20261008_084610_blob_object_key',
+  },
+  {
+    up: migration_20261012_054924_brand_logo_ci_variant.up,
+    down: migration_20261012_054924_brand_logo_ci_variant.down,
+    name: '20261012_054924_brand_logo_ci_variant'
   },
 ];
