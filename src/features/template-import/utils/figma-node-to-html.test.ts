@@ -53,6 +53,11 @@ function firstTextStyle(html: string): string {
 function rootStyle(html: string): string {
 	return html.match(/^<(?:div|p)\b[\s\S]*?style="([\s\S]*?)"/)?.[1] ?? ''
 }
+// 판 fill은 맨 뒤 bg 레이어로 간다 — 판 배경을 보는 테스트는 이 레이어의 style을 본다.
+function frameBackgroundStyle(html: string): string {
+	const id = html.match(/data-node-id="([^"]+)"/)?.[1]
+	return nodeStyle(html, `${id}:bg`)
+}
 // 특정 node-id 요소의 style 값.
 function nodeStyle(html: string, id: string): string {
 	const re = new RegExp(
@@ -463,7 +468,7 @@ describe('convertFigmaNodeToHtml — 박스 속성', () => {
 	})
 
 	it('SOLID+GRADIENT 스택을 background 다중 레이어(위→아래 = fills 역순)로 옮긴다', () => {
-		const s = rootStyle(
+		const s = frameBackgroundStyle(
 			convertFigmaNodeToHtml(
 				boxNode({
 					fills: [
@@ -517,7 +522,7 @@ describe('convertFigmaNodeToHtml — 박스 속성', () => {
 		{ type: 'IMAGE', imageRef: 'ref-9', scaleMode: 'FILL' },
 	]
 
-	it('SOLID 위 IMAGE fill은 판에 색, bg 레이어에 이미지로 나뉜다', () => {
+	it('SOLID 위 IMAGE fill은 한 bg 레이어 안에 색과 이미지로 합쳐진다', () => {
 		const { html } = convertFigmaNodeToHtml(
 			boxNode({ fills: posterFills }),
 			{},
@@ -529,8 +534,9 @@ describe('convertFigmaNodeToHtml — 박스 속성', () => {
 				},
 			},
 		)
-		expect(rootStyle(html)).toContain('background-color:rgb(0,0,0)')
+		expect(rootStyle(html)).not.toContain('background')
 		const bg = nodeStyle(html, '1:1:bg')
+		expect(bg).toContain('background-color:rgb(0,0,0)')
 		expect(bg).toContain('background-image:url(/api/application-images/file/fill.png)')
 		expect(bg).toContain('background-size:cover')
 		expect(html).toContain('data-asset-id="21"')
@@ -564,7 +570,7 @@ describe('convertFigmaNodeToHtml — 박스 속성', () => {
 	})
 
 	it('linear-gradient 배경 (색 정지점 정확)', () => {
-		const s = rootStyle(
+		const s = frameBackgroundStyle(
 			convertFigmaNodeToHtml(
 				boxNode({
 					fills: [
@@ -888,7 +894,7 @@ describe('convertFigmaNodeToHtml — 리뷰 수정 회귀', () => {
 				},
 			],
 		})
-		const s = rootStyle(gradHtml.html)
+		const s = frameBackgroundStyle(gradHtml.html)
 		expect(s).toContain('rgba(255,0,0,0.5)')
 		expect(s).toContain('rgba(0,0,255,0.5)')
 	})
@@ -1033,7 +1039,7 @@ describe('convertFigmaNodeToHtml — 이미지 캐리어', () => {
 		expect(html).toMatch(/data-node-id="2:1:bg"[^>]*data-image-carrier/)
 	})
 
-	it('판을 덮거나 넘치는 맨 뒤 이미지는 그 레이어 자체가 bg가 되고, 판 fill은 떼지 않는다', () => {
+	it('판을 덮거나 넘치는 이미지도 이미지 레이어로 남고, fill 없는 판은 bg를 만들지 않는다', () => {
 		const { html } = convertFigmaNodeToHtml(
 			clipFrame([
 				{
@@ -1048,28 +1054,19 @@ describe('convertFigmaNodeToHtml — 이미지 캐리어', () => {
 			{},
 			FILL_ASSETS,
 		)
-		expect(html).toMatch(/data-node-id="2:5"\s+data-figma-type="BACKGROUND"\s+data-name="bg"/)
-		expect(html).not.toContain('2:1:bg')
-		// 원본 크기 그대로 넘친다 — 판이 잘라 보여 준다.
+		expect(html).not.toContain('BACKGROUND')
+		expect(html).toMatch(/data-node-id="2:5"\s+data-figma-type="RECTANGLE"/)
 		expect(nodeStyle(html, '2:5')).toContain('width:960px')
 	})
 
-	it('맨 뒤가 아닌 덮는 이미지는 bg로 옮기지 않는다', () => {
-		const { html } = convertFigmaNodeToHtml(
-			clipFrame([
-				{ id: '2:7', name: 'under', type: 'TEXT', characters: '아래' },
-				{
-					id: '2:5',
-					name: 'photo',
-					type: 'RECTANGLE',
-					fills: [{ type: 'IMAGE', imageRef: 'ref-1', scaleMode: 'FILL' }],
-					absoluteBoundingBox: { x: 0, y: 0, width: 911, height: 492 },
-				},
-			]),
-			{},
-			FILL_ASSETS,
-		)
-		expect(html).not.toContain('BACKGROUND')
+	it('단색만 칠한 판도 bg 레이어가 그 색을 갖는다 — 스튜디오 Background가 늘 같은 자리에 칠한다', () => {
+		const { html } = convertFigmaNodeToHtml({
+			...clipFrame([]),
+			fills: [{ type: 'SOLID', color: { r: 1, g: 1, b: 1, a: 1 } }],
+		})
+		expect(rootStyle(html)).not.toContain('background')
+		expect(nodeStyle(html, '2:1:bg')).toContain('background:rgb(255,255,255)')
+		expect(html).not.toContain('data-image-carrier')
 	})
 
 	it('클립 외동 조건 밖의 래스터 폴백 img도 자기 마킹된다', () => {

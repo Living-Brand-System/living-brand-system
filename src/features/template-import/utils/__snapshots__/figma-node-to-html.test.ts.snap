@@ -18,9 +18,22 @@ exports[`convertFigmaNodeToHtml — 골든 스냅샷 > 대표 트리의 출력 H
 		padding:24px 24px 24px 24px;
 		overflow:hidden;
 		position:relative;
-		background:rgb(255,255,255);
 	"
 >
+	<div
+		data-node-id="9:0:bg"
+		data-figma-type="BACKGROUND"
+		data-name="bg"
+		style="
+			box-sizing:border-box;
+			position:absolute;
+			left:0;
+			top:0;
+			width:100%;
+			height:100%;
+			background:rgb(255,255,255);
+		"
+	></div>
 	<p
 		data-node-id="9:1"
 		data-figma-type="TEXT"

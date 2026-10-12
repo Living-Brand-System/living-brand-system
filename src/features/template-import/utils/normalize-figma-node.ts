@@ -296,7 +296,10 @@ export function normalizeFigmaNode(
 	return root && withBackgroundLayer(root, node)
 }
 
-const IMAGE_BACKGROUND_KEYS = [
+/** lowerNodeBackground가 내는 배경 선언 전부 — 판에서 bg 레이어로 옮기는 단위다. */
+const BACKGROUND_KEYS = [
+	'background',
+	'background-color',
 	'background-image',
 	'background-size',
 	'background-position',
@@ -304,28 +307,17 @@ const IMAGE_BACKGROUND_KEYS = [
 ] as const
 
 /**
- * 판의 이미지 배경을 맨 뒤의 bg 레이어 하나로 세운다 — 이미지 배정·스튜디오 배경이 이 레이어를 쓴다.
- * ① 판을 꽉 채우거나 넘치는 이미지가 맨 뒤에 있으면 그 레이어가 bg다(원본을 두고 판이 잘라 보인다).
- * ② 아니면 판 자신의 이미지 fill을 판 크기의 bg 레이어로 떼어 낸다.
- * ponytail: 맨 뒤가 아닌 덮는 이미지는 옮기지 않는다 — 앞으로 당기면 뒤에 깔린 것이 위로 올라온다.
+ * 판 자신의 fill을 맨 뒤의 bg 레이어 하나로 세운다 — 스튜디오 「Background」가 이 레이어에 칠한다.
+ * fill이 여러 겹이면 한 레이어 안에서 겹친 그대로 합친다. 이미지 레이어는 크기와 상관없이 이미지 레이어로 둔다.
  */
 function withBackgroundLayer(root: IrNode, source: FigmaSourceNode): IrNode {
-	const [first, ...rest] = root.children
-	const firstSource = source.children?.find((child) => child.id === first?.id)
-	if (first && firstSource && isCoveringImage(first, firstSource, source)) {
-		return {
-			...root,
-			children: [
-				{ ...first, name: 'bg', figmaType: TEMPLATE_BACKGROUND_FIGMA_TYPE },
-				...rest,
-			],
-		}
-	}
-	if (!root.fillAsset) return root
+	if (!(source.fills ?? []).some((paint) => paint.visible !== false)) return root
 
 	const style = { ...root.style }
-	const image = Object.fromEntries(IMAGE_BACKGROUND_KEYS.map((key) => [key, style[key]]))
-	for (const key of IMAGE_BACKGROUND_KEYS) delete style[key]
+	const background = Object.fromEntries(
+		BACKGROUND_KEYS.flatMap((key) => (style[key] ? [[key, style[key]]] : [])),
+	)
+	for (const key of BACKGROUND_KEYS) delete style[key]
 	return {
 		...root,
 		style,
@@ -343,34 +335,16 @@ function withBackgroundLayer(root: IrNode, source: FigmaSourceNode): IrNode {
 					top: '0',
 					width: '100%',
 					height: '100%',
-					...image,
+					...background,
 				},
 				fillAsset: root.fillAsset,
-				imageCarrier: true,
+				// 이미지가 깔린 배경만 이미지 배정 자리다 — 단색 배경은 스튜디오 Background가 다룬다.
+				...(root.fillAsset ? { imageCarrier: true as const } : {}),
 				children: [],
 			},
 			...root.children,
 		],
 	}
-}
-
-/** 판을 꽉 채우거나 넘치는 이미지 하나인가 — 자식 없는 이미지 fill 레이어이고 판 박스를 다 덮는다. */
-function isCoveringImage(ir: IrNode, node: FigmaSourceNode, frame: FigmaSourceNode): boolean {
-	const box = node.absoluteBoundingBox
-	const bounds = frame.absoluteBoundingBox
-	// 오토 레이아웃 판의 흐름 자식은 절대배치로 옮길 수 없다.
-	const inFlow =
-		frame.layoutMode && frame.layoutMode !== 'NONE' && node.layoutPositioning !== 'ABSOLUTE'
-	if (!ir.imageCarrier || !ir.fillAsset || ir.children.length || inFlow || !box || !bounds) {
-		return false
-	}
-	const EPSILON = 0.5
-	return (
-		box.x <= bounds.x + EPSILON &&
-		box.y <= bounds.y + EPSILON &&
-		box.x + box.width >= bounds.x + bounds.width - EPSILON &&
-		box.y + box.height >= bounds.y + bounds.height - EPSILON
-	)
 }
 
 /**
