@@ -1059,6 +1059,30 @@ describe('convertFigmaNodeToHtml — 이미지 캐리어', () => {
 		expect(nodeStyle(html, '2:5')).toContain('width:960px')
 	})
 
+	it('판 fill 합성본이 오면 bg 레이어는 겹친 fill 대신 그 한 장을 판 크기로 깐다', () => {
+		const { html } = convertFigmaNodeToHtml(
+			{
+				...clipFrame([]),
+				fills: [
+					{ type: 'SOLID', color: { r: 1, g: 0, b: 0, a: 1 } },
+					{ type: 'IMAGE', imageRef: 'ref-1', scaleMode: 'STRETCH' },
+				],
+			},
+			{},
+			FILL_ASSETS,
+			{
+				collection: 'application-images',
+				id: 9,
+				url: '/api/application-images/file/backdrop.png',
+			},
+		)
+		const bg = nodeStyle(html, '2:1:bg')
+		expect(bg).toContain('background-image:url(/api/application-images/file/backdrop.png)')
+		expect(bg).toContain('background-size:100% 100%')
+		expect(bg).not.toContain('background-color')
+		expect(html).toMatch(/data-node-id="2:1:bg"[^>]*data-asset-id="9"/)
+	})
+
 	it('단색만 칠한 판도 bg 레이어가 그 색을 갖는다 — 스튜디오 Background가 늘 같은 자리에 칠한다', () => {
 		const { html } = convertFigmaNodeToHtml({
 			...clipFrame([]),

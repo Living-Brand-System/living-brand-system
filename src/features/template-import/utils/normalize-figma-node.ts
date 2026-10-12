@@ -291,9 +291,10 @@ export function normalizeFigmaNode(
 	node: FigmaSourceNode,
 	renderedAssets: Readonly<Record<string, FigmaRenderedAsset>> = {},
 	imageFillAssets: Readonly<Record<string, FigmaRenderedAsset>> = {},
+	backdropAsset?: FigmaRenderedAsset,
 ): IrNode | null {
 	const root = normalizeNode(node, null, true, renderedAssets, imageFillAssets)
-	return root && withBackgroundLayer(root, node)
+	return root && withBackgroundLayer(root, node, backdropAsset)
 }
 
 /** lowerNodeBackground가 내는 배경 선언 전부 — 판에서 bg 레이어로 옮기는 단위다. */
@@ -310,13 +311,25 @@ const BACKGROUND_KEYS = [
  * 판 자신의 fill을 맨 뒤의 bg 레이어 하나로 세운다 — 스튜디오 「Background」가 이 레이어에 칠한다.
  * fill이 여러 겹이면 한 레이어 안에서 겹친 그대로 합친다. 이미지 레이어는 크기와 상관없이 이미지 레이어로 둔다.
  */
-function withBackgroundLayer(root: IrNode, source: FigmaSourceNode): IrNode {
+function withBackgroundLayer(
+	root: IrNode,
+	source: FigmaSourceNode,
+	backdrop?: FigmaRenderedAsset,
+): IrNode {
 	if (!(source.fills ?? []).some((paint) => paint.visible !== false)) return root
 
 	const style = { ...root.style }
-	const background = Object.fromEntries(
-		BACKGROUND_KEYS.flatMap((key) => (style[key] ? [[key, style[key]]] : [])),
-	)
+	// 합성본이 있으면 판 fill(겹친 CSS)을 버리고 그 한 장을 판 크기로 깐다 — 이미 판 비율로 구운 그림이다.
+	const background = backdrop
+		? {
+				'background-image': `url(${backdrop.url})`,
+				'background-size': '100% 100%',
+				'background-repeat': 'no-repeat',
+			}
+		: Object.fromEntries(
+				BACKGROUND_KEYS.flatMap((key) => (style[key] ? [[key, style[key]]] : [])),
+			)
+	const fillAsset = backdrop ?? root.fillAsset
 	for (const key of BACKGROUND_KEYS) delete style[key]
 	return {
 		...root,
@@ -337,9 +350,9 @@ function withBackgroundLayer(root: IrNode, source: FigmaSourceNode): IrNode {
 					height: '100%',
 					...background,
 				},
-				fillAsset: root.fillAsset,
+				fillAsset,
 				// 이미지가 깔린 배경만 이미지 배정 자리다 — 단색 배경은 스튜디오 Background가 다룬다.
-				...(root.fillAsset ? { imageCarrier: true as const } : {}),
+				...(fillAsset ? { imageCarrier: true as const } : {}),
 				children: [],
 			},
 			...root.children,

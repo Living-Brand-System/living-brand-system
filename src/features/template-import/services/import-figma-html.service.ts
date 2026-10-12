@@ -20,6 +20,11 @@ import {
 } from '@/features/template-import/utils/figma-node-to-html'
 import { fitRasterToLimit } from '@/features/template-import/utils/fit-raster-to-limit'
 import {
+	findFrameBackdrop,
+	isImageRefUsedBelow,
+	renderFrameBackdrop,
+} from '@/features/template-import/utils/frame-backdrop'
+import {
 	isLogoAspectClose,
 	matchBrandLogo,
 	rasterizeLogoSource,
@@ -46,9 +51,11 @@ export type {
 interface AssetDownloadJob {
 	/** 결과 맵의 키 — 노드 렌더는 nodeId, IMAGE fill은 imageRef. */
 	key: string
-	target: 'render' | 'fill'
+	target: 'render' | 'fill' | 'backdrop'
 	name: string
 	url: string
+	/** 내려받은 원본을 저장 전에 바꾼다 — 판 fill 합성(backdrop)이 쓴다. */
+	prepare?: (data: Buffer) => Promise<Buffer>
 	/** 렌더는 요청 포맷과 응답 MIME이 일치해야 한다. fill 원본은 임의 이미지 MIME을 허용한다. */
 	expectedMimeType?: 'image/svg+xml' | 'image/png'
 }
@@ -65,6 +72,8 @@ export interface FigmaLogoDiagnostic {
 interface ResolvedFigmaAssets {
 	renders: Record<string, FigmaRenderedAsset>
 	imageFills: Record<string, FigmaRenderedAsset>
+	/** 판 fill 여러 겹을 합성한 한 장 — 있으면 bg 레이어가 이것을 쓴다. */
+	backdrop?: FigmaRenderedAsset
 }
 
 /**
@@ -94,17 +103,30 @@ export async function importFigmaHtml(
 	// 로고로 바뀐 서브트리의 조각은 굽지 않는다 — 저장해도 아무도 참조하지 않는 draft가 된다.
 	const keep = ({ nodeId }: { nodeId: string }) => !logos.replacedIds.has(nodeId)
 	const diagnostics = plan.diagnostics.filter(keep)
+	const backdrop = findFrameBackdrop(node)
+	// 판만 쓰는 이미지면 원본 fill은 받지 않는다 — 합성본만 쓰므로 저장해도 아무도 참조하지 않는다.
+	const imageFills =
+		backdrop && !isImageRefUsedBelow(node, backdrop.imageRef)
+			? plan.imageFills.filter((fill) => fill.imageRef !== backdrop.imageRef)
+			: plan.imageFills
 	const assets = await storePlannedAssets(
 		token,
 		source.fileKey,
-		{ ...plan, renders: plan.renders.filter(keep), diagnostics },
+		{ ...plan, renders: plan.renders.filter(keep), imageFills, diagnostics },
 		payload,
 		user,
+		backdrop && {
+			nodeId: node.id,
+			name: `${node.name ?? node.id} 배경`,
+			imageRef: backdrop.imageRef,
+			render: (image) => renderFrameBackdrop(node, backdrop.paints, image),
+		},
 	)
 	const result = convertFigmaNodeToHtml(
 		node,
 		{ ...assets.renders, ...logos.renders },
 		assets.imageFills,
+		assets.backdrop,
 	)
 
 	return {
@@ -200,17 +222,19 @@ async function storePlannedAssets(
 	plan: FigmaAssetPlan,
 	payload: Payload,
 	user: User,
+	backdrop?: FrameBackdropJob | null,
 ): Promise<ResolvedFigmaAssets> {
 	const resolved: ResolvedFigmaAssets = { renders: {}, imageFills: {} }
-	if (plan.renders.length === 0 && plan.imageFills.length === 0) return resolved
+	if (plan.renders.length === 0 && plan.imageFills.length === 0 && !backdrop) return resolved
 
 	const createdAssetIds: number[] = []
 
 	try {
-		const jobs = await collectDownloadJobs(token, fileKey, plan)
+		const jobs = await collectDownloadJobs(token, fileKey, plan, backdrop)
 		await runWithConcurrency(jobs, DOWNLOAD_CONCURRENCY, async (job) => {
 			const asset = await storeDownloadedAsset(job, payload, user)
-			resolved[job.target === 'render' ? 'renders' : 'imageFills'][job.key] = asset
+			if (job.target === 'backdrop') resolved.backdrop = asset
+			else resolved[job.target === 'render' ? 'renders' : 'imageFills'][job.key] = asset
 			if (asset.created) createdAssetIds.push(asset.id)
 		})
 		return resolved
@@ -222,11 +246,20 @@ async function storePlannedAssets(
 	}
 }
 
+/** 판 fill 합성 작업 — 판 이미지의 원본을 받아 단색과 함께 한 장으로 굽는다. */
+interface FrameBackdropJob {
+	nodeId: string
+	name: string
+	imageRef: string
+	render: (image: Buffer) => Promise<Buffer>
+}
+
 /** 계획의 렌더(포맷별 배치)·IMAGE fill(파일 단위 1회) 임시 URL을 모아 다운로드 작업 목록으로 만든다. */
 async function collectDownloadJobs(
 	token: string,
 	fileKey: string,
 	plan: FigmaAssetPlan,
+	backdrop?: FrameBackdropJob | null,
 ): Promise<AssetDownloadJob[]> {
 	const jobs: AssetDownloadJob[] = []
 
@@ -258,17 +291,34 @@ async function collectDownloadJobs(
 		}
 	}
 
-	if (plan.imageFills.length > 0) {
+	if (plan.imageFills.length > 0 || backdrop) {
 		const fillUrls = await findFigmaImageFillUrls(token, fileKey)
-		for (const fill of plan.imageFills) {
-			const url = fillUrls[fill.imageRef]
+		const urlOf = (imageRef: string) => {
+			const url = fillUrls[imageRef]
 			if (!url) {
 				throw new FigmaImportError(
-					`Figma image fill "${fill.imageRef}" not found in file "${fileKey}".`,
+					`Figma image fill "${imageRef}" not found in file "${fileKey}".`,
 					'Figma 이미지 채우기를 찾을 수 없습니다. 원본 레이어를 확인하세요.',
 				)
 			}
-			jobs.push({ key: fill.imageRef, target: 'fill', name: fill.name, url })
+			return url
+		}
+		for (const fill of plan.imageFills) {
+			jobs.push({
+				key: fill.imageRef,
+				target: 'fill',
+				name: fill.name,
+				url: urlOf(fill.imageRef),
+			})
+		}
+		if (backdrop) {
+			jobs.push({
+				key: backdrop.nodeId,
+				target: 'backdrop',
+				name: backdrop.name,
+				url: urlOf(backdrop.imageRef),
+				prepare: backdrop.render,
+			})
 		}
 	}
 
@@ -301,8 +351,8 @@ async function storeDownloadedAsset(
 
 	// 저장 상한을 넘는 래스터는 실패시키지 않고 같은 해상도·최고 화질로 다시 만든다.
 	const { data, mimeType: normalizedMimeType } = await fitRasterToLimit(
-		downloaded.data,
-		downloadedMimeType,
+		job.prepare ? await job.prepare(downloaded.data) : downloaded.data,
+		job.prepare ? 'image/png' : downloadedMimeType,
 	)
 	const extension =
 		normalizedMimeType === 'image/svg+xml' ? 'svg' : (normalizedMimeType.split('/')[1] ?? 'png')
