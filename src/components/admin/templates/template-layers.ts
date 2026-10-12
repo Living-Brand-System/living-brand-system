@@ -41,6 +41,8 @@ const TYPE_LABEL: Record<string, string> = {
 	POLYGON: '다각형',
 	REGULAR_POLYGON: '다각형',
 	BOOLEAN_OPERATION: '불리언',
+	// 가져오기가 세운 판 배경 레이어(스튜디오 Background가 칠하는 자리).
+	BACKGROUND: '배경',
 }
 
 export const IMAGE_CONFIG_KEYS = [

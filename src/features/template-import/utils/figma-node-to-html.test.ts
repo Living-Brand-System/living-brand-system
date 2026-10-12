@@ -489,7 +489,7 @@ describe('convertFigmaNodeToHtml — 박스 속성', () => {
 		)
 	})
 
-	it('단일 IMAGE fill을 background-image longhand와 에셋 메타데이터로 낮춘다', () => {
+	it('판의 단일 IMAGE fill은 맨 뒤 bg 레이어의 background-image longhand와 에셋 메타데이터가 된다', () => {
 		const { html } = convertFigmaNodeToHtml(
 			boxNode({ fills: [{ type: 'IMAGE', imageRef: 'ref-9', scaleMode: 'TILE' }] }),
 			{},
@@ -501,11 +501,14 @@ describe('convertFigmaNodeToHtml — 박스 속성', () => {
 				},
 			},
 		)
-		const s = rootStyle(html)
+		const s = nodeStyle(html, '1:1:bg')
 		expect(s).toContain('background-image:url(/api/application-images/file/fill.png)')
 		expect(s).toContain('background-repeat:repeat')
-		expect(html).toContain('data-asset-collection="application-images"')
-		expect(html).toContain('data-asset-id="21"')
+		expect(s).toContain('width:100%')
+		expect(rootStyle(html)).not.toContain('background-image')
+		expect(html).toMatch(
+			/data-node-id="1:1:bg"\s+data-figma-type="BACKGROUND"\s+data-name="bg"\s+data-asset-collection="application-images"\s+data-asset-id="21"\s+data-image-carrier=""/,
+		)
 	})
 
 	// hd_lbs_templates Poster_Type3·4 — 프레임에 이미지 fill을 얹으면 검정 SOLID 위에 IMAGE가 쌓인다.
@@ -514,7 +517,7 @@ describe('convertFigmaNodeToHtml — 박스 속성', () => {
 		{ type: 'IMAGE', imageRef: 'ref-9', scaleMode: 'FILL' },
 	]
 
-	it('SOLID 위 IMAGE fill을 background-color와 background-image로 낮춘다', () => {
+	it('SOLID 위 IMAGE fill은 판에 색, bg 레이어에 이미지로 나뉜다', () => {
 		const { html } = convertFigmaNodeToHtml(
 			boxNode({ fills: posterFills }),
 			{},
@@ -526,10 +529,10 @@ describe('convertFigmaNodeToHtml — 박스 속성', () => {
 				},
 			},
 		)
-		const s = rootStyle(html)
-		expect(s).toContain('background-color:rgb(0,0,0)')
-		expect(s).toContain('background-image:url(/api/application-images/file/fill.png)')
-		expect(s).toContain('background-size:cover')
+		expect(rootStyle(html)).toContain('background-color:rgb(0,0,0)')
+		const bg = nodeStyle(html, '1:1:bg')
+		expect(bg).toContain('background-image:url(/api/application-images/file/fill.png)')
+		expect(bg).toContain('background-size:cover')
 		expect(html).toContain('data-asset-id="21"')
 	})
 
@@ -1005,7 +1008,7 @@ describe('convertFigmaNodeToHtml — 이미지 캐리어', () => {
 		expect(html).not.toContain('data-image-carrier')
 	})
 
-	it('자식 있는 이미지 fill 프레임은 마킹하지 않는다 — 배정 시 자식이 이미지를 가린다', () => {
+	it('자식 있는 이미지 fill 판은 이미지를 맨 뒤 bg 레이어로 떼어 그 레이어만 마킹한다', () => {
 		const { html } = convertFigmaNodeToHtml(
 			{
 				...clipFrame([
@@ -1022,7 +1025,51 @@ describe('convertFigmaNodeToHtml — 이미지 캐리어', () => {
 			{},
 			FILL_ASSETS,
 		)
-		expect(html).not.toContain('data-image-carrier')
+		// bg 레이어가 첫 자식(맨 뒤)이고 캐리어다 — 판 자신과 content는 마킹하지 않는다.
+		expect(html.match(/data-image-carrier/g)).toHaveLength(1)
+		expect(html.indexOf('data-node-id="2:1:bg"')).toBeLessThan(
+			html.indexOf('data-node-id="2:3"'),
+		)
+		expect(html).toMatch(/data-node-id="2:1:bg"[^>]*data-image-carrier/)
+	})
+
+	it('판을 덮거나 넘치는 맨 뒤 이미지는 그 레이어 자체가 bg가 되고, 판 fill은 떼지 않는다', () => {
+		const { html } = convertFigmaNodeToHtml(
+			clipFrame([
+				{
+					id: '2:5',
+					name: 'photo',
+					type: 'RECTANGLE',
+					fills: [{ type: 'IMAGE', imageRef: 'ref-1', scaleMode: 'FILL' }],
+					absoluteBoundingBox: { x: -20, y: -10, width: 960, height: 520 },
+				},
+				{ id: '2:6', name: 'title', type: 'TEXT', characters: '제목' },
+			]),
+			{},
+			FILL_ASSETS,
+		)
+		expect(html).toMatch(/data-node-id="2:5"\s+data-figma-type="BACKGROUND"\s+data-name="bg"/)
+		expect(html).not.toContain('2:1:bg')
+		// 원본 크기 그대로 넘친다 — 판이 잘라 보여 준다.
+		expect(nodeStyle(html, '2:5')).toContain('width:960px')
+	})
+
+	it('맨 뒤가 아닌 덮는 이미지는 bg로 옮기지 않는다', () => {
+		const { html } = convertFigmaNodeToHtml(
+			clipFrame([
+				{ id: '2:7', name: 'under', type: 'TEXT', characters: '아래' },
+				{
+					id: '2:5',
+					name: 'photo',
+					type: 'RECTANGLE',
+					fills: [{ type: 'IMAGE', imageRef: 'ref-1', scaleMode: 'FILL' }],
+					absoluteBoundingBox: { x: 0, y: 0, width: 911, height: 492 },
+				},
+			]),
+			{},
+			FILL_ASSETS,
+		)
+		expect(html).not.toContain('BACKGROUND')
 	})
 
 	it('클립 외동 조건 밖의 래스터 폴백 img도 자기 마킹된다', () => {
