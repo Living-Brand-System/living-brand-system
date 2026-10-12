@@ -3,6 +3,7 @@
 import { Button, TextInput, toast, useForm, useFormFields } from '@payloadcms/ui'
 import { useState } from 'react'
 import { composeTemplateHtml } from '@/features/template-core/runtime/compose-template-html.client'
+import { applyImportedLayerDefaults } from '@/features/template-import/domain/imported-layer-defaults'
 import { requestFigmaHtmlImport } from '@/features/template-import/services/import-figma-html.client'
 import type { FigmaLogoDiagnostic } from '@/features/template-import/services/import-figma-html.service'
 import type {
@@ -86,9 +87,10 @@ export function FigmaHtmlImportField() {
 			const imported = await requestFigmaHtmlImport(sourceUrl)
 
 			const currentNodeConfigs = (getData()?.overrides ?? {}) as TemplateNodeConfigMap
-			const nextNodeConfigs = pruneTemplateNodeConfigs(imported.html, currentNodeConfigs)
+			const keptNodeConfigs = pruneTemplateNodeConfigs(imported.html, currentNodeConfigs)
 			const removedOverrideCount =
-				Object.keys(currentNodeConfigs).length - Object.keys(nextNodeConfigs).length
+				Object.keys(currentNodeConfigs).length - Object.keys(keptNodeConfigs).length
+			const nextNodeConfigs = applyImportedLayerDefaults(imported.html, keptNodeConfigs)
 			dispatchFields({ type: 'UPDATE', path: 'baseHtml', value: imported.html })
 			dispatchFields({ type: 'UPDATE', path: 'overrides', value: nextNodeConfigs })
 			dispatchFields({
