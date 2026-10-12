@@ -206,15 +206,12 @@ function LayerList({
 	)
 }
 
-/** 설정이 없을 때의 고정 값 — 렌더마다 새 `{}`를 만들면 합성 효과가 매번 다시 돈다. */
-const NO_NODE_CONFIGS: TemplateNodeConfigMap = {}
-
 export function TemplateLayersField() {
 	const { dispatchFields, setModified } = useForm()
 	const html = useFormFields(([fields]) => fields.html?.value) as string | undefined
 	const baseHtml = useFormFields(([fields]) => fields.baseHtml?.value) as string | undefined
 	const nodeConfigs = (useFormFields(([fields]) => fields.overrides?.value) ??
-		NO_NODE_CONFIGS) as TemplateNodeConfigMap
+		{}) as TemplateNodeConfigMap
 	const width = useFormFields(([fields]) => fields.width?.value) as number | undefined
 	const height = useFormFields(([fields]) => fields.height?.value) as number | undefined
 	const layout = useDialKit('Admin · 템플릿 레이어', {
@@ -240,22 +237,15 @@ export function TemplateLayersField() {
 	}, [])
 
 	// DOMParser는 서버에 없다 — 서버 렌더는 빈 목록으로 그리고 마운트 후 파싱한다(previewOrigin과 같은 패턴).
-	// 🔑 저장된 html이 아니라 **지금 합성한 결과**를 보인다 — 겹침 순서 규칙 이전에 저장된 템플릿도
-	//    열자마자 스튜디오·내보내기와 같은 순서로 보인다.
-	const [shownHtml, setShownHtml] = useState('')
 	const [layers, setLayers] = useState<LayerRow[]>([])
 	useEffect(() => {
-		const base = baseHtml || html
-		const composed =
-			typeof base === 'string' && base.trim() ? composeTemplateHtml(base, nodeConfigs) : ''
-		setShownHtml(composed)
-		setLayers(composed ? parseLayers(composed) : [])
-	}, [baseHtml, html, nodeConfigs])
+		setLayers(typeof html === 'string' && html.trim() ? parseLayers(html) : [])
+	}, [html])
 	const selected = layers.find((layer) => layer.id === selectedId) ?? null
-	const hasHtml = shownHtml.trim().length > 0
+	const hasHtml = typeof html === 'string' && html.trim().length > 0
 	const previewDocument = useMemo(
-		() => (hasHtml ? buildPreviewDocument(shownHtml, previewOrigin) : ''),
-		[hasHtml, shownHtml, previewOrigin],
+		() => (hasHtml ? buildPreviewDocument(html, previewOrigin) : ''),
+		[hasHtml, html, previewOrigin],
 	)
 	const templateWidth = typeof width === 'number' && width > 0 ? width : 0
 	const templateHeight = typeof height === 'number' && height > 0 ? height : 0

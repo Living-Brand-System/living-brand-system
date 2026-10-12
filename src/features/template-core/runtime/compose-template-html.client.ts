@@ -1,6 +1,5 @@
 'use client'
 
-import { orderTemplateLayers } from '@/features/template-core/domain/template-layer-order'
 import { TEMPLATE_BACKGROUND_FIGMA_TYPE } from '@/features/template-core/domain/template-node-types'
 import { formatImageEditTransform, isIdentityTransform } from '@/lib/template-image-transform'
 import type { TemplateNodeConfig, TemplateNodeConfigMap } from '@/types/template'
@@ -295,8 +294,7 @@ export function composeTemplateHtml(
 		!needsNameCleanup &&
 		(!nodeConfigs || Object.keys(nodeConfigs).length === 0)
 	) {
-		// 겹침 순서 규칙은 설정이 없어도 건다 — DOMParser 없이 도는 정렬이라 서버 렌더에서도 산다.
-		return orderTemplateLayers(baseHtml)
+		return baseHtml
 	}
 
 	const doc = new DOMParser().parseFromString(baseHtml, 'text/html')
@@ -459,6 +457,5 @@ export function composeTemplateHtml(
 		}
 	}
 
-	// 겹침 순서 규칙 — 배경 < 이미지 < 텍스트 < CI(childOrder는 같은 순위 안에서만 남는다).
-	return orderTemplateLayers(doc.body.innerHTML)
+	return doc.body.innerHTML
 }

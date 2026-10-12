@@ -34,7 +34,6 @@ import {
 	collectTemplateVectorSlots,
 	type ResolvedTemplateLayerPolicy,
 } from '@/features/template-core/domain/collect-template-slots'
-import { TEMPLATE_LAYER_RANK } from '@/features/template-core/domain/template-layer-order'
 import { IMAGE_EDIT_TRANSFORM_LIMITS } from '@/lib/template-image-transform'
 import type {
 	ControllerControlDefinition,
@@ -893,22 +892,13 @@ export function deriveTemplateStudioConfig(
 	//    그대로 보여 주면 「겹침 순서」로 읽히는데 사실이 아니었다.
 	// 🔑 문서 순서가 곧 겹침 순서다(템플릿 12개 전부 z-index 0건 · 전부 `position: absolute`).
 	//    그래서 Admin의 `childOrder`가 compose에서 DOM을 재배치하면 이 정렬이 그것을 따라간다.
-	// 🔑 겹침 순서 규칙(배경 < 이미지 < 텍스트 < CI)이 먼저다 — compose가 판을 그 순서로 다시 쌓으므로
-	//    발행 html이 규칙 이전에 저장된 것이어도 패널이 화면과 같은 순서를 보인다.
+	//    배경은 노드가 아니라 도화지라 언제나 맨 아래다.
 	const documentOrder = new Map(
 		Array.from(html.matchAll(/data-node-id="([^"]*)"/g), (match, index) => [match[1], index]),
 	)
-	const rankOf = (slot: TemplateStudioConfigSlot) =>
-		slot.kind === 'background'
-			? TEMPLATE_LAYER_RANK.background
-			: slot.kind === 'image'
-				? TEMPLATE_LAYER_RANK.image
-				: slot.kind === 'text'
-					? TEMPLATE_LAYER_RANK.text
-					: TEMPLATE_LAYER_RANK.ci
 	const orderOf = (slot: TemplateStudioConfigSlot) =>
 		slot.kind === 'background' ? Number.NEGATIVE_INFINITY : (documentOrder.get(slot.id) ?? 0)
-	slots.sort((left, right) => rankOf(left) - rankOf(right) || orderOf(left) - orderOf(right))
+	slots.sort((left, right) => orderOf(left) - orderOf(right))
 
 	const runtimeManifest = getTemplateRuntimeManifest(template)
 	const controllerGroups = runtimeManifest.controller.groups

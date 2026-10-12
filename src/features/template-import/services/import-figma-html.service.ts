@@ -5,6 +5,7 @@ import {
 	storeDraftImportedApplicationImage,
 } from '@/features/application-image/repositories/imported-application-image.payload.repository'
 import { findFigmaToken } from '@/features/auth/services/user-settings.service'
+import { orderTemplateLayers } from '@/features/template-core/domain/template-layer-order'
 import { listPublishedBrandLogos } from '@/features/template-core/services/published-brand-logos.service'
 import {
 	downloadFigmaImage,
@@ -131,6 +132,8 @@ export async function importFigmaHtml(
 
 	return {
 		...result,
+		// 가져올 때 한 번만 아래부터 배경 < 이미지 < 텍스트 < CI로 쌓는다 — 그 뒤 순서는 Admin이 자유롭게 바꾼다.
+		html: orderTemplateLayers(result.html),
 		name: node.name ?? 'Untitled',
 		diagnostics,
 		truncationDiagnostics: plan.truncationDiagnostics,

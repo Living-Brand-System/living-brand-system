@@ -2,11 +2,11 @@ import { DomUtils, ElementType, parseDocument } from 'htmlparser2'
 import { isTemplateVectorNodeType, TEMPLATE_BACKGROUND_FIGMA_TYPE } from './template-node-types'
 
 /**
- * 레이어 겹침 순서 규칙(사용자 결정 2026-10-12) — 아래부터 배경 < 이미지 < 텍스트 < CI.
- * 텍스트는 이미지 아래에 올 수 없다고 본다. 모든 템플릿이 이 순서로 열린다 — 합성(compose)과
- * 스튜디오에 내려주는 발행 html이 이 함수를 지난다. 같은 순위끼리는 Figma·Admin이 정한 순서를 지킨다.
+ * 가져올 때의 레이어 겹침 순서(사용자 결정 2026-10-12) — 아래부터 배경 < 이미지 < 텍스트 < CI.
+ * Figma 가져오기가 한 번 쌓고, 그 뒤 순서는 Admin이 자유롭게 바꾼다(열 때마다 강제하지 않는다).
+ * 같은 순위끼리는 Figma 순서를 지킨다.
  */
-export const TEMPLATE_LAYER_RANK = { background: 0, image: 1, text: 2, ci: 3 } as const
+const TEMPLATE_LAYER_RANK = { background: 0, image: 1, text: 2, ci: 3 } as const
 
 // domhandler는 htmlparser2의 하위 의존성이라 직접 import할 수 없다 — 노드 타입을 파서 반환값에서 끌어온다.
 type ChildNode = ReturnType<typeof parseDocument>['children'][number]

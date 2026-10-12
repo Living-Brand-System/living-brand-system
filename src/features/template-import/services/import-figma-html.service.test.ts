@@ -453,6 +453,27 @@ describe('importFigmaHtml', () => {
 		expect(result.truncationDiagnostics).toEqual([{ nodeId: '2:1', name: 'degraded' }])
 	})
 
+	it('가져올 때 한 번 이미지 < 텍스트 < CI 순으로 쌓는다', async () => {
+		vi.mocked(findFigmaNodeTree).mockResolvedValue({
+			...node,
+			children: [
+				{ id: '1:5', name: 'title', type: 'TEXT', characters: '제목' },
+				{
+					id: '1:6',
+					name: 'photo',
+					type: 'RECTANGLE',
+					absoluteBoundingBox: { x: 0, y: 0, width: 10, height: 10 },
+				},
+			],
+		})
+
+		const result = await importFigmaHtml({ fileKey: 'file', nodeId: '1:1' }, payload, user)
+
+		expect(result.html.indexOf('data-node-id="1:6"')).toBeLessThan(
+			result.html.indexOf('data-node-id="1:5"'),
+		)
+	})
+
 	describe('로고 인식', () => {
 		// 심볼(삼각형) + 워드마크(막대) 배치의 가짜 로고. 비율 2:1.
 		const logoSvg = (symbol: string, mark: string) =>
