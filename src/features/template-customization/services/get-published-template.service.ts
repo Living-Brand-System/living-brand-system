@@ -4,6 +4,7 @@ import {
 } from '@/features/template-core/domain/ci-variants'
 import { collectTemplateVectorSlots } from '@/features/template-core/domain/collect-template-slots'
 import { projectTemplateRenderModel } from '@/features/template-core/domain/project-template-render-model'
+import { orderTemplateLayers } from '@/features/template-core/domain/template-layer-order'
 import { listPublishedBrandLogos } from '@/features/template-core/services/published-brand-logos.service'
 import { findPublishedTemplate } from '@/features/template-core/services/published-template-catalog.service'
 import type {
@@ -67,6 +68,8 @@ export async function getPublishedTemplate(
 		previewImage: toStudioPreviewImage(template.previewImage),
 		defaultSession: template.defaultSession ?? undefined,
 		...renderModel,
+		// 겹침 순서 규칙 이전에 저장된 html도 이 순서로 연다 — 서버 렌더와 브라우저 합성이 같은 순서를 본다.
+		html: orderTemplateLayers(renderModel.html),
 		// 🔑 스프레드 뒤에 둔다 — 앞에 두면 renderModel이 같은 이름을 갖게 될 때 조용히 덮인다.
 		...toTemplateSize(template),
 		nodeConfigs: projectStudioNodeConfigs(renderModel.nodeConfigs),
