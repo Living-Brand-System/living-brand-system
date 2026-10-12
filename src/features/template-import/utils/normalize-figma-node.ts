@@ -147,6 +147,72 @@ function collectAssetRequests(
 	}
 }
 
+/** 로고 인식 후보 — 렌더해서 brand-logos와 비교할 레이어. */
+export interface FigmaLogoCandidate {
+	node: FigmaSourceNode
+	/** 이 후보를 품은 바깥 후보들 — 바깥이 로고로 인식되면 안쪽은 비교하지 않는다. */
+	ancestorIds: string[]
+}
+
+const hasVisiblePaint = (paints: FigmaSourceNode['fills']) =>
+	(paints ?? []).some(
+		(paint) => paint.visible !== false && (paint.opacity ?? 1) > 0 && (paint.color?.a ?? 1) > 0,
+	)
+
+/** 벡터만으로 이뤄진 레이어인가 — 단독 벡터(컴파운드 패스), 또는 칠·효과 없는 묶음 안에 벡터만 있는 것(패스 그룹). */
+function isVectorOnly(node: FigmaSourceNode): boolean {
+	if (isTemplateVectorNodeType(node.type)) return true
+	const children = (node.children ?? []).filter(isRenderable)
+	return (
+		children.length > 0 &&
+		!hasVisiblePaint(node.fills) &&
+		!hasVisiblePaint(node.strokes) &&
+		!node.effects?.some((effect) => effect.visible !== false) &&
+		children.every(isVectorOnly)
+	)
+}
+
+/**
+ * 로고 인식 후보를 바깥부터 모은다. 순수 함수 — 렌더·비교 I/O는 서비스가 한다.
+ * 벡터만으로 된 레이어 중 박스 비율이 등록 로고 비율 하나와 가까운 것만 넣는다(렌더 요청 수를 줄인다).
+ * 바깥 묶음이 로고가 아닐 때(로고 + 장식 선) 안쪽을 다시 보도록 안쪽 후보도 함께 넣는다.
+ */
+export function findFigmaLogoCandidates(
+	root: FigmaSourceNode,
+	isLogoAspect: (aspect: number) => boolean,
+): FigmaLogoCandidate[] {
+	const candidates: FigmaLogoCandidate[] = []
+	const walk = (node: FigmaSourceNode, ancestorIds: string[]) => {
+		if (!isRenderable(node)) return
+		let inner = ancestorIds
+		const box = node.absoluteBoundingBox
+		if (
+			node !== root &&
+			box &&
+			box.width > 0 &&
+			box.height > 0 &&
+			isVectorOnly(node) &&
+			isLogoAspect(box.width / box.height)
+		) {
+			candidates.push({ node, ancestorIds })
+			inner = [...ancestorIds, node.id]
+		}
+		for (const child of node.children ?? []) walk(child, inner)
+	}
+	walk(root, [])
+	return candidates
+}
+
+/** 서브트리의 노드 id 전부(자기 포함). */
+export function collectFigmaSubtreeIds(
+	node: FigmaSourceNode,
+	ids = new Set<string>(),
+): Set<string> {
+	ids.add(node.id)
+	for (const child of node.children ?? []) collectFigmaSubtreeIds(child, ids)
+	return ids
+}
+
 /** 서브트리에서 보이는 TEXT 레이어 수 — 래스터 폴백이 삼키는 편집 가능성의 크기를 진단에 싣는다. */
 function countVisibleTextLayers(node: FigmaSourceNode): number {
 	if (node.visible === false) return 0
@@ -291,14 +357,16 @@ function normalizeNode(
 	// ① 래스터 폴백 img(벡터 제외 — 벡터 img는 VectorLayerEditor 영역이라 절대 마킹하지 않는다)
 	// ② 자식 없는 CSS-lowerable 이미지 fill 노드(스탠드얼론 이미지 사각형 등).
 	//    자식 있는 이미지 fill 프레임은 배정 시 자식이 이미지를 가리므로 의도적으로 마킹하지 않는다.
+	// 로고로 인식된 묶음은 등록 로고 SVG 하나가 된다 — 레이어 패널·VectorLayerEditor가 벡터로 다루도록 VECTOR로 적는다.
+	const figmaType = renderedAsset?.collection === 'brand-logos' ? 'VECTOR' : node.type
 	const selfCarrier = renderedAsset
-		? !isTemplateVectorNodeType(node.type)
+		? !isTemplateVectorNodeType(figmaType)
 		: children.length === 0 && Boolean(findCssLowerableImageFill(node))
 
 	return {
 		id: node.id,
 		name: node.name ?? '',
-		figmaType: node.type,
+		figmaType,
 		tag: renderedAsset ? 'img' : isText ? 'p' : 'div',
 		style,
 		text: !renderedAsset && isText ? (node.characters ?? '') : undefined,

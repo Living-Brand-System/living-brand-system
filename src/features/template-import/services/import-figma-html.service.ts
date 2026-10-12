@@ -5,24 +5,35 @@ import {
 	storeDraftImportedApplicationImage,
 } from '@/features/application-image/repositories/imported-application-image.payload.repository'
 import { findFigmaToken } from '@/features/auth/services/user-settings.service'
+import { findPublishedBrandLogos } from '@/features/template-import/repositories/brand-logo.payload.repository'
 import {
 	downloadFigmaImage,
 	findFigmaImageFillUrls,
 	findFigmaImageUrls,
 	findFigmaNodeTree,
 } from '@/features/template-import/repositories/figma.rest.repository'
+import type { FigmaSourceNode } from '@/features/template-import/utils/figma-ir'
 import {
 	convertFigmaNodeToHtml,
 	type FigmaHtmlResult,
 	type FigmaRenderedAsset,
 } from '@/features/template-import/utils/figma-node-to-html'
 import {
+	isLogoAspectClose,
+	matchBrandLogo,
+	rasterizeLogoSource,
+	renderLogoInk,
+} from '@/features/template-import/utils/match-brand-logo'
+import {
+	collectFigmaSubtreeIds,
 	type FigmaAssetPlan,
 	type FigmaRasterDiagnostic,
 	type FigmaTruncationDiagnostic,
+	findFigmaLogoCandidates,
 	planFigmaAssets,
 } from '@/features/template-import/utils/normalize-figma-node'
 import { FigmaConfigurationError, FigmaImportError } from '@/lib/errors'
+import { fetchAppFile } from '@/lib/fetch-app-file'
 import type { User } from '@/payload-types'
 
 export type {
@@ -39,6 +50,15 @@ interface AssetDownloadJob {
 	url: string
 	/** 렌더는 요청 포맷과 응답 MIME이 일치해야 한다. fill 원본은 임의 이미지 MIME을 허용한다. */
 	expectedMimeType?: 'image/svg+xml' | 'image/png'
+}
+
+/** 로고 인식 결과 — 실루엣이 등록 로고와 맞은 레이어. matched=false면 색이 맞는 버전이 없어 그대로 뒀다. */
+export interface FigmaLogoDiagnostic {
+	nodeId: string
+	name: string
+	/** 고른(또는 색만 빼고 가장 가까운) 등록 로고 이름. */
+	logo: string
+	matched: boolean
 }
 
 interface ResolvedFigmaAssets {
@@ -60,6 +80,7 @@ export async function importFigmaHtml(
 		name: string
 		diagnostics: FigmaRasterDiagnostic[]
 		truncationDiagnostics: FigmaTruncationDiagnostic[]
+		logoDiagnostics: FigmaLogoDiagnostic[]
 	}
 > {
 	// 요청한 사람의 토큰으로 읽는다 — 그 사람이 열 수 있는 파일만 가져와진다.
@@ -68,15 +89,102 @@ export async function importFigmaHtml(
 
 	const node = await findFigmaNodeTree(token, source.fileKey, source.nodeId)
 	const plan = planFigmaAssets(node)
-	const assets = await storePlannedAssets(token, source.fileKey, plan, payload, user)
-	const result = convertFigmaNodeToHtml(node, assets.renders, assets.imageFills)
+	const logos = await recognizeBrandLogos(token, source.fileKey, node, payload)
+	// 로고로 바뀐 서브트리의 조각은 굽지 않는다 — 저장해도 아무도 참조하지 않는 draft가 된다.
+	const keep = ({ nodeId }: { nodeId: string }) => !logos.replacedIds.has(nodeId)
+	const diagnostics = plan.diagnostics.filter(keep)
+	const assets = await storePlannedAssets(
+		token,
+		source.fileKey,
+		{ ...plan, renders: plan.renders.filter(keep), diagnostics },
+		payload,
+		user,
+	)
+	const result = convertFigmaNodeToHtml(
+		node,
+		{ ...assets.renders, ...logos.renders },
+		assets.imageFills,
+	)
 
 	return {
 		...result,
 		name: node.name ?? 'Untitled',
-		diagnostics: plan.diagnostics,
+		diagnostics,
 		truncationDiagnostics: plan.truncationDiagnostics,
+		logoDiagnostics: logos.diagnostics,
 	}
+}
+
+/**
+ * 벡터만으로 된 레이어를 Figma에서 SVG로 렌더해 발행 brand-logos와 비교하고, 맞은 레이어를 그 로고로 바꿀 렌더 맵을 만든다.
+ * 바깥 레이어가 실루엣으로 맞으면(색이 안 맞아도) 안쪽은 보지 않는다.
+ */
+async function recognizeBrandLogos(
+	token: string,
+	fileKey: string,
+	root: FigmaSourceNode,
+	payload: Payload,
+): Promise<{
+	renders: Record<string, FigmaRenderedAsset>
+	replacedIds: Set<string>
+	diagnostics: FigmaLogoDiagnostic[]
+}> {
+	const recognized = {
+		renders: {} as Record<string, FigmaRenderedAsset>,
+		replacedIds: new Set<string>(),
+		diagnostics: [] as FigmaLogoDiagnostic[],
+	}
+	const logos = await findPublishedBrandLogos(payload)
+	const candidates = findFigmaLogoCandidates(root, (aspect) =>
+		logos.some((logo) => isLogoAspectClose(logo.width / logo.height, aspect)),
+	)
+	if (candidates.length === 0) return recognized
+
+	const [urls, inks] = await Promise.all([
+		findFigmaImageUrls(
+			token,
+			fileKey,
+			candidates.map(({ node }) => node.id),
+			'svg',
+		),
+		Promise.all(
+			logos.map(async (logo) => {
+				const file = await fetchAppFile(logo.url)
+				const ink = file && (await renderLogoInk(file))
+				return ink ? [{ logo, ink }] : []
+			}),
+		).then((list) => list.flat()),
+	])
+	const sources = await Promise.all(
+		candidates.map(async ({ node }) => {
+			const url = urls[node.id]
+			return url ? rasterizeLogoSource((await downloadFigmaImage(url)).data) : null
+		}),
+	)
+
+	const shapeMatchedIds = new Set<string>()
+	for (const [index, { node, ancestorIds }] of candidates.entries()) {
+		const source = sources[index]
+		if (!source || ancestorIds.some((id) => shapeMatchedIds.has(id))) continue
+		const match = await matchBrandLogo(source, inks)
+		if (!match) continue
+
+		shapeMatchedIds.add(node.id)
+		recognized.diagnostics.push({
+			nodeId: node.id,
+			name: node.name ?? node.id,
+			logo: match.logo.name,
+			matched: match.matched,
+		})
+		if (!match.matched) continue
+		recognized.renders[node.id] = {
+			collection: 'brand-logos',
+			id: match.logo.id,
+			url: match.logo.url,
+		}
+		collectFigmaSubtreeIds(node, recognized.replacedIds)
+	}
+	return recognized
 }
 
 /** 임시 URL 만료 전에 끝내되 메모리에 동시에 잡는 Buffer 수를 제한하는 다운로드 동시성. */

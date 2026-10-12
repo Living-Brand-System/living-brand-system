@@ -4,6 +4,7 @@ import { Button, TextInput, toast, useForm, useFormFields } from '@payloadcms/ui
 import { useState } from 'react'
 import { composeTemplateHtml } from '@/features/template-core/runtime/compose-template-html.client'
 import { requestFigmaHtmlImport } from '@/features/template-import/services/import-figma-html.client'
+import type { FigmaLogoDiagnostic } from '@/features/template-import/services/import-figma-html.service'
 import type {
 	FigmaRasterDiagnostic,
 	FigmaTruncationDiagnostic,
@@ -27,6 +28,23 @@ function formatTruncationWarning(diagnostics: FigmaTruncationDiagnostic[]): stri
 	const names = diagnostics.slice(0, 3).map((diagnostic) => `'${diagnostic.name}'`)
 	const rest = diagnostics.length - names.length
 	return `말줄임(…) 줄 수를 정하지 못해 잘림만 적용된 텍스트 ${diagnostics.length}개: ${names.join(', ')}${rest > 0 ? ` 외 ${rest}개` : ''}. Figma에서 최대 줄 수나 고정 줄 높이(px)를 지정하면 말줄임으로 가져올 수 있습니다.`
+}
+
+/** 로고 인식 결과를 어드민 안내 문구로 요약한다 — 바꾼 것과, 모양은 맞는데 색이 맞는 로고가 없어 그대로 둔 것. */
+function formatLogoNotices(diagnostics: FigmaLogoDiagnostic[]): {
+	replaced?: string
+	kept?: string
+} {
+	const list = (items: FigmaLogoDiagnostic[]) =>
+		items.map((item) => `'${item.name}' → ${item.logo}`).join(', ')
+	const replaced = diagnostics.filter((item) => item.matched)
+	const kept = diagnostics.filter((item) => !item.matched)
+	return {
+		replaced: replaced.length ? `등록 로고로 바꾼 레이어: ${list(replaced)}.` : undefined,
+		kept: kept.length
+			? `로고 모양이지만 색이 맞는 등록 로고가 없어 그대로 둔 레이어: ${list(kept)}(가장 가까운 로고). 그 색 버전을 로고에 등록하면 다시 가져올 때 바뀝니다.`
+			: undefined,
+	}
 }
 
 /** 재import한 base HTML에 남아 있는 nodeId의 설정만 보존한다. 외부 I/O는 없다. */
@@ -96,6 +114,9 @@ export function FigmaHtmlImportField() {
 			if (imported.truncationDiagnostics?.length) {
 				toast.warning(formatTruncationWarning(imported.truncationDiagnostics))
 			}
+			const logoNotices = formatLogoNotices(imported.logoDiagnostics ?? [])
+			if (logoNotices.replaced) toast.info(logoNotices.replaced)
+			if (logoNotices.kept) toast.warning(logoNotices.kept)
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Figma 가져오기에 실패했습니다.')
 		} finally {

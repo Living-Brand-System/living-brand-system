@@ -5,6 +5,7 @@ import {
 	storeDraftImportedApplicationImage,
 } from '@/features/application-image/repositories/imported-application-image.payload.repository'
 import { findFigmaToken } from '@/features/auth/services/user-settings.service'
+import { findPublishedBrandLogos } from '@/features/template-import/repositories/brand-logo.payload.repository'
 import {
 	downloadFigmaImage,
 	findFigmaImageFillUrls,
@@ -12,6 +13,7 @@ import {
 	findFigmaNodeTree,
 } from '@/features/template-import/repositories/figma.rest.repository'
 import type { FigmaTextStyle } from '@/features/template-import/utils/figma-ir'
+import { fetchAppFile } from '@/lib/fetch-app-file'
 import type { User } from '@/payload-types'
 import { importFigmaHtml } from './import-figma-html.service'
 
@@ -21,6 +23,12 @@ vi.mock('@/features/template-import/repositories/figma.rest.repository', () => (
 	findFigmaImageUrls: vi.fn(),
 	findFigmaNodeTree: vi.fn(),
 }))
+
+vi.mock('@/features/template-import/repositories/brand-logo.payload.repository', () => ({
+	findPublishedBrandLogos: vi.fn(),
+}))
+
+vi.mock('@/lib/fetch-app-file', () => ({ fetchAppFile: vi.fn() }))
 
 vi.mock('@/features/auth/services/user-settings.service', () => ({
 	findFigmaToken: vi.fn(),
@@ -56,6 +64,7 @@ describe('importFigmaHtml', () => {
 	beforeEach(() => {
 		vi.resetAllMocks()
 		vi.mocked(findFigmaToken).mockResolvedValue('user-token')
+		vi.mocked(findPublishedBrandLogos).mockResolvedValue([])
 	})
 
 	it('요청한 사용자의 토큰으로 Figma를 읽는다', async () => {
@@ -435,5 +444,123 @@ describe('importFigmaHtml', () => {
 		const result = await importFigmaHtml({ fileKey: 'file', nodeId: '1:1' }, payload, user)
 
 		expect(result.truncationDiagnostics).toEqual([{ nodeId: '2:1', name: 'degraded' }])
+	})
+
+	describe('로고 인식', () => {
+		// 심볼(삼각형) + 워드마크(막대) 배치의 가짜 로고. 비율 2:1.
+		const logoSvg = (symbol: string, mark: string) =>
+			Buffer.from(
+				`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 40"><polygon points="0,40 20,0 40,40" fill="${symbol}"/><rect x="50" y="5" width="30" height="30" fill="${mark}"/></svg>`,
+			)
+		const logos = {
+			'/api/brand-logos/file/mono.svg': logoSvg('#000', '#000'),
+			'/api/brand-logos/file/default.svg': logoSvg('#00af41', '#003087'),
+		}
+		// 패스 그룹: 칠 없는 GROUP 안에 벡터 둘.
+		const group = {
+			...node,
+			children: [
+				{
+					id: '1:3',
+					name: 'Group 192',
+					type: 'GROUP',
+					absoluteBoundingBox: { x: 20, y: 30, width: 160, height: 80 },
+					children: [
+						{
+							id: '1:4',
+							name: 'Vector',
+							type: 'VECTOR',
+							absoluteBoundingBox: { x: 20, y: 30, width: 80, height: 80 },
+						},
+						{
+							id: '1:5',
+							name: 'Vector',
+							type: 'VECTOR',
+							absoluteBoundingBox: { x: 120, y: 40, width: 60, height: 60 },
+						},
+					],
+				},
+			],
+		}
+
+		function arrange(groupRender: Buffer) {
+			vi.mocked(findFigmaNodeTree).mockResolvedValue(group)
+			vi.mocked(findPublishedBrandLogos).mockResolvedValue([
+				{
+					id: 6,
+					name: 'hd-horizontal-mono',
+					url: '/api/brand-logos/file/mono.svg',
+					width: 80,
+					height: 40,
+				},
+				{
+					id: 14,
+					name: 'hd-horizontal-default',
+					url: '/api/brand-logos/file/default.svg',
+					width: 80,
+					height: 40,
+				},
+			])
+			vi.mocked(fetchAppFile).mockImplementation(
+				async (url) => logos[url as keyof typeof logos],
+			)
+			vi.mocked(findFigmaImageUrls).mockImplementation(async (_token, _file, ids) =>
+				Object.fromEntries(ids.map((id) => [id, `https://figma.example/${id}.svg`])),
+			)
+			vi.mocked(downloadFigmaImage).mockImplementation(async (url) => ({
+				data: url.endsWith('1:3.svg')
+					? groupRender
+					: Buffer.from('<svg viewBox="0 0 1 1"/>'),
+				mimeType: 'image/svg+xml',
+			}))
+			vi.mocked(storeDraftImportedApplicationImage).mockImplementation(
+				async (_payload, _user, { name }) => ({
+					collection: 'application-images',
+					id: 99,
+					url: `/api/application-images/file/${name}.svg`,
+					created: true,
+				}),
+			)
+		}
+
+		it('색 오차 안의 로고 묶음을 그 색 버전의 등록 로고 하나로 바꾸고 조각은 굽지 않는다', async () => {
+			arrange(logoSvg('#062812', '#062812'))
+
+			const result = await importFigmaHtml({ fileKey: 'file', nodeId: '1:1' }, payload, user)
+
+			expect(result.logoDiagnostics).toEqual([
+				{ nodeId: '1:3', name: 'Group 192', logo: 'hd-horizontal-mono', matched: true },
+			])
+			expect(result.html).toContain('data-figma-type="VECTOR"')
+			expect(result.html).toContain('data-asset-collection="brand-logos"')
+			expect(result.html).toContain('src="/api/brand-logos/file/mono.svg"')
+			expect(result.html).toContain('width:160px')
+			expect(result.html).not.toContain('data-node-id="1:4"')
+			expect(storeDraftImportedApplicationImage).not.toHaveBeenCalled()
+		})
+
+		it('색이 맞는 버전이 없으면 그대로 두고 가장 가까운 로고를 진단으로 남긴다', async () => {
+			arrange(logoSvg('#ff0000', '#ff0000'))
+
+			const result = await importFigmaHtml({ fileKey: 'file', nodeId: '1:1' }, payload, user)
+
+			expect(result.logoDiagnostics).toMatchObject([{ nodeId: '1:3', matched: false }])
+			expect(result.html).not.toContain('brand-logos')
+			expect(result.html).toContain('data-node-id="1:4"')
+		})
+
+		it('배치가 다르면 로고로 보지 않는다', async () => {
+			// 같은 부품, 자리를 바꿈
+			arrange(
+				Buffer.from(
+					'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 40"><rect x="0" y="5" width="30" height="30"/><polygon points="40,40 60,0 80,40"/></svg>',
+				),
+			)
+
+			const result = await importFigmaHtml({ fileKey: 'file', nodeId: '1:1' }, payload, user)
+
+			expect(result.logoDiagnostics).toEqual([])
+			expect(result.html).not.toContain('brand-logos')
+		})
 	})
 })
