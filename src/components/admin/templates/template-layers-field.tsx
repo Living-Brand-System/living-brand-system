@@ -16,6 +16,7 @@ import { TemplateLayerEditor } from './template-layer-editors'
 import {
 	canAssignImage,
 	hasLayerEditor,
+	isBackgroundLayer,
 	type LayerRow,
 	moveLayer,
 	parseLayers,
@@ -141,6 +142,9 @@ function LayerList({
 	onSelect: (id: string) => void
 	selectedId: string | null
 }) {
+	// 판(루트 프레임) — 맨 위가 묶음 하나뿐일 때 그것이다. 고칠 것이 없어 줄을 그리지 않는다.
+	const roots = layers.filter((layer) => layer.depth === 0)
+	const frameId = roots.length === 1 && roots[0].tag === 'div' ? roots[0].id : null
 	return (
 		<section
 			className="shrink-0 rounded-3xl border p-3"
@@ -158,47 +162,57 @@ function LayerList({
 					</Empty>
 				) : (
 					<div className="flex flex-col gap-0.5">
-						{[...layers].reverse().map((layer) => (
-							<div key={layer.id} className="flex items-center gap-0.5">
-								<Button
-									type="button"
-									variant={layer.id === selectedId ? 'tint' : 'ghost'}
-									size="sm"
-									className="h-7 min-w-0 flex-1 justify-start px-1 font-normal"
-									style={{ paddingLeft: layer.depth * 14 + 4 }}
-									// 편집 UI 없는 레이어는 선택 불가 — 빈 패널 대신 목록에서 잠근다(안내 문구 제거 결정).
-									disabled={!hasLayerEditor(layer)}
-									onClick={() => onSelect(layer.id)}
-								>
-									<span className="w-11 shrink-0 text-xs text-muted-foreground">
-										{typeLabel(layer.figmaType)}
-									</span>
-									<span className="truncate">{layer.name}</span>
-								</Button>
-								{/* 🔴 드래그가 아니라 버튼이다 — 키보드로 그대로 되고(docs/08), 끝에
-								    닿으면 잠겨서 「눌렀는데 안 움직인다」가 생기지 않는다. */}
-								<Button
-									type="button"
-									variant="ghost"
-									size="icon-sm"
-									aria-label={`${layer.name} 위로`}
-									disabled={!canMove(layer.id, 'up')}
-									onClick={() => onMove(layer.id, 'up')}
-								>
-									<ChevronUp />
-								</Button>
-								<Button
-									type="button"
-									variant="ghost"
-									size="icon-sm"
-									aria-label={`${layer.name} 아래로`}
-									disabled={!canMove(layer.id, 'down')}
-									onClick={() => onMove(layer.id, 'down')}
-								>
-									<ChevronDown />
-								</Button>
-							</div>
-						))}
+						{[...layers]
+							.filter((layer) => layer.id !== frameId)
+							.reverse()
+							.map((layer) => (
+								<div key={layer.id} className="flex items-center gap-0.5">
+									<Button
+										type="button"
+										variant={layer.id === selectedId ? 'tint' : 'ghost'}
+										size="sm"
+										className="h-7 min-w-0 flex-1 justify-start px-1 font-normal"
+										style={{
+											paddingLeft: (layer.depth - (frameId ? 1 : 0)) * 14 + 4,
+										}}
+										// 편집 UI 없는 레이어는 선택 불가 — 빈 패널 대신 목록에서 잠근다(안내 문구 제거 결정).
+										disabled={!hasLayerEditor(layer)}
+										onClick={() => onSelect(layer.id)}
+									>
+										<span className="w-11 shrink-0 text-xs text-muted-foreground">
+											{typeLabel(layer.figmaType)}
+										</span>
+										<span className="truncate">{layer.name}</span>
+									</Button>
+									{/* 🔴 드래그가 아니라 버튼이다 — 키보드로 그대로 되고(docs/08), 끝에
+								    닿으면 잠겨서 「눌렀는데 안 움직인다」가 생기지 않는다.
+								    배경은 늘 맨 아래라 손잡이 자체가 없다. */}
+									{!isBackgroundLayer(layer) && (
+										<>
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon-sm"
+												aria-label={`${layer.name} 위로`}
+												disabled={!canMove(layer.id, 'up')}
+												onClick={() => onMove(layer.id, 'up')}
+											>
+												<ChevronUp />
+											</Button>
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon-sm"
+												aria-label={`${layer.name} 아래로`}
+												disabled={!canMove(layer.id, 'down')}
+												onClick={() => onMove(layer.id, 'down')}
+											>
+												<ChevronDown />
+											</Button>
+										</>
+									)}
+								</div>
+							))}
 					</div>
 				)}
 			</ScrollArea>

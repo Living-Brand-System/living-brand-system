@@ -81,7 +81,11 @@ export const canAssignImage = (layer: LayerRow) =>
 
 /** 편집 UI가 있는 레이어 — 없는 레이어(부모 소관·img 고정 등)는 목록에서 비활성으로 그린다(정본 81:2, 안내 문구 제거). */
 export const hasLayerEditor = (layer: LayerRow) =>
-	layer.isText || layer.isVector || canAssignImage(layer)
+	layer.isText || layer.isVector || canAssignImage(layer) || isBackgroundLayer(layer)
+
+/** 가져오기가 세운 판 배경 레이어 — 이름만 고치고, 겹침에서 늘 맨 아래라 옮기지 않는다. */
+export const isBackgroundLayer = (layer: LayerRow) =>
+	layer.figmaType === TEMPLATE_BACKGROUND_FIGMA_TYPE
 
 function stylePx(element: Element, property: 'width' | 'height'): number | undefined {
 	if (!(element instanceof HTMLElement)) return undefined
@@ -178,6 +182,8 @@ export function moveLayer(
 	// 화면에서 위로 = 문서에서 뒤로.
 	const to = direction === 'up' ? at + 1 : at - 1
 	if (at < 0 || to < 0 || to >= siblings.length) return null
+	// 배경은 늘 맨 아래다 — 배경 자신도, 배경과 자리를 바꾸는 이동도 막는다.
+	if (isBackgroundLayer(row) || isBackgroundLayer(siblings[to])) return null
 
 	const order = siblings.map((candidate) => candidate.id)
 	;[order[at], order[to]] = [order[to], order[at]]
