@@ -10,7 +10,7 @@ import {
 const draft = (overrides: Partial<TemplateDraft> = {}): TemplateDraft => ({
 	text: { t1: '안녕' },
 	textColor: '#000000',
-	vectorColors: { v1: '#00af41' },
+	ciVariants: { v1: 'mono-white' },
 	visibility: { i1: false },
 	images: {},
 	background: {

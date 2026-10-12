@@ -190,8 +190,9 @@ export type TemplateStudioValue = {
 	}
 	vectors: {
 		slots: readonly TemplateVectorSlot[]
-		colors: Record<string, string | undefined>
-		setColor: (slotId: string, color: string) => void
+		/** CI 레이어마다 고른 색 버전(CI_VARIANTS 값). */
+		variants: Record<string, string | undefined>
+		setVariant: (slotId: string, variant: string) => void
 	}
 	layers: {
 		visibility: Record<string, boolean>

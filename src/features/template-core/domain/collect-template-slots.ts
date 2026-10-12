@@ -48,7 +48,8 @@ export interface TemplateImageSlot {
 export interface TemplateVectorSlot {
 	nodeId: string
 	name: string
-	color?: string
+	/** 지금 끼워진 브랜드 로고 — CI 색 버전을 찾는 열쇠다. 로고가 아닌 벡터면 없다. */
+	logoId?: number
 	policy: ResolvedTemplateLayerPolicy
 }
 
@@ -178,10 +179,14 @@ export function collectTemplateVectorSlots(
 				) {
 					return
 				}
+				const logoId =
+					attributes['data-asset-collection'] === 'brand-logos'
+						? Number(attributes['data-asset-id'])
+						: Number.NaN
 				slots.push({
 					nodeId,
 					name: attributes['data-name'] || nodeId,
-					color: config?.vectorColor,
+					...(Number.isInteger(logoId) ? { logoId } : {}),
 					policy,
 				})
 			},

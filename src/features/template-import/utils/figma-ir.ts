@@ -121,9 +121,12 @@ export interface FigmaSourceNode {
 /** CSS 선언 묶음. 값이 undefined/빈 문자열인 키는 방출 시 걸러진다. */
 export type IrCssStyle = Record<string, string | undefined>
 
-/** Figma 렌더 API로 구워 저장한 에셋 참조. img 태그의 src와 data-asset-* 속성이 된다. */
+/**
+ * 노드를 대신 그리는 에셋 참조. img 태그의 src와 data-asset-* 속성이 된다.
+ * application-images는 Figma 렌더 API로 구워 저장한 것, brand-logos는 로고 인식이 고른 등록 로고다.
+ */
 export interface FigmaRenderedAsset {
-	collection: 'application-images'
+	collection: 'application-images' | 'brand-logos'
 	id: number
 	url: string
 }

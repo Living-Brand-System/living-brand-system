@@ -83,8 +83,6 @@ const templateNodeConfigMapSchema = z.record(
 			})
 			.strict()
 			.optional(),
-		vectorFit: z.enum(['fill', 'contain']).optional(),
-		vectorColor: templateHexColorSchema.optional(),
 	}),
 )
 

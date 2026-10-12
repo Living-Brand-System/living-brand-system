@@ -1,15 +1,4 @@
-import type { TemplateVectorAssetCollection } from '@/features/template-core/domain/template-asset-policy'
-import type {
-	ApplicationImage,
-	BrandColor,
-	BrandColorGroup,
-	BrandColorPair,
-	BrandLogo,
-} from '@/payload-types'
-
-export type TemplateVectorAsset = (BrandLogo | ApplicationImage) & {
-	collection: TemplateVectorAssetCollection
-}
+import type { BrandColor, BrandColorGroup, BrandColorPair, BrandLogo } from '@/payload-types'
 
 const PUBLISHED_QUERY = 'depth=0&limit=100&where[_status][equals]=published&sort=name'
 
@@ -58,16 +47,7 @@ export function requestPublishedBrandColorPairs(signal: AbortSignal): Promise<Br
 	)
 }
 
-/** Admin 템플릿 벡터 편집기의 허용 자산을 읽는다. Payload REST I/O는 이 client service가 소유한다. */
-export async function requestPublishedTemplateVectorAssets(
-	signal: AbortSignal,
-): Promise<TemplateVectorAsset[]> {
-	const [logos, images] = await Promise.all([
-		requestPublishedDocs<BrandLogo>('brand-logos', signal),
-		requestPublishedDocs<ApplicationImage>('application-images', signal),
-	])
-	return [
-		...logos.map((asset) => ({ ...asset, collection: 'brand-logos' as const })),
-		...images.map((asset) => ({ ...asset, collection: 'application-images' as const })),
-	]
+/** Admin 템플릿 CI 편집기가 고르는 발행 로고(CI 모양·색상 포함). Payload REST I/O는 이 client service가 소유한다. */
+export async function requestPublishedBrandLogos(signal: AbortSignal): Promise<BrandLogo[]> {
+	return requestPublishedDocs<BrandLogo>('brand-logos', signal)
 }

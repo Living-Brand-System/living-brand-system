@@ -1,3 +1,4 @@
+import { CI_VARIANTS } from '@/features/template-core/domain/ci-variants'
 import type { ControllerCluster } from '@/modules/studio-controller/controller-composition'
 import type {
 	ControllerControlDefinition,
@@ -13,8 +14,8 @@ import {
 type LayerComposition = { groups: ControllerGroupDefinition[]; clusters: ControllerCluster[] }
 
 /**
- * 심볼 색을 묶음 멤버로 쓰려고 컨트롤로 승격한 id(docs/10 §3.7).
- * 🔑 값은 지금처럼 심볼 세션(`vectors.colors`)이 갖는다 — 발행 config에는 없는 컴포지션 전용 축이다.
+ * CI 색 버전을 컨트롤로 세운 id(docs/10 §3.7).
+ * 🔑 값은 CI 세션(`vectors.variants`)이 갖는다 — 발행 config에는 없는 컴포지션 전용 축이다.
  */
 export const templateSymbolColorId = (slotId: string) => `${slotId}.color`
 
@@ -72,23 +73,35 @@ export function deriveTemplateTextComposition(
 	}
 }
 
-/** 심볼 레이어의 패널 컴포지션 매니페스트(Figma 529:25611) — 슬롯마다 브랜드 색 하나(palette). */
+/**
+ * CI 레이어의 패널 컴포지션 매니페스트 — 슬롯마다 색 버전 하나(palette).
+ * 선택지는 그 로고가 「로고」에 가진 색 버전뿐이다(CI_VARIANTS 순서). 버전이 없는 벡터는 세우지 않는다.
+ */
 export function deriveTemplateSymbolComposition(
 	config: TemplateStudioConfig,
 ): LayerComposition | null {
-	const slots = partitionTemplateSlots(config.template.slots).vector
+	const slots = partitionTemplateSlots(config.template.slots).vector.filter(
+		(slot) => slot.variants.length > 0,
+	)
 	if (!slots.length) return null
 	return {
 		groups: [
 			{
 				id: 'symbol-color',
 				title: 'Color',
+				role: 'palette',
 				controls: slots.map(
 					(slot): ControllerControlDefinition => ({
 						id: templateSymbolColorId(slot.id),
-						kind: 'color',
+						kind: 'select',
 						label: slot.label,
-						defaultValue: slot.color ?? null,
+						defaultValue: slot.variant ?? null,
+						options: slot.variants.map(({ variant }) => ({
+							value: variant,
+							label:
+								CI_VARIANTS.find(({ value }) => value === variant)?.label ??
+								variant,
+						})),
 						...(slot.access === 'readonly'
 							? { availability: 'readonly' as const }
 							: {}),
@@ -96,12 +109,6 @@ export function deriveTemplateSymbolComposition(
 				),
 			},
 		],
-		clusters: slots.map((slot) => ({
-			id: `symbol:${slot.id}`,
-			title: slot.label,
-			role: 'palette' as const,
-			widget: 'swatches' as const,
-			members: { value: templateSymbolColorId(slot.id) },
-		})),
+		clusters: [],
 	}
 }

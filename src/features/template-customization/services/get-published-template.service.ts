@@ -1,4 +1,10 @@
+import {
+	type CiVariantOption,
+	findCiVariantOptions,
+} from '@/features/template-core/domain/ci-variants'
+import { collectTemplateVectorSlots } from '@/features/template-core/domain/collect-template-slots'
 import { projectTemplateRenderModel } from '@/features/template-core/domain/project-template-render-model'
+import { listPublishedBrandLogos } from '@/features/template-core/services/published-brand-logos.service'
 import { findPublishedTemplate } from '@/features/template-core/services/published-template-catalog.service'
 import type {
 	PublishedHtmlTemplate,
@@ -7,7 +13,7 @@ import type {
 import { toStudioPreviewImage } from '@/modules/studio-controller/controller-definition'
 import type { TemplateNodeConfigMap } from '@/types/template'
 
-// 노출 경계: 스튜디오가 쓰는 creator·input(aiInstruction 제외)·imageInput·imageColorize·vectorColor만 남긴다.
+// 노출 경계: 스튜디오가 쓰는 creator·input(aiInstruction 제외)·imageInput·imageColorize만 남긴다.
 // aiInstruction·vectorAsset·generatedImageId 등 저작 내부 정보는 SSR 페이로드에 싣지 않는다.
 // agent/MCP 경로(projectTemplateRenderModel 직행)는 의도적으로 전체 config를 쓴다 — 이 프로젝션을
 // "안전한 투영"으로 오독해 새 공개 표면에 renderModel을 그대로 태우지 말 것.
@@ -15,11 +21,10 @@ function projectStudioNodeConfigs(
 	nodeConfigs: TemplateNodeConfigMap,
 ): Record<string, PublishedTemplateNodeConfig> {
 	const projected: Record<string, PublishedTemplateNodeConfig> = {}
-	for (const [
-		nodeId,
-		{ creator, input, imageInput, imageColorize, vectorColor },
-	] of Object.entries(nodeConfigs)) {
-		if (!creator && !input && !imageInput && !imageColorize && !vectorColor) continue
+	for (const [nodeId, { creator, input, imageInput, imageColorize }] of Object.entries(
+		nodeConfigs,
+	)) {
+		if (!creator && !input && !imageInput && !imageColorize) continue
 		const config: PublishedTemplateNodeConfig = {}
 		if (creator) config.creator = creator
 		if (input) {
@@ -28,7 +33,6 @@ function projectStudioNodeConfigs(
 		}
 		if (imageInput) config.imageInput = imageInput
 		if (imageColorize) config.imageColorize = imageColorize
-		if (vectorColor) config.vectorColor = vectorColor
 		projected[nodeId] = config
 	}
 	return projected
@@ -66,6 +70,24 @@ export async function getPublishedTemplate(
 		// 🔑 스프레드 뒤에 둔다 — 앞에 두면 renderModel이 같은 이름을 갖게 될 때 조용히 덮인다.
 		...toTemplateSize(template),
 		nodeConfigs: projectStudioNodeConfigs(renderModel.nodeConfigs),
+		...(await resolveCiVariants(renderModel.html, renderModel.nodeConfigs)),
+	}
+}
+
+/** 스튜디오에 노출한 로고 레이어마다 같은 CI 모양의 색 버전을 푼다. 로고 레이어가 없으면 조회하지 않는다. */
+async function resolveCiVariants(
+	html: string,
+	nodeConfigs: TemplateNodeConfigMap,
+): Promise<{ ciVariants?: Record<string, readonly CiVariantOption[]> }> {
+	const slots = collectTemplateVectorSlots(html, nodeConfigs).filter(
+		(slot) => slot.logoId !== undefined,
+	)
+	if (!slots.length) return {}
+	const logos = await listPublishedBrandLogos()
+	return {
+		ciVariants: Object.fromEntries(
+			slots.map((slot) => [slot.nodeId, findCiVariantOptions(logos, slot.logoId as number)]),
+		),
 	}
 }
 

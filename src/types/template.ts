@@ -94,8 +94,6 @@ export interface TemplateNodeConfig {
 		id: number
 		src: string
 	}
-	vectorFit?: 'fill' | 'contain'
-	vectorColor?: string
 }
 
 /** DB의 overrides 필드가 저장하는 nodeId → 노드 설정 map. */

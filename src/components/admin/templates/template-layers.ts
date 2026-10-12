@@ -15,6 +15,8 @@ export interface LayerRow {
 	tag: string
 	isText: boolean
 	isVector: boolean
+	/** 끼워진 브랜드 로고 id — CI 레이어가 같은 모양의 색 버전을 찾는 열쇠다. */
+	logoId?: number
 	imageAddress?: 'self' | 'parent'
 	carrierChildId?: string
 	boxWidth?: number
@@ -33,7 +35,8 @@ const TYPE_LABEL: Record<string, string> = {
 	RECTANGLE: '사각형',
 	ELLIPSE: '타원',
 	LINE: '선',
-	VECTOR: '벡터',
+	// 가져오기가 남기는 벡터는 CI뿐이다(로고 인식이 묶음을 VECTOR 하나로 바꾼다).
+	VECTOR: 'CI',
 	STAR: '별',
 	POLYGON: '다각형',
 	REGULAR_POLYGON: '다각형',
@@ -117,6 +120,10 @@ export function parseLayers(html: string): LayerRow[] {
 				(isTemplateVectorNodeType(figmaType) || figmaType === 'POLYGON') &&
 				(tag === 'img' ||
 					(element instanceof HTMLElement && Boolean(element.style.maskImage))),
+			...(element.getAttribute('data-asset-collection') === 'brand-logos' &&
+			Number.isInteger(Number(element.getAttribute('data-asset-id')))
+				? { logoId: Number(element.getAttribute('data-asset-id')) }
+				: {}),
 			imageAddress: selfMarked
 				? isCarrierFrameAddress(element.parentElement, depth - 1)
 					? 'parent'

@@ -7,6 +7,10 @@ import {
 import { getCreateNavigation } from '@/features/template-customization/services/get-create-navigation.service'
 import { getPublishedTemplate } from '@/features/template-customization/services/get-published-template.service'
 
+vi.mock('@/features/template-core/repositories/brand-logo.payload.repository', () => ({
+	findPublishedBrandLogos: vi.fn().mockResolvedValue([]),
+}))
+
 vi.mock('@/features/template-core/repositories/published-template.payload.repository', () => ({
 	findPublishedTemplate: vi.fn(),
 	listPublishedTemplateNavItems: vi.fn(),

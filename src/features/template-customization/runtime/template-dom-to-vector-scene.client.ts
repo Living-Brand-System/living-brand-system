@@ -79,7 +79,7 @@ async function plateBackdrop(stage: HTMLElement, context: WalkContext): Promise<
 	const box = toBox(stage.getBoundingClientRect(), context.origin)
 	if (box.width <= 0 || box.height <= 0) return []
 	// 판에 얹힌 그라디언트·그림자도 자식과 같은 기준으로 진단에 남긴다 — 지금은 바닥색으로 뭉개진다.
-	reportUnsupported(style, 'plate', context, { maskHandled: false })
+	reportUnsupported(style, 'plate', context)
 	const backdrop = await backgroundImagePrimitives(stage, box, style, context)
 	// 판의 배경 이미지·graphic 스냅샷은 배경 묶음이다 — 묶음을 실으려면 그룹이어야 한다.
 	return backdrop.length
@@ -131,12 +131,11 @@ async function walk(
 	const nodeId = element.dataset.nodeId ?? element.dataset.name ?? element.tagName.toLowerCase()
 	const layer = context.nodeLayers.get(nodeId) ?? inheritedLayer
 
-	// SVG 자산은 마스크째 도형으로 펴진다 — 그때는 마스크를 「못 옮긴 효과」로 세지 않는다.
 	const svgAsset = await svgAssetPrimitives(element, box, style)
-	reportUnsupported(style, nodeId, context, { maskHandled: svgAsset !== null })
+	reportUnsupported(style, nodeId, context)
 
 	// 자산이 <style>·class로만 색을 정하면 fill을 못 읽어 검정으로 나간다 — 사람이 알아야 한다.
-	if (svgAsset && (await svgAssetStyleSheetWarning(element, style))) {
+	if (svgAsset && (await svgAssetStyleSheetWarning(element))) {
 		context.unsupported.push({ nodeId, reason: 'svg-stylesheet-fill' })
 	}
 
@@ -178,18 +177,13 @@ async function walk(
 }
 
 /** 벡터로 못 옮기는 효과를 기록한다. 여기서 버리면 폴백이 무엇을 구워야 할지 알 수 없다. */
-function reportUnsupported(
-	style: CSSStyleDeclaration,
-	nodeId: string,
-	context: WalkContext,
-	{ maskHandled }: { maskHandled: boolean },
-) {
+function reportUnsupported(style: CSSStyleDeclaration, nodeId: string, context: WalkContext) {
 	const effects: [string, boolean][] = [
 		['gradient', hasRealGradient(style.backgroundImage)],
 		['box-shadow', isSet(style.boxShadow)],
 		['filter', isSet(style.filter)],
 		['backdrop-filter', isSet(style.backdropFilter)],
-		['mask', !maskHandled && maskUrl(style) !== null],
+		['mask', maskUrl(style) !== null],
 		['blend-mode', isSet(style.mixBlendMode, 'normal')],
 		['uneven-border', hasUnevenBorder(style)],
 	]
@@ -198,36 +192,21 @@ function reportUnsupported(
 	}
 }
 
-/**
- * SVG 자산이면 도형으로 펼친다. 두 형태가 있다 —
- * 색을 안 바꾼 로고는 `img[src$=.svg]`, 색을 바꾼 로고는 `div` + `mask-image` + `background-color`다
- * (`compose-template-html`이 그렇게 심는다).
- */
+/** `img[src$=.svg]`(로고·CI)면 도형으로 펼친다. 색은 파일의 패스에 칠해진 그대로다. */
 async function svgAssetPrimitives(
 	element: HTMLElement,
 	box: Box,
 	style: CSSStyleDeclaration,
 ): Promise<VectorPrimitive[] | null> {
-	if (element instanceof HTMLImageElement) {
-		const source = element.currentSrc || element.src
-		return isSvgUrl(source)
-			? svgAssetToPrimitives(source, box, { fit: fitOf(style.objectFit) })
-			: null
-	}
-	const mask = maskUrl(style)
-	if (!mask || !isSvgUrl(mask)) return null
-	// 마스크는 모양만 쓴다 — 색은 배경색이 정한다. 없으면 검정이 인쇄 기본이다.
-	const tint = solidColor(style.backgroundColor) ?? '#000000'
-	return svgAssetToPrimitives(mask, box, { fit: fitOf(style.maskSize), tint })
+	if (!(element instanceof HTMLImageElement)) return null
+	const source = element.currentSrc || element.src
+	return isSvgUrl(source)
+		? svgAssetToPrimitives(source, box, { fit: fitOf(style.objectFit) })
+		: null
 }
 
-/** 이 노드가 쓰는 SVG 자산이 스타일시트로만 색을 정하는지. 틴트가 있으면 색을 덮으므로 무관하다. */
-async function svgAssetStyleSheetWarning(
-	element: HTMLElement,
-	style: CSSStyleDeclaration,
-): Promise<boolean> {
-	const mask = maskUrl(style)
-	if (mask) return false
+/** 이 노드가 쓰는 SVG 자산이 스타일시트로만 색을 정하는지 — 그러면 fill을 못 읽어 검정으로 나간다. */
+async function svgAssetStyleSheetWarning(element: HTMLElement): Promise<boolean> {
 	const source = element instanceof HTMLImageElement ? element.currentSrc || element.src : ''
 	return source && isSvgUrl(source) ? svgAssetUsesStyleSheetFill(source) : false
 }

@@ -98,7 +98,7 @@ function applyImageColorize(
 	colorize: NonNullable<TemplateNodeConfig['imageColorize']>,
 	imageUrl: string,
 ): HTMLElement {
-	// 래스터 폴백 img 캐리어는 vectorColor와 같은 방식으로 div 치환 — mask는 img 콘텐츠에 못 얹는다.
+	// 래스터 폴백 img 캐리어는 div로 치환한다 — mask는 img 콘텐츠에 못 얹는다.
 	const base = carrier instanceof HTMLImageElement ? replaceImageWithDiv(doc, carrier) : carrier
 	if (base !== carrier) {
 		// img는 background-*가 없어 아래 maskSize 읽기가 폴백('100% 100%')을 쓴다. 치환 div에 같은
@@ -373,36 +373,11 @@ export function composeTemplateHtml(
 					: editTransform
 			}
 			// img 캐리어가 div로 치환(replaceWith)됐어도 아래 벡터 경로에 진입하지 않는다.
-			// 캐리어 없는 img에 backgroundImage가 와도(UI상 불가능한 조합) 벡터 경로는
-			// vectorAsset·vectorColor·vectorFit만 보므로 이미지 배정 없이 무해하다.
-		} else if (
-			config.vectorColor &&
-			el instanceof HTMLElement &&
-			!(el instanceof HTMLImageElement) &&
-			el.style.maskImage
-		) {
-			el.style.backgroundColor = config.vectorColor
-		} else if (el instanceof HTMLImageElement) {
-			if (config.vectorAsset) {
-				el.src = config.vectorAsset.src
-				el.dataset.assetCollection = config.vectorAsset.collection
-				el.dataset.assetId = String(config.vectorAsset.id)
-			}
-			const src = el.getAttribute('src')
-			const fit = config.vectorFit ?? 'fill'
-
-			if (config.vectorColor && src) {
-				const mask = replaceImageWithDiv(doc, el)
-				mask.style.backgroundColor = config.vectorColor
-				mask.style.maskImage = `url("${src}")`
-				mask.style.maskPosition = 'center'
-				mask.style.maskRepeat = 'no-repeat'
-				// mask-size는 기본값이 없어 태생적으로 명시가 필요하다 — vectorFit 미지정이면 fill 상당.
-				mask.style.maskSize = fit === 'contain' ? 'contain' : '100% 100%'
-			} else if (config.vectorFit) {
-				// 명시된 vectorFit만 기록한다 — 무조건 기록하면 base의 object-fit을 덮어쓴다.
-				el.style.objectFit = config.vectorFit
-			}
+		} else if (el instanceof HTMLImageElement && config.vectorAsset) {
+			// CI 색 버전은 칠된 로고 파일을 그대로 끼운다 — 화면과 인쇄 PDF가 같은 파일의 패스를 쓴다.
+			el.src = config.vectorAsset.src
+			el.dataset.assetCollection = config.vectorAsset.collection
+			el.dataset.assetId = String(config.vectorAsset.id)
 		}
 		if (config.imageDimmer !== undefined && slot instanceof HTMLElement) {
 			applyImageDimmer(doc, slot, config.imageDimmer)

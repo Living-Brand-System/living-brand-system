@@ -26,6 +26,7 @@ import {
 	compressForAiReference,
 	resizeForAiVision,
 } from '@/features/asset-check/repositories/image-decoder.sharp.repository'
+import { fetchAppFile } from '@/lib/fetch-app-file'
 
 export interface AiCheckRunResult {
 	observations: Record<string, Record<string, HeuristicObservation>>
@@ -267,7 +268,7 @@ export async function loadAiReferenceFiles(checks: RuntimeCheck[]) {
 	const files = await Promise.all(
 		[...assets].map(async ([key, asset]) => {
 			try {
-				const raw = await readReferenceAsset(asset)
+				const raw = await fetchAppFile(asset.url)
 				if (!raw) return [key, null] as const
 				const { data, mediaType } = await compressForAiReference(raw, asset.mimeType)
 				return [
@@ -301,29 +302,8 @@ export function findUnavailableAiReferenceCheckKeys(
 		.map((check) => check.key)
 }
 
-async function readReferenceAsset(asset: CheckReferenceAsset): Promise<Buffer | null> {
-	// staging은 Vercel 로그인으로 보호돼 자기 자신에게 보내는 요청도 막힌다. 우회 비밀값은
-	// 상대 경로(= 이 앱)로 가는 요청에만 싣는다 — 외부 절대 URL에 실으면 제3자에게 샌다.
-	const bypass = isAbsoluteUrl(asset.url) ? undefined : env.VERCEL_AUTOMATION_BYPASS_SECRET
-	const response = await fetch(toAbsoluteUrl(asset.url), {
-		headers: bypass ? { 'x-vercel-protection-bypass': bypass } : undefined,
-	})
-	if (!response.ok) return null
-	return Buffer.from(await response.arrayBuffer())
-}
-
 export function aiReferenceAssetKey(asset: CheckReferenceAsset) {
 	return `${asset.url}:${asset.role}`
-}
-
-const isAbsoluteUrl = (url: string) => /^https?:\/\//.test(url)
-
-function toAbsoluteUrl(url: string) {
-	if (isAbsoluteUrl(url)) return url
-	const origin =
-		env.NEXT_PUBLIC_SITE_URL ||
-		(env.VERCEL_URL ? `https://${env.VERCEL_URL}` : 'http://localhost:3000')
-	return new URL(url, origin).toString()
 }
 
 function failed(

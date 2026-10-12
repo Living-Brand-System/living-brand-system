@@ -220,7 +220,7 @@ function useTemplateImageSession(
 			setStates((current) =>
 				// 🔴 잠긴 슬롯을 여기서 막는다. 지금까지 이미지 슬롯의 readonly를 집행하는 코드는
 				//    사이드바 컴포넌트의 prop뿐이었다 — 챗 저작은 사이드바를 우회하므로(그게 목적이다)
-				//    모든 호출자가 지나는 이 자리에 둔다. 대조: vectors.setColor·layers.setVisible은
+				//    모든 호출자가 지나는 이 자리에 둔다. 대조: vectors.setVariant·layers.setVisible은
 				//    이미 슬롯 정책을 본다.
 				imageSlots.find((slot) => slot.id === slotId)?.access === 'editable'
 					? updateTemplateImageSlot(current, slotId, patch, contracts[slotId] ?? [])
@@ -361,24 +361,27 @@ function useTemplateVectorSession(
 	vectorSlots: readonly TemplateVectorSlot[],
 	draft: TemplateDraft | null,
 ): TemplateStudioValue['vectors'] {
-	const [colors, setColors] = useState<Record<string, string | undefined>>(() => ({
-		...Object.fromEntries(vectorSlots.map((slot) => [slot.id, slot.color])),
+	const [variants, setVariants] = useState<Record<string, string | undefined>>(() => ({
+		...Object.fromEntries(vectorSlots.map((slot) => [slot.id, slot.variant])),
 		...pickKnownSlots(
-			draft?.vectorColors,
+			draft?.ciVariants,
 			vectorSlots.map((slot) => slot.id),
 		),
 	}))
-	const setColor = useCallback(
-		(slotId: string, color: string) =>
-			setColors((current) => {
+	const setVariant = useCallback(
+		(slotId: string, variant: string) =>
+			setVariants((current) => {
 				const slot = vectorSlots.find((candidate) => candidate.id === slotId)
-				return slot?.access === 'editable' ? { ...current, [slotId]: color } : current
+				return slot?.access === 'editable' &&
+					slot.variants.some((option) => option.variant === variant)
+					? { ...current, [slotId]: variant }
+					: current
 			}),
 		[vectorSlots],
 	)
 	return useMemo(
-		() => ({ slots: vectorSlots, colors, setColor }),
-		[colors, setColor, vectorSlots],
+		() => ({ slots: vectorSlots, variants, setVariant }),
+		[variants, setVariant, vectorSlots],
 	)
 }
 
@@ -658,7 +661,7 @@ function useTemplateDraftAutosave(
 		templateId,
 		draft.text,
 		draft.textColor,
-		draft.vectorColors,
+		draft.ciVariants,
 		draft.visibility,
 		draft.images,
 		draft.background,
@@ -878,7 +881,7 @@ export function TemplateStudioProvider({
 		(): TemplateDraft => ({
 			text: text.values,
 			textColor: text.color,
-			vectorColors: vectors.colors,
+			ciVariants: vectors.variants,
 			visibility: layers.visibility,
 			images: committed?.images ?? images.states,
 			background: committed?.background ?? background.state,
@@ -890,13 +893,13 @@ export function TemplateStudioProvider({
 			layers.visibility,
 			text.color,
 			text.values,
-			vectors.colors,
+			vectors.variants,
 		],
 	)
 	useTemplateDraftAutosave(userId, String(template.id), defaults(), restoreDraft)
 	const deferredTextColor = useDeferredValue(text.color)
 	const deferredImageStates = useDeferredValue(images.states)
-	const deferredVectorColors = useDeferredValue(vectors.colors)
+	const deferredCiVariants = useDeferredValue(vectors.variants)
 	const deferredLayerVisibility = useDeferredValue(layers.visibility)
 	const deferredBackground = useDeferredValue(background.state)
 
@@ -911,7 +914,7 @@ export function TemplateStudioProvider({
 				imageSlots,
 				imageContracts: images.contracts,
 				vectorSlots,
-				vectorColors: deferredVectorColors,
+				ciVariants: deferredCiVariants,
 				layerVisibility: deferredLayerVisibility,
 				background: deferredBackground,
 				width,
@@ -927,7 +930,7 @@ export function TemplateStudioProvider({
 			imageSlots,
 			images.contracts,
 			vectorSlots,
-			deferredVectorColors,
+			deferredCiVariants,
 			deferredLayerVisibility,
 			width,
 			height,

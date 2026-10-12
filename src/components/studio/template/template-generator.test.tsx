@@ -869,39 +869,44 @@ describe('TemplateGenerator', () => {
 		expect(stored).not.toContain('편집 중')
 	})
 
-	it('심볼 색은 브랜드 색 스와치로 고르고, Custom은 열지 않는다', async () => {
+	it('CI는 그 로고의 색 버전 중에서 고르고, 고르면 캔버스에 그 로고 파일이 그대로 끼워진다', async () => {
 		const user = userEvent.setup()
 		const { container } = render(
 			<TemplateGenerator
 				categoryTitle="카드"
 				template={{
 					...template,
-					html: '<div data-node-id="1:1" data-figma-type="FRAME"><img data-node-id="3:1" data-figma-type="VECTOR" data-name="Logo" src="/logo.svg"></div>',
+					html: '<div data-node-id="1:1" data-figma-type="FRAME"><img data-node-id="3:1" data-figma-type="VECTOR" data-name="Logo" data-asset-collection="brand-logos" data-asset-id="15" src="/mono.svg"></div>',
 					nodeConfigs: {
 						'3:1': {
 							creator: {
 								access: 'editable',
 								visibility: { defaultVisible: true, allowToggle: true },
 							},
-							vectorColor: '#112233',
 						},
+					},
+					ciVariants: {
+						'3:1': [
+							{ variant: 'default', id: 14, src: '/default.svg' },
+							{ variant: 'mono-black', id: 15, src: '/mono.svg' },
+						],
 					},
 				}}
 			/>,
 		)
 
 		selectLayerGroup('vector')
-		const swatch = await screen.findByRole('radio', { name: /색상 #002c5f$/ })
-		expect(screen.getByRole('radio', { name: 'Custom' })).toBeDisabled()
+		const select = await screen.findByRole('combobox', { name: 'Logo' })
+		select.focus()
+		await user.keyboard('{ArrowDown}')
+		await user.click(screen.getByRole('option', { name: '기본형' }))
 
-		await user.click(swatch)
-
-		expect(swatch).toBeChecked()
-		await waitFor(() =>
-			expect(
-				container.querySelector<HTMLElement>('[data-node-id="3:1"]')?.style.backgroundColor,
-			).toBe('rgb(0, 44, 95)'),
-		)
+		await waitFor(() => {
+			const logo = container.querySelector<HTMLImageElement>('[data-node-id="3:1"]')
+			expect(logo?.tagName).toBe('IMG')
+			expect(logo?.getAttribute('src')).toBe('/default.svg')
+			expect(logo?.getAttribute('data-asset-id')).toBe('14')
+		})
 	})
 
 	// 슬롯의 첫 화면은 Generate다 — Preset으로 옮기는 패치가 세션 상태에 닿지 않으면 세그먼트가 움직이지 않는다.

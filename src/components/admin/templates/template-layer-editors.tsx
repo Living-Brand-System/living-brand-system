@@ -331,7 +331,7 @@ export function TemplateLayerEditor({
 		return (
 			<LayerCard heading={selected.name}>
 				{policy}
-				<VectorLayerEditor config={config} onChange={onCommit} />
+				<VectorLayerEditor logoId={selected.logoId} onChange={onCommit} />
 			</LayerCard>
 		)
 	}
