@@ -512,7 +512,7 @@ describe('convertFigmaNodeToHtml — 박스 속성', () => {
 		expect(s).toContain('width:100%')
 		expect(rootStyle(html)).not.toContain('background-image')
 		expect(html).toMatch(
-			/data-node-id="1:1:bg"\s+data-figma-type="BACKGROUND"\s+data-name="bg"\s+data-asset-collection="application-images"\s+data-asset-id="21"\s+data-image-carrier=""/,
+			/data-node-id="1:1:bg"\s+data-figma-type="BACKGROUND"\s+data-name="bg"\s+data-asset-collection="application-images"\s+data-asset-id="21"\s+style=/,
 		)
 	})
 
@@ -1014,7 +1014,7 @@ describe('convertFigmaNodeToHtml — 이미지 캐리어', () => {
 		expect(html).not.toContain('data-image-carrier')
 	})
 
-	it('자식 있는 이미지 fill 판은 이미지를 맨 뒤 bg 레이어로 떼어 그 레이어만 마킹한다', () => {
+	it('자식 있는 이미지 fill 판은 이미지를 맨 뒤 bg 레이어로 떼고, bg는 이미지 레이어가 아니다', () => {
 		const { html } = convertFigmaNodeToHtml(
 			{
 				...clipFrame([
@@ -1031,12 +1031,11 @@ describe('convertFigmaNodeToHtml — 이미지 캐리어', () => {
 			{},
 			FILL_ASSETS,
 		)
-		// bg 레이어가 첫 자식(맨 뒤)이고 캐리어다 — 판 자신과 content는 마킹하지 않는다.
-		expect(html.match(/data-image-carrier/g)).toHaveLength(1)
+		// bg 레이어가 첫 자식(맨 뒤)이고, 배경은 스튜디오 Background만 다루므로 캐리어가 아니다.
+		expect(html).not.toContain('data-image-carrier')
 		expect(html.indexOf('data-node-id="2:1:bg"')).toBeLessThan(
 			html.indexOf('data-node-id="2:3"'),
 		)
-		expect(html).toMatch(/data-node-id="2:1:bg"[^>]*data-image-carrier/)
 	})
 
 	it('판을 덮거나 넘치는 이미지도 이미지 레이어로 남고, fill 없는 판은 bg를 만들지 않는다', () => {

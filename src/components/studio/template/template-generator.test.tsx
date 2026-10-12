@@ -1190,13 +1190,13 @@ describe('TemplateGenerator', () => {
 		const textOf = (selector: string) =>
 			Array.from(panel.querySelectorAll(selector), (element) => element.textContent)
 
+		// 레이어가 없는 묶음(Symbol)은 줄째 없다 — 배경만은 늘 있다.
 		expect(textOf('[data-slot="template-layer-group"]')).toEqual([
 			'Text',
-			'Symbol',
 			'Image',
 			'Background',
 		])
-		expect(screen.getByRole('button', { name: 'Symbol' })).toBeDisabled()
+		expect(screen.queryByRole('button', { name: 'Symbol' })).not.toBeInTheDocument()
 	})
 
 	it('판의 텍스트를 클릭하면 텍스트 묶음이 선택되고 누른 것만 밝아진다', () => {
@@ -1473,7 +1473,7 @@ describe('TemplateGenerator', () => {
 		selectLayer('Image')
 		expect(screen.getByRole('region', { name: '선택한 레이어 편집' })).toBeInTheDocument()
 		expect(screen.getByRole('group', { name: '배경 A' })).toBeInTheDocument()
-		expect(screen.getByRole('button', { name: 'Text' })).toBeDisabled()
+		expect(screen.getByRole('button', { name: 'Background' })).toBeDisabled()
 	})
 
 	/**

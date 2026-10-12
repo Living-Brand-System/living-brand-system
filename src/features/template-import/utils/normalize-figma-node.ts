@@ -351,8 +351,7 @@ function withBackgroundLayer(
 					...background,
 				},
 				fillAsset,
-				// 이미지가 깔린 배경만 이미지 배정 자리다 — 단색 배경은 스튜디오 Background가 다룬다.
-				...(fillAsset ? { imageCarrier: true as const } : {}),
+				// 🔴 이미지 배정 자리(캐리어)가 아니다 — 배경은 스튜디오 Background만 다룬다(사용자 결정 2026-10-12).
 				children: [],
 			},
 			...root.children,

@@ -1,4 +1,7 @@
-import { isTemplateVectorNodeType } from '@/features/template-core/domain/template-node-types'
+import {
+	isTemplateVectorNodeType,
+	TEMPLATE_BACKGROUND_FIGMA_TYPE,
+} from '@/features/template-core/domain/template-node-types'
 import {
 	findImageCarrier,
 	isImageColorizeOverlayId,
@@ -105,8 +108,11 @@ export function parseLayers(html: string): LayerRow[] {
 		const figmaType =
 			element.getAttribute('data-figma-type') || (tag === 'p' ? 'TEXT' : 'FRAME')
 		const isText = tag === 'p'
+		// 판 배경 레이어는 이미지 레이어가 아니다 — 예전 가져오기가 붙인 캐리어 표시가 남아 있어도 무시한다.
 		const selfMarked =
-			element instanceof HTMLElement && element.hasAttribute('data-image-carrier')
+			element instanceof HTMLElement &&
+			element.hasAttribute('data-image-carrier') &&
+			figmaType !== TEMPLATE_BACKGROUND_FIGMA_TYPE
 		const frameAddress = isCarrierFrameAddress(element, depth)
 
 		const id = element.getAttribute('data-node-id') || `${depth}-${rows.length}`

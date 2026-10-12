@@ -5,7 +5,7 @@ import type {
 	TemplateNodeConfigMap,
 	TemplateSlotSpec,
 } from '@/types/template'
-import { isTemplateVectorNodeType } from './template-node-types'
+import { isTemplateVectorNodeType, TEMPLATE_BACKGROUND_FIGMA_TYPE } from './template-node-types'
 
 /** 표시 여부는 정책이 아니다 — 스튜디오 사용자가 Layers 패널에서 정한다(2026-10-07). */
 export type ResolvedTemplateLayerPolicy = {
@@ -131,7 +131,13 @@ export function collectTemplateImageSlots(
 	const parser = new Parser(
 		{
 			onopentag(tagName, attributes) {
-				if (tagName === 'p') return
+				// 판 배경 레이어는 이미지 레이어가 아니다 — 예전에 이미지 슬롯으로 열어 둔 설정이 남아 있어도 무시한다.
+				if (
+					tagName === 'p' ||
+					attributes['data-figma-type'] === TEMPLATE_BACKGROUND_FIGMA_TYPE
+				) {
+					return
+				}
 				const nodeId = attributes['data-node-id']
 				const config = nodeId ? nodeConfigs[nodeId] : undefined
 				const policy = resolveTemplateLayerPolicy(config, Boolean(config?.imageInput))
