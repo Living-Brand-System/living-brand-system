@@ -18,6 +18,7 @@ import {
 	type FigmaHtmlResult,
 	type FigmaRenderedAsset,
 } from '@/features/template-import/utils/figma-node-to-html'
+import { fitRasterToLimit } from '@/features/template-import/utils/fit-raster-to-limit'
 import {
 	isLogoAspectClose,
 	matchBrandLogo,
@@ -280,23 +281,29 @@ async function storeDownloadedAsset(
 	payload: Payload,
 	user: User,
 ): Promise<FigmaRenderedAsset & { created: boolean }> {
-	const { data, mimeType } = await downloadFigmaImage(job.url)
-	const normalizedMimeType = mimeType.split(';', 1)[0]?.trim() ?? ''
+	const downloaded = await downloadFigmaImage(job.url)
+	const downloadedMimeType = downloaded.mimeType.split(';', 1)[0]?.trim() ?? ''
+	const mimeType = downloaded.mimeType
 
 	if (job.expectedMimeType) {
-		if (normalizedMimeType !== job.expectedMimeType) {
+		if (downloadedMimeType !== job.expectedMimeType) {
 			throw new FigmaImportError(
 				`Figma ${job.expectedMimeType === 'image/svg+xml' ? 'SVG' : 'PNG'} download returned "${mimeType}" for node "${job.key}".`,
 				'Figma 렌더 결과의 이미지 형식이 올바르지 않습니다. 잠시 후 다시 가져오세요.',
 			)
 		}
-	} else if (!normalizedMimeType.startsWith('image/')) {
+	} else if (!downloadedMimeType.startsWith('image/')) {
 		throw new FigmaImportError(
 			`Figma image fill download returned "${mimeType}" for "${job.key}".`,
 			'Figma 이미지 채우기의 파일 형식이 올바르지 않습니다. 원본 레이어를 확인하세요.',
 		)
 	}
 
+	// 저장 상한을 넘는 래스터는 실패시키지 않고 같은 해상도·최고 화질로 다시 만든다.
+	const { data, mimeType: normalizedMimeType } = await fitRasterToLimit(
+		downloaded.data,
+		downloadedMimeType,
+	)
 	const extension =
 		normalizedMimeType === 'image/svg+xml' ? 'svg' : (normalizedMimeType.split('/')[1] ?? 'png')
 	const checksum = createHash('sha256').update(data).digest('hex')
