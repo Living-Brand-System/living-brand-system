@@ -72,7 +72,7 @@ export function ImageGenerationResults({
 										onClick={() => onSelect(index)}
 										aria-pressed={selected === index}
 										className={cn(
-											'overflow-hidden rounded-md border-2 transition-colors',
+											'overflow-hidden border-2 transition-colors',
 											selected === index
 												? 'border-primary'
 												: isReference

@@ -14,8 +14,8 @@ type TemplateFocus = ReturnType<typeof useTemplateStudio>['focus']
  *    비웠는데, 다음 대상을 고르는 클릭은 mousedown(blur)과 click 사이에 한 프레임을 둔다 —
  *    그 프레임 동안 활성 섹션이 없어 회색 띠가 꺼졌다 켜지면서 패널이 깜빡였다. 다음 대상이
  *    **덮어쓸 때까지 그대로 둔다**: 같은 글자를 여러 번 눌러도, 다른 글자로 옮겨도 교체만 일어난다.
- * 🔑 판에서도 빈 곳이 없다(어디를 눌러도 배경이 잡힌다) — 「아무것도 안 만지는 상태」로 돌아갈
- *    입구 자체가 없으므로 푸는 코드가 필요 없다.
+ * 🔑 푸는 입구는 하나뿐이다 — 판 **밖**(회색 무대)을 누르면 캔버스가 강조를 끈다(`template-canvas`,
+ *    2026-10-12). 판 안은 어디를 눌러도 무언가 잡히므로 거기서는 풀리지 않는다.
  */
 export function sectionProps(focus: TemplateFocus, target: TemplateFocusTarget) {
 	return {

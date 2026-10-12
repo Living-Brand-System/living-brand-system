@@ -1358,7 +1358,7 @@ describe('TemplateGenerator', () => {
 	 * 🔴 지나가는 자리를 옅게 비춘다 — **지금 누르면 무엇이 잡히는지**를 먼저 보여 준다
 	 * (사용자 지시, 2026-09-29). 배경은 뺀다: 판 어디에 있든 늘 켜져 있어 알려 주는 것이 없다.
 	 */
-	it('슬롯 위를 지나면 미리 비추고, 배경 위에서는 비추지 않는다', () => {
+	it('슬롯과 배경 모두 지나면 미리 비추고, 배경은 테두리만 남긴다', () => {
 		const rect = vi
 			.spyOn(Element.prototype, 'getBoundingClientRect')
 			.mockReturnValue({ left: 0, top: 0, width: 400, height: 300 } as DOMRect)
@@ -1379,10 +1379,13 @@ describe('TemplateGenerator', () => {
 
 			fireEvent.pointerOver(container.querySelector('[data-node-id="t1"]') as Element)
 			expect(hovers()).toHaveLength(1)
+			expect((hovers()[0] as HTMLElement).style.backgroundColor).not.toBe('')
 
-			// 배경(슬롯이 아닌 자리)에서는 뜨지 않는다.
+			// 배경(슬롯이 아닌 자리)도 비춘다 — 면 없이 테두리만(2026-10-12).
 			fireEvent.pointerOver(container.querySelector('[data-background-type]') as Element)
-			expect(hovers()).toHaveLength(0)
+			expect(hovers()).toHaveLength(1)
+			expect((hovers()[0] as HTMLElement).style.backgroundColor).toBe('')
+			expect((hovers()[0] as HTMLElement).style.border).not.toBe('')
 		} finally {
 			rect.mockRestore()
 		}

@@ -139,16 +139,17 @@ export function slotHighlightStyle(
  *
  * 🔴 테두리도 **반투명**이다(사용자 지시, 2026-09-30). 굵기는 선택과 같게 둬서 잡히는 순간
  *    상자가 흔들리지 않고, 색만 옅어 「고른 것」의 실선과 구별된다.
- * 🔑 배경(도화지)에는 쓰지 않는다. 전면을 덮는 면은 콘텐츠만 탁하게 만들고, 판 어디에 있든 늘
- *    켜져 있어 아무것도 알려 주지 않는다.
+ * 🔑 배경(도화지)은 테두리만 — 면은 깔지 않는다(사용자 지시, 2026-10-12). 선택 쪽 `filled`와 같은 규칙이다.
  */
-export function slotHoverStyle(scale: number, color?: string | null): CSSProperties {
+export function slotHoverStyle(scale: number, color?: string | null, filled = true): CSSProperties {
 	const ink = cssColor(color)
 	return {
 		position: 'absolute',
 		boxSizing: 'border-box',
 		pointerEvents: 'none',
 		border: `${borderWidth(scale)} solid color-mix(in srgb, ${ink} ${HOVER_BORDER_ALPHA}, transparent)`,
-		backgroundColor: `color-mix(in srgb, ${ink} ${HOVER_ALPHA}, transparent)`,
+		...(filled
+			? { backgroundColor: `color-mix(in srgb, ${ink} ${HOVER_ALPHA}, transparent)` }
+			: {}),
 	}
 }

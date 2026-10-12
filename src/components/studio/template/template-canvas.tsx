@@ -149,24 +149,29 @@ export function TemplateCanvas() {
 	 * 지나가는 자리를 옅게 비춘다 — **지금 누르면 무엇이 잡히는지**를 먼저 보여 준다
 	 * (사용자 지시, 2026-09-29).
 	 *
-	 * 🔴 배경은 뺀다. 도화지를 덮는 면은 판 어디에 있든 늘 켜져 있어 아무것도 알려 주지 않는다.
+	 * 🔑 규칙은 모든 요소에 하나다 — hover는 반투명 테두리, 클릭하면 100%(사용자 지시, 2026-10-12).
+	 *    배경(도화지)만 면을 깔지 않는다 — 전면을 덮는 면은 콘텐츠만 탁하게 만든다.
 	 * 🔑 지날 때 바로 재고 끝낸다 — 상시 측정을 두면 이미지·폰트가 늦게 도착할 때마다 다시 재야 한다.
 	 * 🔑 겹친 슬롯은 고려하지 않는다(사용자 지시) — 맨 위에 그려진 것을 브라우저가 이미 골라 준다.
 	 */
-	const [hoverBox, setHoverBox] = useState<SlotHighlightBox | null>(null)
+	const [hoverBox, setHoverBox] = useState<{ box: SlotHighlightBox; canvas: boolean } | null>(
+		null,
+	)
 	const previewHover = (from: Element | null) => {
 		const root = canvas.previewRef.current
-		const found = slotAt(from)
-		if (!found || !root) {
+		if (!root) {
 			setHoverBox(null)
 			return
 		}
-		setHoverBox(
-			clampSlotBox(found.node.getBoundingClientRect(), root.getBoundingClientRect(), {
-				width,
-				height,
-			}),
-		)
+		// 슬롯이 아닌 자리는 배경이다 — 판 안은 어디를 눌러도 배경이 잡히므로(`selectAt`) 같은 것을 비춘다.
+		const found = slotAt(from)
+		const box = found
+			? clampSlotBox(found.node.getBoundingClientRect(), root.getBoundingClientRect(), {
+					width,
+					height,
+				})
+			: { left: 0, top: 0, width, height }
+		setHoverBox(box ? { box, canvas: !found } : null)
 	}
 
 	// 끌기와 클릭을 가른다 — 그래픽 핸들을 끌고 놓는 것이 선택으로 읽히면 안 된다.
@@ -242,6 +247,11 @@ export function TemplateCanvas() {
 		<div
 			ref={stageRef}
 			className="relative grid h-full min-h-0 min-w-0 overflow-hidden p-1 lg:pb-28"
+			// 🔑 판 밖(회색 무대)을 누르면 강조를 끈다 — 판 전체를 결과물 그대로 볼 수 있는 유일한 입구(사용자 지시, 2026-10-12).
+			//    판 안을 누르면 이벤트 대상이 무대가 아니라서 걸리지 않는다.
+			onPointerDown={(event) => {
+				if (event.target === event.currentTarget && !editing.targetId) focus.set(null)
+			}}
 		>
 			{/* 🔴 여기서 자르지 않는다 — 강조선이 판 **밖**에 그려지므로, 자르는 일은 안쪽
 			    클릭 상자가 맡는다(주입 HTML과 그래픽 배경만 가둔다). */}
@@ -324,8 +334,8 @@ export function TemplateCanvas() {
 						<div
 							data-slot="template-slot-hover"
 							style={{
-								...slotHoverStyle(scale, focus.color),
-								...outsetSlotBox(hoverBox, scale),
+								...slotHoverStyle(scale, focus.color, !hoverBox.canvas),
+								...outsetSlotBox(hoverBox.box, scale),
 							}}
 						/>
 					)}
