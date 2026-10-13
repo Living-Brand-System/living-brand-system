@@ -226,7 +226,7 @@ function AccountsPanel({
 			{/* 막대는 하나를 모두가 같이 쓴다 — 표에서 고른 행만 바꿔 끼운다. */}
 			{/* 가운데 정렬은 이 화면의 배치다 — 스트립은 `/account` 카드와 공용이라 여기서 감싼다. */}
 			{/* 가운데 정렬은 이 화면의 배치다 — 스트립은 `/account` 카드와 공용이라 여기서 감싼다. */}
-			<div className="flex justify-center">
+			<div className="flex justify-center py-6">
 				<AiUsageDailyStrip days={daily} />
 			</div>
 			{/* 🔑 열 폭은 내용이 아니라 화면 폭이 정한다(table-fixed + 비율) — 값을 고치거나 버튼이 켜져도 표가 흔들리지 않는다. */}
