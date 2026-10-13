@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { AiUsageBreakdownRow } from './ai-usage-breakdown'
 import { AI_USAGE_MODEL_ROW_LIMIT, AI_USAGE_STUDIOS } from './ai-usage-catalog'
-import { foldAiUsage } from './ai-usage-fold'
+import { fillAiUsageDays, foldAiUsage } from './ai-usage-fold'
 
 const TODAY = '2026-09-22'
 
@@ -144,6 +144,18 @@ describe('foldAiUsage', () => {
 		expect(fold.daily.map((d) => d.dayKey)).toEqual(['2026-09-21', '2026-09-22'])
 		expect(fold.daily[1]?.share).toBe(1)
 		expect(fold.daily[0]?.share).toBe(0.5)
+	})
+
+	it('최근 n일을 빈 날까지 채운다', () => {
+		const fold = foldAiUsage([row({ dayKey: TODAY, totalTokens: 400 })], {
+			axis: 'user',
+			days: 3,
+			todayKey: TODAY,
+		})
+		const days = fillAiUsageDays(fold.daily, TODAY, 3)
+
+		expect(days.map((d) => d.totalTokens)).toEqual([0, 0, 400])
+		expect(days.at(-1)?.dayKey).toBe(TODAY)
 	})
 
 	it('빈 입력에서 나누기를 하지 않는다', () => {

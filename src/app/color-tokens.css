@@ -52,6 +52,8 @@
 	--color-success: var(--success);
 	--color-info: var(--info);
 	--color-warning: var(--warning);
+	--color-saturday: var(--saturday);
+	--color-sunday: var(--sunday);
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
@@ -113,6 +115,9 @@
 	--success: var(--color-emerald-700);
 	--info: var(--color-sky-700);
 	--warning: var(--color-amber-700);
+	/* 달력 주말 표기(토 파랑·일 빨강). 상태가 아니라 관습이라 상태색을 빌려 쓰지 않는다. */
+	--saturday: var(--color-blue-600);
+	--sunday: var(--color-red-600);
 	--border: var(--color-neutral-200);
 	--input: var(--color-neutral-200);
 	--ring: var(--color-neutral-400);
@@ -157,6 +162,8 @@
 	--success: var(--color-emerald-400);
 	--info: var(--color-sky-400);
 	--warning: var(--color-amber-400);
+	--saturday: var(--color-blue-400);
+	--sunday: var(--color-red-400);
 	/* 🔑 shadcn 기본은 흰색 10%·15% 알파지만 중립색은 neutral 단계만 쓴다(2026-10-06 결정). */
 	--border: var(--color-neutral-800);
 	--input: var(--color-neutral-700);
