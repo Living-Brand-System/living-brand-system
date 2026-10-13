@@ -3,7 +3,6 @@
 import { Button, TextInput, toast, useForm, useFormFields } from '@payloadcms/ui'
 import { useState } from 'react'
 import { composeTemplateHtml } from '@/features/template-core/runtime/compose-template-html.client'
-import { applyImportedLayerDefaults } from '@/features/template-import/domain/imported-layer-defaults'
 import { requestFigmaHtmlImport } from '@/features/template-import/services/import-figma-html.client'
 import type { FigmaLogoDiagnostic } from '@/features/template-import/services/import-figma-html.service'
 import type {
@@ -11,6 +10,7 @@ import type {
 	FigmaTruncationDiagnostic,
 } from '@/features/template-import/utils/normalize-figma-node'
 import type { TemplateNodeConfigMap } from '@/types/template'
+import { applyImportedLayerDefaults } from './template-layers'
 
 /** 이미지로 고정된 레이어 진단을 어드민 경고 문구로 요약한다(3개 초과는 개수로 줄임). */
 function formatRasterWarning(diagnostics: FigmaRasterDiagnostic[]): string {

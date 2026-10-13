@@ -213,3 +213,37 @@ export function pruneCarrierChildImageKeys(
 	else next[carrierChildId] = child
 	return next
 }
+
+/**
+ * Figma에서 가져온 레이어는 사용 상태가 정해진 모든 종류(텍스트·이미지·CI)가 「편집 가능」으로 시작한다.
+ * 어느 레이어가 그 종류인지는 이 목록과 **같은 판정**(parseLayers·canAssignImage)으로 고른다 — 그래야
+ * Admin이 보는 레이어와 기본값이 걸린 레이어가 갈라지지 않는다.
+ * 이미 사용 상태를 정한 레이어는 다시 가져와도 그대로 둔다 — Admin이 고른 값이 이긴다.
+ * 개방 선언(텍스트 `input`·이미지 `imageInput`)은 「편집 가능」으로 바꿀 때 편집기가 붙이는 것과 같다.
+ */
+export function applyImportedLayerDefaults(
+	html: string,
+	nodeConfigs: TemplateNodeConfigMap,
+): TemplateNodeConfigMap {
+	const next: TemplateNodeConfigMap = { ...nodeConfigs }
+	for (const layer of parseLayers(html)) {
+		const config = next[layer.id]
+		if (config?.creator) continue
+		if (layer.isText) {
+			next[layer.id] = {
+				...config,
+				creator: { access: 'editable' },
+				input: config?.input ?? {},
+			}
+		} else if (canAssignImage(layer)) {
+			next[layer.id] = {
+				...config,
+				creator: { access: 'editable' },
+				imageInput: config?.imageInput ?? {},
+			}
+		} else if (layer.isVector) {
+			next[layer.id] = { ...config, creator: { access: 'editable' } }
+		}
+	}
+	return next
+}
