@@ -45,6 +45,7 @@ Payload Admin 기본 화면은 이 문서의 대상이 아닙니다. Payload가 
 | action-hover-foreground | 액션의 호버·포커스 전경색. 눌림은 기존 `foreground`를 사용 | `src/app/color-tokens.css` |
 | chart-1~5 | HD 초록 다섯 단(prosperity·heritage·eco·deep·light, 다크는 4·5 교대). 번호가 계약 — 사용량 막대·일자 스트립·카메라 궤도 축·어드민 대시보드가 번호로 집는다 | `src/app/color-tokens.css` |
 | 상태색 | 판정·상태 표시 전용 `--success`/`--info`/`--warning`(실패는 기존 `--destructive`, 해당 없음은 `--muted`) | `src/app/color-tokens.css` |
+| 주말색 | 달력 날짜 표기 전용 `--saturday`(파랑)/`--sunday`(빨강). 상태가 아니라 관습이라 상태색을 빌려 쓰지 않는다 | `src/app/color-tokens.css` |
 | highlight | 강조 배경(그라디언트)과 전경 토큰, `.bg-highlight` 클래스. 앱·어드민 공통 | `src/app/color-tokens.css` |
 | radius | `--radius` 뿌리 1개에서 `--radius-sm/md/lg/xl/2xl/3xl` 6단 파생(`lg`는 뿌리값, 나머지는 calc) | `src/app/(frontend)/theme.css`, `src/app/(payload)/admin-tailwind.css` |
 | studio-rail-idle-foreground | StudioRail의 Idle 아이콘 전경색 | `src/app/color-tokens.css` |
