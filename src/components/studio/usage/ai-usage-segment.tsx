@@ -14,15 +14,23 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
  */
 export function AiUsageSegment({
 	ariaLabel,
+	className,
 	options,
 	value,
 }: {
 	ariaLabel: string
+	className?: string
 	options: readonly { value: string; label: string; href: string }[]
 	value: string
 }) {
 	return (
-		<ToggleGroup aria-label={ariaLabel} spacing={0} type="single" value={value}>
+		<ToggleGroup
+			aria-label={ariaLabel}
+			className={className}
+			spacing={0}
+			type="single"
+			value={value}
+		>
 			{options.map((option) => (
 				<ToggleGroupItem asChild key={option.value} value={option.value}>
 					{/* scroll=false: 축만 바꿨는데 화면이 맨 위로 튀지 않게 한다. */}

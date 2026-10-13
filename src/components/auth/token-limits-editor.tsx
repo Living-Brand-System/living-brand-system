@@ -219,10 +219,12 @@ function AccountsPanel({
 			/>
 			{/* 막대는 하나를 모두가 같이 쓴다 — 표에서 고른 행만 바꿔 끼운다. */}
 			{/* 가운데 정렬은 이 화면의 배치다 — 스트립은 `/account` 카드와 공용이라 여기서 감싼다. */}
-			<div className="flex flex-col items-center gap-4">
+			{/* 토글은 그래프 왼쪽 위에 나란히 선다 — 둘을 한 덩어리로 가운데 둔다. */}
+			<div className="flex flex-wrap items-start justify-center gap-6">
 				{/* 역할을 바꾸면 고른 계정은 풀린다 — 다른 역할의 계정이 막대에 남으면 표와 어긋난다. */}
 				<AiUsageSegment
 					ariaLabel="역할"
+					className="border border-foreground/20 p-0.5"
 					options={ROLE_OPTIONS.map((option) => ({
 						...option,
 						href: pageHref(option.value),
