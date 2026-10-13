@@ -83,6 +83,22 @@ function shiftDayKey(dayKey: string, days: number): string {
 	return shifted.toISOString().slice(0, 10)
 }
 
+/**
+ * 최근 n일을 빈 날까지 채운다. `foldAiUsage`의 일자 분포는 쓴 날만 담는데, 계정 하나만 보면 쓴 날이
+ * 드문드문이라 빈 날이 빠지면 막대 간격이 날짜 간격을 거짓말한다.
+ */
+export function fillAiUsageDays(
+	daily: readonly AiUsageDay[],
+	todayKey: string,
+	days: number,
+): AiUsageDay[] {
+	const byDay = new Map(daily.map((day) => [day.dayKey, day]))
+	return Array.from({ length: days }, (_, index) => {
+		const dayKey = shiftDayKey(todayKey, days - 1 - index)
+		return byDay.get(dayKey) ?? { dayKey, share: 0, totalTokens: 0 }
+	})
+}
+
 function matchesFilters(row: AiUsageBreakdownRow, filters: AiUsageFilters): boolean {
 	if (filters.user !== undefined && userKeyOf(row) !== filters.user) return false
 	if (filters.feature !== undefined && row.feature !== filters.feature) return false
