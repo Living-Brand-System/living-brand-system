@@ -45,6 +45,8 @@ export type StudioSurface = {
 		extras?: ControlPanelExtras
 		/** 같은 패널 안에서 편집 대상이 바뀌는 스튜디오(템플릿의 레이어) — 바뀌면 탭 선택만 Basic으로 돌아간다. */
 		target?: string
+		/** 레일 맨 아래 버튼(`ControlPanel`의 `railFooter`). */
+		railFooter?: ReactNode
 	}
 }
 
@@ -72,6 +74,7 @@ export function StudioShell({ surface }: { surface: StudioSurface }) {
 								compositions={panel.compositions}
 								extras={panel.extras}
 								target={panel.target}
+								railFooter={panel.railFooter}
 							/>
 						</ControllerBrowser.Root>
 					</PanelRenderScope>

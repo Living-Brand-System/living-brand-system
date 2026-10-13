@@ -1,7 +1,7 @@
 'use client'
 
 import { cva } from 'class-variance-authority'
-import type { ComponentProps } from 'react'
+import type { ComponentProps, ReactElement } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -17,7 +17,8 @@ const iconVariants = cva('size-11 rounded-lg p-0 disabled:opacity-100', {
 })
 
 type StudioRailIconProps = Omit<ComponentProps<'button'>, 'children'> & {
-	icon: 'basic' | 'presets' | 'adjustment'
+	/** Figma 원본 SVG 이름, 또는 그 원본이 없는 버튼(Manager mode 등)의 `@carbon/icons-react` 아이콘. */
+	icon: 'basic' | 'presets' | 'adjustment' | ReactElement
 	label: string
 	state?: 'active' | 'disabled' | 'idle'
 }
@@ -46,12 +47,22 @@ export function StudioRailIcon({
 			disabled={resolved === 'disabled'}
 			className={cn(iconVariants({ state: resolved }), className)}
 		>
-			<span
-				aria-hidden="true"
-				data-icon="only"
-				className="block size-5 bg-current mask-center mask-no-repeat"
-				style={{ maskImage: `url(/studio/rail/${icon}.svg)` }}
-			/>
+			{typeof icon === 'string' ? (
+				<span
+					aria-hidden="true"
+					data-icon="only"
+					className="block size-5 bg-current mask-center mask-no-repeat"
+					style={{ maskImage: `url(/studio/rail/${icon}.svg)` }}
+				/>
+			) : (
+				<span
+					aria-hidden="true"
+					data-icon="only"
+					className="flex size-5 items-center justify-center [&_svg]:size-5"
+				>
+					{icon}
+				</span>
+			)}
 		</Button>
 	)
 }

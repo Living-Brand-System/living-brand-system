@@ -133,6 +133,7 @@ import * as migration_20261007_110418_template_default_session from './20261007_
 import * as migration_20261008_015146_payload_3_90_security from './20261008_015146_payload_3_90_security';
 import * as migration_20261008_084610_blob_object_key from './20261008_084610_blob_object_key';
 import * as migration_20261012_054924_brand_logo_ci_variant from './20261012_054924_brand_logo_ci_variant';
+import * as migration_20261013_042256_template_trash from './20261013_042256_template_trash';
 
 export const migrations = [
   {
@@ -808,6 +809,11 @@ export const migrations = [
   {
     up: migration_20261012_054924_brand_logo_ci_variant.up,
     down: migration_20261012_054924_brand_logo_ci_variant.down,
-    name: '20261012_054924_brand_logo_ci_variant'
+    name: '20261012_054924_brand_logo_ci_variant',
+  },
+  {
+    up: migration_20261013_042256_template_trash.up,
+    down: migration_20261013_042256_template_trash.down,
+    name: '20261013_042256_template_trash'
   },
 ];
