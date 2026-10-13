@@ -278,7 +278,8 @@ function AccountsPanel({
 							// 행 어디를 눌러도 고른다. 키보드는 이메일 링크로 같은 일을 한다.
 							<TableRow
 								key={account.id}
-								className="cursor-pointer"
+								// 계정 사이 선은 머리글 아래 선보다 옅게 — 머리글과 본문의 경계가 먼저 읽힌다.
+								className="cursor-pointer border-foreground/20"
 								data-state={isSelected ? 'selected' : undefined}
 								onClick={(event) => {
 									// 입력·토글·저장 버튼·링크는 제 할 일만 한다 — 행 선택은 빈 자리를 눌렀을 때뿐이다.
