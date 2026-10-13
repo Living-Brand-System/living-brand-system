@@ -1,11 +1,20 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Controller } from '@/components/shared/controller'
 import { PageCard } from '@/components/shared/page-card'
+import { AiUsageDailyStrip } from '@/components/studio/usage/ai-usage-daily-strip'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select'
 import {
 	Table,
 	TableBody,
@@ -15,7 +24,10 @@ import {
 	TableRow,
 } from '@/components/ui/table'
 import { Toggle } from '@/components/ui/toggle'
+import type { Role } from '@/lib/auth'
+import { routes } from '@/lib/routes'
 import { cn } from '@/lib/utils'
+import type { AiUsageDay } from '@/modules/ai-usage/ai-usage-fold'
 import {
 	saveAccountTokenLimits,
 	saveDefaultTokenLimits,
@@ -47,6 +59,16 @@ const USAGE_TITLES: Record<TokenLimitPeriod, string> = {
 	daily: '오늘 사용',
 	monthly: '이번 달 사용',
 }
+/** 역할 나눠 보기 — 기본은 worker다. 라벨은 Users 컬렉션의 role 선택지와 같다. */
+const ROLE_OPTIONS: readonly { value: Role; label: string }[] = [
+	{ value: 'worker', label: 'Worker' },
+	{ value: 'manager', label: 'Manager' },
+	{ value: 'admin', label: 'Admin' },
+]
+/** 역할과 고른 계정은 URL에만 있다 — 새로고침·링크 공유에 안 날아간다. */
+const pageHref = (role: Role, userId?: number) =>
+	`${routes.accountTokenLimits}?${new URLSearchParams(userId === undefined ? { role } : { role, user: String(userId) })}`
+
 const NUMBER = new Intl.NumberFormat('ko-KR')
 const PERCENT = new Intl.NumberFormat('ko-KR', { style: 'percent', maximumFractionDigits: 0 })
 
@@ -67,15 +89,30 @@ const sameDraft = (a: AccountDraft, b: AccountDraft) =>
 export function TokenLimitsEditor({
 	defaults,
 	accounts,
+	daily,
+	role,
+	selectedUserId,
 }: {
 	/** 지금 걸리는 기본값(저장값, 없으면 LBS 기본값). */
 	defaults: Limits
 	accounts: TokenLimitAccount[]
+	/** 표 위 일별 막대 — 고른 계정, 안 골랐으면 보이는 계정 전체. */
+	daily: AiUsageDay[]
+	/** 표·막대가 보여 주는 역할. */
+	role: Role
+	/** 이메일을 눌러 고른 계정. 그 행만 표시한다. */
+	selectedUserId?: number
 }) {
 	return (
 		<div className="flex flex-col gap-4">
 			<DefaultsPanel defaults={defaults} />
-			<AccountsPanel defaults={defaults} accounts={accounts} />
+			<AccountsPanel
+				defaults={defaults}
+				accounts={accounts}
+				daily={daily}
+				role={role}
+				selectedUserId={selectedUserId}
+			/>
 		</div>
 	)
 }
@@ -130,9 +167,15 @@ function DefaultsPanel({ defaults }: { defaults: Limits }) {
 function AccountsPanel({
 	defaults,
 	accounts,
+	daily,
+	role,
+	selectedUserId,
 }: {
 	defaults: Limits
 	accounts: TokenLimitAccount[]
+	daily: AiUsageDay[]
+	role: Role
+	selectedUserId?: number
 }) {
 	const router = useRouter()
 	const [drafts, setDrafts] = useState<Record<number, AccountDraft>>({})
@@ -180,6 +223,12 @@ function AccountsPanel({
 					</Button>
 				}
 			/>
+			{/* 막대는 하나를 모두가 같이 쓴다 — 표에서 고른 행만 바꿔 끼운다. */}
+			{/* 가운데 정렬은 이 화면의 배치다 — 스트립은 `/account` 카드와 공용이라 여기서 감싼다. */}
+			{/* 가운데 정렬은 이 화면의 배치다 — 스트립은 `/account` 카드와 공용이라 여기서 감싼다. */}
+			<div className="flex justify-center py-6">
+				<AiUsageDailyStrip days={daily} />
+			</div>
 			{/* 🔑 열 폭은 내용이 아니라 화면 폭이 정한다(table-fixed + 비율) — 값을 고치거나 버튼이 켜져도 표가 흔들리지 않는다. */}
 			<Table className="table-fixed">
 				<colgroup>
@@ -207,7 +256,27 @@ function AccountsPanel({
 							</div>
 						</TableHead>
 						<TableHead>
-							<span className="sr-only">저장</span>
+							{/* 역할 나눠 보기는 표의 머리글 맨 오른쪽에 선다 — 표와 막대가 함께 그 역할로 좁혀진다.
+							    역할을 바꾸면 고른 계정은 풀린다 — 다른 역할의 계정이 막대에 남으면 표와 어긋난다. */}
+							<div className="flex justify-end">
+								<Select
+									value={role}
+									onValueChange={(next) =>
+										router.push(pageHref(next as Role), { scroll: false })
+									}
+								>
+									<SelectTrigger aria-label="역할" size="sm">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{ROLE_OPTIONS.map((option) => (
+											<SelectItem key={option.value} value={option.value}>
+												{option.label}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
 						</TableHead>
 					</TableRow>
 				</TableHeader>
@@ -220,14 +289,39 @@ function AccountsPanel({
 								...current,
 								[account.id]: { ...draft, ...patch },
 							}))
+						const isSelected = selectedUserId === account.id
+						// 누르면 표 위 막대가 이 계정으로 바뀌고, 다시 누르면 전체로 돌아간다.
+						const selectHref = pageHref(role, isSelected ? undefined : account.id)
 						return (
-							<TableRow key={account.id}>
+							// 행 어디를 눌러도 고른다. 키보드는 이메일 링크로 같은 일을 한다.
+							<TableRow
+								key={account.id}
+								// 계정 사이 선은 머리글 아래 선보다 옅게 — 머리글과 본문의 경계가 먼저 읽힌다.
+								className="cursor-pointer border-foreground/20"
+								data-state={isSelected ? 'selected' : undefined}
+								onClick={(event) => {
+									// 입력·토글·저장 버튼·링크는 제 할 일만 한다 — 행 선택은 빈 자리를 눌렀을 때뿐이다.
+									if (
+										(event.target as HTMLElement).closest(
+											'a, button, input, label',
+										)
+									)
+										return
+									router.push(selectHref, { scroll: false })
+								}}
+							>
 								<TableCell>
 									{/* 한 줄로 자른다 — 긴 이메일이 줄을 바꾸면 그 행만 높아진다. */}
 									<div className="flex min-w-0 flex-col">
-										<span className="truncate text-sm" title={account.email}>
+										<Link
+											aria-current={isSelected ? 'true' : undefined}
+											className="truncate text-sm underline-offset-4 hover:underline"
+											href={selectHref}
+											scroll={false}
+											title={account.email}
+										>
 											{account.email}
-										</span>
+										</Link>
 										<span className="text-muted-foreground text-xs">
 											{account.role}
 										</span>
