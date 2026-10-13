@@ -219,19 +219,21 @@ function AccountsPanel({
 			/>
 			{/* 막대는 하나를 모두가 같이 쓴다 — 표에서 고른 행만 바꿔 끼운다. */}
 			{/* 가운데 정렬은 이 화면의 배치다 — 스트립은 `/account` 카드와 공용이라 여기서 감싼다. */}
-			{/* 토글은 그래프 왼쪽 위에 나란히 선다 — 둘을 한 덩어리로 가운데 둔다. */}
-			<div className="flex flex-wrap items-start justify-center gap-6">
+			{/* 토글은 제 폭만 갖고 왼쪽 위에 선다. 남은 폭은 그래프 영역이 갖고, 그래프는 그 안에서 가운데다. */}
+			<div className="flex items-start gap-6">
 				{/* 역할을 바꾸면 고른 계정은 풀린다 — 다른 역할의 계정이 막대에 남으면 표와 어긋난다. */}
 				<AiUsageSegment
 					ariaLabel="역할"
-					className="border border-foreground/20 p-0.5"
+					className="shrink-0 border border-foreground/20 p-0.5"
 					options={ROLE_OPTIONS.map((option) => ({
 						...option,
 						href: pageHref(option.value),
 					}))}
 					value={role}
 				/>
-				<AiUsageDailyStrip days={daily} />
+				<div className="flex min-w-0 flex-1 justify-center">
+					<AiUsageDailyStrip days={daily} />
+				</div>
 			</div>
 			{/* 🔑 열 폭은 내용이 아니라 화면 폭이 정한다(table-fixed + 비율) — 값을 고치거나 버튼이 켜져도 표가 흔들리지 않는다. */}
 			<Table className="table-fixed">
