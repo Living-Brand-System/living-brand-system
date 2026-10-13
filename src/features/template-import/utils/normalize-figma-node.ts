@@ -1,4 +1,7 @@
-import { isTemplateVectorNodeType } from '@/features/template-core/domain/template-node-types'
+import {
+	isTemplateVectorNodeType,
+	TEMPLATE_BACKGROUND_FIGMA_TYPE,
+} from '@/features/template-core/domain/template-node-types'
 import type { FigmaRenderedAsset, FigmaSourceNode, IrNode } from './figma-ir'
 import {
 	createBoxStyle,
@@ -288,8 +291,72 @@ export function normalizeFigmaNode(
 	node: FigmaSourceNode,
 	renderedAssets: Readonly<Record<string, FigmaRenderedAsset>> = {},
 	imageFillAssets: Readonly<Record<string, FigmaRenderedAsset>> = {},
+	backdropAsset?: FigmaRenderedAsset,
 ): IrNode | null {
-	return normalizeNode(node, null, true, renderedAssets, imageFillAssets)
+	const root = normalizeNode(node, null, true, renderedAssets, imageFillAssets)
+	return root && withBackgroundLayer(root, node, backdropAsset)
+}
+
+/** lowerNodeBackground가 내는 배경 선언 전부 — 판에서 bg 레이어로 옮기는 단위다. */
+const BACKGROUND_KEYS = [
+	'background',
+	'background-color',
+	'background-image',
+	'background-size',
+	'background-position',
+	'background-repeat',
+] as const
+
+/**
+ * 판 자신의 fill을 맨 뒤의 bg 레이어 하나로 세운다 — 스튜디오 「Background」가 이 레이어에 칠한다.
+ * fill이 여러 겹이면 한 레이어 안에서 겹친 그대로 합친다. 이미지 레이어는 크기와 상관없이 이미지 레이어로 둔다.
+ */
+function withBackgroundLayer(
+	root: IrNode,
+	source: FigmaSourceNode,
+	backdrop?: FigmaRenderedAsset,
+): IrNode {
+	if (!(source.fills ?? []).some((paint) => paint.visible !== false)) return root
+
+	const style = { ...root.style }
+	// 합성본이 있으면 판 fill(겹친 CSS)을 버리고 그 한 장을 판 크기로 깐다 — 이미 판 비율로 구운 그림이다.
+	const background = backdrop
+		? {
+				'background-image': `url(${backdrop.url})`,
+				'background-size': '100% 100%',
+				'background-repeat': 'no-repeat',
+			}
+		: Object.fromEntries(
+				BACKGROUND_KEYS.flatMap((key) => (style[key] ? [[key, style[key]]] : [])),
+			)
+	const fillAsset = backdrop ?? root.fillAsset
+	for (const key of BACKGROUND_KEYS) delete style[key]
+	return {
+		...root,
+		style,
+		fillAsset: undefined,
+		children: [
+			{
+				id: `${root.id}:bg`,
+				name: 'bg',
+				figmaType: TEMPLATE_BACKGROUND_FIGMA_TYPE,
+				tag: 'div',
+				style: {
+					'box-sizing': 'border-box',
+					position: 'absolute',
+					left: '0',
+					top: '0',
+					width: '100%',
+					height: '100%',
+					...background,
+				},
+				fillAsset,
+				// 🔴 이미지 배정 자리(캐리어)가 아니다 — 배경은 스튜디오 Background만 다룬다(사용자 결정 2026-10-12).
+				children: [],
+			},
+			...root.children,
+		],
+	}
 }
 
 /**

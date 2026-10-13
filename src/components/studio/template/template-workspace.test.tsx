@@ -108,7 +108,7 @@ it('실제 합성 캔버스·출력에 연결하고 Reset은 텍스트·색·출
 	expect(screen.getByRole('combobox', { name: 'Format' })).toHaveTextContent('PNG')
 })
 
-it('네 가지 묶음만 표시하고 눈 아이콘은 편집 권한과 무관하게 묶음 전체를 숨기고 복원한다', async () => {
+it('레이어가 있는 묶음과 배경만 표시하고 눈 아이콘은 편집 권한과 무관하게 묶음 전체를 숨기고 복원한다', async () => {
 	const { container } = renderTemplate(
 		studio(1, {
 			html: '<div><p data-node-id="title">제목 원본</p><p data-node-id="subtitle">부제 원본</p><p data-node-id="fixed">고정 문구</p></div>',
@@ -127,14 +127,15 @@ it('네 가지 묶음만 표시하고 눈 아이콘은 편집 권한과 무관�
 	)
 	await screen.findByRole('textbox', { name: '제목' })
 	const panel = screen.getByRole('region', { name: 'Layers' })
-	expect(panel.querySelectorAll('[data-slot="template-layer-group"]')).toHaveLength(4)
+	// 레이어가 없는 묶음(Image·Symbol)은 줄째 없다 — 배경만은 늘 있다.
+	expect(panel.querySelectorAll('[data-slot="template-layer-group"]')).toHaveLength(2)
 	expect(within(panel).getByRole('button', { name: /^Text$/ })).toHaveAttribute(
 		'aria-pressed',
 		'true',
 	)
-	expect(within(panel).getByRole('button', { name: /^Image$/ })).toBeDisabled()
-	expect(within(panel).getByRole('button', { name: /^Symbol$/ })).toBeDisabled()
-	expect(within(panel).getByRole('button', { name: 'Symbol 숨김' })).toBeDisabled()
+	expect(within(panel).queryByRole('button', { name: /^Image$/ })).not.toBeInTheDocument()
+	expect(within(panel).queryByRole('button', { name: /^Symbol$/ })).not.toBeInTheDocument()
+	expect(within(panel).getByRole('button', { name: /^Background$/ })).toBeInTheDocument()
 	expect(screen.queryByText('서포트 설명')).not.toBeInTheDocument()
 	expect(screen.queryByRole('group', { name: '제목 표시' })).not.toBeInTheDocument()
 	const preview = container.querySelector('[data-slot="template-preview"]')

@@ -8,7 +8,12 @@ import {
 	requestPublishedImageProfiles,
 } from '@/features/image-generation/services/generate-image.client'
 import type { TemplateLayerAccess, TemplateNodeConfig, TemplateSlotSpec } from '@/types/template'
-import { canAssignImage, type LayerRow, toggleAllowedId } from './template-layers'
+import {
+	canAssignImage,
+	isBackgroundLayer,
+	type LayerRow,
+	toggleAllowedId,
+} from './template-layers'
 import { VectorLayerEditor } from './vector-layer-editor'
 
 function usePublishedImageProfiles() {
@@ -49,12 +54,15 @@ function CreatorLayerPolicyEditor({
 	config,
 	fallbackName,
 	onChange,
+	withAccess = true,
 }: {
 	access: TemplateLayerAccess
 	config: TemplateNodeConfig
 	/** Admin이 이름을 정하지 않았을 때 실제로 쓰이는 이름 — Figma가 준 `data-name`이다. */
 	fallbackName: string
 	onChange: (patch: TemplateNodeConfig) => void
+	/** 사용 상태 줄을 그릴지 — 배경은 스튜디오 Background가 늘 다루므로 사용 상태가 없다. */
+	withAccess?: boolean
 }) {
 	return (
 		<Controller.Group title="기본 설정" collapsible={false}>
@@ -67,20 +75,22 @@ function CreatorLayerPolicyEditor({
 					onChange={(event) => onChange({ label: event.target.value || undefined })}
 				/>
 			</Controller.Row>
-			<Controller.Row label="사용 상태">
-				<Controller.Segmented
-					aria-label="사용 상태"
-					options={[
-						{ value: 'editable', label: '편집 가능' },
-						{ value: 'readonly', label: '읽기 전용' },
-					]}
-					// 🔑 미설정 레이어는 `hidden`(스튜디오에 노출 안 함)이라 어느 칸도 눌려 있지 않다.
-					//    표시 여부는 정책이 아니다 — 스튜디오 사용자가 Layers 패널에서 정한다.
-					value={access}
-					// 예전의 visibility 값은 여기서 걷힌다 — 읽는 곳이 없다.
-					onChange={(next) => onChange({ creator: { access: next } })}
-				/>
-			</Controller.Row>
+			{withAccess && (
+				<Controller.Row label="사용 상태">
+					<Controller.Segmented
+						aria-label="사용 상태"
+						options={[
+							{ value: 'editable', label: '편집 가능' },
+							{ value: 'readonly', label: '읽기 전용' },
+						]}
+						// 🔑 미설정 레이어는 `hidden`(스튜디오에 노출 안 함)이라 어느 칸도 눌려 있지 않다.
+						//    표시 여부는 정책이 아니다 — 스튜디오 사용자가 Layers 패널에서 정한다.
+						value={access}
+						// 예전의 visibility 값은 여기서 걷힌다 — 읽는 곳이 없다.
+						onChange={(next) => onChange({ creator: { access: next } })}
+					/>
+				</Controller.Row>
+			)}
 		</Controller.Group>
 	)
 }
@@ -296,6 +306,20 @@ export function TemplateLayerEditor({
 			}}
 		/>
 	)
+
+	if (isBackgroundLayer(selected)) {
+		return (
+			<LayerCard heading={selected.name}>
+				<CreatorLayerPolicyEditor
+					access={access}
+					config={config}
+					fallbackName={selected.name}
+					onChange={onCommit}
+					withAccess={false}
+				/>
+			</LayerCard>
+		)
+	}
 
 	if (selected.isText) {
 		return (

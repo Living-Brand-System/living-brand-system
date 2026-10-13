@@ -1050,3 +1050,36 @@ describe('composeTemplateHtml 레이어 이름 정리', () => {
 		expect(nameOf(html)).toBe('\u2028')
 	})
 })
+
+describe('composeTemplateHtml canvas background with bg layer', () => {
+	const withBg =
+		'<div data-node-id="root" style="width:100px;height:100px;position:relative;background-color:rgb(0,0,0)">' +
+		'<div data-node-id="root:bg" data-figma-type="BACKGROUND" data-name="bg" data-image-carrier="" style="position:absolute;left:0;top:0;width:100%;height:100%;background-image:url(/fill.png)"></div>' +
+		'<p data-node-id="t">제목</p></div>'
+
+	it('스튜디오 배경 색은 판이 아니라 bg 레이어에 칠하고, 디머는 bg 바로 위에 깐다', () => {
+		const html = composeTemplateHtml(
+			withBg,
+			{},
+			{ canvasBackground: { color: '#ff0000', dimmer: 0.4 } },
+		)
+		const root = new DOMParser().parseFromString(html, 'text/html').body
+			.firstElementChild as HTMLElement
+		const bg = root.children[0] as HTMLElement
+
+		expect(bg.dataset.figmaType).toBe('BACKGROUND')
+		expect(bg.style.backgroundColor).toBe('rgb(255, 0, 0)')
+		expect(bg.style.backgroundImage).toBe('none')
+		expect(root.style.backgroundColor).toBe('rgb(0, 0, 0)')
+		expect(root.children[1].hasAttribute('data-canvas-dimmer')).toBe(true)
+	})
+
+	it('graphic 배경(clear)은 판과 bg 레이어를 함께 비운다', () => {
+		const html = composeTemplateHtml(withBg, {}, { canvasBackground: { clear: true } })
+		const root = new DOMParser().parseFromString(html, 'text/html').body
+			.firstElementChild as HTMLElement
+
+		expect(root.style.backgroundColor).toBe('transparent')
+		expect((root.children[0] as HTMLElement).style.backgroundImage).toBe('none')
+	})
+})

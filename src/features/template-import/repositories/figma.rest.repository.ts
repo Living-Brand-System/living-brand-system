@@ -105,8 +105,11 @@ export async function findFigmaImageFillUrls(
 	return data.meta?.images ?? {}
 }
 
-/** 이미지 조각 하나의 최대 크기 — 폭주한 렌더 결과가 메모리·S3를 잠식하지 않게 막는다. */
-const MAX_IMAGE_BYTES = 15 * 1024 * 1024
+/**
+ * 내려받는 이미지 하나의 최대 크기 — 폭주한 렌더 결과가 메모리를 잠식하지 않게 막는 상한이다.
+ * 저장 상한(15MB)보다 크게 둔다 — 그 사이는 서비스가 화질을 지키며 다시 인코딩한다.
+ */
+const MAX_IMAGE_BYTES = 64 * 1024 * 1024
 
 /** Figma가 준 임시 S3 URL에서 이미지 바이트를 내려받는다. URL은 곧 만료되므로 임포트 중에만 쓴다. */
 export async function downloadFigmaImage(url: string): Promise<{ data: Buffer; mimeType: string }> {
@@ -124,7 +127,7 @@ export async function downloadFigmaImage(url: string): Promise<{ data: Buffer; m
 	if (data.byteLength > MAX_IMAGE_BYTES) {
 		throw new FigmaImportError(
 			`Figma image exceeds size limit (${data.byteLength} bytes)`,
-			'Figma 레이어 이미지가 가져오기 제한인 15MB를 초과했습니다.',
+			'Figma 레이어 이미지가 가져오기 제한인 64MB를 초과했습니다.',
 			413,
 		)
 	}

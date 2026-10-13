@@ -75,6 +75,8 @@ export function TemplateLayerGroups() {
 			</Typography>
 			{TEMPLATE_LAYER_ROWS.map(({ kind, label, Icon }) => {
 				const slots = config.template.slots.filter((slot) => slot.kind === kind)
+				// 레이어가 없는 묶음은 줄째 그리지 않는다 — 비활성 줄로 남기면 없는 것을 있는 것처럼 보인다.
+				if (!slots.length) return null
 				const selected = selectedKind === kind
 				return (
 					<div

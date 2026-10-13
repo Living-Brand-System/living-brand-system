@@ -1,5 +1,6 @@
 'use client'
 
+import { TEMPLATE_BACKGROUND_FIGMA_TYPE } from '@/features/template-core/domain/template-node-types'
 import { formatImageEditTransform, isIdentityTransform } from '@/lib/template-image-transform'
 import type { TemplateNodeConfig, TemplateNodeConfigMap } from '@/types/template'
 
@@ -233,7 +234,11 @@ function applyCanvasDimmer(doc: Document, root: HTMLElement, opacity: number) {
 	dimmer.style.backgroundColor = `rgba(0, 0, 0, ${alpha})`
 	// 캔버스는 슬롯을 눌러 고르는 편집면이다 — 전면을 덮는 장식이 클릭을 가로채면 안 된다.
 	dimmer.style.pointerEvents = 'none'
-	root.insertBefore(dimmer, root.firstChild)
+	// bg 레이어가 있으면 그 바로 위 — 배경만 누르고 콘텐츠는 덮지 않는다.
+	const backdrop = root.querySelector(
+		`:scope > [data-figma-type="${TEMPLATE_BACKGROUND_FIGMA_TYPE}"]`,
+	)
+	root.insertBefore(dimmer, backdrop ? backdrop.nextSibling : root.firstChild)
 }
 
 const IMAGE_DIMMER_ATTRIBUTE = 'data-image-dimmer'
@@ -423,21 +428,29 @@ export function composeTemplateHtml(
 		for (const child of next) parent.appendChild(child)
 	}
 
-	// 캔버스 배경 — 루트 프레임(body 직계 자식)의 inline 배경을 덮는다. 값을 준 갈래만 쓰므로
+	// 캔버스 배경 — 판의 bg 레이어(없으면 루트 프레임)의 inline 배경을 덮는다. 값을 준 갈래만 쓰므로
 	// 색만/이미지만/둘 다가 모두 성립하고, 같은 입력이면 같은 선언이 나와 재합성이 멱등이다.
 	const root = doc.body.firstElementChild
 	if (canvasBackground && root instanceof HTMLElement) {
-		if (canvasBackground.clear) root.style.background = 'transparent'
+		const backdrop =
+			root.querySelector<HTMLElement>(
+				`:scope > [data-figma-type="${TEMPLATE_BACKGROUND_FIGMA_TYPE}"]`,
+			) ?? root
+		if (canvasBackground.clear) {
+			// 뒤에 깔린 graphic이 비쳐야 한다 — 판과 bg 레이어를 함께 비운다.
+			root.style.background = 'transparent'
+			backdrop.style.background = 'transparent'
+		}
 		if (canvasBackground.color) {
-			root.style.backgroundColor = canvasBackground.color
-			// 색만 고른 것이면 원본 루트의 이미지 fill을 걷는다 — 안 걷으면 고른 색이 사진 아래에 깔려 안 보인다.
-			if (!canvasBackground.imageUrl) root.style.backgroundImage = 'none'
+			backdrop.style.backgroundColor = canvasBackground.color
+			// 색만 고른 것이면 원본의 이미지 fill을 걷는다 — 안 걷으면 고른 색이 사진 아래에 깔려 안 보인다.
+			if (!canvasBackground.imageUrl) backdrop.style.backgroundImage = 'none'
 		}
 		if (canvasBackground.imageUrl) {
-			root.style.backgroundImage = `url("${canvasBackground.imageUrl}")`
-			root.style.backgroundSize = 'cover'
-			root.style.backgroundPosition = 'center'
-			root.style.backgroundRepeat = 'no-repeat'
+			backdrop.style.backgroundImage = `url("${canvasBackground.imageUrl}")`
+			backdrop.style.backgroundSize = 'cover'
+			backdrop.style.backgroundPosition = 'center'
+			backdrop.style.backgroundRepeat = 'no-repeat'
 		}
 		if (canvasBackground.dimmer !== undefined) {
 			applyCanvasDimmer(doc, root, canvasBackground.dimmer)

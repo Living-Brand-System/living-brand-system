@@ -23,6 +23,11 @@ export interface FigmaPaint {
 	imageRef?: string
 	/** IMAGE paint의 맞춤 방식: FILL/FIT/TILE/STRETCH. */
 	scaleMode?: string
+	/**
+	 * IMAGE paint의 배치 행렬 — 판(0~1) 좌표를 이미지(0~1) 좌표로 옮긴다. Figma에서 이미지를 잘라 놓으면 붙는다.
+	 * 실측(2026-10-12, hd_lbs_templates 161:84): 이미지는 판의 x ∈ [-tx/sx, (1-tx)/sx] 구간에 놓인다.
+	 */
+	imageTransform?: [[number, number, number], [number, number, number]]
 }
 
 export interface FigmaEffect {

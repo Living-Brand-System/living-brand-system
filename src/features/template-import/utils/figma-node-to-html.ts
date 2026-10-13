@@ -24,8 +24,10 @@ export function convertFigmaNodeToHtml(
 	node: FigmaSourceNode,
 	renderedAssets: Readonly<Record<string, FigmaRenderedAsset>> = {},
 	imageFillAssets: Readonly<Record<string, FigmaRenderedAsset>> = {},
+	/** 판 fill 여러 겹을 합성한 한 장 — 있으면 bg 레이어가 판 fill 대신 이것을 쓴다. */
+	backdropAsset?: FigmaRenderedAsset,
 ): FigmaHtmlResult {
-	const ir = normalizeFigmaNode(node, renderedAssets, imageFillAssets)
+	const ir = normalizeFigmaNode(node, renderedAssets, imageFillAssets, backdropAsset)
 	return {
 		html: ir ? emitTemplateHtml(ir) : '',
 		width: roundCssNumber(node.absoluteBoundingBox?.width ?? 0),

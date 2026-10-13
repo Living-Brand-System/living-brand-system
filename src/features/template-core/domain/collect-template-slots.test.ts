@@ -222,3 +222,14 @@ describe('Template 공통 Creator 레이어 정책', () => {
 		).toEqual([{ nodeId: '4:1', name: 'Logo', logoId: 35, policy: { access: 'editable' } }])
 	})
 })
+
+describe('판 배경 레이어', () => {
+	it('예전에 이미지 슬롯으로 열어 둔 설정이 남아 있어도 이미지 슬롯으로 모으지 않는다', () => {
+		expect(
+			collectTemplateImageSlots(
+				'<div data-node-id="f"><div data-node-id="f:bg" data-figma-type="BACKGROUND" data-name="bg" data-image-carrier=""></div></div>',
+				{ 'f:bg': { creator: { access: 'editable' }, imageInput: {} } },
+			),
+		).toEqual([])
+	})
+})

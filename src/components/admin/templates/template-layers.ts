@@ -1,4 +1,7 @@
-import { isTemplateVectorNodeType } from '@/features/template-core/domain/template-node-types'
+import {
+	isTemplateVectorNodeType,
+	TEMPLATE_BACKGROUND_FIGMA_TYPE,
+} from '@/features/template-core/domain/template-node-types'
 import {
 	findImageCarrier,
 	isImageColorizeOverlayId,
@@ -41,6 +44,8 @@ const TYPE_LABEL: Record<string, string> = {
 	POLYGON: '다각형',
 	REGULAR_POLYGON: '다각형',
 	BOOLEAN_OPERATION: '불리언',
+	// 가져오기가 세운 판 배경 레이어(스튜디오 Background가 칠하는 자리).
+	BACKGROUND: '배경',
 }
 
 export const IMAGE_CONFIG_KEYS = [
@@ -76,7 +81,11 @@ export const canAssignImage = (layer: LayerRow) =>
 
 /** 편집 UI가 있는 레이어 — 없는 레이어(부모 소관·img 고정 등)는 목록에서 비활성으로 그린다(정본 81:2, 안내 문구 제거). */
 export const hasLayerEditor = (layer: LayerRow) =>
-	layer.isText || layer.isVector || canAssignImage(layer)
+	layer.isText || layer.isVector || canAssignImage(layer) || isBackgroundLayer(layer)
+
+/** 가져오기가 세운 판 배경 레이어 — 이름만 고치고, 겹침에서 늘 맨 아래라 옮기지 않는다. */
+export const isBackgroundLayer = (layer: LayerRow) =>
+	layer.figmaType === TEMPLATE_BACKGROUND_FIGMA_TYPE
 
 function stylePx(element: Element, property: 'width' | 'height'): number | undefined {
 	if (!(element instanceof HTMLElement)) return undefined
@@ -103,8 +112,11 @@ export function parseLayers(html: string): LayerRow[] {
 		const figmaType =
 			element.getAttribute('data-figma-type') || (tag === 'p' ? 'TEXT' : 'FRAME')
 		const isText = tag === 'p'
+		// 판 배경 레이어는 이미지 레이어가 아니다 — 예전 가져오기가 붙인 캐리어 표시가 남아 있어도 무시한다.
 		const selfMarked =
-			element instanceof HTMLElement && element.hasAttribute('data-image-carrier')
+			element instanceof HTMLElement &&
+			element.hasAttribute('data-image-carrier') &&
+			figmaType !== TEMPLATE_BACKGROUND_FIGMA_TYPE
 		const frameAddress = isCarrierFrameAddress(element, depth)
 
 		const id = element.getAttribute('data-node-id') || `${depth}-${rows.length}`
@@ -170,6 +182,8 @@ export function moveLayer(
 	// 화면에서 위로 = 문서에서 뒤로.
 	const to = direction === 'up' ? at + 1 : at - 1
 	if (at < 0 || to < 0 || to >= siblings.length) return null
+	// 배경은 늘 맨 아래다 — 배경 자신도, 배경과 자리를 바꾸는 이동도 막는다.
+	if (isBackgroundLayer(row) || isBackgroundLayer(siblings[to])) return null
 
 	const order = siblings.map((candidate) => candidate.id)
 	;[order[at], order[to]] = [order[to], order[at]]
@@ -197,5 +211,39 @@ export function pruneCarrierChildImageKeys(
 	for (const key of IMAGE_CONFIG_KEYS) delete child[key]
 	if (Object.keys(child).length === 0) delete next[carrierChildId]
 	else next[carrierChildId] = child
+	return next
+}
+
+/**
+ * Figma에서 가져온 레이어는 사용 상태가 정해진 모든 종류(텍스트·이미지·CI)가 「편집 가능」으로 시작한다.
+ * 어느 레이어가 그 종류인지는 이 목록과 **같은 판정**(parseLayers·canAssignImage)으로 고른다 — 그래야
+ * Admin이 보는 레이어와 기본값이 걸린 레이어가 갈라지지 않는다.
+ * 이미 사용 상태를 정한 레이어는 다시 가져와도 그대로 둔다 — Admin이 고른 값이 이긴다.
+ * 개방 선언(텍스트 `input`·이미지 `imageInput`)은 「편집 가능」으로 바꿀 때 편집기가 붙이는 것과 같다.
+ */
+export function applyImportedLayerDefaults(
+	html: string,
+	nodeConfigs: TemplateNodeConfigMap,
+): TemplateNodeConfigMap {
+	const next: TemplateNodeConfigMap = { ...nodeConfigs }
+	for (const layer of parseLayers(html)) {
+		const config = next[layer.id]
+		if (config?.creator) continue
+		if (layer.isText) {
+			next[layer.id] = {
+				...config,
+				creator: { access: 'editable' },
+				input: config?.input ?? {},
+			}
+		} else if (canAssignImage(layer)) {
+			next[layer.id] = {
+				...config,
+				creator: { access: 'editable' },
+				imageInput: config?.imageInput ?? {},
+			}
+		} else if (layer.isVector) {
+			next[layer.id] = { ...config, creator: { access: 'editable' } }
+		}
+	}
 	return next
 }
