@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils'
 import { ControllerField } from '../compose/field'
 import { useRowControl } from '../compose/row'
+import { LOCKED_COLOR_INPUT } from './color-row'
 
 export type ControllerColorStripSwatch = {
 	/** 이 칸이 대표하는 control의 id — 값 변경이 그 control로 돌아간다. */
@@ -22,6 +23,8 @@ type ControllerColorStripProps = {
 	/** 띠 전체를 원래 색으로 되돌린다 — 조합이 한 단위이므로 되돌리기도 한 단위다. */
 	onReset?: () => void
 	disabled?: boolean
+	/** 편집 불가 — 필드가 0.5로 흐려지고 칸·초기화가 값을 바꾸지 않는다. */
+	readonly?: boolean
 }
 
 /**
@@ -40,13 +43,16 @@ export function ControllerColorStrip({
 	onChange,
 	onReset,
 	disabled,
+	readonly,
 }: ControllerColorStripProps) {
 	return (
 		<ControllerField
 			label={label}
 			disabled={disabled}
+			readonly={readonly}
 			action={
-				onReset && (
+				onReset &&
+				!readonly && (
 					<button
 						type="button"
 						aria-label={`${label} 원래 색으로 되돌리기`}
@@ -79,7 +85,10 @@ function StripSwatches({
 					title={`${swatch.label} · ${swatch.isEmpty ? '미설정' : swatch.value}`}
 					value={swatch.value}
 					disabled={row?.disabled || undefined}
-					onChange={(event) => onChange?.(swatch.id, event.target.value)}
+					{...(row?.readonly ? LOCKED_COLOR_INPUT : {})}
+					onChange={(event) =>
+						!row?.readonly && onChange?.(swatch.id, event.target.value)
+					}
 					className={cn(
 						'h-10 min-w-0 flex-1 cursor-pointer appearance-none rounded-sm border border-border bg-transparent p-0 disabled:cursor-not-allowed',
 						'[&::-webkit-color-swatch]:rounded-[inherit] [&::-webkit-color-swatch]:border-0 [&::-webkit-color-swatch-wrapper]:p-0',

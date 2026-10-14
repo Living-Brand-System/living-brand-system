@@ -11,6 +11,8 @@ type ControllerPadProps = {
 	onChange: (value: ControllerPadValue) => void
 	'aria-label': string
 	disabled?: boolean
+	/** 편집 불가 — 0.5로 흐려지고 끌기·화살표가 값을 바꾸지 않는다(포커스는 남는다). */
+	readonly?: boolean
 	/** 조작 대상의 종횡비(w/h) — Wide/Portrait/Square를 별도 variant 없이 표현한다. */
 	aspectRatio?: number
 	/** Position 컴파운드 내부의 테두리와 모서리. */
@@ -24,18 +26,19 @@ export function ControllerPad({
 	onChange,
 	'aria-label': ariaLabel,
 	disabled,
+	readonly = false,
 	aspectRatio,
 	contained = false,
 	className,
 }: ControllerPadProps) {
 	// 위치를 직접 찍는 컨트롤이라 클릭을 따로 받지 않는다 — 누른 지점이 곧 값이다.
 	const drag = useControllerPointerDrag({
-		disabled,
+		disabled: disabled || readonly,
 		onDrag: (ratioX, ratioY) => onChange({ x: ratioX * 2 - 1, y: ratioY * 2 - 1 }),
 	})
 
 	function nudge(event: KeyboardEvent<HTMLDivElement>) {
-		if (disabled) return
+		if (disabled || readonly) return
 		const deltas: Record<string, [number, number]> = {
 			ArrowLeft: [-0.05, 0],
 			ArrowRight: [0.05, 0],
@@ -61,6 +64,7 @@ export function ControllerPad({
 			aria-valuenow={Math.round(value.x * 100)}
 			aria-valuetext={`가로 ${Math.round(value.x * 100)}%, 세로 ${Math.round(value.y * 100)}%`}
 			aria-disabled={disabled || undefined}
+			aria-readonly={readonly || undefined}
 			tabIndex={disabled ? -1 : 0}
 			onKeyDown={nudge}
 			data-dragging={drag.dragging ? 'true' : 'false'}
@@ -71,6 +75,7 @@ export function ControllerPad({
 					? 'overflow-hidden rounded-controller-pad border border-border'
 					: 'rounded-lg',
 				!aspectRatio && 'h-36 w-full',
+				readonly && 'pointer-events-none opacity-50',
 				disabled && 'pointer-events-none opacity-50',
 				className,
 			)}

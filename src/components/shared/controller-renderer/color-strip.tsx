@@ -9,7 +9,6 @@ import {
 	resolveControlAvailability,
 	resolveControlValue,
 } from '@/modules/studio-controller/controller-definition'
-import { ReadonlyRow } from './control'
 
 type ColorControl = Extract<ControllerControlDefinition, { kind: 'color' }>
 type SelectControl = Extract<ControllerControlDefinition, { kind: 'select' }>
@@ -46,25 +45,6 @@ export function ColorStripGroup({
 		palette && (selected ?? palette.defaultValue) !== null
 			? ((selected ?? palette.defaultValue) as string)
 			: undefined
-	if (!disabled && readonly) {
-		return (
-			<>
-				{palette && (
-					<ReadonlyRow
-						label={palette.label}
-						value={
-							palette.options.find((option) => option.value === selectedPalette)
-								?.label ?? '—'
-						}
-					/>
-				)}
-				{resolved.map(({ control, color }) => (
-					<ReadonlyRow key={control.id} label={control.label} value={color ?? '—'} />
-				))}
-			</>
-		)
-	}
-
 	return (
 		<>
 			{palette && (
@@ -73,6 +53,7 @@ export function ColorStripGroup({
 					options={palette.options}
 					value={selectedPalette}
 					disabled={disabled}
+					readonly={!disabled && readonly}
 					onChange={(value) => {
 						onChange(palette.id, value)
 						// 고른 조합이 칸을 순서대로 채운다 — 띠가 화면의 색과 어긋나지 않는다.
@@ -89,6 +70,7 @@ export function ColorStripGroup({
 			<Controller.ColorStrip
 				label={title}
 				disabled={disabled}
+				readonly={!disabled && readonly}
 				swatches={resolved.map(({ control, color }) => ({
 					id: control.id,
 					label: control.label,

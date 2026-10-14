@@ -63,8 +63,8 @@ export function McpKeyIssuer({ issuedAt = null }: { issuedAt?: string | null }) 
 			{credential ? (
 				<>
 					<div className="flex flex-col gap-1">
-						{/* 값만 읽는 행이라 readonly — docs/10 §3.6대로 정상 대비를 유지하고 흐리지 않는다. */}
-						<Controller.Row readonly label="Key" className="pr-1">
+						{/* 값만 읽는 행이라 display — 편집 불가 컨트롤(readonly)이 아니므로 흐리지 않는다(docs/10 §3.6). */}
+						<Controller.Row display label="Key" className="pr-1">
 							<span className="flex min-w-0 items-center gap-2">
 								<span className="truncate text-muted-foreground text-sm">
 									{credential.apiKey}
@@ -139,7 +139,7 @@ export function McpKeyIssuer({ issuedAt = null }: { issuedAt?: string | null }) 
 			) : (
 				<>
 					{issuedAt && (
-						<Controller.Row readonly label="발급됨">
+						<Controller.Row display label="발급됨">
 							<span className="text-muted-foreground text-sm">
 								{ISSUED_AT_FORMAT.format(new Date(issuedAt))}
 							</span>

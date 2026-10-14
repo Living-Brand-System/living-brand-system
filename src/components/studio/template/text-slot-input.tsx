@@ -1,7 +1,6 @@
 'use client'
 
 import { Controller } from '@/components/shared/controller'
-import { ControllerControlRenderer } from '@/components/shared/controller-renderer'
 import { Typography } from '@/components/ui/typography'
 import type { TemplateTextSlot } from '@/features/template-customization/domain/template-studio-config'
 import type { ControllerControlDefinition } from '@/modules/studio-controller/controller-definition'
@@ -17,16 +16,6 @@ type TextSlotInputProps = {
 /** 편집 계약(config)의 입력 제약(형식·글자수·줄수)을 적용한 텍스트 슬롯 컨트롤러 행. */
 export function TextSlotInput({ definition, input, value, onChange }: TextSlotInputProps) {
 	const availability = definition.availability ?? 'enabled'
-	if (availability === 'readonly')
-		return (
-			<ControllerControlRenderer
-				definition={definition}
-				value={value}
-				onChange={(next) => {
-					if (typeof next === 'string') onChange(next)
-				}}
-			/>
-		)
 	const singleLine = input.format !== 'free' || input.maxLines === 1
 	const invalidEmail = input.format === 'email' && value !== '' && !/^\S+@\S+\.\S+$/.test(value)
 	const change = (next: string) => {
@@ -62,7 +51,12 @@ export function TextSlotInput({ definition, input, value, onChange }: TextSlotIn
 		</Typography>
 	) : null
 	return (
-		<Controller.Field label={definition.label} disabled={availability === 'disabled'}>
+		// readonly도 같은 Field·입력이다 — 편집만 막는다(docs/10 §3.6). 부품을 갈아타면 배치가 바뀐다.
+		<Controller.Field
+			label={definition.label}
+			disabled={availability === 'disabled'}
+			readonly={availability === 'readonly'}
+		>
 			{control}
 			{error}
 		</Controller.Field>

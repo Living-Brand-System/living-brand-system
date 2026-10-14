@@ -45,7 +45,7 @@ export function FigmaTokenCard({ connected: initialConnected }: { connected: boo
 				description="템플릿 가져오기에 사용할 토큰을 등록합니다."
 			/>
 
-			<Controller.Row readonly label="상태">
+			<Controller.Row display label="상태">
 				<span className="text-sm">{connected ? '연결됨' : '연결 안 됨'}</span>
 			</Controller.Row>
 

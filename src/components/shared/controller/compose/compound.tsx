@@ -23,7 +23,7 @@ export function ControllerCompound({
 			aria-label={label}
 			className={cn('flex min-w-0 flex-col rounded-lg bg-muted', className)}
 		>
-			<ControllerRow label={label} readonly className="bg-transparent pr-1.5">
+			<ControllerRow label={label} display className="bg-transparent pr-1.5">
 				{control}
 			</ControllerRow>
 			{/* 머리 행과 본문 사이 4px은 본문 상자의 위 여백이다 — 켜고 끄는 본문(카메라 등)이 높이로 펼쳐진다. */}

@@ -20,6 +20,8 @@ type ControllerCameraControlProps = {
 	axes: readonly ControllerCameraAxis[]
 	/** Compound 표면 안에서는 축 컨트롤에 6px 인셋을 둔다. */
 	contained?: boolean
+	/** 편집 불가 — 축 행이 0.5로 흐려지고 셀렉트가 열리지 않는다. 프리뷰(children)는 소비자가 잠근다. */
+	readonly?: boolean
 }
 
 /**
@@ -30,6 +32,7 @@ export function ControllerCameraControl({
 	children,
 	axes,
 	contained = false,
+	readonly,
 }: ControllerCameraControlProps) {
 	return (
 		<div
@@ -49,6 +52,7 @@ export function ControllerCameraControl({
 					<ControllerRow
 						key={axis.label}
 						label={axis.label}
+						readonly={readonly}
 						className={contained ? 'rounded-md bg-foreground/4' : undefined}
 					>
 						<ControllerSelect

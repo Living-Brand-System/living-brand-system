@@ -56,14 +56,12 @@ it.each(['readonly', 'disabled'] as const)('%s 입력은 값을 바꾸지 않는
 			onChange={onChange}
 		/>,
 	)
-	if (availability === 'readonly') {
-		expect(screen.queryByRole('textbox')).toBeNull()
-		expect(screen.getByText('고정 제목')).toBeInTheDocument()
-	} else {
-		const input = screen.getByRole('textbox', { name: '제목' })
-		expect(input).toBeDisabled()
-		fireEvent.change(input, { target: { value: '변경' } })
-	}
+	// readonly도 같은 입력이다 — 부품을 갈아타지 않고 편집만 막는다(배치가 그대로다).
+	const input = screen.getByRole('textbox', { name: '제목' })
+	expect(input).toHaveValue('고정 제목')
+	if (availability === 'readonly') expect(input).toHaveAttribute('readonly')
+	else expect(input).toBeDisabled()
+	fireEvent.change(input, { target: { value: '변경' } })
 	expect(onChange).not.toHaveBeenCalled()
 })
 

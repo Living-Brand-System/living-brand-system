@@ -13,6 +13,8 @@ type ControllerColorChipsProps = {
 	value?: string
 	onChange?: (value: string) => void
 	disabled?: boolean
+	/** 편집 불가 — 필드가 0.5로 흐려지고 칩을 눌러도 값이 바뀌지 않는다. */
+	readonly?: boolean
 }
 
 /**
@@ -26,12 +28,13 @@ export function ControllerColorChips({
 	value,
 	onChange,
 	disabled,
+	readonly,
 }: ControllerColorChipsProps) {
 	// 🔴 라벨이 가리키는 것은 첫 칩이 아니라 묶음이다 — 첫 라디오를 가리키면 라벨 클릭이
 	//    포커스가 아니라 '첫 조합 선택'이 되어 사용자의 선택을 조용히 덮는다.
 	const groupId = useId()
 	return (
-		<ControllerField label={label} htmlFor={groupId} disabled={disabled}>
+		<ControllerField label={label} htmlFor={groupId} disabled={disabled} readonly={readonly}>
 			<ColorChipGrid label={label} options={options} value={value} onChange={onChange} />
 		</ControllerField>
 	)
@@ -54,6 +57,7 @@ function ColorChipGrid({
 			id={row?.controlId}
 			role="radiogroup"
 			aria-label={label}
+			aria-readonly={row?.readonly || undefined}
 			className="grid grid-cols-3 gap-1.5"
 		>
 			{options.map((option) => (
@@ -67,6 +71,7 @@ function ColorChipGrid({
 					title={option.label}
 					checked={value === option.value}
 					disabled={row?.disabled || undefined}
+					readonly={row?.readonly}
 					onChange={() => onChange?.(option.value)}
 					style={{ backgroundImage: chipBackground(option.colors ?? []) }}
 					className="aspect-square w-full"
