@@ -3,7 +3,7 @@ import {
 	type AuthorizedTemplateImageRef,
 	TEMPLATE_VECTOR_ASSET_COLLECTIONS,
 } from '@/features/template-core/domain/template-asset-policy'
-import { isValidHex } from '@/lib/color'
+import { HEX_COLOR_PATTERN } from '@/lib/color'
 import { TEXT_FORMAT_IDS } from '@/modules/studio-controller/text-formats'
 import type { TemplateNodeConfig, TemplateNodeConfigMap } from '@/types/template'
 
@@ -29,9 +29,7 @@ const templateImageTransformSchema = z
 	.strict()
 
 // 컬러 치환 값의 신뢰 경계 — CSS로 그대로 나가는 값이므로 hex 리터럴만 허용한다.
-const templateHexColorSchema = z
-	.string()
-	.refine((value) => value.startsWith('#') && isValidHex(value))
+const templateHexColorSchema = z.string().regex(HEX_COLOR_PATTERN)
 const templateImageColorizeSchema = z
 	.object({
 		line: templateHexColorSchema,

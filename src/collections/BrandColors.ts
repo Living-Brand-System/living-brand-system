@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { managerManagedAccess } from '@/lib/auth'
-import { isValidHex } from '@/lib/color'
+import { isHexColor } from '@/lib/color'
 import { draftVersions } from './shared'
 
 export const BrandColors: CollectionConfig = {
@@ -29,7 +29,7 @@ export const BrandColors: CollectionConfig = {
 			required: true,
 			validate: (value: string | null | undefined) =>
 				// 🔴 `#`을 필수로 받는다 — 인쇄 잉크 표가 원문을 키로 써서 `#` 없는 값은 정본 CMYK를 못 찾는다.
-				typeof value === 'string' && value.startsWith('#') && isValidHex(value)
+				typeof value === 'string' && isHexColor(value)
 					? true
 					: '6자리 HEX 컬러를 입력하세요. 예: #RRGGBB',
 			admin: {

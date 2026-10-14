@@ -1,4 +1,5 @@
 import sharp from 'sharp'
+import { isHexColor } from '@/lib/color'
 
 /** PDF가 쓰는 0~1 CMYK 성분. */
 export type CmykColor = { c: number; m: number; y: number; k: number }
@@ -13,7 +14,7 @@ export async function convertRgbToCmyk(
 	hexColors: readonly string[],
 	icc: string,
 ): Promise<Map<string, CmykColor>> {
-	const unique = [...new Set(hexColors)].filter((hex) => /^#[0-9a-f]{6}$/i.test(hex))
+	const unique = [...new Set(hexColors)].filter(isHexColor)
 	if (unique.length === 0) return new Map()
 
 	const rgb = Buffer.alloc(unique.length * 3)
