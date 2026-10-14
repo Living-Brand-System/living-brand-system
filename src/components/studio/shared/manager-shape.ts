@@ -4,10 +4,15 @@ export type Rect = { left: number; top: number; width: number; height: number }
 type Point = readonly [x: number, y: number]
 
 /**
- * 다각형을 꼭짓점마다 같은 반지름의 원호로 둥글린 SVG path. 볼록한 꼭짓점은 안으로 깎이고(면적이 줄고)
+ * 다각형을 꼭짓점마다 원호로 둥글린 SVG path. 볼록한 꼭짓점은 안으로 깎이고(면적이 줄고)
  * 오목한 꼭짓점은 밖으로 메워진다(면적이 는다). 반지름은 양쪽 변 길이의 절반을 넘지 않게 줄인다.
+ * `concaveRadius`: 오목한 꼭짓점만 따로 — 옆 요소 모서리와 동심원이 되게 더 크게 줄 때(없으면 `radius`).
  */
-export function roundedPolygonPath(points: readonly Point[], radius: number): string {
+export function roundedPolygonPath(
+	points: readonly Point[],
+	radius: number,
+	concaveRadius = radius,
+): string {
 	const n = points.length
 	let d = ''
 	for (let i = 0; i < n; i++) {
@@ -22,7 +27,7 @@ export function roundedPolygonPath(points: readonly Point[], radius: number): st
 			d += `${d ? 'L' : 'M'}${px} ${py}`
 			continue
 		}
-		const r = Math.min(radius, la / 2, lb / 2)
+		const r = Math.min(cross > 0 ? radius : concaveRadius, la / 2, lb / 2)
 		const sx = px + ((ax - px) / la) * r
 		const sy = py + ((ay - py) / la) * r
 		const ex = px + ((bx - px) / lb) * r
@@ -86,12 +91,22 @@ export function managerOutline(
 	])
 }
 
-/** 겹친 꼭짓점을 걷는다 — 다리가 없거나(reach 0) 높이가 같으면 꼭짓점이 포개진다. 포개진 채면 둥글리기가 원호를 잃는다. */
+/**
+ * 겹친 꼭짓점과 일직선 위의 꼭짓점을 걷는다 — 다리가 없거나(reach 0) 높이가 같으면 꼭짓점이 포개지거나 한 줄에 선다.
+ * 남겨 두면 둥글리기가 원호를 잃거나, 옆 꼭짓점의 반지름이 그 짧은 토막의 절반으로 잘린다.
+ */
 function dedupe(points: Point[]): Point[] {
-	return points.filter(([x, y], i) => {
-		const [px, py] = points[(i - 1 + points.length) % points.length]
-		return Math.abs(x - px) >= 0.5 || Math.abs(y - py) >= 0.5
-	})
+	const kept = [...points]
+	for (let i = 0; i < kept.length && kept.length > 3; ) {
+		const [ax, ay] = kept[(i - 1 + kept.length) % kept.length]
+		const [px, py] = kept[i]
+		const [bx, by] = kept[(i + 1) % kept.length]
+		const same = Math.abs(px - ax) < 0.5 && Math.abs(py - ay) < 0.5
+		const straight = Math.abs((px - ax) * (by - py) - (py - ay) * (bx - px)) < 0.5
+		if (same || straight) kept.splice(i, 1)
+		else i++
+	}
+	return kept
 }
 
 /** 패널 자리(구멍) — 원본 패널이 보이고 만져지도록 테두리 안쪽을 뚫는다(evenodd라 그리는 방향은 상관없다). */

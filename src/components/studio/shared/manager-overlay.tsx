@@ -49,7 +49,15 @@ export type ManagerFormRegistry = Readonly<Record<string, ManagerForm>>
  * 테두리를 두르는 요소 하나 — 표시가 달린 칸 자체(텍스트 칸 하나, 레이어 줄 하나).
  * `reach`: 새 패널이 요소가 든 패널(좌·우 사이드바) 밖에서 열리도록 테두리 바깥에서 띄울 거리 — 그 사이를 다리가 잇는다.
  */
-type ManagerTarget = { id: string; label: string | null; rect: Rect; radius: number; reach: number }
+type ManagerTarget = {
+	id: string
+	label: string | null
+	rect: Rect
+	radius: number
+	reach: number
+	/** 바로 아래 요소(같은 줄 맞춤)의 모서리 반지름 — 다리 아래 오목한 이음매를 그 모서리와 동심원으로 둥글린다. */
+	belowRadius?: number
+}
 
 /**
  * 요소 둘레의 마우스·키보드 여유 · 새 패널 폭. 바깥 흰 테두리는 없앴다 — 기본 모드 화면을 가리지 않고 요소 안쪽만 밝힌다
@@ -158,6 +166,9 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 										reach: panel.reach,
 									}),
 									panel.radius,
+									// 오목한 이음매 — 바로 아래 요소 모서리와 동심원(사용자 2026-10-14). 다리 길이가 두 요소 사이 간격과
+									// 같아서(`reach`) 원호 중심이 가로·세로 모두 아래 요소 모서리 원의 중심에 온다.
+									(panel.belowRadius ?? panel.radius) + panel.reach,
 								)
 							: null
 					return (
@@ -352,6 +363,30 @@ function radiusOf(element: Element): number {
 	return radius
 }
 
+/**
+ * 같은 열(왼쪽 맞춤)에 이웃 요소가 있으면 다리 길이를 그 사이 간격과 같게 맞춘다 — 가로(다리)·세로(간격)가 같아야
+ * 오목한 이음매가 아래 요소 모서리와 동심원이 된다(사용자 2026-10-14). 아래가 없으면 위 간격을 써 한 열의 거리가 같다.
+ * 이웃이 없으면 패널 padding의 절반(`reachOf`) 그대로다.
+ */
+function withNeighbors(targets: ManagerTarget[]): ManagerTarget[] {
+	return targets.map((target) => {
+		const top = target.rect.top
+		const bottom = top + target.rect.height
+		const column = targets.filter(
+			(other) => other.id !== target.id && Math.abs(other.rect.left - target.rect.left) < 1,
+		)
+		const below = column
+			.filter((other) => other.rect.top >= bottom - 0.5)
+			.sort((a, b) => a.rect.top - b.rect.top)[0]
+		const above = column
+			.filter((other) => other.rect.top + other.rect.height <= top + 0.5)
+			.sort((a, b) => b.rect.top - a.rect.top)[0]
+		if (below) return { ...target, reach: below.rect.top - bottom, belowRadius: below.radius }
+		if (above) return { ...target, reach: top - (above.rect.top + above.rect.height) }
+		return target
+	})
+}
+
 /** 표시 요소 안의 평소 동작 버튼을 누른다(`data-manager-passthrough`) — 없으면 아무것도 안 한다. */
 function pressOriginal(id: string) {
 	document
@@ -445,7 +480,7 @@ function useManagerTargets(
 					reach: Math.max(0, reachOf(element, box)),
 				})
 			}
-			const list = [...next.values()]
+			const list = withNeighbors([...next.values()])
 			const key = JSON.stringify(list)
 			if (key !== last) {
 				last = key
