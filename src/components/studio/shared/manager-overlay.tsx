@@ -25,7 +25,7 @@ const MANAGER_LABEL_ATTRIBUTE = 'data-manager-label'
  * 폼은 원본 컨트롤러 밖에 놓이고 종류(`<종류>:`)로만 짝지어진다. 폼이 CMS(Payload)를 고친다.
  */
 export type ManagerForm = {
-	/** 제목 — 「편집 권한」. 한 종류에 여러 폼이 섞이면(`control:`) 열쇠로 고른다. */
+	/** 제목 — 「편집 권한」. 비우면 칸 이름만 쓴다. 한 종류에 여러 폼이 섞이면(`control:`) 열쇠로 고른다. */
 	title: string | ((key: string) => string)
 	render: (key: string) => ReactNode
 	/**
@@ -41,9 +41,9 @@ export type ManagerFormRegistry = Readonly<Record<string, ManagerForm>>
 /** 테두리를 두르는 요소 하나 — 표시가 달린 칸 자체(텍스트 칸 하나, 레이어 줄 하나). */
 type ManagerTarget = { id: string; label: string | null; rect: Rect; radius: number }
 
-/** 테두리 두께 · 새 패널 폭. 요소는 최대한 작은 단위라(사용자 2026-10-13) 테두리도 얇게 둔다. */
+/** 테두리 두께 · 새 패널 폭(Figma 659:9297). 요소는 최대한 작은 단위라(사용자 2026-10-13) 테두리도 얇게 둔다. */
 const FRAME = 6
-const EXTENSION_WIDTH = 320
+const EXTENSION_WIDTH = 280
 
 function splitTarget(id: string): [kind: string, key: string] {
 	const at = id.indexOf(':')
@@ -163,7 +163,8 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 				const form = forms[kind]
 				if (!form) return null
 				const formTitle = typeof form.title === 'function' ? form.title(key) : form.title
-				const title = panel.label ? `${panel.label} · ${formTitle}` : formTitle
+				// 폼 제목이 비면 칸 이름만 쓴다(텍스트 칸 — Figma 659:9297).
+				const title = [panel.label, formTitle].filter(Boolean).join(' · ')
 				return (
 					<div key={panel.id}>
 						{/* 키보드로도 고를 수 있게 테두리 윗변에 버튼을 둔다(마우스는 테두리 어디를 눌러도 된다). */}
@@ -198,7 +199,7 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 											: { ...prev, [panel.id]: next },
 									)
 								}
-								onClose={() => manager.select(panel.id)}
+								onClose={manager.close}
 							>
 								{form.render(key)}
 							</ManagerExtension>
@@ -244,7 +245,7 @@ function ManagerExtension({
 			ref={setElement}
 			aria-label={`${title} 관리`}
 			// 흰 테두리 위라 밝은 토큰으로 그린다(선택 카드와 같은 `light` 범위).
-			className="light pointer-events-auto absolute flex flex-col gap-4 overflow-y-auto p-5 text-foreground"
+			className="light pointer-events-auto absolute flex flex-col gap-4 overflow-y-auto p-3 text-foreground"
 			style={{ ...style, maxHeight: `max(12rem, calc(100dvh - ${style.top}px - 1rem))` }}
 		>
 			<header className="flex items-center justify-between gap-2">
