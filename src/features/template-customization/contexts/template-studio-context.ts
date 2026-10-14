@@ -10,7 +10,7 @@ import type {
 	TemplateImageMode,
 	TemplateStudioConfig,
 	TemplateStudioConfigSlot,
-	TemplateVectorSlot,
+	TemplateVectorConfigSlot,
 } from '@/features/template-customization/domain/template-studio-config'
 import type {
 	TemplateRasterArtifact,
@@ -190,7 +190,7 @@ export type TemplateStudioValue = {
 		generate: (slotId: string, prompt?: string) => Promise<void>
 	}
 	vectors: {
-		slots: readonly TemplateVectorSlot[]
+		slots: readonly TemplateVectorConfigSlot[]
 		/** CI 레이어마다 고른 색 버전(CI_VARIANTS 값). */
 		variants: Record<string, string | undefined>
 		setVariant: (slotId: string, variant: string) => void

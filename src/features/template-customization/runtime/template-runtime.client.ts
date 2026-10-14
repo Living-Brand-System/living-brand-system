@@ -17,7 +17,7 @@ import {
 	type TemplateBackgroundType,
 	type TemplateImageConfigSlot,
 	type TemplateTextSlot,
-	type TemplateVectorSlot,
+	type TemplateVectorConfigSlot,
 } from '@/features/template-customization/domain/template-studio-config'
 import type {
 	CanvasVideoSource,
@@ -207,7 +207,7 @@ export type TemplateSessionOverridesInput = {
 	>
 	imageSlots: readonly TemplateImageConfigSlot[]
 	imageContracts: Readonly<Record<string, readonly ResolvedTemplateImageConfig[]>>
-	vectorSlots: readonly TemplateVectorSlot[]
+	vectorSlots: readonly TemplateVectorConfigSlot[]
 	ciVariants: Readonly<Record<string, string | undefined>>
 	layerVisibility: Readonly<Record<string, boolean>>
 	width: number

@@ -108,7 +108,7 @@ export type TemplateImageConfigSlot = TemplateEditableSlotBase & {
 	transform: { enabled: boolean; limits: TransformLimits }
 }
 
-export type TemplateVectorSlot = TemplateEditableSlotBase & {
+export type TemplateVectorConfigSlot = TemplateEditableSlotBase & {
 	kind: 'vector'
 	/** 고를 수 있는 CI 색 버전(CI_VARIANTS 순서). 브랜드 로고가 아닌 벡터면 빈 배열이다. */
 	variants: readonly CiVariantOption[]
@@ -127,7 +127,10 @@ export type TemplateBackgroundSlot = TemplateSlotBindingBase & {
 	imageConfig: { mode: 'selectable'; allowedConfigIds?: readonly number[] }
 }
 
-export type TemplateEditableLayer = TemplateTextSlot | TemplateImageConfigSlot | TemplateVectorSlot
+export type TemplateEditableLayer =
+	| TemplateTextSlot
+	| TemplateImageConfigSlot
+	| TemplateVectorConfigSlot
 
 export type TemplateStudioConfigSlot = TemplateEditableLayer | TemplateBackgroundSlot
 
@@ -435,7 +438,7 @@ export const isTextSlot = (slot: TemplateStudioConfigSlot): slot is TemplateText
 	slot.kind === 'text'
 export const isImageSlot = (slot: TemplateStudioConfigSlot): slot is TemplateImageConfigSlot =>
 	slot.kind === 'image'
-export const isVectorSlot = (slot: TemplateStudioConfigSlot): slot is TemplateVectorSlot =>
+export const isVectorSlot = (slot: TemplateStudioConfigSlot): slot is TemplateVectorConfigSlot =>
 	slot.kind === 'vector'
 export const isBackgroundSlot = (slot: TemplateStudioConfigSlot): slot is TemplateBackgroundSlot =>
 	slot.kind === 'background'
@@ -519,7 +522,7 @@ export function mapTemplateNodeLayers(
 export function partitionTemplateSlots(slots: readonly TemplateStudioConfigSlot[]) {
 	const text: TemplateTextSlot[] = []
 	const image: TemplateImageConfigSlot[] = []
-	const vector: TemplateVectorSlot[] = []
+	const vector: TemplateVectorConfigSlot[] = []
 	let background: TemplateBackgroundSlot | undefined
 	for (const slot of slots) {
 		switch (slot.kind) {
@@ -872,7 +875,7 @@ export function deriveTemplateStudioConfig(
 				transform: { enabled: slot.transformEnabled, limits: IMAGE_EDIT_TRANSFORM_LIMITS },
 			}),
 		),
-		...vectorSlots.map((slot): TemplateVectorSlot => {
+		...vectorSlots.map((slot): TemplateVectorConfigSlot => {
 			const variants = template.ciVariants?.[slot.nodeId] ?? []
 			const variant = variants.find((option) => option.id === slot.logoId)?.variant
 			return {

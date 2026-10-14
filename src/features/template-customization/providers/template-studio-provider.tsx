@@ -52,7 +52,7 @@ import {
 	type TemplateStudioConfig,
 	type TemplateStudioConfigSlot,
 	type TemplateTextSlot,
-	type TemplateVectorSlot,
+	type TemplateVectorConfigSlot,
 } from '@/features/template-customization/domain/template-studio-config'
 import {
 	composeTemplateStudioHtml,
@@ -359,7 +359,7 @@ function useTemplateImageSession(
 }
 
 function useTemplateVectorSession(
-	vectorSlots: readonly TemplateVectorSlot[],
+	vectorSlots: readonly TemplateVectorConfigSlot[],
 	draft: TemplateDraft | null,
 ): TemplateStudioValue['vectors'] {
 	const [variants, setVariants] = useState<Record<string, string | undefined>>(() => ({
