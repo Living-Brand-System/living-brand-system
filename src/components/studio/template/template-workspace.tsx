@@ -73,9 +73,7 @@ export function TemplateWorkspace({
 							subtitle: navigation.categoryTitle ?? 'Template',
 							image: preview.image ?? config.previewImage,
 							onReset,
-							managerTarget: 'thumbnail:',
-							titleManagerTarget: 'name:',
-							subtitleManagerTarget: 'category:',
+							managerTarget: 'card:',
 							actions: (
 								<>
 									<PreviewRefreshButton preview={preview} />

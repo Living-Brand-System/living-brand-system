@@ -2,14 +2,39 @@
 
 import { Renew } from '@carbon/icons-react'
 import type { useProfilePreview } from '@/components/studio/shared/use-profile-preview'
+import {
+	TemplateCategoryManagerForm,
+	TemplateNameManagerForm,
+} from '@/components/studio/template/manager-forms/identity-forms'
 import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
 import { Typography } from '@/components/ui/typography'
 
 /**
- * 선택 카드의 관리 폼(`thumbnail:`) — 지금 캔버스를 찍어 이 템플릿의 썸네일로. 찍은 뒤 맞추는 창은 카드의
+ * 선택 카드의 관리 폼(`card:`) — 카드 하나가 한 대상이고, 열면 제목(이름·주소·설명)·분류·썸네일을 한 패널에서 고친다
+ * (사용자 2026-10-14). 카드 안 글자·아이콘에는 따로 대상을 두지 않는다.
+ */
+export function TemplateCardManagerForm({
+	preview,
+}: {
+	preview: ReturnType<typeof useProfilePreview>
+}) {
+	return (
+		<div className="flex flex-col gap-4">
+			<TemplateNameManagerForm />
+			<Separator />
+			<TemplateCategoryManagerForm />
+			<Separator />
+			<TemplateThumbnailManagerForm preview={preview} />
+		</div>
+	)
+}
+
+/**
+ * 썸네일 — 지금 캔버스를 찍어 이 템플릿의 썸네일로. 찍은 뒤 맞추는 창은 카드의
  * 「미리보기 갱신」과 같은 것이 뜬다(같은 `useProfilePreview` 인스턴스).
  */
-export function TemplateThumbnailManagerForm({
+function TemplateThumbnailManagerForm({
 	preview,
 }: {
 	preview: ReturnType<typeof useProfilePreview>

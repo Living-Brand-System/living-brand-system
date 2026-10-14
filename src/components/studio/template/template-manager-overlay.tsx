@@ -20,11 +20,6 @@ import {
 	TemplateSampleManagerForm,
 } from '@/components/studio/template/manager-forms/foundation-forms'
 import {
-	TemplateCategoryManagerForm,
-	TemplateDefaultsManagerForm,
-	TemplateNameManagerForm,
-} from '@/components/studio/template/manager-forms/identity-forms'
-import {
 	TemplateImageProfileManagerForm,
 	TemplateImageTransformManagerForm,
 } from '@/components/studio/template/manager-forms/image-forms'
@@ -34,7 +29,7 @@ import {
 } from '@/components/studio/template/manager-forms/layers-form'
 import { TemplateOutputManagerForm } from '@/components/studio/template/manager-forms/output-form'
 import { TemplateTextManagerForm } from '@/components/studio/template/manager-forms/text-form'
-import { TemplateThumbnailManagerForm } from '@/components/studio/template/manager-forms/thumbnail-form'
+import { TemplateCardManagerForm } from '@/components/studio/template/manager-forms/thumbnail-form'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import {
 	hasTemplateDraft,
@@ -138,12 +133,9 @@ export function TemplateManagerOverlay({
 							<TemplateExportManagerForm axis={axis} />
 						) : null,
 				},
-				name: { title: '이름', render: () => <TemplateNameManagerForm /> },
-				category: { title: '카테고리', render: () => <TemplateCategoryManagerForm /> },
-				defaults: { title: '기본 화면', render: () => <TemplateDefaultsManagerForm /> },
-				thumbnail: {
-					title: '썸네일',
-					render: () => <TemplateThumbnailManagerForm preview={preview} />,
+				card: {
+					title: '템플릿 카드',
+					render: () => <TemplateCardManagerForm preview={preview} />,
 				},
 				output: {
 					title: '판형',

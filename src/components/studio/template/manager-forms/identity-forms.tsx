@@ -154,8 +154,8 @@ export function TemplateCategoryManagerForm() {
 }
 
 /**
- * 선택 카드 저장 아이콘의 관리 폼(`defaults:`) — 템플릿 「기본 화면」(`defaultSession`)이 무엇인지 알리고 지운다.
- * 저장은 원본 아이콘이 한다.
+ * 템플릿 「기본 화면」(`defaultSession`)이 무엇인지 알리고 지운다. 저장은 원본 아이콘이 한다.
+ * ponytail: 선택 카드를 한 대상으로 묶으면서(사용자 2026-10-14) 지금 이 폼을 여는 자리가 없다 — 카드 패널에 넣을지 미정.
  */
 export function TemplateDefaultsManagerForm() {
 	const { config } = useTemplateStudio()
