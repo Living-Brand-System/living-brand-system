@@ -16,12 +16,12 @@ import { partitionTemplateSlots } from '@/features/template-customization/domain
 import {
 	applyTextSlotDraft,
 	parseSlotCount,
-	TEXT_INPUT_FORMATS,
 	type TextSlotDraft,
 	toTextSlotDraft,
 } from '@/features/template-customization/domain/text-slot-draft'
 import { useTemplateManagerData } from '@/features/template-customization/hooks/use-template-manager-data'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
+import { TEXT_FORMAT_OPTIONS } from '@/modules/studio-controller/text-formats'
 import type {
 	TemplateLayerAccess,
 	TemplateNodeConfig,
@@ -159,7 +159,7 @@ function TextSlotFields({
 				<Controller.Group title="Input" collapsible={false}>
 					<Controller.Row label="입력 형식">
 						<Controller.Select
-							options={TEXT_INPUT_FORMATS}
+							options={TEXT_FORMAT_OPTIONS}
 							value={draft.inputFormat}
 							onChange={(value) =>
 								set({ inputFormat: value as TextSlotDraft['inputFormat'] })
