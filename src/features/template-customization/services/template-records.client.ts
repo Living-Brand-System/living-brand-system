@@ -67,12 +67,36 @@ type TemplateDraftDoc = Record<string, unknown> & { _status?: string | null }
  */
 const drafts = new Map<number, { at: number; doc: Promise<TemplateDraftDoc> }>()
 
+/**
+ * 템플릿마다 게시하지 않은 고친 값(초안)이 있나 — 초안을 읽거나 쓸 때마다 갱신하고 구독자에게 알린다.
+ * Manager mode 레일 버튼이 이걸 보고 고친 값이 있을 때만 저장 아이콘이 된다(사용자 2026-10-14).
+ */
+const pending = new Map<number, boolean>()
+const pendingListeners = new Set<() => void>()
+
+function notePending(templateId: number, doc: TemplateDraftDoc | undefined): void {
+	const next = doc?._status === 'draft'
+	if (pending.get(templateId) === next) return
+	pending.set(templateId, next)
+	for (const listener of pendingListeners) listener()
+}
+
+export const isTemplateDraftPending = (templateId: number): boolean =>
+	pending.get(templateId) ?? false
+
+export function subscribeTemplateDrafts(listener: () => void): () => void {
+	pendingListeners.add(listener)
+	return () => pendingListeners.delete(listener)
+}
+
 export function readTemplateDraft(templateId: number, maxAge = 0): Promise<TemplateDraftDoc> {
 	const hit = drafts.get(templateId)
 	if (hit && performance.now() - hit.at <= maxAge) return hit.doc
 	const doc = fetch(`/api/templates/${templateId}?depth=0&draft=true`).then(async (response) => {
 		if (!response.ok) throw await failure(response, '템플릿을 읽지 못했어요.')
-		return (await response.json()) as TemplateDraftDoc
+		const loaded = (await response.json()) as TemplateDraftDoc
+		notePending(templateId, loaded)
+		return loaded
 	})
 	const entry = { at: performance.now(), doc }
 	drafts.set(templateId, entry)
@@ -117,6 +141,7 @@ async function writeTemplate(
 	if (!response.ok) throw await failure(response, fallback)
 	const saved = ((await response.json().catch(() => null)) as { doc?: TemplateDraftDoc } | null)
 		?.doc
+	notePending(templateId, saved)
 	if (saved) drafts.set(templateId, { at: performance.now(), doc: Promise.resolve(saved) })
 	else drafts.delete(templateId)
 }

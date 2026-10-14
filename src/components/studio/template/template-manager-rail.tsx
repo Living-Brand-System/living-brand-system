@@ -1,8 +1,8 @@
 'use client'
 
-import { DataTable, Debug, UserAdmin } from '@carbon/icons-react'
+import { DataTable, Debug, Save, UserAdmin } from '@carbon/icons-react'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { StudioRailIcon } from '@/components/studio/panel/studio-rail'
 import { useManagerMode } from '@/components/studio/shared/use-manager-mode'
 import { TemplateDataEditor } from '@/components/studio/template/template-data-editor'
@@ -18,8 +18,10 @@ import {
 import {
 	discardTemplateDraft,
 	hasTemplateDraft,
+	isTemplateDraftPending,
 	publishTemplateDraft,
 	readTemplateDraft,
+	subscribeTemplateDrafts,
 } from '@/features/template-customization/services/template-records.client'
 import { getStudioTemplateRoute } from '@/lib/routes'
 
@@ -32,6 +34,11 @@ export function TemplateManagerRail({ templateId }: { templateId: number }) {
 	const managerMode = useManagerMode()
 	const router = useRouter()
 	const pathname = usePathname()
+	const pending = useSyncExternalStore(
+		subscribeTemplateDrafts,
+		() => isTemplateDraftPending(templateId),
+		() => false,
+	)
 	const [exiting, setExiting] = useState(false)
 	const [busy, setBusy] = useState(false)
 	const [error, setError] = useState<string | null>(null)
@@ -76,12 +83,26 @@ export function TemplateManagerRail({ templateId }: { templateId: number }) {
 					/>
 				)}
 			/>
-			<StudioRailIcon
-				icon={<UserAdmin />}
-				label="Manager mode"
-				state={managerMode.on ? 'active' : 'idle'}
-				onClick={() => void toggle()}
-			/>
+			{managerMode.on ? (
+				// 켜면 Output 패널의 「저장」과 같은 배경이 된다. 아이콘은 Manager mode 그대로이고, 고친 값(초안)이 생기면
+				// 저장 아이콘으로 바뀐다 — 누르면 저장할지 묻고 모드를 끈다(사용자 2026-10-14).
+				<Button
+					aria-label={pending ? 'Manager mode 끄고 저장' : 'Manager mode 끄기'}
+					title={pending ? 'Manager mode 끄고 저장' : 'Manager mode 끄기'}
+					aria-pressed
+					size="icon"
+					className="size-11 rounded-lg p-0 [&_svg]:size-5"
+					onClick={() => void toggle()}
+				>
+					{pending ? <Save aria-hidden /> : <UserAdmin aria-hidden />}
+				</Button>
+			) : (
+				<StudioRailIcon
+					icon={<UserAdmin />}
+					label="Manager mode"
+					onClick={() => void toggle()}
+				/>
+			)}
 			{/* ponytail: 자리만 — QA 방식은 사용자가 정한다(QA 파일 C12). */}
 			<StudioRailIcon icon={<Debug />} label="QA mode (준비 중)" disabled />
 			<Dialog open={exiting} onOpenChange={(open) => !busy && setExiting(open)}>
