@@ -51,7 +51,10 @@ export type ManagerFormRegistry = Readonly<Record<string, ManagerForm>>
  */
 type ManagerTarget = { id: string; label: string | null; rect: Rect; radius: number; reach: number }
 
-/** 테두리 두께 · 새 패널 폭. 요소는 최대한 작은 단위라(사용자 2026-10-13) 테두리도 얇게 둔다. */
+/**
+ * 요소 둘레의 마우스·키보드 여유 · 새 패널 폭. 바깥 흰 테두리는 없앴다 — 기본 모드 화면을 가리지 않고 요소 안쪽만 밝힌다
+ * (사용자 2026-10-14). 흰 면은 고른 요소의 다리·새 패널에만 남는다.
+ */
 const FRAME = 6
 const EXTENSION_WIDTH = 320
 /** 새 패널을 띄울 기준 — 요소가 든 사이드바 기둥. 새 패널은 그 경계에서 `PANEL_GAP`만큼 더 밖에서 열린다(사용자 2026-10-14). */
@@ -63,8 +66,8 @@ function reachOf(element: Element, rect: Rect): number {
 	const sidebar = element.closest(SIDEBAR_SELECTOR)?.getBoundingClientRect()
 	if (!sidebar) return 0
 	return outwardSide(rect) === 'left'
-		? rect.left - FRAME - (sidebar.left - PANEL_GAP)
-		: sidebar.right + PANEL_GAP - (rect.left + rect.width + FRAME)
+		? rect.left - (sidebar.left - PANEL_GAP)
+		: sidebar.right + PANEL_GAP - (rect.left + rect.width)
 }
 
 function splitTarget(id: string): [kind: string, key: string] {
@@ -127,24 +130,25 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 					</filter>
 				</defs>
 				{panels.map((panel, index) => {
-					const frame = grow(panel.rect, FRAME)
 					const selected = manager.selected === panel.id
-					const side = outwardSide(panel.rect)
 					const height = heights[panel.id] ?? 0
-					const outline = roundedPolygonPath(
-						managerOutline(
-							frame,
-							selected && height > 0
-								? { width: EXTENSION_WIDTH, height, side, reach: panel.reach }
-								: undefined,
-						),
-						panel.radius + FRAME,
-					)
 					const hovered = !selected && hoveredId === panel.id
-					// 원본 자리(구멍). 그라디언트는 여기 가장자리에서 안쪽으로만 번진다 — 기기 화면 테두리를 밝히는 Siri처럼,
-					// 바깥(기본 모드의 주변 UI)으로는 흰 테두리만 나간다(사용자 2026-10-14).
+					// 원본 자리. 그라디언트는 여기 가장자리에서 안쪽으로만 번진다 — 기기 화면 테두리를 밝히는 Siri처럼(사용자 2026-10-14).
 					const hole = roundedRectPath(panel.rect, panel.radius)
 					const clip = `${clipId}-${index}`
+					// 고른 요소만 흰 다리·새 패널을 그린다 — 원본 자리는 뚫는다(evenodd).
+					const extension =
+						selected && height > 0
+							? roundedPolygonPath(
+									managerOutline(panel.rect, {
+										width: EXTENSION_WIDTH,
+										height,
+										side: outwardSide(panel.rect),
+										reach: panel.reach,
+									}),
+									panel.radius,
+								)
+							: null
 					return (
 						<g
 							key={panel.id}
@@ -154,14 +158,13 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 							<clipPath id={clip}>
 								<path d={hole} />
 							</clipPath>
-							{/* 흰 테두리 — 원본 자리는 뚫는다(evenodd). */}
-							{/* biome-ignore lint/a11y/noStaticElementInteractions: 키보드는 테두리 윗변 버튼이 같은 일을 한다 */}
-							<path
-								d={`${outline}${hole}`}
-								fillRule="evenodd"
-								className={styles.fill}
-								onClick={() => manager.select(panel.id)}
-							/>
+							{extension && (
+								<path
+									d={`${extension}${hole}`}
+									fillRule="evenodd"
+									className={styles.fill}
+								/>
+							)}
 							{/* 원본 자리 위 투명 누름 판 — Manager mode에서는 요소 안쪽을 눌러도 그 요소를 고른다(사용자 2026-10-14).
 							    원본은 그대로 보이지만 만져지지 않는다. 모드를 끄면 층이 없으니 원본이 그대로 동작한다. */}
 							{/* biome-ignore lint/a11y/noStaticElementInteractions: 키보드는 테두리 윗변 버튼이 같은 일을 한다 */}
@@ -174,10 +177,12 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 								}}
 							/>
 							<g clipPath={`url(#${clip})`}>
+								{/* 그라디언트 하나로 — 늘 얇은 안쪽 광선, hover·선택이면 요소 전체에 얕은 채움이 더해진다(투명도만 바뀐다). */}
 								<path
 									d={hole}
 									className={styles.glow}
 									stroke={`url(#${gradientId})`}
+									fill={`url(#${gradientId})`}
 									filter={`url(#${glowId})`}
 								/>
 								<path
@@ -191,7 +196,7 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 				})}
 			</svg>
 			{panels.map((panel) => {
-				const frame = grow(panel.rect, FRAME)
+				const { rect } = panel
 				const selected = manager.selected === panel.id
 				const side = outwardSide(panel.rect)
 				const [kind, key] = splitTarget(panel.id)
@@ -209,9 +214,9 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 							onClick={() => manager.select(panel.id)}
 							className="pointer-events-auto absolute rounded-full opacity-0 outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/30"
 							style={{
-								top: frame.top,
-								left: frame.left + panel.radius,
-								width: Math.max(frame.width - panel.radius * 2, FRAME),
+								top: rect.top,
+								left: rect.left + panel.radius,
+								width: Math.max(rect.width - panel.radius * 2, FRAME),
 								height: FRAME,
 							}}
 						/>
@@ -220,11 +225,11 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 								title={title}
 								heading={form.heading !== false}
 								style={{
-									top: frame.top,
+									top: rect.top,
 									left:
 										side === 'left'
-											? frame.left - panel.reach - EXTENSION_WIDTH
-											: frame.left + frame.width + panel.reach,
+											? rect.left - panel.reach - EXTENSION_WIDTH
+											: rect.left + rect.width + panel.reach,
 									width: EXTENSION_WIDTH,
 								}}
 								onHeight={(next) =>
