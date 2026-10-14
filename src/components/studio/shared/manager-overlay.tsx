@@ -130,12 +130,20 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 								stroke={`url(#${gradientId})`}
 								filter={`url(#${glowId})`}
 							/>
-							{/* 원본 패널 자리는 뚫는다(evenodd) — 원본이 그대로 보이고 그대로 만져진다. */}
+							{/* 흰 테두리 — 원본 자리는 뚫는다(evenodd). */}
 							{/* biome-ignore lint/a11y/noStaticElementInteractions: 키보드는 테두리 윗변 버튼이 같은 일을 한다 */}
 							<path
 								d={`${outline}${roundedRectPath(panel.rect, panel.radius)}`}
 								fillRule="evenodd"
 								className={styles.fill}
+								onClick={() => manager.select(panel.id)}
+							/>
+							{/* 원본 자리 위 투명 누름 판 — Manager mode에서는 요소 안쪽을 눌러도 그 요소를 고른다(사용자 2026-10-14).
+							    원본은 그대로 보이지만 만져지지 않는다. 모드를 끄면 층이 없으니 원본이 그대로 동작한다. */}
+							{/* biome-ignore lint/a11y/noStaticElementInteractions: 키보드는 테두리 윗변 버튼이 같은 일을 한다 */}
+							<path
+								d={roundedRectPath(panel.rect, panel.radius)}
+								className={styles.hit}
 								onClick={() => manager.select(panel.id)}
 							/>
 							<path
@@ -339,10 +347,10 @@ function useManagerTargets(
 				const rect = element.getBoundingClientRect()
 				if (rect.width === 0 || rect.height === 0) continue
 				// 칸 가운데가 실제로 이 칸에 닿아야 보이는 것이다 — 접힌 탭·스크롤 밖·다른 층에 가린 칸은 뺀다.
-				const hit = document.elementFromPoint(
-					rect.left + rect.width / 2,
-					rect.top + rect.height / 2,
-				)
+				// 이 층 자신(누름 판·패널)은 건너뛰고 그 아래 원본을 본다.
+				const hit = document
+					.elementsFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+					.find((candidate) => !candidate.closest('[data-slot="manager-overlay"]'))
 				if (!hit || !element.contains(hit)) continue
 				next.set(id, {
 					id,

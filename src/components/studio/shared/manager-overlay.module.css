@@ -17,6 +17,16 @@
 	cursor: pointer;
 }
 
+.hit {
+	fill: transparent;
+	pointer-events: all;
+	cursor: pointer;
+}
+
+.panel[data-state="selected"] .hit {
+	cursor: default;
+}
+
 .edge {
 	fill: none;
 	stroke-width: 2;
