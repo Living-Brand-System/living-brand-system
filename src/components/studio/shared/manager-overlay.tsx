@@ -346,11 +346,35 @@ function outwardSide(rect: Rect): 'left' | 'right' {
 /** 요소마다 한 번만 잰다 — 매 프레임 getComputedStyle을 부르지 않게. */
 const radii = new WeakMap<Element, number>()
 
-/** 요소의 모서리 반지름 — 칸을 감싼 래퍼면 반지름이 없으니 첫 자식까지 본다. 못 찾으면 8px. */
+/** 요소를 감싸 잘라 내는 조상(크기가 테두리만큼만 다르다)의 안쪽 반지름. 그런 조상이 없으면 0. */
+function clippingRadiusOf(element: Element): number {
+	const box = element.getBoundingClientRect()
+	for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+		const rect = parent.getBoundingClientRect()
+		const style = getComputedStyle(parent)
+		const border = Number.parseFloat(style.borderTopWidth) || 0
+		// 테두리 바깥까지 요소와 같은 크기인 조상만 — 그보다 크면 요소를 감싼 패널이 아니라 그냥 바깥 칸이다.
+		if (
+			Math.abs(rect.width - box.width) > border * 2 + 1 ||
+			Math.abs(rect.height - box.height) > border * 2 + 1
+		) {
+			return 0
+		}
+		const value = Number.parseFloat(style.borderTopLeftRadius)
+		if (value > 0 && style.overflow !== 'visible') return Math.max(0, value - border)
+	}
+	return 0
+}
+
+/**
+ * 요소의 모서리 반지름 — 화면에 실제로 보이는 모양에서 읽는다(값을 박아 두지 않는다, 사용자 2026-10-14).
+ * ① 요소 자신 ② 첫 자식(칸을 감싼 래퍼) ③ 요소를 잘라 내는 조상(선택 카드처럼 패널이 `overflow-hidden`으로 둥글리는 경우)
+ * 순으로 찾는다. ③은 그 조상의 반지름에서 테두리 두께를 뺀 안쪽 반지름이라 패널 테두리와 동심이다. 못 찾으면 직각(0).
+ */
 function radiusOf(element: Element): number {
 	const known = radii.get(element)
 	if (known !== undefined) return known
-	let radius = 8
+	let radius = 0
 	for (const candidate of [element, element.firstElementChild]) {
 		if (!candidate) continue
 		const value = Number.parseFloat(getComputedStyle(candidate).borderTopLeftRadius)
@@ -359,6 +383,7 @@ function radiusOf(element: Element): number {
 			break
 		}
 	}
+	if (radius === 0) radius = clippingRadiusOf(element)
 	radii.set(element, radius)
 	return radius
 }
