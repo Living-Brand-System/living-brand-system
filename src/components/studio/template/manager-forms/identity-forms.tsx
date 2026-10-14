@@ -1,12 +1,12 @@
 'use client'
 
 import { Renew, TrashCan } from '@carbon/icons-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { ManagerLinkForm } from '@/components/studio/template/manager-forms/link-form'
 import { reimportTemplateFromFigma } from '@/components/studio/template/manager-forms/template-html-writes'
 import { FormNote } from '@/components/studio/template/manager-forms/text-form'
 import { Button } from '@/components/ui/button'
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
+import { Field, FieldDescription, FieldError, FieldLabel, FieldTitle } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
 	Select,
@@ -30,28 +30,15 @@ const adminTemplateHref = (templateId: number) => `/admin/collections/templates/
 /** 서버 slug 검증(`url-slug-field.ts`)과 같은 모양 — 초안은 서버 검증을 건너뛰어 여기서 먼저 막는다. */
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
-function RecordLoading({ error }: { error: string | null }) {
-	return (
-		<Typography
-			size="xs"
-			tone={error ? 'destructive' : 'muted'}
-			role={error ? 'alert' : undefined}
-		>
-			{error ?? '불러오는 중…'}
-		</Typography>
-	)
-}
-
 /**
- * 선택 카드 제목의 관리 폼(`name:`) — 템플릿 이름·주소·설명. 지금 보는 템플릿의 주소를 바꾸면
- * 새 주소로 옮겨 간다(`useTemplateRecord`).
+ * 선택 카드 제목의 관리 폼(`name:`) — 템플릿 이름·주소·설명. 칸을 벗어날 때 초안에 쌓는다.
+ * 주소는 Manager mode를 끄며 저장할 때 바뀌고, 그때 새 주소로 옮겨 간다(레일).
  */
 export function TemplateNameManagerForm() {
 	const { config } = useTemplateStudio()
 	const state = useTemplateRecord(config.id)
-	if (!state.record) return <RecordLoading error={state.error} />
-	// 저장하면 다시 읽은 값으로 새로 시작한다.
-	return <NameFormBody key={state.record.updatedAt} record={state.record} state={state} />
+	if (!state.record) return <FormNote error={state.error} loading />
+	return <NameFormBody record={state.record} state={state} />
 }
 
 function NameFormBody({ record, state }: { record: TemplateRecord; state: TemplateRecordState }) {
@@ -65,8 +52,16 @@ function NameFormBody({ record, state }: { record: TemplateRecord; state: Templa
 		nameValid && slugValid
 			? { name: name.trim(), slug: slug.trim(), description: description.trim() }
 			: null
+	const written = useRef(JSON.stringify(patch))
+	const commit = () => {
+		if (!patch || JSON.stringify(patch) === written.current) return
+		written.current = JSON.stringify(patch)
+		void state.saveInfo(patch)
+	}
 	return (
-		<div className="flex flex-col gap-3">
+		// 칸을 벗어날 때(focusout은 올라온다) 바뀌었고 올바르면 쓴다.
+		// biome-ignore lint/a11y/noStaticElementInteractions: 입력칸들의 focusout을 모아 받을 뿐 스스로 조작되지 않는다
+		<div className="flex flex-col gap-3" onBlur={commit}>
 			<Field data-invalid={!nameValid}>
 				<FieldLabel htmlFor="manager-template-name">이름</FieldLabel>
 				<Input
@@ -89,7 +84,10 @@ function NameFormBody({ record, state }: { record: TemplateRecord; state: Templa
 					aria-describedby="manager-template-slug-description"
 					onChange={(event) => setSlug(event.target.value)}
 				/>
-				<FieldDescription id="manager-template-slug-description">
+				<FieldError className="text-xs">
+					{slugValid ? null : '영문 소문자·숫자·하이픈으로 적어 주세요.'}
+				</FieldError>
+				<FieldDescription id="manager-template-slug-description" className="text-xs">
 					영문 소문자·숫자·하이픈만 써요. 바꾸면 예전 주소로 공유한 링크가 끊겨요.
 				</FieldDescription>
 			</Field>
@@ -101,18 +99,7 @@ function NameFormBody({ record, state }: { record: TemplateRecord; state: Templa
 					onChange={(event) => setDescription(event.target.value)}
 				/>
 			</Field>
-			<Button
-				size="sm"
-				disabled={!patch || state.busy}
-				onClick={() => patch && void state.saveInfo(patch)}
-			>
-				저장
-			</Button>
-			<FormNote
-				error={state.error}
-				busy={state.busy}
-				note="저장하면 모든 사용자에게 바로 반영돼요."
-			/>
+			<FormNote error={state.error} busy={state.busy} />
 		</div>
 	)
 }
@@ -125,10 +112,11 @@ export function TemplateCategoryManagerForm() {
 	const { config } = useTemplateStudio()
 	const state = useTemplateRecord(config.id)
 	const { record } = state
-	if (!record) return <RecordLoading error={state.error} />
+	if (!record) return <FormNote error={state.error} loading />
 	return (
 		<div className="flex flex-col gap-3">
-			<div className="flex flex-col gap-1.5">
+			<Field className="gap-1.5">
+				<FieldTitle>카테고리</FieldTitle>
 				<Select
 					value={record.categoryId ? String(record.categoryId) : ''}
 					disabled={state.busy}
@@ -145,12 +133,8 @@ export function TemplateCategoryManagerForm() {
 						))}
 					</SelectContent>
 				</Select>
-				<FormNote
-					error={state.error}
-					busy={state.busy}
-					note="고르면 모든 사용자에게 바로 반영돼요."
-				/>
-			</div>
+				<FormNote error={state.error} busy={state.busy} />
+			</Field>
 			<ManagerLinkForm
 				note="카테고리 이름·순서는 모든 템플릿이 같이 써서 admin에서 고쳐요."
 				links={[
@@ -186,13 +170,15 @@ export function TemplateDefaultsManagerForm() {
 				템플릿의 기본 화면이 돼요. 모든 사용자가 이 화면으로 시작하고, 초기화해도 여기로
 				돌아와요.
 			</Typography>
-			<Typography size="sm">
-				{manager.data === null
-					? '불러오는 중…'
-					: saved
+			{manager.data === null ? (
+				<FormNote error={manager.error} loading />
+			) : (
+				<Typography size="sm">
+					{saved
 						? '저장한 기본 화면이 있어요.'
 						: '저장한 기본 화면이 없어요 — 템플릿 원본 그대로 시작해요.'}
-			</Typography>
+				</Typography>
+			)}
 			<div className="flex flex-col gap-1.5">
 				<Button
 					size="sm"
@@ -220,8 +206,9 @@ export function TemplateDefaultsManagerForm() {
 }
 
 /**
- * 캔버스(판 전체)의 관리 폼(`canvas:`) — 같은 Figma 프레임에서 다시 가져와 바로 반영한다. 프레임 주소를
- * 바꾸는 일은 admin 「가져오기」에서 한다.
+ * 캔버스(판 전체)의 관리 폼 — 같은 Figma 프레임에서 다시 가져온다. 프레임 주소를 바꾸는 일은 admin 「가져오기」에서 한다.
+ * ponytail: 캔버스는 Manager mode 대상이 아니라서(사용자 2026-10-14) 지금 이 폼을 여는 자리가 없다.
+ * 어디로 옮길지는 미정(`docs/13-manager-mode.md`) — 정해지면 그 요소의 등록표 줄에 붙인다.
  */
 export function TemplateCanvasManagerForm() {
 	const { config } = useTemplateStudio()

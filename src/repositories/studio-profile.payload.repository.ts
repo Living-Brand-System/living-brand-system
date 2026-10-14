@@ -63,6 +63,8 @@ export async function updateStudioProfilePreview(input: {
 	id: number
 	previewImageId: number
 	status: StudioProfileDocument['_status']
+	/** 게시본은 두고 초안 버전으로만 쓴다. */
+	draft?: boolean
 	user: User
 }): Promise<StudioProfileDocument> {
 	const payload = await getPayload({ config })
@@ -70,6 +72,7 @@ export async function updateStudioProfilePreview(input: {
 		collection: input.collection,
 		id: input.id,
 		data: { previewImage: input.previewImageId, _status: input.status },
+		draft: input.draft,
 		depth: 1,
 		overrideAccess: false,
 		user: input.user,

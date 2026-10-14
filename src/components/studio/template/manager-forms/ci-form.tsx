@@ -1,8 +1,10 @@
 'use client'
 
+import { LayerNameField } from '@/components/studio/template/manager-forms/layer-name-field'
 import { ManagerLinkForm } from '@/components/studio/template/manager-forms/link-form'
 import { updateTemplateNodeConfig } from '@/components/studio/template/manager-forms/template-html-writes'
 import { FormNote } from '@/components/studio/template/manager-forms/text-form'
+import { Field, FieldTitle } from '@/components/ui/field'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { CI_VARIANTS } from '@/features/template-core/domain/ci-variants'
 import { templateSymbolColorId } from '@/features/template-customization/domain/template-layer-composition'
@@ -45,7 +47,9 @@ export function TemplateCiColorManagerForm({ controlId }: { controlId: string })
 	const currentLogoId = slot.variants.find((option) => option.variant === current)?.id
 	return (
 		<div className="flex flex-col gap-3">
-			<div className="flex flex-col gap-1.5">
+			<LayerNameField nodeId={slot.id} />
+			<Field className="gap-1.5">
+				<FieldTitle>기본 색 버전</FieldTitle>
 				<ToggleGroup
 					type="single"
 					variant="outline"
@@ -56,22 +60,20 @@ export function TemplateCiColorManagerForm({ controlId }: { controlId: string })
 					onValueChange={(variant) => {
 						const option = slot.variants.find((item) => item.variant === variant)
 						if (!option || variant === current) return
-						void manager.save(
-							() =>
-								updateTemplateNodeConfig(
-									config.id,
-									slot.id,
-									(nodeConfig) => ({
-										...nodeConfig,
-										vectorAsset: {
-											collection: 'brand-logos',
-											id: option.id,
-											src: option.src,
-										},
-									}),
-									'기본 색 버전을 저장하지 못했어요.',
-								),
-							'기본 색 버전을 저장하지 못했어요.',
+						void manager.save(() =>
+							updateTemplateNodeConfig(
+								config.id,
+								slot.id,
+								(nodeConfig) => ({
+									...nodeConfig,
+									vectorAsset: {
+										collection: 'brand-logos',
+										id: option.id,
+										src: option.src,
+									},
+								}),
+								'기본 색 버전을 저장하지 못했어요.',
+							),
 						)
 					}}
 					aria-label={`${slot.label}: 기본 색 버전`}
@@ -86,9 +88,10 @@ export function TemplateCiColorManagerForm({ controlId }: { controlId: string })
 				<FormNote
 					error={manager.error}
 					busy={manager.busy}
-					note="템플릿에 끼워 둘 색 버전이에요. 고르면 모든 사용자에게 바로 반영돼요."
+					loading={!manager.data}
+					note="템플릿에 끼워 둘 색 버전이에요."
 				/>
-			</div>
+			</Field>
 			<ManagerLinkForm
 				note="색 버전 목록과 로고 파일은 「로고」에서 관리해요. 같은 CI 모양에 CI 색상을 지정한 로고가 여기 선택지로 나와요."
 				links={[

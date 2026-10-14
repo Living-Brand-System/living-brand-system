@@ -19,6 +19,7 @@ import { useTemplatePanel } from '@/components/studio/template/template-panel'
 import { Typography } from '@/components/ui/typography'
 import { useTemplateExport } from '@/features/studio-export/hooks/use-template-export'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
+import { isManagerDraft } from '@/features/template-customization/services/template-records.client'
 import { TemplateLayerGroups } from './template-controls'
 import { TemplateProfilePicker } from './template-profile-picker'
 export function TemplateWorkspace({
@@ -57,6 +58,7 @@ export function TemplateWorkspace({
 		artifact: canvas.artifact,
 		viewport: config.template.exportOption.canvas,
 		onUpdated: navigation.browse.reload,
+		asDraft: () => isManagerDraft(config.id),
 	})
 	const defaults = useTemplateDefaults()
 	const { canManageProfiles } = useStudioCapabilities()

@@ -82,15 +82,49 @@ export function readTemplateDraft(templateId: number, maxAge = 0): Promise<Templ
 	return doc
 }
 
-/** Manager mode를 켜는 순간 미리 받아 둔다 — 첫 폼이 기다리지 않게. */
-export function prefetchTemplateDraft(templateId: number): void {
-	readTemplateDraft(templateId, Number.POSITIVE_INFINITY).catch(() => {})
+/**
+ * Manager mode가 켜진 템플릿 — 이 템플릿에 대한 쓰기는 게시본을 건드리지 않고 초안으로만 쌓인다.
+ * 모드를 끌 때 사용자가 저장(`publishTemplateDraft`)이나 버리기(`discardTemplateDraft`)를 고른다(사용자 2026-10-14).
+ */
+const managerDrafts = new Set<number>()
+
+export function setManagerDraft(templateId: number, on: boolean): void {
+	if (on) managerDrafts.add(templateId)
+	else managerDrafts.delete(templateId)
+}
+
+export const isManagerDraft = (templateId: number): boolean => managerDrafts.has(templateId)
+
+/** 게시하지 않은 고친 값(초안)이 있나 — 최신 버전이 초안이면 그렇다. */
+export async function hasTemplateDraft(templateId: number): Promise<boolean> {
+	return (await readTemplateDraft(templateId, Number.POSITIVE_INFINITY))._status === 'draft'
+}
+
+async function writeTemplate(
+	templateId: number,
+	body: Record<string, unknown>,
+	draft: boolean,
+	fallback: string,
+): Promise<void> {
+	const response = await fetch(
+		`/api/templates/${templateId}?depth=0${draft ? '&draft=true' : ''}`,
+		{
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(body),
+		},
+	)
+	if (!response.ok) throw await failure(response, fallback)
+	const saved = ((await response.json().catch(() => null)) as { doc?: TemplateDraftDoc } | null)
+		?.doc
+	if (saved) drafts.set(templateId, { at: performance.now(), doc: Promise.resolve(saved) })
+	else drafts.delete(templateId)
 }
 
 /**
- * 템플릿 한 건을 고친다.
- * 🔴 `_status`를 읽은 그대로 되쓴다. 빠뜨리면 최신(초안) 버전을 따라 써 게시 템플릿이 초안으로 떨어진다
- *    (`/api/studio/preview`와 같은 이유·같은 가드). admin에 발행 안 한 초안이 있으면 그 초안을 덮어
+ * 템플릿 한 건을 고친다. Manager mode가 켜진 템플릿이면 초안으로만 쌓는다(게시본·다른 사용자 화면은 그대로).
+ * 🔴 그 밖에는 `_status`를 읽은 그대로 되쓴다. 빠뜨리면 최신(초안) 버전을 따라 써 게시 템플릿이 초안으로 떨어진다
+ *    (`/api/studio/preview`와 같은 이유·같은 가드). 게시하지 않은 초안이 있으면 그 초안을 덮어
  *    발행하게 되므로 거부한다.
  */
 export async function patchTemplate(
@@ -98,24 +132,40 @@ export async function patchTemplate(
 	data: Record<string, unknown>,
 	fallback: string,
 ): Promise<void> {
+	if (managerDrafts.has(templateId)) {
+		return writeTemplate(templateId, { ...data, _status: 'draft' }, true, fallback)
+	}
 	// 저장 직전 읽기(읽고-고쳐-쓰기)가 방금 새로 받은 것을 그대로 쓴다 — 상태를 따로 읽지 않는다.
 	const status = (await readTemplateDraft(templateId, 3000))._status
 	if (status === 'draft' && (await readStatus(templateId, false)) === 'published') {
 		throw new Error(
-			'admin에 발행하지 않은 초안이 있어요. 초안을 발행하거나 되돌린 뒤 다시 저장해 주세요.',
+			'저장하지 않은 고친 값이 있어요. Manager mode를 켰다 끄면서 저장하거나 버린 뒤 다시 해 주세요.',
 		)
 	}
+	return writeTemplate(templateId, { ...data, _status: status }, false, fallback)
+}
 
-	const response = await fetch(`/api/templates/${templateId}?depth=0`, {
-		method: 'PATCH',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ ...data, _status: status }),
-	})
-	if (!response.ok) throw await failure(response, fallback)
-	const saved = ((await response.json().catch(() => null)) as { doc?: TemplateDraftDoc } | null)
-		?.doc
-	if (saved) drafts.set(templateId, { at: performance.now(), doc: Promise.resolve(saved) })
-	else drafts.delete(templateId)
+/** 초안을 게시한다 — 게시는 최신(초안) 버전 위에 얹히므로 상태만 보낸다. */
+export function publishTemplateDraft(templateId: number): Promise<void> {
+	return writeTemplate(templateId, { _status: 'published' }, false, '저장하지 못했어요.')
+}
+
+/** 초안을 버린다 — 게시본을 그대로 다시 게시해 최신 버전을 게시본으로 되돌린다(Payload에 초안 버리기가 없다). */
+export async function discardTemplateDraft(templateId: number): Promise<void> {
+	const response = await fetch(`/api/templates/${templateId}?depth=0`)
+	if (!response.ok) throw await failure(response, '고친 값을 버리지 못했어요.')
+	const {
+		id: _id,
+		createdAt: _created,
+		updatedAt: _updated,
+		...published
+	} = (await response.json()) as Record<string, unknown>
+	return writeTemplate(
+		templateId,
+		{ ...published, _status: 'published' },
+		false,
+		'고친 값을 버리지 못했어요.',
+	)
 }
 
 const RECORD_FIELDS = [

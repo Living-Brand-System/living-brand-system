@@ -105,6 +105,7 @@ describe('POST /api/studio/preview', () => {
 			profileId: 'key-visual-pattern',
 			png: expect.any(Buffer),
 			user: { id: 7 },
+			draft: false,
 		})
 		await expect(response.json()).resolves.toEqual({
 			previewImage: { url: '/api/application-images/file/p.png', alt: 'alt' },

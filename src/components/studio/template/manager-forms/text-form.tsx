@@ -1,14 +1,13 @@
 'use client'
 
-import { useId, useMemo, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 import { parseLayers } from '@/components/admin/templates/template-layers'
 import { LayerAccessToggle } from '@/components/studio/template/manager-forms/layer-access-toggle'
 import {
 	updateTemplateLayerAccess,
 	updateTemplateNodeConfig,
 } from '@/components/studio/template/manager-forms/template-html-writes'
-import { Button } from '@/components/ui/button'
-import { Field, FieldDescription, FieldLabel, FieldTitle } from '@/components/ui/field'
+import { Field, FieldDescription, FieldError, FieldLabel, FieldTitle } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -34,8 +33,9 @@ type TextSource = {
 const TEXT_SOURCE_FIELDS = ['baseHtml', 'overrides', 'defaultSession'] as const
 
 /**
- * 텍스트 칸의 관리 폼(`text:<레이어 id>`) — worker가 이 칸을 어떻게 쓰나(권한은 고르는 즉시 반영)와 칸의 설정
- * (레이어 이름·칸 이름·안내 문구·형식·최대 글자/줄·AI 지침·기본 문구, 「저장」으로 반영). 전부 `overrides[nodeId]`다.
+ * 텍스트 칸의 관리 폼(`text:<레이어 id>`) — worker가 이 칸을 어떻게 쓰나와 칸의 설정
+ * (레이어 이름·칸 이름·안내 문구·형식·최대 글자/줄·AI 지침·기본 문구). 전부 `overrides[nodeId]`다.
+ * 고르는 값은 고르는 즉시, 적는 값은 칸을 벗어날 때 초안에 쌓인다(모드를 끌 때 저장·버리기).
  */
 export function TemplateTextManagerForm({ nodeId }: { nodeId: string }) {
 	const { config } = useTemplateStudio()
@@ -58,51 +58,43 @@ export function TemplateTextManagerForm({ nodeId }: { nodeId: string }) {
 	const savedText = toTemplateDraft(data?.defaultSession)?.text?.[nodeId]
 	return (
 		<div className="flex flex-col gap-4">
-			<div className="flex flex-col gap-1.5">
+			<Field className="gap-1.5">
+				<FieldTitle>편집 권한</FieldTitle>
 				<LayerAccessToggle
-					label={`${slot.label}: worker가 쓰는 방법`}
+					label={`${slot.label}: 편집 권한`}
 					access={slot.access}
 					busy={source.busy}
 					onChange={(access) =>
-						void source.save(
-							() => updateTemplateLayerAccess(config.id, nodeId, access, 'input'),
-							'편집 권한을 바꾸지 못했어요.',
+						source.save(() =>
+							updateTemplateLayerAccess(config.id, nodeId, access, 'input'),
 						)
 					}
 					withAiReview
 				/>
-				<Typography size="xs" tone="muted">
-					고르면 모든 사용자에게 바로 반영돼요. 숨긴 칸은 Layers의 Text 묶음에서 되살려요.
-				</Typography>
-			</div>
+				<FieldDescription className="text-xs">
+					숨긴 칸은 Layers의 Text 묶음에서 되살려요.
+				</FieldDescription>
+			</Field>
 			{data ? (
 				<TextSlotFields
-					// 저장하면 다시 읽은 값으로 새로 시작한다(권한만 바뀌면 입력 중인 값을 지킨다).
-					key={JSON.stringify(toTextSlotDraft(nodeConfig))}
+					// 처음 읽은 값으로 시작하고 다시 만들지 않는다 — 칸을 옮겨 다니는 중에 포커스를 잃지 않게.
 					config={nodeConfig}
 					figmaName={figma?.name ?? slot.layer}
 					figmaText={figma?.text ?? ''}
 					savedText={typeof savedText === 'string' ? savedText : undefined}
-					busy={source.busy}
 					onSave={(draft) =>
-						void source.save(
-							// 저장 직전에 다시 읽은 설정 위에 얹는다 — 그 사이 다른 폼이 고친 키(권한 등)를 덮지 않는다.
-							() =>
-								updateTemplateNodeConfig(
-									config.id,
-									nodeId,
-									(current) => applyTextSlotDraft(current, draft) ?? current,
-								),
-							'텍스트 칸을 저장하지 못했어요.',
+						void source.save(() =>
+							// 쓰기 직전에 다시 읽은 설정 위에 얹는다 — 그 사이 다른 폼이 고친 키(권한 등)를 덮지 않는다.
+							updateTemplateNodeConfig(
+								config.id,
+								nodeId,
+								(current) => applyTextSlotDraft(current, draft) ?? current,
+							),
 						)
 					}
 				/>
 			) : null}
-			<FormNote
-				error={source.error}
-				busy={source.busy}
-				note={data ? '저장하면 모든 사용자에게 바로 반영돼요.' : '불러오는 중…'}
-			/>
+			<FormNote error={source.error} busy={source.busy} loading={!data} />
 		</div>
 	)
 }
@@ -112,7 +104,6 @@ function TextSlotFields({
 	figmaName,
 	figmaText,
 	savedText,
-	busy,
 	onSave,
 }: {
 	config: TemplateNodeConfig
@@ -120,16 +111,24 @@ function TextSlotFields({
 	figmaText: string
 	/** 기본 화면(`defaultSession`)에 저장된 이 칸 문구 — 있으면 스튜디오는 기본 문구 대신 이것으로 시작한다. */
 	savedText: string | undefined
-	busy: boolean
 	onSave: (draft: TextSlotDraft) => void
 }) {
 	const id = useId()
 	const [draft, setDraft] = useState(() => toTextSlotDraft(config))
+	const written = useRef(draft)
 	const set = (patch: Partial<TextSlotDraft>) => setDraft((current) => ({ ...current, ...patch }))
-	const valid = applyTextSlotDraft(config, draft) !== null
+	/** 바뀌었고 올바르면 쓴다 — 적는 칸은 벗어날 때, 고르는 칸은 고르는 즉시 부른다. */
+	const commit = (next: TextSlotDraft) => {
+		if (applyTextSlotDraft(config, next) === null) return
+		if (JSON.stringify(next) === JSON.stringify(written.current)) return
+		written.current = next
+		onSave(next)
+	}
 	const countInvalid = (raw: string) => parseSlotCount(raw) === null
 	return (
-		<div className="flex flex-col gap-3">
+		// 칸을 벗어날 때(focusout은 올라온다) 한 번에 쓴다.
+		// biome-ignore lint/a11y/noStaticElementInteractions: 입력칸들의 focusout을 모아 받을 뿐 스스로 조작되지 않는다
+		<div className="flex flex-col gap-3" onBlur={() => commit(draft)}>
 			<div className="flex flex-col gap-3">
 				<Field className="gap-1">
 					<FieldLabel htmlFor={`${id}-layer`}>레이어 이름</FieldLabel>
@@ -174,9 +173,15 @@ function TextSlotFields({
 						size="sm"
 						spacing={0}
 						value={draft.inputFormat}
-						onValueChange={(value) =>
-							value && set({ inputFormat: value as TextSlotDraft['inputFormat'] })
-						}
+						onValueChange={(value) => {
+							if (!value) return
+							const next = {
+								...draft,
+								inputFormat: value as TextSlotDraft['inputFormat'],
+							}
+							setDraft(next)
+							commit(next)
+						}}
 						aria-labelledby={`${id}-format`}
 						className="w-full"
 					>
@@ -199,6 +204,9 @@ function TextSlotFields({
 							aria-describedby={`${id}-count-hint`}
 							onChange={(event) => set({ maxLength: event.target.value })}
 						/>
+						{countInvalid(draft.maxLength) && (
+							<FieldError>1 이상의 정수로 적어 주세요.</FieldError>
+						)}
 					</Field>
 					<Field className="gap-1">
 						<FieldLabel htmlFor={`${id}-max-lines`}>최대 줄</FieldLabel>
@@ -211,18 +219,13 @@ function TextSlotFields({
 							aria-describedby={`${id}-count-hint`}
 							onChange={(event) => set({ maxLines: event.target.value })}
 						/>
+						{countInvalid(draft.maxLines) && (
+							<FieldError>1 이상의 정수로 적어 주세요.</FieldError>
+						)}
 					</Field>
 				</div>
-				<Typography
-					id={`${id}-count-hint`}
-					aria-live="polite"
-					size="xs"
-					tone={valid ? 'muted' : 'destructive'}
-					className="-mt-2"
-				>
-					{valid
-						? '자유 형식이 아니거나 최대 줄이 1이면 한 줄 칸이 돼요.'
-						: '최대 글자·줄은 비우거나 1 이상의 정수로 적어 주세요.'}
+				<Typography id={`${id}-count-hint`} size="xs" tone="muted" className="-mt-2">
+					비우면 제한이 없어요. 자유 형식이 아니거나 최대 줄이 1이면 한 줄 칸이 돼요.
 				</Typography>
 				<Field className="gap-1">
 					<FieldLabel htmlFor={`${id}-ai`}>AI에게 전달할 문구</FieldLabel>
@@ -251,30 +254,34 @@ function TextSlotFields({
 					</FieldDescription>
 				</Field>
 			</div>
-			<Button size="sm" disabled={!valid || busy} onClick={() => onSave(draft)}>
-				저장
-			</Button>
 		</div>
 	)
 }
 
-/** 폼 아래 한 줄 — 오류가 있으면 오류, 저장 중이면 그 사실, 아니면 안내. */
+/**
+ * 폼 아래 한 줄(Manager mode 폼 공용) — 오류 > 불러오는 중 > 쓰는 중 > 안내 순으로 하나만 보인다.
+ * 오류는 화면 읽기 프로그램에도 알린다. 보일 것이 없으면 그리지 않는다.
+ */
 export function FormNote({
 	error,
-	busy,
+	busy = false,
+	loading = false,
 	note,
 }: {
 	error: string | null
-	busy: boolean
-	note: string
+	busy?: boolean
+	loading?: boolean
+	note?: string
 }) {
+	const text = error ?? (loading ? '불러오는 중…' : busy ? '반영하는 중…' : note)
+	if (!text) return null
 	return (
 		<Typography
 			size="xs"
 			tone={error ? 'destructive' : 'muted'}
 			role={error ? 'alert' : undefined}
 		>
-			{error ?? (busy ? '반영하는 중…' : note)}
+			{text}
 		</Typography>
 	)
 }

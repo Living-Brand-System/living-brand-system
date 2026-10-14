@@ -19,6 +19,11 @@ import styles from './manager-overlay.module.css'
  */
 export const MANAGER_TARGET_ATTRIBUTE = 'data-manager-target'
 const MANAGER_LABEL_ATTRIBUTE = 'data-manager-label'
+/**
+ * 표시 요소 안에서 Manager mode 중에도 평소 동작을 할 버튼 — 그 요소를 누르면 층이 패널을 열면서 이 버튼도 누른다
+ * (Layers 묶음 줄: 평소처럼 고르고 관리 패널도 연다, 사용자 2026-10-14). 원본은 표시만 달고 모드를 모른다.
+ */
+const MANAGER_PASSTHROUGH_ATTRIBUTE = 'data-manager-passthrough'
 
 /**
  * 종류 하나의 관리 폼 — 컨트롤러마다 자기 폼을 갖고 Manager mode가 켜지기를 기다린다(사용자 2026-10-13).
@@ -144,7 +149,10 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 							<path
 								d={roundedRectPath(panel.rect, panel.radius)}
 								className={styles.hit}
-								onClick={() => manager.select(panel.id)}
+								onClick={() => {
+									if (manager.selected !== panel.id) pressOriginal(panel.id)
+									manager.select(panel.id)
+								}}
 							/>
 							<path
 								d={outline}
@@ -243,6 +251,13 @@ function ManagerExtension({
 		<section
 			ref={setElement}
 			aria-label={`${title} 관리`}
+			onKeyDown={(event) => {
+				// 포털로 뜬 목록(Select 등)의 Esc는 React 트리로만 올라온다 — DOM 안에서 온 키만 받는다.
+				if (event.key !== 'Escape' || !element?.contains(event.target as Node)) return
+				// 입력 중인 칸을 먼저 벗어나게 해 그 값을 쓴다(칸을 벗어날 때 쓰는 폼들).
+				if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+				onClose()
+			}}
 			// 흰 테두리 위라 밝은 토큰으로 그린다(선택 카드와 같은 `light` 범위).
 			className="light pointer-events-auto absolute flex flex-col gap-4 overflow-y-auto p-5 text-foreground"
 			style={{ ...style, maxHeight: `max(12rem, calc(100dvh - ${style.top}px - 1rem))` }}
@@ -286,6 +301,15 @@ function radiusOf(element: Element): number {
 	}
 	radii.set(element, radius)
 	return radius
+}
+
+/** 표시 요소 안의 평소 동작 버튼을 누른다(`data-manager-passthrough`) — 없으면 아무것도 안 한다. */
+function pressOriginal(id: string) {
+	document
+		.querySelector<HTMLElement>(
+			`[${MANAGER_TARGET_ATTRIBUTE}="${CSS.escape(id)}"] [${MANAGER_PASSTHROUGH_ATTRIBUTE}]`,
+		)
+		?.click()
 }
 
 const contains = (rect: Rect, x: number, y: number) =>

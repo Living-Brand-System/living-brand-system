@@ -8,9 +8,9 @@ import {
 } from '@/components/studio/template/manager-forms/link-form'
 import { FormNote } from '@/components/studio/template/manager-forms/text-form'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Field, FieldTitle } from '@/components/ui/field'
 import { Label } from '@/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { Typography } from '@/components/ui/typography'
 import { fetchCanvasStudioConfigs } from '@/features/graphic-generation/services/list-canvas-studio-configs.client'
 import { requestPublishedImageProfiles } from '@/features/image-generation/services/generate-image.client'
 import type {
@@ -41,7 +41,6 @@ type Choice<T> = { id: T; name: string }
 export type BackgroundPolicyFocus = 'types' | 'dimmer' | 'profile'
 
 const loadGraphicChoices = () => fetchCanvasStudioConfigs('graphic')
-const NOTE = '고르면 모든 사용자에게 바로 반영돼요.'
 
 /**
  * 배경 정책의 관리 폼(`background:` · `control:background.type|dimmer` · `profile:background`) — 허용 형식·처음 형식·
@@ -54,13 +53,7 @@ export function BackgroundPolicyForm({ focus }: { focus?: BackgroundPolicyFocus 
 	const manager = useTemplateManagerData<{ backgroundPolicy?: unknown }>(config.id, [
 		'backgroundPolicy',
 	])
-	if (!manager.data) {
-		return (
-			<Typography size="xs" tone={manager.error ? 'destructive' : 'muted'}>
-				{manager.error ?? '불러오는 중…'}
-			</Typography>
-		)
-	}
+	if (!manager.data) return <FormNote error={manager.error} loading />
 
 	const policy = readBackgroundPolicy(manager.data.backgroundPolicy)
 	const types = policy.types ?? BACKGROUND_TYPES
@@ -113,9 +106,7 @@ export function BackgroundPolicyForm({ focus }: { focus?: BackgroundPolicyFocus 
 					</ToggleGroup>
 					{types.length > 1 && (
 						<>
-							<Typography size="xs" tone="muted">
-								처음 열면 고른 형식
-							</Typography>
+							<FieldTitle>처음 열면 고른 형식</FieldTitle>
 							<ToggleGroup
 								type="single"
 								variant="outline"
@@ -215,12 +206,10 @@ export function BackgroundPolicyForm({ focus }: { focus?: BackgroundPolicyFocus 
 
 function FormSection({ title, children }: { title: string; children: ReactNode }) {
 	return (
-		<div className="flex flex-col gap-1.5">
-			<Typography size="xs" weight="medium">
-				{title}
-			</Typography>
+		<Field className="gap-1.5">
+			<FieldTitle>{title}</FieldTitle>
 			{children}
-		</div>
+		</Field>
 	)
 }
 
@@ -251,15 +240,13 @@ function AllowedList<T extends string | number>({
 	return (
 		<FormSection title={title}>
 			{failed || !items || items.length === 0 ? (
-				<Typography size="xs" tone="muted">
-					{failed
-						? '목록을 불러오지 못했어요.'
-						: items
-							? '발행된 프로파일이 없어요.'
-							: '불러오는 중…'}
-				</Typography>
+				<FormNote
+					error={failed ? '목록을 불러오지 못했어요.' : null}
+					loading={!items}
+					note="발행된 항목이 없어요."
+				/>
 			) : (
-				<ul className="flex max-h-48 flex-col gap-2 overflow-y-auto">
+				<ul className="flex flex-col gap-2">
 					{items.map((item) => (
 						<li key={item.id}>
 							<Label className="font-normal">
@@ -313,9 +300,8 @@ function linksFor(
 	return [{ label: '브랜드 컬러', href: '/admin/collections/brand-colors' }]
 }
 
-function noteFor(focus: BackgroundPolicyFocus | undefined): string {
-	if (focus === 'types') return `${NOTE} 끈 형식은 Layers의 Background 줄에서 다시 켜요.`
-	if (focus === 'dimmer')
-		return `${NOTE} 숨기면 이 행이 사라지고, Layers의 Background 줄에서 되살려요.`
-	return NOTE
+function noteFor(focus: BackgroundPolicyFocus | undefined): string | undefined {
+	if (focus === 'types') return '끈 형식은 Layers의 Background 줄에서 다시 켜요.'
+	if (focus === 'dimmer') return '숨기면 이 행이 사라지고, Layers의 Background 줄에서 되살려요.'
+	return undefined
 }

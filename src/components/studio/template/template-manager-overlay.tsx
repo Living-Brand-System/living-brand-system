@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { ManagerOverlay } from '@/components/studio/shared/manager-overlay'
 import { useManagerMode } from '@/components/studio/shared/use-manager-mode'
@@ -19,7 +20,6 @@ import {
 	TemplateSampleManagerForm,
 } from '@/components/studio/template/manager-forms/foundation-forms'
 import {
-	TemplateCanvasManagerForm,
 	TemplateCategoryManagerForm,
 	TemplateDefaultsManagerForm,
 	TemplateNameManagerForm,
@@ -36,7 +36,10 @@ import { TemplateOutputManagerForm } from '@/components/studio/template/manager-
 import { TemplateTextManagerForm } from '@/components/studio/template/manager-forms/text-form'
 import { TemplateThumbnailManagerForm } from '@/components/studio/template/manager-forms/thumbnail-form'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
-import { prefetchTemplateDraft } from '@/features/template-customization/services/template-records.client'
+import {
+	hasTemplateDraft,
+	setManagerDraft,
+} from '@/features/template-customization/services/template-records.client'
 
 /** 배경 정책 폼으로 가는 공용 컨트롤 줄(`control:<id>`) — Mode·Dimming Use. */
 const BACKGROUND_CONTROL_KEYS = new Set(['background.type', 'background.dimmer'])
@@ -53,10 +56,18 @@ export function TemplateManagerOverlay({
 }) {
 	const { config } = useTemplateStudio()
 	const manager = useManagerMode()
-	// 켜는 순간 템플릿 초안을 받아 둔다 — 첫 칸을 눌렀을 때 폼이 기다리지 않게.
+	const router = useRouter()
+	// 켜져 있는 동안 이 템플릿에 대한 쓰기는 초안으로만 쌓인다 — 끌 때 레일이 저장·버리기를 묻는다.
+	// 켜는 순간 초안을 받아 둔다(첫 칸을 눌렀을 때 폼이 기다리지 않게). 지난번에 저장하지 않은 고친 값이
+	// 남아 있으면, 모드 없이 연 화면은 게시본이므로 다시 그린다.
 	useEffect(() => {
-		if (manager.on) prefetchTemplateDraft(config.id)
-	}, [manager.on, config.id])
+		if (!manager.on) return
+		setManagerDraft(config.id, true)
+		hasTemplateDraft(config.id)
+			.then((pending) => pending && router.refresh())
+			.catch(() => {})
+		return () => setManagerDraft(config.id, false)
+	}, [manager.on, config.id, router])
 	return (
 		<ManagerOverlay
 			forms={{
@@ -65,7 +76,7 @@ export function TemplateManagerOverlay({
 					render: (nodeId) => <TemplateTextManagerForm nodeId={nodeId} />,
 				},
 				layers: {
-					title: '레이어 이름·순서·편집 권한',
+					title: '순서·편집 권한',
 					accepts: isManagedLayerKind,
 					render: (kind) =>
 						isManagedLayerKind(kind) ? <TemplateLayersManagerForm kind={kind} /> : null,
@@ -129,7 +140,6 @@ export function TemplateManagerOverlay({
 				name: { title: '이름', render: () => <TemplateNameManagerForm /> },
 				category: { title: '카테고리', render: () => <TemplateCategoryManagerForm /> },
 				defaults: { title: '기본 화면', render: () => <TemplateDefaultsManagerForm /> },
-				canvas: { title: 'Figma 원본', render: () => <TemplateCanvasManagerForm /> },
 				thumbnail: {
 					title: '썸네일',
 					render: () => <TemplateThumbnailManagerForm preview={preview} />,

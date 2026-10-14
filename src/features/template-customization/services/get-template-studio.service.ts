@@ -28,13 +28,15 @@ export type GetTemplateStudioOutput = {
  * Effective TemplateStudioConfig를 파생한다. Payload 원본과 Admin 정책은 이 서비스 밖으로
  * 나가지 않는다 — 클라이언트에는 PublishedTemplateView만 반환한다.
  * 호출자(페이지)가 requireUser로 인증을 보장한다 — 비회원 분기는 여기 두지 않는다.
+ * `draft`는 Manager mode에서 고친 값(초안)을 보일 때만 — manager인지는 호출자가 판단한다.
  */
 export async function getTemplateStudio(
 	templateSlug: string,
 	user: unknown,
+	options?: { draft?: boolean },
 ): Promise<GetTemplateStudioOutput | null> {
 	const [published, imageConfigs, graphicConfigs, highlight] = await Promise.all([
-		getPublishedTemplate(templateSlug),
+		getPublishedTemplate(templateSlug, options),
 		listImageStudioConfigs(user),
 		listGraphicStudioConfigs(user),
 		getTemplateHighlightColor(),

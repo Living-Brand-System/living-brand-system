@@ -102,7 +102,31 @@ export async function listPublishedTemplateNavItems(): Promise<PublishedTemplate
 	}))
 }
 
-export async function findPublishedTemplate(templateSlug: string): Promise<
+const TEMPLATE_STUDIO_SELECT = {
+	backgroundPolicy: true,
+	defaultSession: true,
+	name: true,
+	updatedAt: true,
+	html: true,
+	overrides: true,
+	previewImage: true,
+	width: true,
+	height: true,
+	// 🔴 화이트리스트에 없으면 타입은 통과하는데 런타임 값이 영원히 undefined다.
+	outputKind: true,
+	size: true,
+	exportPolicy: true,
+} as const
+
+/**
+ * `draft`: 게시된 템플릿을 slug로 찾은 뒤 그 템플릿의 최신 초안을 돌려준다(Manager mode에서 고친 값 미리보기).
+ * 주소는 게시본의 slug로 찾는다 — 초안에서 slug를 고쳐도 게시 전까지 주소는 그대로다.
+ * 🔴 초안은 manager에게만 보인다. 판단은 부르는 쪽(페이지)이 한다.
+ */
+export async function findPublishedTemplate(
+	templateSlug: string,
+	{ draft = false }: { draft?: boolean } = {},
+): Promise<
 	| (Template & {
 			backgroundPolicy?: unknown
 			previewImage?: unknown
@@ -126,25 +150,24 @@ export async function findPublishedTemplate(templateSlug: string): Promise<
 				equals: 'published',
 			},
 		},
-		select: {
-			backgroundPolicy: true,
-			defaultSession: true,
-			name: true,
-			updatedAt: true,
-			html: true,
-			overrides: true,
-			previewImage: true,
-			width: true,
-			height: true,
-			// 🔴 화이트리스트에 없으면 타입은 통과하는데 런타임 값이 영원히 undefined다.
-			outputKind: true,
-			size: true,
-			exportPolicy: true,
-		},
+		select: TEMPLATE_STUDIO_SELECT,
 	})
 
+	const published = templates.docs[0]
+	const doc =
+		draft && published
+			? await payload.findByID({
+					collection: 'templates',
+					id: published.id,
+					depth: 1,
+					draft: true,
+					fallbackLocale: FALLBACK_LOCALE,
+					locale: LOCALE,
+					select: TEMPLATE_STUDIO_SELECT,
+				})
+			: published
 	return (
-		(templates.docs[0] as
+		(doc as
 			| (Template & {
 					backgroundPolicy?: unknown
 					previewImage?: unknown

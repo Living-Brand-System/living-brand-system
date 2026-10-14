@@ -6,13 +6,13 @@ import {
 	pruneCarrierChildImageKeys,
 	toggleAllowedId,
 } from '@/components/admin/templates/template-layers'
+import { LayerNameField } from '@/components/studio/template/manager-forms/layer-name-field'
 import { ManagerLinkForm } from '@/components/studio/template/manager-forms/link-form'
 import { FormNote } from '@/components/studio/template/manager-forms/text-form'
 import { Checkbox } from '@/components/ui/checkbox'
-import { FieldLegend, FieldSet } from '@/components/ui/field'
+import { Field, FieldLegend, FieldSet, FieldTitle } from '@/components/ui/field'
 import { Label } from '@/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { Typography } from '@/components/ui/typography'
 import {
 	type ImageProfileOption,
 	requestPublishedImageProfiles,
@@ -59,7 +59,7 @@ async function saveImageInput(
 	)
 }
 
-/** 이미지 칸 하나의 입력 정책 — 최신 초안에서 읽고, 고치면 바로 반영한다. */
+/** 이미지 칸 하나의 입력 정책 — 최신 초안에서 읽고, 고치면 초안에 쌓는다. */
 function useImageInput(nodeId: string) {
 	const { config } = useTemplateStudio()
 	const manager = useTemplateManagerData<{ overrides?: TemplateNodeConfigMap | null }>(
@@ -88,22 +88,12 @@ function usePublishedImageProfiles() {
 	return { profiles, error }
 }
 
-function Loading({ error }: { error: string | null }) {
-	return (
-		<Typography size="xs" tone={error ? 'destructive' : 'muted'}>
-			{error ?? '불러오는 중…'}
-		</Typography>
-	)
-}
-
 /** 이동·확대·회전 허용 — 끄면 Transform 묶음이 사라지므로, 다시 켜는 자리는 프로파일 폼에도 있다. */
 function TransformToggle({ slot, input }: { slot: ImageInputState; input: ImageInput }) {
 	const enabled = input.transform?.enabled ?? true
 	return (
-		<div className="flex flex-col gap-1.5">
-			<Typography size="xs" weight="medium">
-				이동·확대·회전
-			</Typography>
+		<Field className="gap-1.5">
+			<FieldTitle>이동·확대·회전</FieldTitle>
 			<ToggleGroup
 				type="single"
 				variant="outline"
@@ -123,9 +113,9 @@ function TransformToggle({ slot, input }: { slot: ImageInputState; input: ImageI
 				className="w-full"
 			>
 				<ToggleGroupItem value="on">허용</ToggleGroupItem>
-				<ToggleGroupItem value="off">막음</ToggleGroupItem>
+				<ToggleGroupItem value="off">숨김</ToggleGroupItem>
 			</ToggleGroup>
-		</div>
+		</Field>
 	)
 }
 
@@ -137,7 +127,7 @@ export function TemplateImageProfileManagerForm({ nodeId }: { nodeId: string }) 
 	const { images } = useTemplateStudio()
 	const slot = useImageInput(nodeId)
 	const { profiles, error } = usePublishedImageProfiles()
-	if (!slot.imageInput || !profiles) return <Loading error={slot.error ?? error} />
+	if (!slot.imageInput || !profiles) return <FormNote error={slot.error ?? error} loading />
 	const input = slot.imageInput
 	const all = profiles.map((profile) => profile.id)
 	const allowed = allowedOf(input) ?? all
@@ -145,14 +135,13 @@ export function TemplateImageProfileManagerForm({ nodeId }: { nodeId: string }) 
 	const current = profiles.find((profile) => profile.id === currentId)
 	return (
 		<div className="flex flex-col gap-4">
+			<LayerNameField nodeId={nodeId} />
 			<FieldSet className="gap-2">
-				<FieldLegend variant="label" className="mb-0 text-xs">
+				<FieldLegend variant="label" className="mb-0">
 					고를 수 있는 프로파일
 				</FieldLegend>
 				{profiles.length === 0 && (
-					<Typography size="xs" tone="muted">
-						발행된 이미지 프로파일이 없어요.
-					</Typography>
+					<FormNote error={null} note="발행된 이미지 프로파일이 없어요." />
 				)}
 				{profiles.map((profile) => (
 					<Label key={profile.id} className="font-normal">
@@ -193,7 +182,7 @@ export function TemplateImageProfileManagerForm({ nodeId }: { nodeId: string }) 
 			<FormNote
 				error={slot.error}
 				busy={slot.busy}
-				note="고르면 모든 사용자에게 바로 반영돼요. 하나만 켜면 그 프로파일로 고정돼요."
+				note="하나만 켜면 그 프로파일로 고정돼요."
 			/>
 		</div>
 	)
@@ -205,14 +194,14 @@ export function TemplateImageProfileManagerForm({ nodeId }: { nodeId: string }) 
  */
 export function TemplateImageTransformManagerForm({ nodeId }: { nodeId: string }) {
 	const slot = useImageInput(nodeId)
-	if (!slot.imageInput) return <Loading error={slot.error} />
+	if (!slot.imageInput) return <FormNote error={slot.error} loading />
 	return (
 		<div className="flex flex-col gap-2">
 			<TransformToggle slot={slot} input={slot.imageInput} />
 			<FormNote
 				error={slot.error}
 				busy={slot.busy}
-				note="막으면 이 묶음이 사라져요. 다시 허용하는 곳은 위쪽 이미지 카드예요. 움직일 수 있는 범위는 모든 템플릿이 같이 써서 바꾸지 않아요."
+				note="숨기면 이 묶음이 사라져요. 다시 허용하는 곳은 위쪽 이미지 카드예요. 움직일 수 있는 범위는 모든 템플릿이 같이 써서 바꾸지 않아요."
 			/>
 		</div>
 	)
