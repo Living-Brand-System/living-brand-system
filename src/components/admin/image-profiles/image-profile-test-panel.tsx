@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldTitle } from '@/components/ui/field'
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
+import { IMAGE_PROMPT_MAX_LENGTH } from '@/features/image-generation/domain/image-generation-limits'
 import type { ImageModelPreset } from '@/features/image-generation/domain/image-model'
 import type {
 	ImageAspectRatio,
@@ -119,7 +120,7 @@ export function ImageProfileTestPanel() {
 							setResult(null)
 							setImage(null)
 						}}
-						maxLength={500}
+						maxLength={IMAGE_PROMPT_MAX_LENGTH}
 						rows={4}
 					/>
 				</Field>
