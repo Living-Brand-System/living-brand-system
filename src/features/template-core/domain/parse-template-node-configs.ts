@@ -5,7 +5,7 @@ import {
 } from '@/features/template-core/domain/template-asset-policy'
 import { isValidHex } from '@/lib/color'
 import { TEXT_FORMAT_IDS } from '@/modules/studio-controller/text-formats'
-import type { TemplateNodeConfigMap } from '@/types/template'
+import type { TemplateNodeConfig, TemplateNodeConfigMap } from '@/types/template'
 
 const templateSlotSpecSchema = z
 	.object({
@@ -87,6 +87,20 @@ const templateNodeConfigMapSchema = z.record(
 	}),
 )
 
+/**
+ * 🔑 저장 스키마와 `TemplateNodeConfig`가 같은 저장 필드를 말하는지 타입으로 지킨다 — 저장 필드를
+ *    한쪽에만 추가하면 typecheck가 떨어진다(예전엔 캐스트 하나로만 이어져 차이가 숨었다, 2026-10-14).
+ *    타입에만 있는 필드는 compose가 세션 값으로 싣는 셋(저장 안 됨)뿐이어야 한다.
+ */
+type StoredNodeConfigKey = keyof z.infer<typeof templateNodeConfigMapSchema>[string]
+type ComposeOnlyNodeConfigKey = 'color' | 'assetRef' | 'imageDimmer'
+type SameKeys<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never
+const _storedKeysMatchType: SameKeys<
+	StoredNodeConfigKey,
+	Exclude<keyof TemplateNodeConfig, ComposeOnlyNodeConfigKey>
+> = true
+void _storedKeysMatchType
+
 /** parseTemplateNodeConfigs가 성공했을 때의 결과 — 검증된 config map과 노드별 에셋 참조. */
 export interface ParsedTemplateNodeConfigs {
 	data: TemplateNodeConfigMap
@@ -126,5 +140,5 @@ export function parseTemplateNodeConfigs(
 		}
 	}
 
-	return { data: parsed.data as TemplateNodeConfigMap, refsByNode }
+	return { data: parsed.data, refsByNode }
 }
