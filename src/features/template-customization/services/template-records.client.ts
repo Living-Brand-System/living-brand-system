@@ -1,3 +1,4 @@
+import { toRelationshipId } from '@/lib/payload-relationship'
 import {
 	type StudioPreviewImage,
 	toStudioPreviewImage,
@@ -143,7 +144,7 @@ type TemplateRecordDoc = Omit<TemplateRecord, 'categoryId' | 'status' | 'preview
 function toRecord({ category, previewImage, _status, ...doc }: TemplateRecordDoc): TemplateRecord {
 	return {
 		...doc,
-		categoryId: typeof category === 'object' ? (category?.id ?? null) : (category ?? null),
+		categoryId: toRelationshipId(category) ?? null,
 		status: _status ?? 'draft',
 		previewImage: toStudioPreviewImage(previewImage),
 	}
