@@ -1,5 +1,4 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { MotionGlobalConfig } from 'motion/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { StudioCapabilitiesProvider } from '@/components/studio/shared/studio-capabilities'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -491,23 +490,20 @@ it('🔴 Manager mode는 원본 화면을 바꾸지 않는다 — 켜도 끈 것
 			{ wrapper: TooltipProvider },
 		)
 		await screen.findByRole('textbox', { name: '제목' })
-		// 레일 맨 아래 버튼은 모드를 켜고 끄는 스위치 자신이라 비교에서 뺀다. useId 값은 마운트마다 다르다.
+		// 레일 맨 아래 버튼은 모드를 켜고 끄는 스위치 자신이라 비교에서 뺀다.
 		for (const footer of container.querySelectorAll('[data-slot="studio-rail-footer"]'))
 			footer.remove()
-		const html = container.innerHTML.replace(/_r_[0-9a-z]+_/g, 'id')
+		// useId 값은 마운트마다 다르다. 나타나는 애니메이션(캔버스 아래 Preview Size 막대)의 인라인 opacity·transform은
+		// 찍는 순간마다 다르다 — 둘 다 모드와 무관한 차이라 걷고 비교한다.
+		const html = container.innerHTML
+			.replace(/_r_[0-9a-z]+_/g, 'id')
+			.replace(/ style="opacity: [^"]*"/g, '')
 		cleanup()
 		return html
 	}
-	// 나타나는 애니메이션(캔버스 아래 Preview Size 막대) 도중에 찍으면 찍는 순간마다 투명도가 달라 비교가 흔들린다
-	// — 모드와 무관한 차이라 애니메이션을 끝난 값으로 고정한다.
-	MotionGlobalConfig.skipAnimations = true
-	try {
-		const off = await renderAs('')
-		const on = await renderAs('manager=text%3Atitle')
-		expect(on).toBe(off)
-		expect(on).toContain('data-manager-target="text:title"')
-	} finally {
-		MotionGlobalConfig.skipAnimations = false
-		mocks.search = ''
-	}
+	const off = await renderAs('')
+	const on = await renderAs('manager=text%3Atitle')
+	expect(on).toBe(off)
+	expect(on).toContain('data-manager-target="text:title"')
+	mocks.search = ''
 })
