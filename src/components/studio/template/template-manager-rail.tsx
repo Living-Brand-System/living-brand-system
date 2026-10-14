@@ -79,32 +79,33 @@ export function TemplateManagerRail({ templateId }: { templateId: number }) {
 					<StudioRailIcon
 						icon={<DataTable />}
 						label="Manager mode (CMS Style)"
+						state="action"
 						onClick={open}
 					/>
 				)}
 			/>
-			{managerMode.on ? (
-				// 켜면 Output 패널의 「저장」과 같은 배경이 된다. 아이콘은 Manager mode 그대로이고, 고친 값(초안)이 생기면
-				// 저장 아이콘으로 바뀐다 — 누르면 저장할지 묻고 모드를 끈다(사용자 2026-10-14).
-				<Button
-					aria-label={pending ? 'Manager mode 끄고 저장' : 'Manager mode 끄기'}
-					title={pending ? 'Manager mode 끄고 저장' : 'Manager mode 끄기'}
-					aria-pressed
-					size="icon"
-					className="size-11 rounded-lg p-0 [&_svg]:size-5"
-					onClick={() => void toggle()}
-				>
-					{pending ? <Save aria-hidden /> : <UserAdmin aria-hidden />}
-				</Button>
-			) : (
-				<StudioRailIcon
-					icon={<UserAdmin />}
-					label="Manager mode"
-					onClick={() => void toggle()}
-				/>
-			)}
+			{/* 끄면 위쪽 레일 버튼과 같은 생김새(아이콘만 다르다), 켜면 Output 「저장」과 같은 바탕 — 고친 값(초안)이 생기면
+			    아이콘이 저장으로 바뀌고, 누르면 저장할지 묻고 모드를 끈다(사용자 2026-10-14). */}
+			<StudioRailIcon
+				icon={managerMode.on && pending ? <Save /> : <UserAdmin />}
+				label={
+					managerMode.on
+						? pending
+							? 'Manager mode 끄고 저장'
+							: 'Manager mode 끄기'
+						: 'Manager mode'
+				}
+				state={managerMode.on ? 'highlight' : 'action'}
+				onClick={() => void toggle()}
+			/>
 			{/* ponytail: 자리만 — QA 방식은 사용자가 정한다(QA 파일 C12). */}
-			<StudioRailIcon icon={<Debug />} label="QA mode (준비 중)" disabled />
+			{/* 아직 동작이 없지만 생김새는 다른 레일 버튼과 같게 둔다(사용자 2026-10-14) — 누를 수 없다는 것은 접근 이름과 aria-disabled로 알린다. */}
+			<StudioRailIcon
+				icon={<Debug />}
+				label="QA mode (준비 중)"
+				state="action"
+				aria-disabled
+			/>
 			<Dialog open={exiting} onOpenChange={(open) => !busy && setExiting(open)}>
 				<DialogContent showCloseButton={false}>
 					<DialogHeader>
