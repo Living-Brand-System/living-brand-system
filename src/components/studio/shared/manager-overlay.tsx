@@ -59,17 +59,26 @@ const FRAME = 6
 /** 원본 자리 안쪽 가장자리의 흰 테두리 두께(사용자 2026-10-14). */
 const RIM = 2
 const EXTENSION_WIDTH = 320
-/** 새 패널을 띄울 기준 — 요소가 든 사이드바 기둥. 새 패널은 그 경계에서 `PANEL_GAP`만큼 더 밖에서 열린다(사용자 2026-10-14). */
-const SIDEBAR_SELECTOR = '[data-slot="controller-browser"]'
-const PANEL_GAP = 8
+/**
+ * 테두리 바깥에서 새 패널까지의 거리 — 요소를 담은 패널 padding의 절반(사용자 2026-10-14). 바깥 방향에 padding이 있는
+ * 첫 조상이 그 패널이다. 요소마다 한 번만 잰다(매 프레임 getComputedStyle을 부르지 않게). 못 찾으면 0이라 바로 붙는다.
+ */
+const reaches = new WeakMap<Element, number>()
 
-/** 테두리 바깥에서 사이드바 경계 밖까지의 거리 — 사이드바 밖 요소(캔버스 위 등)는 0이라 바로 붙는다. */
 function reachOf(element: Element, rect: Rect): number {
-	const sidebar = element.closest(SIDEBAR_SELECTOR)?.getBoundingClientRect()
-	if (!sidebar) return 0
-	return outwardSide(rect) === 'left'
-		? rect.left - (sidebar.left - PANEL_GAP)
-		: sidebar.right + PANEL_GAP - (rect.left + rect.width)
+	const known = reaches.get(element)
+	if (known !== undefined) return known
+	const property = outwardSide(rect) === 'left' ? 'paddingLeft' : 'paddingRight'
+	let reach = 0
+	for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+		const padding = Number.parseFloat(getComputedStyle(parent)[property])
+		if (padding > 0) {
+			reach = padding / 2
+			break
+		}
+	}
+	reaches.set(element, reach)
+	return reach
 }
 
 function splitTarget(id: string): [kind: string, key: string] {
