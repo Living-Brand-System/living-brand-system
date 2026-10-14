@@ -48,7 +48,12 @@ export function ControllerControlRenderer({
 }: ControllerControlRendererProps) {
 	const errorId = useId()
 	return (
-		<div data-slot="controller-renderer-control" className="flex flex-col gap-1">
+		<div
+			data-slot="controller-renderer-control"
+			data-manager-target={`control:${definition.id}`}
+			data-manager-label={definition.label}
+			className="flex flex-col gap-1"
+		>
 			<ControllerControl
 				definition={definition}
 				value={value}

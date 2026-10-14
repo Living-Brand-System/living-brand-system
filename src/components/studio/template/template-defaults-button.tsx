@@ -46,6 +46,7 @@ export function TemplateDefaultsButton({
 					variant="ghost"
 					size="icon-sm"
 					aria-label="지금 상태를 기본값으로 저장"
+					data-manager-target="defaults:"
 					disabled={defaults.saving}
 					onClick={defaults.save}
 					className="text-inverted-foreground hover:bg-transparent hover:text-inverted-foreground/70"

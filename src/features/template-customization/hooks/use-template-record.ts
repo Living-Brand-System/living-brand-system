@@ -9,6 +9,7 @@ import {
 	type TemplateInfoPatch,
 	type TemplateRecord,
 	updateTemplateInfo,
+	updateTemplateOutput,
 } from '@/features/template-customization/services/template-records.client'
 import { getStudioTemplateRoute } from '@/lib/routes'
 
@@ -38,7 +39,8 @@ export function useTemplateRecord(templateId: number, onSaved?: () => void) {
 		reload().catch((cause: unknown) => setError(messageOf(cause)))
 	}, [reload])
 
-	const saveInfo = async (patch: TemplateInfoPatch) => {
+	/** 보낸 칸만 고친다 — 주소(`slug`)가 들어 있고 바뀌었을 때만 새 주소로 옮겨 간다. */
+	const saveInfo = async (patch: Partial<TemplateInfoPatch>) => {
 		setBusy(true)
 		setError(null)
 		try {
@@ -47,6 +49,7 @@ export function useTemplateRecord(templateId: number, onSaved?: () => void) {
 			onSaved?.()
 			if (
 				record &&
+				patch.slug !== undefined &&
 				patch.slug !== record.slug &&
 				pathname === getStudioTemplateRoute(record.slug)
 			) {
@@ -63,7 +66,22 @@ export function useTemplateRecord(templateId: number, onSaved?: () => void) {
 		}
 	}
 
-	return { record, categories, busy, error, saveInfo }
+	/** 판형만 고친다(Manager mode의 Output 폼). */
+	const saveOutput = async (output: Parameters<typeof updateTemplateOutput>[1]) => {
+		setBusy(true)
+		setError(null)
+		try {
+			await updateTemplateOutput(templateId, output)
+			await reload()
+			router.refresh()
+		} catch (cause) {
+			setError(messageOf(cause))
+		} finally {
+			setBusy(false)
+		}
+	}
+
+	return { record, categories, busy, error, saveInfo, saveOutput }
 }
 
 export type TemplateRecordState = ReturnType<typeof useTemplateRecord>

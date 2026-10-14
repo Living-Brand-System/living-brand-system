@@ -82,8 +82,10 @@ export function TemplateLayerGroups() {
 					<div
 						key={kind}
 						data-slot="template-layer-group"
-						// Manager mode가 찾는 표시 — 모드와 상관없이 늘 같다. 배경은 편집 권한이 없어 달지 않는다.
-						data-manager-target={kind === 'background' ? undefined : `layers:${kind}`}
+						// Manager mode가 찾는 표시 — 모드와 상관없이 늘 같다. 배경 줄은 배경 정책 폼(`background:`)으로 간다.
+						data-manager-target={
+							kind === 'background' ? 'background:' : `layers:${kind}`
+						}
 						data-manager-label={label}
 						className={cn(
 							'group flex h-9 items-center gap-1 rounded-lg pr-1.5',

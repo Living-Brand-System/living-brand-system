@@ -35,6 +35,8 @@ function SizeReadout({ width, height, unit }: NonNullable<TemplateExportView['si
 	const format = (value: number) => (unit === 'mm' ? formatMillimeters(value) : String(value))
 	return (
 		<ControllerStack
+			// Manager mode가 찾는 표시 — 모드와 상관없이 늘 같다.
+			data-manager-target="output:"
 			labelDisplay="icon"
 			items={[
 				{ id: 'width', label: '출력 너비', icon: <ArrowsHorizontal />, value: width },

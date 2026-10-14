@@ -48,7 +48,7 @@ function Root({
 
 function Format({ value, options, set }: StudioOutputView['format']) {
 	return (
-		<Controller.Row label="Format">
+		<Controller.Row label="Format" data-manager-target="export:formats">
 			<Controller.Select
 				options={options.map((option) => ({ value: option, label: option.toUpperCase() }))}
 				value={value ?? ''}
@@ -61,7 +61,11 @@ function Format({ value, options, set }: StudioOutputView['format']) {
 /** 인쇄 해상도. 선택지가 하나뿐이면 읽기 전용 값으로 둔다. */
 function Print({ ppi, options, set }: NonNullable<StudioOutputView['print']>) {
 	return (
-		<Controller.Row label="Resolution" readonly={options.length <= 1}>
+		<Controller.Row
+			label="Resolution"
+			readonly={options.length <= 1}
+			data-manager-target="export:ppi"
+		>
 			{options.length <= 1 ? (
 				<span className="text-sm text-muted-foreground">{ppi}ppi</span>
 			) : (
@@ -89,7 +93,11 @@ function Video({
 }: NonNullable<StudioOutputView['video']>) {
 	return (
 		<div data-slot="studio-output-video" className="flex flex-col gap-1">
-			<Controller.Row label="FPS" readonly={fpsOptions.length <= 1}>
+			<Controller.Row
+				label="FPS"
+				readonly={fpsOptions.length <= 1}
+				data-manager-target="export:fps"
+			>
 				{fpsOptions.length <= 1 ? (
 					<span className="text-sm text-muted-foreground">{fps}</span>
 				) : (
@@ -103,7 +111,7 @@ function Video({
 					/>
 				)}
 			</Controller.Row>
-			<Controller.Row label="Duration">
+			<Controller.Row label="Duration" data-manager-target="export:duration">
 				<div className="flex items-center gap-1 text-muted-foreground">
 					<Controller.NumberInput
 						inputMode="numeric"

@@ -71,6 +71,9 @@ export function TemplateWorkspace({
 							subtitle: navigation.categoryTitle ?? 'Template',
 							image: preview.image ?? config.previewImage,
 							onReset,
+							managerTarget: 'thumbnail:',
+							titleManagerTarget: 'name:',
+							subtitleManagerTarget: 'category:',
 							actions: (
 								<>
 									<PreviewRefreshButton preview={preview} />
@@ -118,7 +121,7 @@ export function TemplateWorkspace({
 				/>
 			</div>
 			{/* body 포털이라 이 자리에 DOM을 남기지 않는다 — 원본 화면은 그대로다. */}
-			{canManageProfiles && <TemplateManagerOverlay />}
+			{canManageProfiles && <TemplateManagerOverlay preview={preview} />}
 		</div>
 	)
 }
