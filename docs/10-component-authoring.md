@@ -257,6 +257,9 @@ type ControllerInteraction = 'idle' | 'hover' | 'focused' | 'error'
 
 리프 컨트롤 8종 — 값 형태와 제약은 종류(kind)가 소유합니다:
 
+- **kind를 새로 만드는 기준은 값 모양입니다(2026-10-14).** 값 모양이 다를 때만 kind를 만듭니다. 생김새만 다르면 렌더러·위젯에서(`variant`, 선택지의 `colors`·`preview`), 검사 규칙만 다르면 kind의 제약에서 다룹니다 — 텍스트 입력 형식(자유·숫자·이메일·날짜)이 제약의 예입니다.
+- **kind를 추가하면 `pnpm typecheck`가 고칠 곳을 전부 알려 줍니다.** 값 모양 검사·어드민 제한 적용·정의 파싱(`controller-definition.ts`), 렌더러(`controller-renderer/control.tsx`), 어드민 기본값 편집기(`studio-controller-restrictions-field.tsx`) 다섯 곳이 kind 분기 끝에 `never` 검사를 둡니다. 새 kind 분기를 만들 때도 같은 검사를 둡니다.
+
 | kind | value | 종류별 제약·부속 | 킷 대응 |
 | --- | --- | --- | --- |
 | text | `string \| null` | `maxLength`(카운터 `n/max`로 표시), `multiline` | `Controller.Row`+`Controller.Input` / `Controller.Field`+`Controller.Textarea` |
