@@ -1,6 +1,7 @@
 'use client'
 
 import { Renew } from '@carbon/icons-react'
+import { PreviewFrameDialog } from '@/components/studio/shared/preview-frame-dialog'
 import type { useProfilePreview } from '@/components/studio/shared/use-profile-preview'
 import {
 	TemplateCategoryManagerForm,
@@ -67,6 +68,17 @@ function TemplateThumbnailManagerForm({
 			>
 				{preview.error ?? '템플릿 첫 화면 카드와 선택 카드에 보이는 그림이에요.'}
 			</Typography>
+			{/* 찍은 판을 정사각 틀에 맞추는 창 — 카드의 아이콘 버튼을 없애며(사용자 2026-10-14) 여기로 왔다. */}
+			{preview.draft && (
+				<PreviewFrameDialog
+					src={preview.draft}
+					mode={preview.mode}
+					saving={preview.refreshing}
+					error={preview.error}
+					onSave={preview.save}
+					onCancel={preview.cancel}
+				/>
+			)}
 		</div>
 	)
 }

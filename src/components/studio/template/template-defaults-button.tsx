@@ -1,5 +1,7 @@
 'use client'
 
+// ponytail: 선택 카드의 아이콘 버튼을 없애며(사용자 2026-10-14) 지금 이 버튼을 두는 자리가 없다 — 「기본값으로 저장」을 어디 둘지 미정.
+
 import { Save } from '@carbon/icons-react'
 import { useState } from 'react'
 import { useStudioCapabilities } from '@/components/studio/shared/studio-capabilities'

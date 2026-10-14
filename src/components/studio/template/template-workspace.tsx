@@ -1,17 +1,12 @@
 'use client'
 
 import { useEffect } from 'react'
-import { PreviewRefreshButton } from '@/components/studio/shared/preview-refresh-button'
 import { useStudioCapabilities } from '@/components/studio/shared/studio-capabilities'
 import { StudioSelectionChange } from '@/components/studio/shared/studio-selection-card'
 import { StudioShell } from '@/components/studio/shared/studio-shell'
 import { useProfilePreview } from '@/components/studio/shared/use-profile-preview'
 import { TemplateOutput } from '@/components/studio/template/output/template-output'
 import { TemplateCanvas } from '@/components/studio/template/template-canvas'
-import {
-	TemplateDefaultsButton,
-	useTemplateDefaults,
-} from '@/components/studio/template/template-defaults-button'
 import { TemplateEditingPanel } from '@/components/studio/template/template-editing-panel'
 import { TemplateManagerOverlay } from '@/components/studio/template/template-manager-overlay'
 import { TemplateManagerRail } from '@/components/studio/template/template-manager-rail'
@@ -60,7 +55,6 @@ export function TemplateWorkspace({
 		onUpdated: navigation.browse.reload,
 		asDraft: () => isManagerDraft(config.id),
 	})
-	const defaults = useTemplateDefaults()
 	const { canManageProfiles } = useStudioCapabilities()
 
 	return (
@@ -76,16 +70,14 @@ export function TemplateWorkspace({
 							managerTarget: 'card:',
 							actions: (
 								<>
-									<PreviewRefreshButton preview={preview} />
-									<TemplateDefaultsButton defaults={defaults} />
 									<StudioSelectionChange label="템플릿 변경" tabs={['Templates']}>
 										<TemplateProfilePicker onSelect={onChange} />
 									</StudioSelectionChange>
 								</>
 							),
-							children: (preview.error || defaults.message) && (
+							children: preview.error && (
 								<Typography role="alert" size="xs">
-									{preview.error ?? defaults.message}
+									{preview.error}
 								</Typography>
 							),
 						},
