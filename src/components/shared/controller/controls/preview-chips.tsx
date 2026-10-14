@@ -46,10 +46,7 @@ export function ControllerPreviewChips({
 	const groupId = useId()
 	if (compound) {
 		return (
-			<ControllerCompound
-				label={label}
-				className={readonly ? 'opacity-50 *:pointer-events-none' : undefined}
-			>
+			<ControllerCompound label={label} readonly={readonly}>
 				<div className="px-3 pt-2 pb-3">
 					<ChipGrid
 						label={label}

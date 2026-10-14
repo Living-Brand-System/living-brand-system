@@ -4,6 +4,7 @@ import { Controller } from '@/components/shared/controller'
 import { Typography } from '@/components/ui/typography'
 import type { TemplateTextSlot } from '@/features/template-customization/domain/template-studio-config'
 import type { ControllerControlDefinition } from '@/modules/studio-controller/controller-definition'
+import { textFormatOf } from '@/modules/studio-controller/text-formats'
 
 type TextSlotInputProps = {
 	/** 공통 Controller Definition과 DOM 입력 binding을 합쳐 렌더한다. */
@@ -16,8 +17,10 @@ type TextSlotInputProps = {
 /** 편집 계약(config)의 입력 제약(형식·글자수·줄수)을 적용한 텍스트 슬롯 컨트롤러 행. */
 export function TextSlotInput({ definition, input, value, onChange }: TextSlotInputProps) {
 	const availability = definition.availability ?? 'enabled'
-	const singleLine = input.format !== 'free' || input.maxLines === 1
-	const invalidEmail = input.format === 'email' && value !== '' && !/^\S+@\S+\.\S+$/.test(value)
+	const format = textFormatOf(input.format)
+	const singleLine = !format.multiline || input.maxLines === 1
+	// 기본 문구(Figma 문구 「December 2025」 등)는 형식이 달라도 오류가 아니다 — 창작자가 쓴 값만 본다.
+	const invalid = value !== definition.defaultValue && !format.accepts(value)
 	const change = (next: string) => {
 		if (availability !== 'enabled') return
 		if (input.maxLines && next.split('\n').length > input.maxLines) return
@@ -25,7 +28,7 @@ export function TextSlotInput({ definition, input, value, onChange }: TextSlotIn
 	}
 	const control = singleLine ? (
 		<Controller.Input
-			type={input.format === 'free' ? 'text' : input.format}
+			type={format.inputType}
 			aria-label={definition.label}
 			maxLength={definition.maxLength}
 			placeholder={definition.placeholder ?? definition.label}
@@ -45,9 +48,9 @@ export function TextSlotInput({ definition, input, value, onChange }: TextSlotIn
 			onChange={(event) => change(event.target.value)}
 		/>
 	)
-	const error = invalidEmail ? (
+	const error = invalid ? (
 		<Typography role="alert" size="sm" tone="destructive">
-			이메일 형식이 아니에요.
+			{format.label} 형식이 아니에요.
 		</Typography>
 	) : null
 	return (

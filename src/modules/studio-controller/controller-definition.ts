@@ -683,7 +683,9 @@ function validateControl(value: unknown, path: string) {
 		invalid(`${path}.availability`, '지원하지 않는 값입니다.')
 	}
 
-	switch (control.kind) {
+	// 🔑 kind로 좁혀 분기한다 — kind를 추가하고 여기 case를 빠뜨리면 default의 never 검사가 typecheck에서 떨어진다.
+	const kind = control.kind as ControllerControlDefinition['kind']
+	switch (kind) {
 		case 'text':
 			assertOnlyKeys(
 				control,
@@ -862,8 +864,11 @@ function validateControl(value: unknown, path: string) {
 			assertPadAspectRatio(control.aspectRatio, path)
 			return
 		}
-		default:
+		default: {
+			const _everyKindIsParsed: never = kind
+			void _everyKindIsParsed
 			invalid(`${path}.kind`, '지원하지 않는 값입니다.')
+		}
 	}
 }
 

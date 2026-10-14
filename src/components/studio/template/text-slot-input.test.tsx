@@ -76,3 +76,25 @@ it('이메일 형식 오류를 유지한다', () => {
 	)
 	expect(screen.getByRole('alert')).toHaveTextContent('이메일 형식이 아니에요.')
 })
+
+it('날짜 칸은 날짜 선택기이고, ISO가 아닌 기본 문구는 오류가 아니다', () => {
+	const { container, rerender } = render(
+		<TextSlotInput
+			definition={{ ...definition, defaultValue: 'December 2025' }}
+			input={{ format: 'date' }}
+			value="December 2025"
+			onChange={() => {}}
+		/>,
+	)
+	expect(container.querySelector('input')).toHaveAttribute('type', 'date')
+	expect(screen.queryByRole('alert')).toBeNull()
+	rerender(
+		<TextSlotInput
+			definition={{ ...definition, defaultValue: 'December 2025' }}
+			input={{ format: 'date' }}
+			value="2026-02-30"
+			onChange={() => {}}
+		/>,
+	)
+	expect(screen.getByRole('alert')).toHaveTextContent('날짜 형식이 아니에요.')
+})

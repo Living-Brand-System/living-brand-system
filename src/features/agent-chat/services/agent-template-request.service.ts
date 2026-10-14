@@ -19,6 +19,7 @@ import {
 	type TemplateStudioConfig,
 } from '@/features/template-customization/domain/template-studio-config'
 import { AgentConfigurationError } from '@/lib/errors'
+import { type TextFormatId, textFormatOf } from '@/modules/studio-controller/text-formats'
 
 /**
  * 모델이 채우는 슬롯 값 한 칸.
@@ -55,6 +56,11 @@ export type AgentTemplateImageAttachment = {
 	height: number
 	/** 스튜디오 세션에 그대로 얹을 편집 패치. 🔑 첨부 미리보기도 이 값으로 합성한다(정본 하나). */
 	patch: TemplateSessionPatch
+	/**
+	 * 자유가 아닌 텍스트 칸의 형식(nodeId → 형식) — 미리보기가 캔버스 표기(날짜 등)를 맞춘다.
+	 * 패치는 원값 그대로다. 예전 첨부에는 없다(없으면 원값 그대로 찍힌다).
+	 */
+	textFormats?: Readonly<Record<string, TextFormatId>>
 	output: TemplateStudioConfig['output']
 	controller: TemplateStudioConfig['controller']
 }
@@ -135,6 +141,7 @@ export async function prepareTemplateImage(
 		exportPolicy: template.exportPolicy,
 		backgroundPolicy: template.backgroundPolicy as PublishedHtmlTemplate['backgroundPolicy'],
 	})
+	const textSlots = collectTemplateSlots(renderModel.html, renderModel.nodeConfigs)
 	return {
 		type: 'template-image' as const,
 		kind: 'html' as const,
@@ -147,9 +154,16 @@ export async function prepareTemplateImage(
 		output: studioConfig.output,
 		controller: studioConfig.controller,
 		patch: toTemplateSessionPatch(
-			collectTemplateSlots(renderModel.html, renderModel.nodeConfigs),
+			textSlots,
 			collectTemplateImageSlots(renderModel.html, renderModel.nodeConfigs),
 			values,
+		),
+		textFormats: Object.fromEntries(
+			textSlots.flatMap((slot) =>
+				slot.input.inputFormat && slot.input.inputFormat !== 'free'
+					? [[slot.nodeId, slot.input.inputFormat]]
+					: [],
+			),
 		),
 	}
 }
@@ -211,10 +225,16 @@ function toTemplateSlotSummary(slot: TemplateSlot): AgentSlotSummary {
 		type: 'text' as const,
 		defaultText: slot.text,
 		inputFormat: slot.input.inputFormat ?? 'free',
+		...withExample(slot.input.inputFormat),
 		maxLength: slot.input.maxLength,
 		maxLines: slot.input.maxLines,
 		aiInstruction: slot.input.aiInstruction,
 	}
+}
+
+function withExample(format: TextFormatId | undefined) {
+	const example = textFormatOf(format).example
+	return example ? { example } : {}
 }
 
 /** 🔑 `type`으로 갈린다 — 텍스트 슬롯은 `text`를, 이미지 슬롯은 `imagePrompt`를 받는다. */
@@ -224,7 +244,9 @@ type AgentSlotSummary =
 			label: string
 			type: 'text'
 			defaultText: string
-			inputFormat: 'free' | 'number' | 'email' | 'date'
+			inputFormat: TextFormatId
+			// 형식 이름만으로 값 모양이 정해지지 않을 때의 입력 예(날짜: 2026-10-14). 모델은 이 모양으로 쓴다.
+			example?: string
 			maxLength: number | undefined
 			maxLines: number | undefined
 			// 이 슬롯을 채울 때 항상 지켜야 할 규칙 (예: "영문 이름만"). 모델이 값 작성 시 따른다.
@@ -260,6 +282,8 @@ export function toTemplateSessionPatch(
 		const raw = byId.get(slot.nodeId)?.text
 		if (typeof raw !== 'string') continue
 		const clamped = raw.trim().slice(0, slot.input.maxLength ?? raw.length)
+		// 형식에 맞지 않는 값은 싣지 않는다 — 날짜 칸에 「October 14」를 넣으면 날짜 선택기가 비어 보인다.
+		if (!textFormatOf(slot.input.inputFormat).accepts(clamped)) continue
 		text[slot.nodeId] = slot.input.maxLines
 			? clamped.split('\n').slice(0, slot.input.maxLines).join('\n')
 			: clamped

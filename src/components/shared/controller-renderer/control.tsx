@@ -315,6 +315,12 @@ function ControllerControl({
 				/>
 			)
 		}
+		default: {
+			// 🔑 kind를 추가하고 그리는 case를 빠뜨리면 여기서 typecheck가 떨어진다 — 조용히 빈 칸이 되지 않게.
+			const _everyKindIsRendered: never = definition
+			void _everyKindIsRendered
+			return null
+		}
 	}
 }
 

@@ -32,6 +32,8 @@ type ColorCompoundProps = {
 	swatches?: readonly BrandColorPairSwatch[]
 	allowCustom?: boolean
 	disabled?: boolean
+	/** 편집 불가 — 컴파운드 표면이 흐려지고 값이 바뀌지 않는다(포커스는 남는다). */
+	readonly?: boolean
 }
 
 export function StudioColorCompound(props: ColorCompoundProps) {
@@ -48,12 +50,15 @@ function BrandColorCompound(props: ColorCompoundProps) {
 
 function ColorCompound({
 	value,
-	onChange,
 	swatches,
 	allowCustom = true,
 	disabled = false,
+	readonly = false,
+	onChange: onChangeValue,
 }: ColorCompoundProps & { swatches: readonly BrandColorPairSwatch[] }) {
 	const swatchName = useId()
+	// 포인터는 표면이 막고, 키보드로 들어온 변경은 여기서 버린다(제어 입력이라 화면은 원래 값으로 돌아간다).
+	const onChange = readonly ? () => {} : onChangeValue
 	// Custom 모드의 빠른 선택 칩은 스와치에 쓰인 색에서 뽑는다 — 따로 적은 팔레트가 정본과 갈리지 않게.
 	const palette = [
 		...new Set(swatches.flatMap((swatch) => [swatch.background, swatch.foreground])),
@@ -62,6 +67,7 @@ function ColorCompound({
 		<ControllerReveal gap={4}>
 			<ControllerCompound
 				label="Color"
+				readonly={readonly}
 				control={
 					<ControllerSegmented
 						compact

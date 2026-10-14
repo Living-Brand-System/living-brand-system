@@ -3,6 +3,7 @@
 import { Controller } from '@/components/shared/controller'
 import type { ControllerWidgetProps } from '@/components/studio/panel/studio-panel-slot'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import {
 	type ControllerControlDefinition,
 	type ControllerControlValue,
@@ -38,20 +39,25 @@ function PresetList({
 	disabled?: boolean
 }) {
 	if (definition?.kind !== 'select' || !definition.options.length) return null
+	const availability = resolveControlAvailability(definition, binding)
+	const readonly = availability === 'readonly'
 	return (
 		<Controller.Group title="Presets">
-			<div className="grid grid-cols-2 gap-2">
+			{/* 읽기 전용이면 목록 표면을 흐리고 포인터를 끈다 — 키보드로 누른 것은 onClick에서 버린다. */}
+			<div
+				className={cn(
+					'grid grid-cols-2 gap-2',
+					readonly && 'opacity-50 *:pointer-events-none',
+				)}
+			>
 				{definition.options.map((option) => (
 					<Button
 						key={option.value}
 						variant="muted"
 						className="h-auto min-h-16 whitespace-normal aria-pressed:ring-2 aria-pressed:ring-ring"
-						disabled={
-							disabled ||
-							resolveControlAvailability(definition, binding) !== 'enabled'
-						}
+						disabled={disabled || availability === 'disabled'}
 						aria-pressed={value === option.value}
-						onClick={() => onChange(option.value)}
+						onClick={() => !readonly && onChange(option.value)}
 					>
 						{option.label}
 					</Button>

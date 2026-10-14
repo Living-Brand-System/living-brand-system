@@ -19,17 +19,20 @@ export function CompoundWidget({
 		members.length === 1 &&
 		only.kind === 'select' &&
 		only.options.some((option) => option.preview)
-	)
+	) {
+		const availability = resolveControlAvailability(only, bindings?.[only.id])
 		return (
 			<ControllerPreviewChips
 				compound
-				disabled={resolveControlAvailability(only, bindings?.[only.id]) !== 'enabled'}
+				disabled={availability === 'disabled'}
+				readonly={availability === 'readonly'}
 				label={cluster.title}
 				options={only.options}
 				value={String(values[only.id])}
 				onChange={(next) => onChange(only.id, next)}
 			/>
 		)
+	}
 	return (
 		<ControllerCompound label={cluster.title}>
 			<div className="flex flex-col gap-1 px-1.5 pb-1.5 [&_[data-slot=controller-row]]:bg-foreground/4">

@@ -17,13 +17,6 @@ export type TextSlotDraft = {
 	text: string
 }
 
-export const TEXT_INPUT_FORMATS = [
-	{ value: 'free', label: '자유' },
-	{ value: 'number', label: '숫자' },
-	{ value: 'email', label: '이메일' },
-	{ value: 'date', label: '날짜' },
-] as const satisfies readonly { value: TextSlotDraft['inputFormat']; label: string }[]
-
 export function toTextSlotDraft(config: TemplateNodeConfig): TextSlotDraft {
 	const input = config.input ?? {}
 	return {

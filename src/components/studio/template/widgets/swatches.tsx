@@ -27,6 +27,7 @@ export function TemplateSwatchesWidget({
 		(slot) => templateSymbolColorId(slot.id) === control.id,
 	)
 	const value = values[control.id]
+	const availability = resolveControlAvailability(control, bindings?.[control.id])
 	return (
 		<div
 			data-manager-target={`color:${control.id}`}
@@ -44,10 +45,8 @@ export function TemplateSwatchesWidget({
 				colors={colors}
 				value={typeof value === 'string' ? value : null}
 				onChange={(hex) => onChange(control.id, hex)}
-				disabled={
-					resolveControlAvailability(control, bindings?.[control.id]) !== 'enabled' ||
-					colors.length === 0
-				}
+				disabled={availability === 'disabled' || colors.length === 0}
+				readonly={availability === 'readonly'}
 			/>
 		</div>
 	)
