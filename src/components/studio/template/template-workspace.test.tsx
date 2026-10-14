@@ -108,7 +108,11 @@ it('실제 합성 캔버스·출력에 연결하고 Reset은 텍스트·색·출
 	fireEvent.keyDown(format, { key: 'ArrowDown' })
 	fireEvent.click(await screen.findByRole('option', { name: /^JPEG$/ }))
 	expect(format).toHaveTextContent('JPEG')
+	// Reset은 확인을 한 번 거친다.
+	const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
 	fireEvent.click(screen.getByRole('button', { name: 'Reset' }))
+	expect(confirm).toHaveBeenCalledOnce()
+	confirm.mockRestore()
 	expect(await screen.findByRole('textbox', { name: '제목' })).toHaveValue('원본 제목')
 	expect(screen.getByRole('radio', { name: '텍스트 색상 #007332' })).not.toBeChecked()
 	expect(screen.getByRole('combobox', { name: 'Format' })).toHaveTextContent('PNG')

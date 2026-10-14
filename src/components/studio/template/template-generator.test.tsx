@@ -1331,7 +1331,9 @@ describe('TemplateGenerator', () => {
 		render(<TemplateGenerator {...props} />)
 
 		expect(input().value).toBe('되살아나라')
+		const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
 		fireEvent.click(screen.getByRole('button', { name: /^Reset$/ }))
+		confirm.mockRestore()
 		expect(input().value).toBe('TITLE')
 		await waitFor(() =>
 			expect(window.localStorage.getItem('lbs.templateDraft')).not.toContain('되살아나라'),

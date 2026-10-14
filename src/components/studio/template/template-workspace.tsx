@@ -66,7 +66,6 @@ export function TemplateWorkspace({
 							title: config.name,
 							subtitle: navigation.categoryTitle ?? 'Template',
 							image: preview.image ?? config.previewImage,
-							onReset,
 							managerTarget: 'card:',
 							actions: (
 								<>
@@ -100,7 +99,7 @@ export function TemplateWorkspace({
 							// Figma 529:19461 — 작품 축은 화면(상단 메뉴) 중심이다. 오른쪽 패널이 왼쪽보다
 							// 56px 넓어 캔버스 열 중심과 28px 어긋나므로 왼쪽에 그만큼 더 비운다.
 							<div className="h-full min-h-96 w-full lg:min-h-0 lg:pl-14">
-								<TemplateCanvas />
+								<TemplateCanvas onReset={onReset} />
 							</div>
 						),
 						panel: {
