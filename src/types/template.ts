@@ -2,6 +2,7 @@ import type {
 	AuthorizedTemplateAssetCollection,
 	TemplateVectorAssetCollection,
 } from '@/features/template-core/domain/template-asset-policy'
+import type { TextFormatId } from '@/modules/studio-controller/text-formats'
 
 /** Creator가 편집할 수 있는 텍스트 슬롯의 제약과 작성 지침. */
 export interface TemplateSlotSpec {
@@ -9,7 +10,7 @@ export interface TemplateSlotSpec {
 	placeholder?: string
 	maxLength?: number
 	maxLines?: number
-	inputFormat?: 'free' | 'number' | 'email' | 'date'
+	inputFormat?: TextFormatId
 	aiInstruction?: string
 }
 

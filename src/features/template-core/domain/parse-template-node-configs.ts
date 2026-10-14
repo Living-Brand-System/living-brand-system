@@ -4,6 +4,7 @@ import {
 	TEMPLATE_VECTOR_ASSET_COLLECTIONS,
 } from '@/features/template-core/domain/template-asset-policy'
 import { isValidHex } from '@/lib/color'
+import { TEXT_FORMAT_IDS } from '@/modules/studio-controller/text-formats'
 import type { TemplateNodeConfigMap } from '@/types/template'
 
 const templateSlotSpecSchema = z
@@ -12,7 +13,7 @@ const templateSlotSpecSchema = z
 		placeholder: z.string().optional(),
 		maxLength: z.number().int().positive().optional(),
 		maxLines: z.number().int().positive().optional(),
-		inputFormat: z.enum(['free', 'number', 'email', 'date']).optional(),
+		inputFormat: z.enum(TEXT_FORMAT_IDS).optional(),
 		aiInstruction: z.string().optional(),
 	})
 	.strict()
