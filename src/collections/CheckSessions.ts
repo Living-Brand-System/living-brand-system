@@ -5,6 +5,7 @@ import {
 	CHECK_SESSION_STATUS_OPTIONS,
 } from '@/features/asset-check/domain/check-session'
 import { managerOrAdmin } from '@/lib/auth'
+import { AI_USAGE_TOTALS_FIELDS } from '@/modules/ai-usage/ai-usage'
 
 export const CheckSessions: CollectionConfig = {
 	slug: 'check-sessions',
@@ -110,51 +111,7 @@ export const CheckSessions: CollectionConfig = {
 			admin: {
 				description: 'AI 검수 비용 분석에 쓰는 모델과 토큰 사용량입니다.',
 			},
-			fields: [
-				{
-					name: 'model',
-					type: 'text',
-				},
-				{
-					name: 'callCount',
-					type: 'number',
-					admin: { step: 1 },
-				},
-				{
-					name: 'inputTokens',
-					type: 'number',
-					admin: { step: 1 },
-				},
-				{
-					name: 'outputTokens',
-					type: 'number',
-					admin: { step: 1 },
-				},
-				{
-					name: 'totalTokens',
-					type: 'number',
-					admin: { step: 1 },
-				},
-				{
-					name: 'cacheReadInputTokens',
-					type: 'number',
-					admin: { step: 1 },
-				},
-				{
-					name: 'cacheWriteInputTokens',
-					type: 'number',
-					admin: { step: 1 },
-				},
-				{
-					name: 'reasoningTokens',
-					type: 'number',
-					admin: { step: 1 },
-				},
-				{
-					name: 'rawUsage',
-					type: 'json',
-				},
-			],
+			fields: AI_USAGE_TOTALS_FIELDS,
 		},
 		{
 			name: 'errorMessage',

@@ -12,6 +12,7 @@ import type {
 } from '@/features/asset-check/domain/heuristic-criterion'
 import type { CheckImageMediaType } from '@/features/asset-check/utils/image-format'
 import type { RuleExecutor } from '@/features/quality-rule/rule-executor'
+import type { AiUsageTotals } from '@/modules/ai-usage/ai-usage'
 import type { Rgb, Swatch } from './palette-match'
 
 /** 기준(expected) 대비 측정값(actual)을 분리해 실은 구조화 필드. */
@@ -138,16 +139,9 @@ export interface AiCheckResult extends CheckResultBase {
 	}[]
 }
 
-export interface AiUsage {
+/** 검수 한 번의 AI 사용량 합산 — 모양은 ai-usage의 합산 계약이고, 검수는 모델을 늘 남긴다. */
+export interface AiUsage extends AiUsageTotals {
 	model: string
-	callCount?: number
-	inputTokens?: number
-	outputTokens?: number
-	totalTokens?: number
-	cacheReadInputTokens?: number
-	cacheWriteInputTokens?: number
-	reasoningTokens?: number
-	rawUsage?: Record<string, unknown>
 }
 
 export type RawCheckResult = AlgorithmCheckResult | AiCheckResult

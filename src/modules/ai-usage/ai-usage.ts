@@ -1,3 +1,4 @@
+import type { Field } from 'payload'
 import type { AiUsageEvent } from '@/payload-types'
 import type { AiUsageFeature, AiUsageStudio } from './ai-usage-catalog'
 
@@ -50,6 +51,27 @@ const TOKEN_KEYS = [
 export function hasAnyTokenCount(tokens: AiUsageTokens): boolean {
 	return TOKEN_KEYS.some((key) => typeof tokens[key] === 'number' && (tokens[key] ?? 0) > 0)
 }
+
+/**
+ * 세션 문서에 남기는 **합산** 사용량 — 검수 세션과 에이전트 채팅 메시지가 같은 모양을 쓴다.
+ * 호출 1건(`AiUsageRecord`)과 다르다: 여러 호출을 합치므로 `callCount`를 갖는다.
+ */
+export interface AiUsageTotals extends AiUsageTokens {
+	model?: string
+	callCount?: number
+	rawUsage?: Record<string, unknown>
+}
+
+/**
+ * 합산 사용량 group의 필드 — CheckSessions·AgentChatSessions가 이 목록 하나를 쓴다.
+ * 🔴 이름·순서·형식이 곧 DB 스키마다. 바꾸면 두 컬렉션 모두 마이그레이션이 필요하다.
+ */
+export const AI_USAGE_TOTALS_FIELDS: Field[] = [
+	{ name: 'model', type: 'text' },
+	{ name: 'callCount', type: 'number', admin: { step: 1 } },
+	...TOKEN_KEYS.map((name): Field => ({ name, type: 'number', admin: { step: 1 } })),
+	{ name: 'rawUsage', type: 'json' },
+]
 
 /**
  * 같은 요청에서 여러 번 호출한 모델의 토큰을 한 행으로 합친다.
