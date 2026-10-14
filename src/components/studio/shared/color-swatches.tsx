@@ -14,6 +14,7 @@ export function StudioColorSwatches({
 	value,
 	onChange,
 	disabled = false,
+	readonly = false,
 }: {
 	/** 접근성 이름에 쓰는 대상 이름 — 예: `텍스트`, `Symbol`. */
 	subject: string
@@ -21,11 +22,14 @@ export function StudioColorSwatches({
 	value: string | null | undefined
 	onChange: (hex: string) => void
 	disabled?: boolean
+	/** 편집 불가 — 컴파운드 표면이 흐려지고 고른 색이 바뀌지 않는다. */
+	readonly?: boolean
 }) {
 	const name = useId()
 	return (
 		<ControllerCompound
 			label="Color"
+			readonly={readonly}
 			control={
 				<Controller.Segmented
 					compact
@@ -53,6 +57,7 @@ export function StudioColorSwatches({
 						aria-label={`${subject} 색상 ${hex}`}
 						checked={value?.toLowerCase() === hex.toLowerCase()}
 						disabled={disabled}
+						readonly={readonly}
 						onChange={() => onChange(hex)}
 						style={{ backgroundColor: hex }}
 						className="aspect-square w-full"
