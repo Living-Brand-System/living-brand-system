@@ -1,8 +1,8 @@
 import { defineGraphicRuntime } from '@/features/graphic-generation/graphic-runtimes/define-graphic-runtime'
-import type {
-	ControllerControlDefinition,
-	ControllerPadValue,
-} from '@/modules/studio-controller/controller-definition'
+import type { ControllerPadValue } from '@/modules/studio-controller/controller-definition'
+import { colorControl, rangeControlFactory } from '@/modules/studio-controller/controller-factory'
+
+const rangeControl = rangeControlFactory({ step: 1, display: { precision: 0, unit: 'px' } })
 
 /**
  * px 단위 control은 모두 캔버스 짧은 변이 이 길이일 때를 기준으로 읽는다.
@@ -29,24 +29,6 @@ export function toControllerPadValue(
 	origin: (typeof FORWARD_STRAIGHT_DEFAULT_INPUT)['origin'],
 ): ControllerPadValue {
 	return { x: origin.x * 2 - 1, y: origin.y * 2 - 1 }
-}
-
-type RangeControl = Extract<ControllerControlDefinition, { kind: 'range' }>
-
-function rangeControl(
-	id: string,
-	label: string,
-	defaultValue: number,
-	min: number,
-	max: number,
-	step = 1,
-	display: RangeControl['display'] = { precision: 0, unit: 'px' },
-): RangeControl {
-	return { id, kind: 'range', label, defaultValue, min, max, step, display }
-}
-
-function colorControl(id: string, label: string, defaultValue: string) {
-	return { id, kind: 'color' as const, label, defaultValue }
 }
 
 export default defineGraphicRuntime({

@@ -1,5 +1,7 @@
 import { defineGraphicRuntime } from '@/features/graphic-generation/graphic-runtimes/define-graphic-runtime'
-import type { ControllerControlDefinition } from '@/modules/studio-controller/controller-definition'
+import { colorControl, rangeControlFactory } from '@/modules/studio-controller/controller-factory'
+
+const rangeControl = rangeControlFactory({ step: 0.01, display: { precision: 2 } })
 
 /**
  * Fluted Glass의 네 모양. 「가로·세로」와 「스윕·방사」는 프로파일 넷으로 갈라져 있었는데,
@@ -567,24 +569,6 @@ const CONTROL_DEFAULTS = {
 	paletteDrift: FLUTED_GLASS_LINEAR_INPUT.paletteDrift,
 	ribCurve: FLUTED_GLASS_LINEAR_INPUT.ribCurve,
 } as const
-
-type RangeControl = Extract<ControllerControlDefinition, { kind: 'range' }>
-
-function rangeControl(
-	id: string,
-	label: string,
-	defaultValue: number,
-	min: number,
-	max: number,
-	step = 0.01,
-	display: RangeControl['display'] = { precision: 2 },
-): RangeControl {
-	return { id, kind: 'range', label, defaultValue, min, max, step, display }
-}
-
-function colorControl(id: string, label: string, defaultValue: string) {
-	return { id, kind: 'color' as const, label, defaultValue }
-}
 
 const flutedGlassRuntimeManifest = defineGraphicRuntime({
 	studio: 'graphic',

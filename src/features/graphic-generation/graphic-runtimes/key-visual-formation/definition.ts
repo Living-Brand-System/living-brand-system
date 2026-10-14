@@ -1,5 +1,7 @@
 import { defineGraphicRuntime } from '@/features/graphic-generation/graphic-runtimes/define-graphic-runtime'
-import type { ControllerControlDefinition } from '@/modules/studio-controller/controller-definition'
+import { rangeControlFactory } from '@/modules/studio-controller/controller-factory'
+
+const rangeControl = rangeControlFactory({ step: 1, display: { precision: 0 } })
 
 /**
  * px 단위 control은 모두 캔버스 짧은 변이 이 길이일 때를 기준으로 읽는다.
@@ -65,20 +67,6 @@ export const KEY_VISUAL_FORMATION_DEFAULT_INPUT = {
 	steps: 8,
 	decay: 2,
 } as const
-
-type RangeControl = Extract<ControllerControlDefinition, { kind: 'range' }>
-
-function rangeControl(
-	id: string,
-	label: string,
-	defaultValue: number,
-	min: number,
-	max: number,
-	step = 1,
-	display: RangeControl['display'] = { precision: 0 },
-): RangeControl {
-	return { id, kind: 'range', label, defaultValue, min, max, step, display }
-}
 
 function colorOptions(levels: readonly (typeof KEY_VISUAL_FORMATION_COLOR_LEVELS)[number][]) {
 	return levels.map((color) => ({
