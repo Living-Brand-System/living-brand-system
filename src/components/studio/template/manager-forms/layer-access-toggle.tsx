@@ -13,6 +13,8 @@ type LayerAccessToggleProps = {
 	onChange: (access: TemplateLayerAccess) => unknown
 	/** 「AI 검수 후 입력」 자리 — 텍스트 칸에만. 아직 없는 값이라 비활성. */
 	withAiReview?: boolean
+	/** 「숨김」을 둘지 — 텍스트 칸 패널에는 없다(숨기기·되살리기는 Layers 묶음 패널이 한다, 사용자 2026-10-14). */
+	withHidden?: boolean
 }
 
 /**
@@ -25,6 +27,7 @@ export function LayerAccessToggle({
 	busy,
 	onChange,
 	withAiReview,
+	withHidden = true,
 }: LayerAccessToggleProps) {
 	// 누른 값 — 누를 때의 서버 값(`from`)이 그대로인 동안만 쓴다. 서버 값이 바뀌면 그쪽이 맞는 값이다.
 	const [pressed, setPressed] = useState<{
@@ -53,7 +56,7 @@ export function LayerAccessToggle({
 		>
 			<ToggleGroupItem value="readonly">값 고정</ToggleGroupItem>
 			<ToggleGroupItem value="editable">입력 가능</ToggleGroupItem>
-			<ToggleGroupItem value="hidden">숨김</ToggleGroupItem>
+			{withHidden && <ToggleGroupItem value="hidden">숨김</ToggleGroupItem>}
 			{/* ponytail: 자리만 — 저장할 값도, 입력 단계 검수 흐름도 아직 없다(별도 브랜치). */}
 			{withAiReview && (
 				<ToggleGroupItem value="ai-review" disabled>

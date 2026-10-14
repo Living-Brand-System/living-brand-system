@@ -87,6 +87,7 @@ export function TemplateTextManagerForm({ nodeId }: { nodeId: string }) {
 									)
 								}
 								withAiReview
+								withHidden={false}
 							/>
 						</Field>
 					}
