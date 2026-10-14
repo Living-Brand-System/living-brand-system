@@ -12,6 +12,11 @@ import {
 	TemplateExportManagerForm,
 } from '@/components/studio/template/manager-forms/export-form'
 import {
+	TemplateColorManagerForm,
+	TemplatePromptManagerForm,
+	TemplateSampleManagerForm,
+} from '@/components/studio/template/manager-forms/foundation-forms'
+import {
 	TemplateCanvasManagerForm,
 	TemplateCategoryManagerForm,
 	TemplateDefaultsManagerForm,
@@ -62,15 +67,24 @@ export function TemplateManagerOverlay({
 					render: () => <BackgroundPolicyForm />,
 				},
 				control: {
-					title: (key) => (BACKGROUND_CONTROL_KEYS.has(key) ? '배경 설정' : 'CI 색 버전'),
+					title: (key) =>
+						BACKGROUND_CONTROL_KEYS.has(key)
+							? '배경 설정'
+							: key === 'prompt'
+								? '이미지 프로파일'
+								: 'CI 색 버전',
 					// 그 밖의 줄(그래픽 런타임 노브·Image Mode·Dimming Strength·색 폴백)은 관리하지 않는다.
 					accepts: (key) =>
-						BACKGROUND_CONTROL_KEYS.has(key) || isTemplateCiColorKey(config, key),
+						BACKGROUND_CONTROL_KEYS.has(key) ||
+						key === 'prompt' ||
+						isTemplateCiColorKey(config, key),
 					render: (key) =>
 						BACKGROUND_CONTROL_KEYS.has(key) ? (
 							<BackgroundPolicyForm
 								focus={key === 'background.dimmer' ? 'dimmer' : 'types'}
 							/>
+						) : key === 'prompt' ? (
+							<TemplatePromptManagerForm />
 						) : (
 							<TemplateCiColorManagerForm controlId={key} />
 						),
@@ -87,6 +101,14 @@ export function TemplateManagerOverlay({
 				transform: {
 					title: '이미지 변형',
 					render: (nodeId) => <TemplateImageTransformManagerForm nodeId={nodeId} />,
+				},
+				color: {
+					title: '브랜드 컬러',
+					render: (controlId) => <TemplateColorManagerForm controlId={controlId} />,
+				},
+				sample: {
+					title: '샘플 이미지',
+					render: (sampleId) => <TemplateSampleManagerForm sampleId={sampleId} />,
 				},
 				export: {
 					title: '출력 설정',
