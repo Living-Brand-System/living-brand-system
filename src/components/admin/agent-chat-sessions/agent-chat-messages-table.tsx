@@ -10,6 +10,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/components/ui/table'
+import type { AgentChatReaction } from '@/features/agent-chat/types'
 import { cn } from '@/lib/utils'
 import { fieldNumber, fieldRowCount, fieldString } from '../shared/form-fields'
 
@@ -26,7 +27,7 @@ type MessageRow = {
 		totalTokens?: number | null
 	} | null
 	messageId?: string | null
-	reaction?: 'good' | 'bad' | null
+	reaction?: AgentChatReaction | null
 	role?: string | null
 	text?: string | null
 	usedSkills?: CountedItem[] | null

@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { AGENT_CHAT_REACTION_OPTIONS } from '@/features/agent-chat/types'
 import { managerOrAdmin } from '@/lib/auth'
 
 export const AgentChatSessions: CollectionConfig = {
@@ -184,10 +185,7 @@ export const AgentChatSessions: CollectionConfig = {
 				{
 					name: 'reaction',
 					type: 'select',
-					options: [
-						{ label: 'Good', value: 'good' },
-						{ label: 'Bad', value: 'bad' },
-					],
+					options: [...AGENT_CHAT_REACTION_OPTIONS],
 					admin: {
 						description: '이 Agent 답변 버블에 대한 사용자 피드백입니다.',
 					},
