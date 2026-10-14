@@ -4,7 +4,10 @@ import type {
 	ControllerGroupDefinition,
 } from '@/modules/studio-controller/controller-definition'
 import type { resolveTemplateImageColorControls } from './image-colorize'
-import type { ResolvedTemplateImageConfig } from './template-studio-config'
+import {
+	type ResolvedTemplateImageConfig,
+	TEMPLATE_IMAGE_MODE_OPTIONS,
+} from './template-studio-config'
 
 /**
  * 이미지 슬롯(과 배경 이미지)의 세션 축을 조건·묶음에 쓰려고 컨트롤로 승격한 id(docs/10 §3.7).
@@ -22,10 +25,7 @@ const MODE = {
 	label: 'Mode',
 	defaultValue: 'preset',
 	variant: 'segmented',
-	options: [
-		{ value: 'preset', label: 'Preset' },
-		{ value: 'generate', label: 'Generate' },
-	],
+	options: TEMPLATE_IMAGE_MODE_OPTIONS,
 } as const satisfies ControllerControlDefinition
 
 /** 이미지 슬롯의 Dimming(Figma 529:27139). 배경 Dimming과 같은 모양이다. */

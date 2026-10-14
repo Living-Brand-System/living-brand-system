@@ -12,6 +12,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { TemplateCategoryOption } from '@/features/template-customization/services/template-records.client'
+import type { Template } from '@/payload-types'
 
 /** Payload 템플릿 폼의 기본 정보 칸(이름·주소·설명·카테고리·판형)을 앱 입력으로 — 생성과 수정이 같이 쓴다. */
 export type TemplateFormValues = {
@@ -19,7 +20,7 @@ export type TemplateFormValues = {
 	slug: string
 	description: string
 	category: number | null
-	outputKind: 'digital' | 'print'
+	outputKind: Template['outputKind']
 	/** 입력 중인 글자 그대로 — 숫자 변환은 저장할 때 한다. */
 	sizeWidth: string
 	sizeHeight: string

@@ -7,6 +7,7 @@ import type { SampleImageOption } from '@/features/template-customization/domain
 import type {
 	ResolvedTemplateImageConfig,
 	TemplateBackgroundType,
+	TemplateImageMode,
 	TemplateStudioConfig,
 	TemplateStudioConfigSlot,
 	TemplateVectorSlot,
@@ -49,7 +50,7 @@ export type TemplateAssignedImage =
 export type TemplateImageSlotState = {
 	profileId?: number
 	/** Preset(샘플 고르기)과 Generate(프롬프트 생성) 중 무엇을 그릴지 — 배경과 같은 분기다. */
-	imageMode: 'preset' | 'generate'
+	imageMode: TemplateImageMode
 	prompt: string
 	generating: boolean
 	error: string | null
@@ -69,7 +70,7 @@ export type TemplateImageSlotPatch = Partial<
 /** 캔버스 배경 하나의 입력·요청·결과 상태. */
 export type TemplateBackgroundState = {
 	type: TemplateBackgroundType
-	imageMode: 'preset' | 'generate'
+	imageMode: TemplateImageMode
 	color: string | null
 	profileId?: number
 	prompt: string
@@ -159,7 +160,7 @@ export type TemplateStudioValue = {
 		targetId: string | null
 		/** 편집 중인 대상의 표시 정보 — 방식·카드 제목·미리보기는 세션이 파생하고 UI는 읽기만 한다. */
 		target: {
-			mode: 'image' | 'graphic' | 'color'
+			mode: TemplateBackgroundType
 			name: string | null
 			/** 카드 부제 — 그래픽은 렌더러 이름이고, 이미지·단색에는 없다. */
 			subtitle: string | undefined

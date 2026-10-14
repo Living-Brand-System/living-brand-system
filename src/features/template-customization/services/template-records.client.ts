@@ -3,6 +3,7 @@ import {
 	type StudioPreviewImage,
 	toStudioPreviewImage,
 } from '@/modules/studio-controller/controller-definition'
+import type { Template } from '@/payload-types'
 import type { TemplateNodeConfigMap } from '@/types/template'
 
 /**
@@ -15,7 +16,7 @@ export type TemplateRecord = {
 	name: string
 	slug: string
 	categoryId: number | null
-	outputKind: 'digital' | 'print'
+	outputKind: Template['outputKind']
 	width: number | null
 	height: number | null
 	size: { width: number | null; height: number | null } | null
@@ -34,7 +35,7 @@ export type TemplateCreateInput = {
 	slug?: string
 	description?: string
 	category: number
-	outputKind: 'digital' | 'print'
+	outputKind: Template['outputKind']
 	sourceUrl: string
 	baseHtml: string
 	html: string
@@ -173,7 +174,7 @@ export type TemplateInfoPatch = {
 	slug: string
 	description: string
 	category: number
-	outputKind: 'digital' | 'print'
+	outputKind: Template['outputKind']
 	size: { width: number; height: number }
 }
 
@@ -229,7 +230,7 @@ export async function readTemplateLayerSource(
 /** 판형(디지털 px / 인쇄 mm)과 크기. 비율·정수 검증은 서버(`validateTemplateSize`)가 한다. */
 export function updateTemplateOutput(
 	templateId: number,
-	output: { outputKind: 'digital' | 'print'; size: { width: number; height: number } },
+	output: { outputKind: Template['outputKind']; size: { width: number; height: number } },
 ): Promise<void> {
 	return patchTemplate(templateId, output, '판형을 저장하지 못했어요.')
 }

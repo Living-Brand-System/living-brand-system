@@ -20,6 +20,7 @@ import {
 	type TemplateExportPolicyDoc,
 	updateTemplateExportPolicy,
 } from '@/features/template-customization/services/manager-export.client'
+import type { Template } from '@/payload-types'
 
 const TEMPLATE_EXPORT_AXES = ['formats', 'ppi', 'fps', 'duration'] as const
 export type TemplateExportAxis = (typeof TEMPLATE_EXPORT_AXES)[number]
@@ -30,7 +31,7 @@ export function isTemplateExportAxis(key: string): key is TemplateExportAxis {
 
 type ExportFields = {
 	exportPolicy?: TemplateExportPolicyDoc | null
-	outputKind?: 'digital' | 'print' | null
+	outputKind?: Template['outputKind'] | null
 }
 const FIELDS = ['exportPolicy', 'outputKind'] as const
 

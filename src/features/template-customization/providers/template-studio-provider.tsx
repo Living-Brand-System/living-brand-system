@@ -45,6 +45,7 @@ import {
 	type PublishedTemplateView,
 	partitionTemplateSlots,
 	type ResolvedTemplateImageConfig,
+	TEMPLATE_BACKGROUND_TYPES,
 	type TemplateBackgroundSlot,
 	type TemplateBackgroundType,
 	type TemplateImageConfigSlot,
@@ -1459,7 +1460,7 @@ function resolvedPrompt(prompt: string, contract: ResolvedTemplateImageConfig) {
 }
 
 function isBackgroundType(value: string | null): value is TemplateBackgroundType {
-	return value === 'color' || value === 'image' || value === 'graphic'
+	return TEMPLATE_BACKGROUND_TYPES.includes(value as TemplateBackgroundType)
 }
 
 /** 고른 순간의 표시 정보까지 세션에 담는다 — 목록을 다시 열지 않아도 카드가 그려진다. */

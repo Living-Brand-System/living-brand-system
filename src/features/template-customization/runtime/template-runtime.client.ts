@@ -10,6 +10,7 @@ import {
 	type ImageTransformValue,
 	toImageEditTransform,
 } from '@/features/template-customization/domain/image-edit-transform'
+import type { TemplateImageMode } from '@/features/template-customization/domain/template-studio-config'
 import {
 	isTemplateBackgroundVisible,
 	type ResolvedTemplateImageConfig,
@@ -196,7 +197,7 @@ export type TemplateSessionOverridesInput = {
 			{
 				profileId?: number
 				featureValues: ControllerValues
-				imageMode: 'preset' | 'generate'
+				imageMode: TemplateImageMode
 				image?: TemplateAssignedImage
 				transform?: ImageTransformValue
 				dimmer?: boolean

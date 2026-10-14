@@ -20,6 +20,7 @@ import {
 	TEMPLATE_IMAGE_DIMMER_STRENGTH,
 	TEMPLATE_IMAGE_IDS,
 } from '@/features/template-customization/domain/template-image-composition'
+import type { TemplateImageMode } from '@/features/template-customization/domain/template-studio-config'
 import { partitionTemplateSlots } from '@/features/template-customization/domain/template-studio-config'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import {
@@ -150,7 +151,7 @@ function templateImageTarget(
 						onSample: (option: SampleImageOption) =>
 							images.selectSampleImage(slot.id, option),
 						onGenerate: () => images.generate(slot.id),
-						onMode: (imageMode: 'preset' | 'generate') =>
+						onMode: (imageMode: TemplateImageMode) =>
 							images.update(slot.id, { imageMode }),
 						...(slot.transform.enabled
 							? {

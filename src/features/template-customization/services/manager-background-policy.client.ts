@@ -2,13 +2,14 @@ import type {
 	TemplateBackgroundPolicy,
 	TemplateBackgroundType,
 } from '@/features/template-customization/domain/template-studio-config'
+import { TEMPLATE_BACKGROUND_TYPES } from '@/features/template-customization/domain/template-studio-config'
 import {
 	patchTemplate,
 	readTemplateFields,
 } from '@/features/template-customization/services/template-records.client'
 
-/** 배경 형식의 고정 순서 — 스튜디오 Mode 행(`buildBackgroundGroup`)과 같다. */
-export const BACKGROUND_TYPES: readonly TemplateBackgroundType[] = ['color', 'image', 'graphic']
+/** 배경 형식의 고정 순서 — 정본은 도메인의 TEMPLATE_BACKGROUND_TYPES다. */
+export const BACKGROUND_TYPES: readonly TemplateBackgroundType[] = TEMPLATE_BACKGROUND_TYPES
 
 /** 저장된 JSON을 정책으로 읽는다 — admin 배경 설정 칸의 `readPolicy`와 같다(배열이 아닌 types는 「전부 허용」). */
 export function readBackgroundPolicy(value: unknown): TemplateBackgroundPolicy {
