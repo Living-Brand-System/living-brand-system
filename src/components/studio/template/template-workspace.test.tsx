@@ -1,4 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { MotionGlobalConfig } from 'motion/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { StudioCapabilitiesProvider } from '@/components/studio/shared/studio-capabilities'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -497,9 +498,16 @@ it('🔴 Manager mode는 원본 화면을 바꾸지 않는다 — 켜도 끈 것
 		cleanup()
 		return html
 	}
-	const off = await renderAs('')
-	const on = await renderAs('manager=text%3Atitle')
-	expect(on).toBe(off)
-	expect(on).toContain('data-manager-target="text:title"')
-	mocks.search = ''
+	// 나타나는 애니메이션(캔버스 아래 Preview Size 막대) 도중에 찍으면 찍는 순간마다 투명도가 달라 비교가 흔들린다
+	// — 모드와 무관한 차이라 애니메이션을 끝난 값으로 고정한다.
+	MotionGlobalConfig.skipAnimations = true
+	try {
+		const off = await renderAs('')
+		const on = await renderAs('manager=text%3Atitle')
+		expect(on).toBe(off)
+		expect(on).toContain('data-manager-target="text:title"')
+	} finally {
+		MotionGlobalConfig.skipAnimations = false
+		mocks.search = ''
+	}
 })
