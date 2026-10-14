@@ -99,6 +99,7 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 	const [heights, setHeights] = useState<Record<string, number>>({})
 	const gradientId = useId()
 	const glowId = useId()
+	const clipId = useId()
 	const reduceMotion = useReducedMotion()
 	if (!manager.on || typeof document === 'undefined') return null
 
@@ -121,11 +122,11 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 							/>
 						)}
 					</linearGradient>
-					<filter id={glowId} x="-20%" y="-20%" width="140%" height="140%">
+					<filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
 						<feGaussianBlur stdDeviation="8" />
 					</filter>
 				</defs>
-				{panels.map((panel) => {
+				{panels.map((panel, index) => {
 					const frame = grow(panel.rect, FRAME)
 					const selected = manager.selected === panel.id
 					const side = outwardSide(panel.rect)
@@ -140,22 +141,23 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 						panel.radius + FRAME,
 					)
 					const hovered = !selected && hoveredId === panel.id
+					// 원본 자리(구멍). 그라디언트는 여기 가장자리에서 안쪽으로만 번진다 — 기기 화면 테두리를 밝히는 Siri처럼,
+					// 바깥(기본 모드의 주변 UI)으로는 흰 테두리만 나간다(사용자 2026-10-14).
+					const hole = roundedRectPath(panel.rect, panel.radius)
+					const clip = `${clipId}-${index}`
 					return (
 						<g
 							key={panel.id}
 							className={styles.panel}
 							data-state={selected ? 'selected' : hovered ? 'hover' : 'idle'}
 						>
-							<path
-								d={outline}
-								className={styles.glow}
-								stroke={`url(#${gradientId})`}
-								filter={`url(#${glowId})`}
-							/>
+							<clipPath id={clip}>
+								<path d={hole} />
+							</clipPath>
 							{/* 흰 테두리 — 원본 자리는 뚫는다(evenodd). */}
 							{/* biome-ignore lint/a11y/noStaticElementInteractions: 키보드는 테두리 윗변 버튼이 같은 일을 한다 */}
 							<path
-								d={`${outline}${roundedRectPath(panel.rect, panel.radius)}`}
+								d={`${outline}${hole}`}
 								fillRule="evenodd"
 								className={styles.fill}
 								onClick={() => manager.select(panel.id)}
@@ -164,18 +166,26 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 							    원본은 그대로 보이지만 만져지지 않는다. 모드를 끄면 층이 없으니 원본이 그대로 동작한다. */}
 							{/* biome-ignore lint/a11y/noStaticElementInteractions: 키보드는 테두리 윗변 버튼이 같은 일을 한다 */}
 							<path
-								d={roundedRectPath(panel.rect, panel.radius)}
+								d={hole}
 								className={styles.hit}
 								onClick={() => {
 									if (manager.selected !== panel.id) pressOriginal(panel.id)
 									manager.select(panel.id)
 								}}
 							/>
-							<path
-								d={outline}
-								className={styles.edge}
-								stroke={`url(#${gradientId})`}
-							/>
+							<g clipPath={`url(#${clip})`}>
+								<path
+									d={hole}
+									className={styles.glow}
+									stroke={`url(#${gradientId})`}
+									filter={`url(#${glowId})`}
+								/>
+								<path
+									d={hole}
+									className={styles.edge}
+									stroke={`url(#${gradientId})`}
+								/>
+							</g>
 						</g>
 					)
 				})}

@@ -1,5 +1,7 @@
 /*
- * Manager mode 패널 테두리 — 두꺼운 흰 면(fill) + 흐르는 그라디언트 테두리(edge) + 그 그라디언트의 번진 광선(glow).
+ * Manager mode 패널 테두리 — 바깥으로 두꺼운 흰 면(fill), 원본 자리 가장자리에서 안쪽으로만 흐르는 그라디언트(edge)와
+ * 그 번진 광선(glow). 둘 다 원본 자리로 잘려 바깥(기본 모드 화면)으로 새지 않는다(사용자 2026-10-14, Siri 화면 테두리).
+ * 잘린 안쪽 절반만 보이므로 선 두께는 보이는 두께의 두 배로 준다.
  * 색은 앱 강조색(`--highlight-background`와 같은 초록 · 하늘색). 상태: idle(약하게) → hover(세게) → selected(가장 세게).
  */
 /* 그라디언트 정지점은 `--highlight-background`의 두 색 — 작품 그라디언트라 L0 참조 규칙의 예외다(color-tokens.css와 같은 이유). */
@@ -29,13 +31,15 @@
 
 .edge {
 	fill: none;
-	stroke-width: 2;
+	pointer-events: none;
+	stroke-width: 4;
 	transition: stroke-width 200ms ease-out;
 }
 
 .glow {
 	fill: none;
-	stroke-width: 8;
+	pointer-events: none;
+	stroke-width: 16;
 	opacity: 0.35;
 	transition:
 		opacity 200ms ease-out,
@@ -44,16 +48,16 @@
 
 .panel[data-state="hover"] .glow {
 	opacity: 0.9;
-	stroke-width: 16;
+	stroke-width: 32;
 }
 
 .panel[data-state="hover"] .edge {
-	stroke-width: 3;
+	stroke-width: 6;
 }
 
 .panel[data-state="selected"] .glow {
 	opacity: 1;
-	stroke-width: 12;
+	stroke-width: 24;
 }
 
 .panel[data-state="selected"] .fill {
