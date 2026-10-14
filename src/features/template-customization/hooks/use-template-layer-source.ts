@@ -12,7 +12,7 @@ export function useTemplateLayerSource(templateId: number) {
 	const [error, setError] = useState<string | null>(null)
 
 	const reload = useCallback(() => {
-		readTemplateLayerSource(templateId)
+		readTemplateLayerSource(templateId, Number.POSITIVE_INFINITY)
 			.then(setSource)
 			.catch((cause: unknown) =>
 				setError(cause instanceof Error ? cause.message : '레이어를 읽지 못했어요.'),

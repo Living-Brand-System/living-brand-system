@@ -1,6 +1,8 @@
 'use client'
 
+import { useEffect } from 'react'
 import { ManagerOverlay } from '@/components/studio/shared/manager-overlay'
+import { useManagerMode } from '@/components/studio/shared/use-manager-mode'
 import type { useProfilePreview } from '@/components/studio/shared/use-profile-preview'
 import { BackgroundPolicyForm } from '@/components/studio/template/manager-forms/background-form'
 import {
@@ -34,6 +36,7 @@ import { TemplateOutputManagerForm } from '@/components/studio/template/manager-
 import { TemplateTextManagerForm } from '@/components/studio/template/manager-forms/text-form'
 import { TemplateThumbnailManagerForm } from '@/components/studio/template/manager-forms/thumbnail-form'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
+import { prefetchTemplateDraft } from '@/features/template-customization/services/template-records.client'
 
 /** 배경 정책 폼으로 가는 공용 컨트롤 줄(`control:<id>`) — Mode·Dimming Use. */
 const BACKGROUND_CONTROL_KEYS = new Set(['background.type', 'background.dimmer'])
@@ -49,6 +52,11 @@ export function TemplateManagerOverlay({
 	preview: ReturnType<typeof useProfilePreview>
 }) {
 	const { config } = useTemplateStudio()
+	const manager = useManagerMode()
+	// 켜는 순간 템플릿 초안을 받아 둔다 — 첫 칸을 눌렀을 때 폼이 기다리지 않게.
+	useEffect(() => {
+		if (manager.on) prefetchTemplateDraft(config.id)
+	}, [manager.on, config.id])
 	return (
 		<ManagerOverlay
 			forms={{

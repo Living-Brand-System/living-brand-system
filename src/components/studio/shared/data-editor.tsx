@@ -1,7 +1,7 @@
 'use client'
 
 import { DataBase } from '@carbon/icons-react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import {
@@ -61,7 +61,6 @@ type DataEditorProps = {
  * 부르는 화면이, 막는 것은 Payload access가 정한다.
  */
 export function DataEditor({ subject, tabs, initial, trigger }: DataEditorProps) {
-	const router = useRouter()
 	const pathname = usePathname()
 	const searchParams = useSearchParams()
 	const requested = searchParams.get(EDIT_PARAM)
@@ -76,7 +75,8 @@ export function DataEditor({ subject, tabs, initial, trigger }: DataEditorProps)
 		if (tabId && nextItemId !== undefined) next.set(ITEM_PARAM, String(nextItemId))
 		else if (!tabId) next.delete(ITEM_PARAM)
 		const query = next.toString()
-		router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+		// 서버 왕복 없이 주소만 바꾼다(`use-manager-mode.ts`와 같은 이유).
+		window.history.replaceState(null, '', query ? `${pathname}?${query}` : pathname)
 	}
 	const open = () => goTo(initial?.tabId ?? tabs[0].id, initial?.itemId)
 

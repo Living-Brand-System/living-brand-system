@@ -22,7 +22,10 @@ export function useTemplateManagerData<T extends Record<string, unknown>>(
 	const [error, setError] = useState<string | null>(null)
 
 	const reload = useCallback(async () => {
-		setData(await readTemplateFields<T>(templateId, fieldsRef.current))
+		// 화면 표시는 받아 둔 초안을 쓴다 — 저장하면 응답 문서로 갈아 끼워져 있다.
+		setData(
+			await readTemplateFields<T>(templateId, fieldsRef.current, Number.POSITIVE_INFINITY),
+		)
 	}, [templateId])
 
 	useEffect(() => {

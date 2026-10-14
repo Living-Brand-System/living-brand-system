@@ -72,7 +72,8 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 	const formsRef = useRef(forms)
 	formsRef.current = forms
 	const panels = useManagerTargets(manager.on, formsRef)
-	const pointer = usePointer(manager.on)
+	// 마우스가 움직일 때마다 층을 다시 그리지 않는다 — 올라간 칸이 바뀔 때만 상태가 바뀐다.
+	const hoveredId = useHoveredTarget(manager.on, panels)
 	const [heights, setHeights] = useState<Record<string, number>>({})
 	const gradientId = useId()
 	const glowId = useId()
@@ -116,8 +117,7 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 						),
 						panel.radius + FRAME,
 					)
-					const hovered =
-						pointer !== null && !selected && contains(frame, pointer.x, pointer.y)
+					const hovered = !selected && hoveredId === panel.id
 					return (
 						<g
 							key={panel.id}
@@ -260,28 +260,46 @@ function outwardSide(rect: Rect): 'left' | 'right' {
 	return rect.left + rect.width / 2 > window.innerWidth / 2 ? 'left' : 'right'
 }
 
+/** 요소마다 한 번만 잰다 — 매 프레임 getComputedStyle을 부르지 않게. */
+const radii = new WeakMap<Element, number>()
+
 /** 요소의 모서리 반지름 — 칸을 감싼 래퍼면 반지름이 없으니 첫 자식까지 본다. 못 찾으면 8px. */
 function radiusOf(element: Element): number {
+	const known = radii.get(element)
+	if (known !== undefined) return known
+	let radius = 8
 	for (const candidate of [element, element.firstElementChild]) {
 		if (!candidate) continue
-		const radius = Number.parseFloat(getComputedStyle(candidate).borderTopLeftRadius)
-		if (radius > 0) return radius
+		const value = Number.parseFloat(getComputedStyle(candidate).borderTopLeftRadius)
+		if (value > 0) {
+			radius = value
+			break
+		}
 	}
-	return 8
+	radii.set(element, radius)
+	return radius
 }
 
 const contains = (rect: Rect, x: number, y: number) =>
 	x >= rect.left && x <= rect.left + rect.width && y >= rect.top && y <= rect.top + rect.height
 
-type Point = { x: number; y: number }
-
-/** 마우스 위치 — 문서 전체에서 읽기만 한다(원본 칸에 이벤트를 걸지 않는다). */
-function usePointer(on: boolean): Point | null {
-	const [point, setPoint] = useState<Point | null>(null)
+/**
+ * 마우스가 올라간 칸(테두리 포함) — 문서 전체에서 위치를 읽기만 하고(원본 칸에 이벤트를 걸지 않는다),
+ * 올라간 칸이 바뀔 때만 상태를 바꾼다.
+ */
+function useHoveredTarget(on: boolean, targets: readonly ManagerTarget[]): string | null {
+	const [hovered, setHovered] = useState<string | null>(null)
+	const targetsRef = useRef(targets)
+	targetsRef.current = targets
 	useEffect(() => {
 		if (!on) return
-		const move = (event: PointerEvent) => setPoint({ x: event.clientX, y: event.clientY })
-		const leave = () => setPoint(null)
+		const move = (event: PointerEvent) => {
+			const hit = targetsRef.current.find((target) =>
+				contains(grow(target.rect, FRAME), event.clientX, event.clientY),
+			)
+			setHovered(hit?.id ?? null)
+		}
+		const leave = () => setHovered(null)
 		document.addEventListener('pointermove', move, { passive: true })
 		document.documentElement.addEventListener('pointerleave', leave)
 		return () => {
@@ -289,7 +307,7 @@ function usePointer(on: boolean): Point | null {
 			document.documentElement.removeEventListener('pointerleave', leave)
 		}
 	}, [on])
-	return point
+	return hovered
 }
 
 /**

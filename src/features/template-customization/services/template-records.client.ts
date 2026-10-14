@@ -58,6 +58,35 @@ async function readStatus(id: number, draft: boolean): Promise<string | null | u
 	return ((await response.json()) as { _status?: string | null })._status
 }
 
+type TemplateDraftDoc = Record<string, unknown> & { _status?: string | null }
+
+/**
+ * 템플릿 최신 초안 한 건을 메모리에 든다 — Manager mode는 사용자가 예측하지 못한 새 층이라 열리는 속도가 중요하다
+ * (사용자 2026-10-14). 화면 표시는 받아 둔 것을 쓰고(`maxAge` 무한), 저장 직전 읽기는 새로 받는다(`maxAge` 0 —
+ * 그 사이 남이 고친 값을 덮지 않게). 저장하면 응답 문서로 갈아 끼운다.
+ */
+const drafts = new Map<number, { at: number; doc: Promise<TemplateDraftDoc> }>()
+
+export function readTemplateDraft(templateId: number, maxAge = 0): Promise<TemplateDraftDoc> {
+	const hit = drafts.get(templateId)
+	if (hit && performance.now() - hit.at <= maxAge) return hit.doc
+	const doc = fetch(`/api/templates/${templateId}?depth=0&draft=true`).then(async (response) => {
+		if (!response.ok) throw await failure(response, '템플릿을 읽지 못했어요.')
+		return (await response.json()) as TemplateDraftDoc
+	})
+	const entry = { at: performance.now(), doc }
+	drafts.set(templateId, entry)
+	doc.catch(() => {
+		if (drafts.get(templateId) === entry) drafts.delete(templateId)
+	})
+	return doc
+}
+
+/** Manager mode를 켜는 순간 미리 받아 둔다 — 첫 폼이 기다리지 않게. */
+export function prefetchTemplateDraft(templateId: number): void {
+	readTemplateDraft(templateId, Number.POSITIVE_INFINITY).catch(() => {})
+}
+
 /**
  * 템플릿 한 건을 고친다.
  * 🔴 `_status`를 읽은 그대로 되쓴다. 빠뜨리면 최신(초안) 버전을 따라 써 게시 템플릿이 초안으로 떨어진다
@@ -69,7 +98,8 @@ export async function patchTemplate(
 	data: Record<string, unknown>,
 	fallback: string,
 ): Promise<void> {
-	const status = await readStatus(templateId, true)
+	// 저장 직전 읽기(읽고-고쳐-쓰기)가 방금 새로 받은 것을 그대로 쓴다 — 상태를 따로 읽지 않는다.
+	const status = (await readTemplateDraft(templateId, 3000))._status
 	if (status === 'draft' && (await readStatus(templateId, false)) === 'published') {
 		throw new Error(
 			'admin에 발행하지 않은 초안이 있어요. 초안을 발행하거나 되돌린 뒤 다시 저장해 주세요.',
@@ -82,6 +112,10 @@ export async function patchTemplate(
 		body: JSON.stringify({ ...data, _status: status }),
 	})
 	if (!response.ok) throw await failure(response, fallback)
+	const saved = ((await response.json().catch(() => null)) as { doc?: TemplateDraftDoc } | null)
+		?.doc
+	if (saved) drafts.set(templateId, { at: performance.now(), doc: Promise.resolve(saved) })
+	else drafts.delete(templateId)
 }
 
 const RECORD_FIELDS = [
@@ -178,12 +212,12 @@ export function trashTemplate(templateId: number): Promise<void> {
 /** 레이어 원본과 노드 설정 — Manager mode의 레이어 묶음 폼이 숨김 레이어까지 그리려고 읽는다. */
 export type TemplateLayerSource = { baseHtml: string; overrides: TemplateNodeConfigMap }
 
-export async function readTemplateLayerSource(templateId: number): Promise<TemplateLayerSource> {
-	const response = await fetch(
-		`/api/templates/${templateId}?depth=0&draft=true&select[baseHtml]=true&select[overrides]=true`,
-	)
-	if (!response.ok) throw await failure(response, '템플릿을 읽지 못했어요.')
-	const doc = (await response.json()) as {
+/** `maxAge`: 화면 표시는 받아 둔 것(무한), 저장 직전 읽기는 새로(0, 기본) — `readTemplateDraft`. */
+export async function readTemplateLayerSource(
+	templateId: number,
+	maxAge = 0,
+): Promise<TemplateLayerSource> {
+	const doc = (await readTemplateDraft(templateId, maxAge)) as {
 		baseHtml?: string | null
 		overrides?: TemplateNodeConfigMap | null
 	}
@@ -205,9 +239,8 @@ export function updateTemplateOutput(
 export async function readTemplateFields<T extends Record<string, unknown>>(
 	templateId: number,
 	fields: readonly (keyof T & string)[],
+	maxAge = 0,
 ): Promise<T> {
-	const select = fields.map((field) => `select[${field}]=true`).join('&')
-	const response = await fetch(`/api/templates/${templateId}?depth=0&draft=true&${select}`)
-	if (!response.ok) throw await failure(response, '템플릿을 읽지 못했어요.')
-	return (await response.json()) as T
+	const doc = await readTemplateDraft(templateId, maxAge)
+	return Object.fromEntries(fields.map((field) => [field, doc[field]])) as T
 }

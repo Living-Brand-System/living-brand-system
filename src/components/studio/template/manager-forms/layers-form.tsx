@@ -59,24 +59,28 @@ export function isManagedLayerKind(kind: string): kind is LayerKind {
  */
 function useLayerEdit(onChanged: () => void) {
 	const router = useRouter()
-	const queue = useRef(Promise.resolve())
+	const queue = useRef<Promise<void>>(Promise.resolve())
 	const [pending, setPending] = useState(0)
 	const [error, setError] = useState<string | null>(null)
 	const run = (action: () => Promise<void>) => {
 		setPending((count) => count + 1)
 		setError(null)
-		queue.current = queue.current.then(async () => {
+		const result = queue.current.then(async () => {
 			try {
 				await action()
 				onChanged()
 				router.refresh()
+				return true
 			} catch (cause) {
 				setError(cause instanceof Error ? cause.message : '레이어를 바꾸지 못했어요.')
+				return false
 			} finally {
 				setPending((count) => count - 1)
 			}
 		})
-		return queue.current
+		queue.current = result.then(() => undefined)
+		// 실패면 `false` — 누른 값을 바로 보이던 토글이 되돌린다.
+		return result
 	}
 	return { busy: pending > 0, error, run }
 }
