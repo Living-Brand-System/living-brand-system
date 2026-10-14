@@ -26,6 +26,7 @@ import type {
 	VideoArtifact,
 } from '@/modules/studio-artifact/studio-artifact'
 import type { ControllerValues } from '@/modules/studio-controller/controller-definition'
+import { textFormatOf } from '@/modules/studio-controller/text-formats'
 import type { TemplateNodeConfigMap } from '@/types/template'
 import { withTemplateRasterStage } from './render-template-raster-stage.client'
 import { templateDomToVectorScene } from './template-dom-to-vector-scene.client'
@@ -232,7 +233,8 @@ function buildTemplateSessionOverrides({
 		textSlots.flatMap((slot) => {
 			const override: { text?: string; color?: string } = {}
 			const text = textValues[slot.id]
-			if (text !== undefined) override.text = text
+			// 출력 계약 — 세션은 원값(날짜는 2026-10-14)을 갖고, 캔버스에는 형식의 표기로 쓴다.
+			if (text !== undefined) override.text = textFormatOf(slot.input.format).toText(text)
 			if (textColor) override.color = textColor
 			return Object.keys(override).length > 0 ? [[slot.id, override] as const] : []
 		}),

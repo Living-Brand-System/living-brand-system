@@ -7,6 +7,7 @@ import {
 	type ImageProfileOption,
 	requestPublishedImageProfiles,
 } from '@/features/image-generation/services/generate-image.client'
+import { TEXT_FORMAT_OPTIONS } from '@/modules/studio-controller/text-formats'
 import type { TemplateLayerAccess, TemplateNodeConfig, TemplateSlotSpec } from '@/types/template'
 import {
 	canAssignImage,
@@ -130,12 +131,7 @@ function SlotSpecEditor({
 				</Controller.Row>
 				<Controller.Row label="형식">
 					<Controller.Select
-						options={[
-							{ value: 'free', label: '자유 텍스트' },
-							{ value: 'number', label: '숫자' },
-							{ value: 'email', label: '이메일' },
-							{ value: 'date', label: '날짜' },
-						]}
+						options={TEXT_FORMAT_OPTIONS}
 						value={input.inputFormat ?? 'free'}
 						onChange={(value) =>
 							patch({ inputFormat: value as TemplateSlotSpec['inputFormat'] })

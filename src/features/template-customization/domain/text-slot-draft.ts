@@ -17,12 +17,8 @@ export type TextSlotDraft = {
 	text: string
 }
 
-export const TEXT_INPUT_FORMATS = [
-	{ value: 'free', label: '자유' },
-	{ value: 'number', label: '숫자' },
-	{ value: 'email', label: '이메일' },
-	{ value: 'date', label: '날짜' },
-] as const satisfies readonly { value: TextSlotDraft['inputFormat']; label: string }[]
+// 형식 목록의 정본은 text-formats다 — 이 이름은 기존 소비자를 위한 별칭이다.
+export { TEXT_FORMAT_OPTIONS as TEXT_INPUT_FORMATS } from '@/modules/studio-controller/text-formats'
 
 export function toTextSlotDraft(config: TemplateNodeConfig): TextSlotDraft {
 	const input = config.input ?? {}

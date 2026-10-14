@@ -70,6 +70,21 @@ describe('toTemplateSessionPatch', () => {
 		expect(Object.keys(patch.images?.i1 ?? {})).toEqual(['prompt'])
 	})
 
+	it('형식에 맞지 않는 값은 싣지 않는다 — 날짜 칸은 ISO 원값만 받는다', () => {
+		const patch = toTemplateSessionPatch(
+			[
+				textSlot('d1', 'editable', { inputFormat: 'date' }),
+				textSlot('d2', 'editable', { inputFormat: 'date' }),
+			],
+			[],
+			[
+				{ slotId: 'd1', text: '2026-10-14' },
+				{ slotId: 'd2', text: 'October 14 2026' },
+			],
+		)
+		expect(patch.text).toEqual({ d1: '2026-10-14' })
+	})
+
 	it('슬롯 스펙으로 자른다 — maxLength·maxLines·이미지 프롬프트 상한', () => {
 		const patch = toTemplateSessionPatch(
 			[

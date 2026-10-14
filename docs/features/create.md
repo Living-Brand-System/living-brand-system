@@ -23,6 +23,7 @@ Template·Graphic·Image가 Runtime Manifest부터 Artifact와 Export까지 공�
 - `export-print.service`(`src/features/studio-export/services/`): 넘어온 PNG의 픽셀 크기를 `findPrintOutputBlocker`로 확인한 뒤 TIFF는 Sharp로 CMYK/ICC 변환해 생성하고, 래스터 PDF는 그 PNG를 그대로 실음(`png-to-pdf.pdf-lib`). 벡터 PDF는 `export-vector-print.service`가 Vector Scene을 pdf-lib으로 직렬화하며, 도형 색은 `brand-colors`가 가진 **브랜드 정본 CMYK**를 쓰고(정본에 없는 색만 ICC로 계산) 사진은 `image-to-cmyk-samples`가 낸 잉크 샘플을 싣는다. 다 만든 뒤 `cmyk-only`가 CMYK 아닌 색이 남았는지 출구에서 검사한다.
 
 - 입력: 발행된 템플릿의 canonical `html` + 열린 텍스트 슬롯 값. 슬롯은 `inputFormat`/`maxLength`/`maxLines`를 강제.
+- 텍스트 입력 형식(자유·숫자·이메일·날짜)의 입출력 계약은 `src/modules/studio-controller/text-formats.ts` 표 하나가 소유합니다(2026-10-14). 형식은 kind가 아닙니다 — 값은 늘 문자열로 저장·전송되고, 형식은 입력 종류·받는 값(`accepts`)·캔버스 표기(`toText`)만 정합니다. 🔴 저장은 원값, 표기는 캔버스에 쓸 때만입니다: 날짜는 `2026-10-14`로 저장하고 스튜디오 캔버스(`buildTemplateSessionOverrides`)와 챗 첨부 미리보기에서만 `October 14 2026`(UTC 기준)으로 찍습니다. ISO가 아닌 기존 문구는 그대로 찍고 오류로 띄우지 않습니다. 에이전트 패치는 형식에 맞지 않는 값을 싣지 않습니다.
 - 🔴 사용자 미리보기는 `<iframe sandbox="">`(opaque origin)이라 CSS `mask-image` fetch가 CORS 모드로 나갑니다. ACAO 헤더가 없는 업로드 파일 경로(`/api/brand-logos/file/*`)가 차단되면 mask가 전체 투명 처리돼 로고가 사라집니다. 어드민은 same-origin 렌더라 재현되지 않습니다.
 - 출력: 클라이언트 PNG 다운로드와 CMYK TIFF·PDF 직접 다운로드(벡터 PDF는 **CMYK**, 래스터 PDF는 RGB). 인쇄 해상도는 `72`·`150`·`300`ppi 프리셋 드롭다운에서 고르고, 운영자가 `exportPolicy.print.allowedPpi`를 지정하면 그 목록이 프리셋을 대신함(`narrowPrintPpi` — 허용 목록이 아니라 프리셋 목록). 기본값은 목록에 `300`이 있으면 `300`, 없으면 가장 낮은 값(`resolveDefaultPrintPpi`). 서버가 받는 유효 범위는 목록이 아니라 1~1200 정수(`isPrintPpi`). Payload에는 아무것도 쓰지 않음(생성 세션/출력 레코드 없음).
 

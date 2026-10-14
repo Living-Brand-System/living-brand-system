@@ -46,6 +46,11 @@ import {
 	parseStudioControllerConfig,
 	resolveControllerPresentation,
 } from '@/modules/studio-controller/controller-definition'
+import {
+	TEXT_FORMAT_IDS,
+	type TextFormatId,
+	textFormatOf,
+} from '@/modules/studio-controller/text-formats'
 import type { TemplateNodeConfig } from '@/types/template'
 
 const BACKGROUND_TYPE_CONTROL_ID = 'background.type'
@@ -78,9 +83,9 @@ export type TemplateTextSlot = TemplateEditableSlotBase & {
 	kind: 'text'
 	/** 공통 controller.groups에 있는 text Definition의 stable id. */
 	controlId: string
-	/** HTML input 동작과 줄 수는 아직 공통 text primitive가 표현하지 못하는 DOM binding 제약이다. */
+	/** 입력 형식과 줄 수 — 형식의 입출력 규칙은 `text-formats`의 표가 정한다. */
 	input: {
-		format: 'free' | 'number' | 'email' | 'date'
+		format: TextFormatId
 		maxLines?: number
 	}
 }
@@ -283,7 +288,7 @@ export function parseTemplateStudioConfig(input: unknown): TemplateStudioConfig 
 				assertTemplateString(slot.controlId, 'slot.controlId')
 				const textInput = templateRecord(slot.input, 'Template text input')
 				assertTemplateKeys(textInput, ['format', 'maxLines'])
-				if (!['free', 'number', 'email', 'date'].includes(textInput.format as string)) {
+				if (!TEXT_FORMAT_IDS.includes(textInput.format as TextFormatId)) {
 					throw new Error('Template text input format이 올바르지 않습니다.')
 				}
 				if (textInput.maxLines !== undefined)
@@ -753,7 +758,7 @@ export function getTemplateRuntimeManifest({
 			label: slot.input.label ?? slot.name,
 			defaultValue: slot.text,
 			...(slot.policy.access === 'readonly' ? { availability: 'readonly' as const } : {}),
-			multiline: (slot.input.inputFormat ?? 'free') === 'free' && slot.input.maxLines !== 1,
+			multiline: textFormatOf(slot.input.inputFormat).multiline && slot.input.maxLines !== 1,
 			...(slot.input.maxLength === undefined ? {} : { maxLength: slot.input.maxLength }),
 			...(slot.input.placeholder === undefined
 				? {}
