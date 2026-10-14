@@ -17,6 +17,8 @@ type ControllerFieldProps = React.ComponentProps<'div'> & {
 	 */
 	action?: React.ReactNode
 	disabled?: boolean
+	/** 편집 불가 — `ControllerRow`의 `readonly`와 같다(0.5 흐림·포인터 차단 + 안의 킷 컨트롤 편집 차단). */
+	readonly?: boolean
 	/** 필드 아래 오류 문구의 id — `ControllerRow`의 `errorId`와 같다. */
 	errorId?: string
 }
@@ -28,6 +30,7 @@ export function ControllerField({
 	counter,
 	action,
 	disabled = false,
+	readonly = false,
 	errorId,
 	className,
 	children,
@@ -39,9 +42,13 @@ export function ControllerField({
 		<div
 			data-slot="controller-field"
 			aria-disabled={disabled || undefined}
+			data-readonly={readonly || undefined}
 			className={cn(
 				'flex w-full shrink-0 flex-col gap-1.5 rounded-lg bg-muted px-3 pt-2 pb-3 focus-within:ring-2 focus-within:ring-ring/30',
 				action && 'pr-2',
+				// 🔑 포인터는 자식에서만 끈다 — 표면 자신까지 끄면 Manager mode의 보임 판정(elementsFromPoint)이
+				//    이 칸을 건너뛰어 readonly 칸을 관리할 수 없다.
+				readonly && 'opacity-50 *:pointer-events-none',
 				disabled && 'pointer-events-none opacity-50',
 				className,
 			)}
@@ -63,7 +70,7 @@ export function ControllerField({
 				)}
 				{action}
 			</span>
-			<RowControlProvider value={{ controlId, disabled, errorId }}>
+			<RowControlProvider value={{ controlId, disabled, readonly, errorId }}>
 				{children}
 			</RowControlProvider>
 		</div>

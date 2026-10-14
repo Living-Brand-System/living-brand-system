@@ -1,5 +1,6 @@
 'use client'
 
+import type * as React from 'react'
 import { useId } from 'react'
 import { cn } from '@/lib/utils'
 import { ControllerRow, useRowControl } from '../compose/row'
@@ -17,6 +18,8 @@ type ControllerColorRowProps = {
 	/** 허용 색 목록(#rrggbb). 주면 네이티브 피커 대신 이 색들만 고르는 스와치 목록이 된다. */
 	values?: readonly string[]
 	disabled?: boolean
+	/** 편집 불가 — 행이 0.5로 흐려지고 피커·팔레트·초기화가 값을 바꾸지 않는다. */
+	readonly?: boolean
 	className?: string
 }
 
@@ -29,6 +32,7 @@ export function ControllerColorRow({
 	onReset,
 	values,
 	disabled,
+	readonly,
 	className,
 }: ControllerColorRowProps) {
 	// 팔레트는 라디오 묶음이라 자동 배선(첫 스와치)을 쓸 수 없다 — 라벨 클릭이 첫 색 선택이 된다.
@@ -39,13 +43,14 @@ export function ControllerColorRow({
 			label={label}
 			htmlFor={values?.length ? paletteId : undefined}
 			disabled={disabled}
+			readonly={readonly}
 			className={className}
 		>
 			{/* 🔴 `shrink-0`을 주지 않는다 — 팔레트가 길면 이 덩어리가 행을 밀어내 패널 밖으로
 			    나간다(브랜드 컬러 19색에서 실제로 깨졌다). 줄어드는 쪽은 팔레트 하나뿐이고,
 			    hex 표기와 초기화는 각자 `shrink-0`으로 자리를 지킨다. */}
 			<span className="flex min-w-0 items-center gap-2">
-				{!isEmpty && onReset && (
+				{!isEmpty && onReset && !readonly && (
 					<button
 						type="button"
 						aria-label={`${label} 원래 색으로 되돌리기`}
@@ -103,6 +108,7 @@ function ColorPalette({
 			id={row?.controlId}
 			role="radiogroup"
 			aria-label={label}
+			aria-readonly={row?.readonly || undefined}
 			className="flex min-w-0 items-center gap-1 overflow-x-auto"
 		>
 			{values.map((candidate) => (
@@ -112,6 +118,7 @@ function ColorPalette({
 					aria-label={candidate}
 					checked={selected === candidate.toLowerCase()}
 					disabled={row?.disabled || undefined}
+					readonly={row?.readonly}
 					onChange={() => onChange?.(candidate)}
 					style={{ backgroundColor: candidate }}
 					className="size-5"
@@ -120,6 +127,18 @@ function ColorPalette({
 		</span>
 	)
 }
+
+/**
+ * 편집 불가 색 입력 — `input[type=color]`은 readonly 속성을 무시하므로 피커를 여는 클릭·키를 막는다.
+ * 포커스는 남는다(readonly는 읽혀야 하는 상태다). `color-strip.tsx`도 쓴다.
+ */
+export const LOCKED_COLOR_INPUT = {
+	'aria-readonly': true,
+	onClick: (event: React.MouseEvent) => event.preventDefault(),
+	onKeyDown: (event: React.KeyboardEvent) => {
+		if (event.key === 'Enter' || event.key === ' ') event.preventDefault()
+	},
+} as const
 
 function ColorSwatchInput({
 	label,
@@ -135,7 +154,8 @@ function ColorSwatchInput({
 			aria-label={`${label} 색상 선택`}
 			value={value}
 			disabled={row?.disabled || undefined}
-			onChange={(event) => onChange?.(event.target.value)}
+			{...(row?.readonly ? LOCKED_COLOR_INPUT : {})}
+			onChange={(event) => !row?.readonly && onChange?.(event.target.value)}
 			className={cn(
 				'size-5 shrink-0 cursor-pointer appearance-none rounded-sm border border-foreground/15 bg-transparent p-0 disabled:cursor-not-allowed [&::-webkit-color-swatch]:rounded-[inherit] [&::-webkit-color-swatch]:border-0 [&::-webkit-color-swatch-wrapper]:p-0',
 				// 미설정 스와치는 비워 보인다 — 검정을 사칭하지 않기 위해서다.

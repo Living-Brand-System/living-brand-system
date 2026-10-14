@@ -43,7 +43,7 @@ function SizeReadout({ width, height, unit }: NonNullable<TemplateExportView['si
 				{ id: 'height', label: '출력 높이', icon: <ArrowsVertical />, value: height },
 			].map(({ value, ...item }) => ({
 				...item,
-				readonly: true,
+				display: true,
 				children: (
 					<div className="flex min-w-0 flex-1 items-center justify-end gap-1 text-sm">
 						<span>{format(value)}</span>
@@ -59,18 +59,14 @@ function SizeReadout({ width, height, unit }: NonNullable<TemplateExportView['si
 function Scale({ value, options, set }: NonNullable<TemplateExportView['scale']>) {
 	return (
 		<Controller.Row label="Scale" readonly={options.length <= 1}>
-			{options.length <= 1 ? (
-				<span className="text-sm text-muted-foreground">{value}×</span>
-			) : (
-				<Controller.Select
-					options={options.map((option) => ({
-						value: String(option),
-						label: `${option}×`,
-					}))}
-					value={String(value)}
-					onChange={(next) => set(Number(next))}
-				/>
-			)}
+			<Controller.Select
+				options={options.map((option) => ({
+					value: String(option),
+					label: `${option}×`,
+				}))}
+				value={String(value)}
+				onChange={(next) => set(Number(next))}
+			/>
 		</Controller.Row>
 	)
 }

@@ -58,7 +58,7 @@ function Format({ value, options, set }: StudioOutputView['format']) {
 	)
 }
 
-/** 인쇄 해상도. 선택지가 하나뿐이면 읽기 전용 값으로 둔다. */
+/** 인쇄 해상도. 선택지가 하나뿐이면 같은 셀렉트를 읽기 전용으로 둔다. */
 function Print({ ppi, options, set }: NonNullable<StudioOutputView['print']>) {
 	return (
 		<Controller.Row
@@ -66,18 +66,14 @@ function Print({ ppi, options, set }: NonNullable<StudioOutputView['print']>) {
 			readonly={options.length <= 1}
 			data-manager-target="export:ppi"
 		>
-			{options.length <= 1 ? (
-				<span className="text-sm text-muted-foreground">{ppi}ppi</span>
-			) : (
-				<Controller.Select
-					options={options.map((option) => ({
-						value: String(option),
-						label: `${option}ppi`,
-					}))}
-					value={String(ppi)}
-					onChange={(next) => set(Number(next) as PrintPpi)}
-				/>
-			)}
+			<Controller.Select
+				options={options.map((option) => ({
+					value: String(option),
+					label: `${option}ppi`,
+				}))}
+				value={String(ppi)}
+				onChange={(next) => set(Number(next) as PrintPpi)}
+			/>
 		</Controller.Row>
 	)
 }
@@ -98,18 +94,14 @@ function Video({
 				readonly={fpsOptions.length <= 1}
 				data-manager-target="export:fps"
 			>
-				{fpsOptions.length <= 1 ? (
-					<span className="text-sm text-muted-foreground">{fps}</span>
-				) : (
-					<Controller.Select
-						options={fpsOptions.map((option) => ({
-							value: String(option),
-							label: String(option),
-						}))}
-						value={String(fps)}
-						onChange={(next) => setFps(Number(next) as typeof fps)}
-					/>
-				)}
+				<Controller.Select
+					options={fpsOptions.map((option) => ({
+						value: String(option),
+						label: String(option),
+					}))}
+					value={String(fps)}
+					onChange={(next) => setFps(Number(next) as typeof fps)}
+				/>
 			</Controller.Row>
 			<Controller.Row label="Duration" data-manager-target="export:duration">
 				<div className="flex items-center gap-1 text-muted-foreground">

@@ -26,14 +26,21 @@ const swatchVariants = cva(
  */
 export function ControllerSwatch({
 	shape,
+	readonly,
+	onChange,
 	className,
 	...props
-}: Omit<React.ComponentProps<'input'>, 'type'> & VariantProps<typeof swatchVariants>) {
+}: Omit<React.ComponentProps<'input'>, 'type'> &
+	VariantProps<typeof swatchVariants> & {
+		/** 편집 불가 — 라디오는 readonly 속성이 없어 변경을 버린다(제어 라디오라 선택이 그대로 남는다). */
+		readonly?: boolean
+	}) {
 	return (
 		<input
 			type="radio"
 			data-slot="controller-swatch"
 			className={cn(swatchVariants({ shape }), className)}
+			onChange={readonly ? undefined : onChange}
 			{...props}
 		/>
 	)

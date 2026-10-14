@@ -195,13 +195,28 @@ describe('Controller.Row', () => {
 		expect(screen.getByRole('radio', { name: 'On' })).toBeDisabled()
 	})
 
-	it('readonly 행은 라벨이 span이라 죽은 label 클릭 어포던스를 만들지 않는다', () => {
+	it('display 행은 라벨이 span이라 죽은 label 클릭 어포던스를 만들지 않는다', () => {
 		render(
-			<Controller.Row label="Size" readonly>
+			<Controller.Row label="Size" display>
 				<span>210 × 297mm</span>
 			</Controller.Row>,
 		)
 		expect(screen.getByText('Size').tagName).toBe('SPAN')
+	})
+
+	it('readonly 행은 0.5로 흐려지고 포인터가 꺼지며 같은 입력이 편집만 막힌다 — 부품을 갈아타지 않는다', () => {
+		render(
+			<Controller.Row label="Title" readonly>
+				<Controller.Input value="고정" onChange={() => {}} />
+			</Controller.Row>,
+		)
+		const input = screen.getByRole('textbox', { name: 'Title' })
+		expect(input).toHaveAttribute('readonly')
+		expect(input).toHaveValue('고정')
+		expect(input.closest('[data-slot=controller-row]')).toHaveClass(
+			'opacity-50',
+			'*:pointer-events-none',
+		)
 	})
 
 	it('아이콘 라벨은 sr-only 텍스트로 접근 가능한 이름을 동반한다 — 컨트롤러 API label 계약', () => {
@@ -213,7 +228,7 @@ describe('Controller.Row', () => {
 						<span className="sr-only">Quality</span>
 					</>
 				}
-				readonly
+				display
 			>
 				<span>High</span>
 			</Controller.Row>,

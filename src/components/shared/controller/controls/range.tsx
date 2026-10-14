@@ -27,6 +27,8 @@ type ControllerRangeProps = {
 	format?: (value: number) => string
 	onChange: (value: number) => void
 	disabled?: boolean
+	/** 편집 불가 — 0.5로 흐려지고 끌기·클릭·화살표가 값을 바꾸지 않는다(포커스는 남는다). */
+	readonly?: boolean
 	className?: string
 }
 
@@ -40,6 +42,7 @@ export function ControllerRange({
 	format = String,
 	onChange,
 	disabled,
+	readonly = false,
 	className,
 }: ControllerRangeProps) {
 	const span = max - min
@@ -64,7 +67,7 @@ export function ControllerRange({
 		span > 0 ? clampControllerValue((next - min) / span, 0, 1) : 0
 
 	const drag = useControllerPointerDrag({
-		disabled: resolvedDisabled,
+		disabled: resolvedDisabled || readonly,
 		onDrag: (ratioX) => {
 			slideRef.current?.stop()
 			slideRef.current = null
@@ -94,7 +97,7 @@ export function ControllerRange({
 	}, [ratio, drag.dragging, fill])
 
 	function nudge(event: KeyboardEvent<HTMLDivElement>) {
-		if (resolvedDisabled) return
+		if (resolvedDisabled || readonly) return
 		const direction =
 			event.key === 'ArrowRight' || event.key === 'ArrowUp'
 				? 1
@@ -118,11 +121,13 @@ export function ControllerRange({
 			aria-valuenow={value}
 			aria-valuetext={format(value)}
 			aria-disabled={resolvedDisabled || undefined}
+			aria-readonly={readonly || undefined}
 			tabIndex={resolvedDisabled ? -1 : 0}
 			onKeyDown={nudge}
 			{...drag.handlers}
 			className={cn(
 				'group/range relative h-9 w-full shrink-0 cursor-ew-resize touch-none select-none overflow-hidden rounded-lg bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring/30',
+				readonly && 'pointer-events-none opacity-50',
 				resolvedDisabled && 'pointer-events-none opacity-50',
 				className,
 			)}

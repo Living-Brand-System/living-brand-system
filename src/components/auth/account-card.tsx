@@ -52,16 +52,16 @@ export function AccountCard({
 			/>
 
 			<div className="flex flex-col gap-1">
-				<Controller.Row readonly label="이메일">
+				<Controller.Row display label="이메일">
 					<span className="truncate text-muted-foreground text-sm">{email}</span>
 				</Controller.Row>
 				{joinedAt && (
-					<Controller.Row readonly label="가입일">
+					<Controller.Row display label="가입일">
 						<span className="text-muted-foreground text-sm">{joinedAt}</span>
 					</Controller.Row>
 				)}
 				{/* 🔑 비밀번호는 입력 세 칸을 항상 펼쳐 둘 만큼 자주 쓰는 일이 아니다 — 자기 페이지로 보낸다. */}
-				<Controller.Row readonly label="비밀번호">
+				<Controller.Row display label="비밀번호">
 					<Link
 						className="inline-flex items-center gap-1 text-muted-foreground text-sm transition-colors hover:text-foreground"
 						href={routes.accountPassword}
@@ -72,7 +72,7 @@ export function AccountCard({
 				</Controller.Row>
 				{/* 🔑 토큰 한도는 계정 운영이라 manager 이상에게만 선다. */}
 				{canManageTokenLimits && (
-					<Controller.Row readonly label="AI 토큰 한도">
+					<Controller.Row display label="AI 토큰 한도">
 						<Link
 							className="inline-flex items-center gap-1 text-muted-foreground text-sm transition-colors hover:text-foreground"
 							href={routes.accountTokenLimits}
