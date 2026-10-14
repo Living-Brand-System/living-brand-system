@@ -29,6 +29,8 @@ export function TemplateSwatchesWidget({
 	const value = values[control.id]
 	return (
 		<div
+			data-manager-target={`color:${control.id}`}
+			data-manager-label={cluster.title}
 			{...(symbol
 				? rowFocusProps(focus, {
 						sectionId: symbol.id,

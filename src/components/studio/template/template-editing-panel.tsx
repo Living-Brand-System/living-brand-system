@@ -96,6 +96,7 @@ export function TemplateEditingPanel({
 									image={target?.preview}
 									onReset={editing.reset}
 									disabled={editing.busy}
+									managerTarget={`profile:${targetId}`}
 									actions={
 										(image || graphic) && (
 											<StudioSelectionChange

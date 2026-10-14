@@ -38,6 +38,8 @@ type StudioHomeProps = {
 	empty: { title: string; description: string }
 	/** 프로파일 블록 뒤에 잇는 블록(이미지 스튜디오의 Examples). */
 	children?: ReactNode
+	/** 부제 옆 데이터 편집 버튼 — manager 이상에게만 넘긴다. */
+	dataEditor?: ReactNode
 }
 
 /**
@@ -46,7 +48,14 @@ type StudioHomeProps = {
  * 카드는 편집 화면 좌상단과 같은 `StudioSelectionCard`이고 딥링크(`/studio/<kind>/<slug>`)로 가는 링크일 뿐이다 —
  * 편집 세션은 딥링크 화면이 소유한다.
  */
-export function StudioHome({ title, subtitle, groups, empty, children }: StudioHomeProps) {
+export function StudioHome({
+	title,
+	subtitle,
+	groups,
+	empty,
+	children,
+	dataEditor,
+}: StudioHomeProps) {
 	const visibleGroups = groups.filter((group) => group.items.length > 0)
 	return (
 		<div data-slot="studio-home" className="h-full min-h-0 overflow-y-auto">
@@ -54,7 +63,11 @@ export function StudioHome({ title, subtitle, groups, empty, children }: StudioH
 			<article className="flex w-full flex-col text-foreground">
 				<LandingHero size="banner" fade="down">
 					<div className="flex flex-col items-center gap-6 text-center">
-						<GuidelineDisplayTitle title={title} subtitle={subtitle} />
+						<GuidelineDisplayTitle
+							title={title}
+							subtitle={subtitle}
+							subtitleAction={dataEditor}
+						/>
 					</div>
 				</LandingHero>
 				<LandingSurface>

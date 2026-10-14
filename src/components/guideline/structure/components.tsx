@@ -1,5 +1,5 @@
 import { cva } from 'class-variance-authority'
-import type { ComponentProps } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { Typography } from '@/components/ui/typography'
 import type { SectionDownload } from '@/features/guideline/services/download-section-assets.client'
 import { cn } from '@/lib/utils'
@@ -18,16 +18,28 @@ export function GuidelineDisplayHeading({ title, subtitle }: { title: string; su
  * 표시 제목(display/h1 + 부제) — 문서 첫 화면과 스튜디오 첫 화면 띠(Figma 571:8040)가 같은 크기를 쓴다.
  * 높이·배경은 부르는 쪽이 갖는다.
  */
-export function GuidelineDisplayTitle({ title, subtitle }: { title: string; subtitle?: string }) {
+export function GuidelineDisplayTitle({
+	title,
+	subtitle,
+	subtitleAction,
+}: {
+	title: string
+	subtitle?: string
+	/** 부제 옆 버튼 — 스튜디오 첫 화면의 데이터 편집 아이콘. */
+	subtitleAction?: ReactNode
+}) {
 	return (
 		<>
 			<Typography as="h1" weight="semibold" className={styles.displayTitle}>
 				{title}
 			</Typography>
 			{subtitle && (
-				<Typography weight="semibold" className={styles.subtitle}>
-					{subtitle}
-				</Typography>
+				<div className="flex items-center gap-2">
+					<Typography weight="semibold" className={styles.subtitle}>
+						{subtitle}
+					</Typography>
+					{subtitleAction}
+				</div>
 			)}
 		</>
 	)

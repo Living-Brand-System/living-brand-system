@@ -48,6 +48,8 @@ type ControlPanelProps = {
 	 * 패널 자체는 다시 마운트하지 않는다(레일·고정 카드가 그대로 남는다).
 	 */
 	target?: string
+	/** 레일 맨 아래에 붙는 화면별 버튼(템플릿의 Manager mode 등) — 패널 탭과 상관없다. */
+	railFooter?: ReactNode
 }
 
 /**
@@ -70,6 +72,7 @@ function ControlPanelView({
 	compositions,
 	extras,
 	target,
+	railFooter,
 }: ControlPanelProps & {
 	compositions: readonly ControlPanelComposition[]
 }) {
@@ -215,6 +218,14 @@ function ControlPanelView({
 							onClick={() => setSelected(tabId)}
 						/>
 					))}
+					{railFooter && (
+						<div
+							data-slot="studio-rail-footer"
+							className="mt-auto flex flex-col gap-1.5"
+						>
+							{railFooter}
+						</div>
+					)}
 				</StudioRail>
 			</aside>
 		</LazyMotion>

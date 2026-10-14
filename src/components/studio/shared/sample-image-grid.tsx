@@ -154,6 +154,8 @@ export function SampleImageGrid({
 							<button
 								key={option.id}
 								type="button"
+								data-manager-target={`sample:${option.id}`}
+								data-manager-label={option.name}
 								aria-current={current || undefined}
 								onClick={() => onSelect(option)}
 								className={sampleCardVariants({ layout, current })}

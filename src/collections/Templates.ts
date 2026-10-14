@@ -75,6 +75,8 @@ export const Templates: CollectionConfig = {
 		defaultColumns: ['name', 'updatedAt'],
 	},
 	versions: draftVersions,
+	// 앱의 데이터 편집에서 지운 템플릿은 휴지통으로 간다 — 되살리기는 아직 admin 휴지통에서만 한다.
+	trash: true,
 	fields: [
 		{
 			name: 'name',

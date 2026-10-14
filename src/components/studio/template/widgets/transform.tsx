@@ -14,7 +14,13 @@ export function TemplateTransformWidget({ cluster, scope }: ControllerWidgetProp
 	if (!target.transform) return null
 	const disabled = target.readonly || !target.state.image
 	return (
-		<Controller.Group title={cluster.title} collapsible disabled={disabled}>
+		<Controller.Group
+			title={cluster.title}
+			collapsible
+			disabled={disabled}
+			data-manager-target={`transform:${target.id}`}
+			data-manager-label={target.label}
+		>
 			<ImageTransformControl
 				value={target.state.transform ?? IMAGE_TRANSFORM_DEFAULT}
 				disabled={disabled}

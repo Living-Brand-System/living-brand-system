@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { PreviewRefreshButton } from '@/components/studio/shared/preview-refresh-button'
+import { useStudioCapabilities } from '@/components/studio/shared/studio-capabilities'
 import { StudioSelectionChange } from '@/components/studio/shared/studio-selection-card'
 import { StudioShell } from '@/components/studio/shared/studio-shell'
 import { useProfilePreview } from '@/components/studio/shared/use-profile-preview'
@@ -12,6 +13,8 @@ import {
 	useTemplateDefaults,
 } from '@/components/studio/template/template-defaults-button'
 import { TemplateEditingPanel } from '@/components/studio/template/template-editing-panel'
+import { TemplateManagerOverlay } from '@/components/studio/template/template-manager-overlay'
+import { TemplateManagerRail } from '@/components/studio/template/template-manager-rail'
 import { useTemplatePanel } from '@/components/studio/template/template-panel'
 import { Typography } from '@/components/ui/typography'
 import { useTemplateExport } from '@/features/studio-export/hooks/use-template-export'
@@ -56,6 +59,7 @@ export function TemplateWorkspace({
 		onUpdated: navigation.browse.reload,
 	})
 	const defaults = useTemplateDefaults()
+	const { canManageProfiles } = useStudioCapabilities()
 
 	return (
 		<div data-slot="template-panel-navigation" className="flex min-h-0 flex-col lg:flex-row">
@@ -67,6 +71,9 @@ export function TemplateWorkspace({
 							subtitle: navigation.categoryTitle ?? 'Template',
 							image: preview.image ?? config.previewImage,
 							onReset,
+							managerTarget: 'thumbnail:',
+							titleManagerTarget: 'name:',
+							subtitleManagerTarget: 'category:',
 							actions: (
 								<>
 									<PreviewRefreshButton preview={preview} />
@@ -104,10 +111,17 @@ export function TemplateWorkspace({
 								<TemplateCanvas />
 							</div>
 						),
-						panel: templatePanel.panel,
+						panel: {
+							...templatePanel.panel,
+							railFooter: canManageProfiles && (
+								<TemplateManagerRail templateId={config.id} />
+							),
+						},
 					}}
 				/>
 			</div>
+			{/* body 포털이라 이 자리에 DOM을 남기지 않는다 — 원본 화면은 그대로다. */}
+			{canManageProfiles && <TemplateManagerOverlay preview={preview} />}
 		</div>
 	)
 }
