@@ -33,6 +33,12 @@
 	cursor: default;
 }
 
+.rim {
+	fill: none;
+	pointer-events: none;
+	stroke: var(--color-white, white);
+}
+
 .edge {
 	fill: none;
 	pointer-events: none;

@@ -56,6 +56,8 @@ type ManagerTarget = { id: string; label: string | null; rect: Rect; radius: num
  * (사용자 2026-10-14). 흰 면은 고른 요소의 다리·새 패널에만 남는다.
  */
 const FRAME = 6
+/** 원본 자리 안쪽 가장자리의 흰 테두리 두께(사용자 2026-10-14). */
+const RIM = 2
 const EXTENSION_WIDTH = 320
 /** 새 패널을 띄울 기준 — 요소가 든 사이드바 기둥. 새 패널은 그 경계에서 `PANEL_GAP`만큼 더 밖에서 열린다(사용자 2026-10-14). */
 const SIDEBAR_SELECTOR = '[data-slot="controller-browser"]'
@@ -177,6 +179,9 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 								}}
 							/>
 							<g clipPath={`url(#${clip})`}>
+								{/* 흰 테두리 — 원본 자리 안쪽 가장자리에 깔아 광선을 받친다. 🔴 요소 바깥으로는 절대 나가지 않는다(사용자 2026-10-14).
+								    잘린 안쪽 절반만 보이므로 굵기는 두 배. */}
+								<path d={hole} className={styles.rim} strokeWidth={RIM * 2} />
 								{/* 그라디언트 하나로 — 늘 얇은 안쪽 광선, hover·선택이면 요소 전체에 얕은 채움이 더해진다(투명도만 바뀐다). */}
 								<path
 									d={hole}
