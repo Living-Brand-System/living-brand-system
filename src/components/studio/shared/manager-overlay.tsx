@@ -45,12 +45,27 @@ export type ManagerForm = {
 /** 종류 → 폼. 등록되지 않은 종류의 표시는 무시한다(그 칸에는 테두리가 안 생긴다). */
 export type ManagerFormRegistry = Readonly<Record<string, ManagerForm>>
 
-/** 테두리를 두르는 요소 하나 — 표시가 달린 칸 자체(텍스트 칸 하나, 레이어 줄 하나). */
-type ManagerTarget = { id: string; label: string | null; rect: Rect; radius: number }
+/**
+ * 테두리를 두르는 요소 하나 — 표시가 달린 칸 자체(텍스트 칸 하나, 레이어 줄 하나).
+ * `reach`: 새 패널이 요소가 든 패널(좌·우 사이드바) 밖에서 열리도록 테두리 바깥에서 띄울 거리 — 그 사이를 다리가 잇는다.
+ */
+type ManagerTarget = { id: string; label: string | null; rect: Rect; radius: number; reach: number }
 
 /** 테두리 두께 · 새 패널 폭. 요소는 최대한 작은 단위라(사용자 2026-10-13) 테두리도 얇게 둔다. */
 const FRAME = 6
 const EXTENSION_WIDTH = 320
+/** 새 패널을 띄울 기준 — 요소가 든 사이드바 기둥. 새 패널은 그 경계에서 `PANEL_GAP`만큼 더 밖에서 열린다(사용자 2026-10-14). */
+const SIDEBAR_SELECTOR = '[data-slot="controller-browser"]'
+const PANEL_GAP = 8
+
+/** 테두리 바깥에서 사이드바 경계 밖까지의 거리 — 사이드바 밖 요소(캔버스 위 등)는 0이라 바로 붙는다. */
+function reachOf(element: Element, rect: Rect): number {
+	const sidebar = element.closest(SIDEBAR_SELECTOR)?.getBoundingClientRect()
+	if (!sidebar) return 0
+	return outwardSide(rect) === 'left'
+		? rect.left - FRAME - (sidebar.left - PANEL_GAP)
+		: sidebar.right + PANEL_GAP - (rect.left + rect.width + FRAME)
+}
 
 function splitTarget(id: string): [kind: string, key: string] {
 	const at = id.indexOf(':')
@@ -119,7 +134,7 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 						managerOutline(
 							frame,
 							selected && height > 0
-								? { width: EXTENSION_WIDTH, height, side }
+								? { width: EXTENSION_WIDTH, height, side, reach: panel.reach }
 								: undefined,
 						),
 						panel.radius + FRAME,
@@ -198,8 +213,8 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 									top: frame.top,
 									left:
 										side === 'left'
-											? frame.left - EXTENSION_WIDTH
-											: frame.left + frame.width,
+											? frame.left - panel.reach - EXTENSION_WIDTH
+											: frame.left + frame.width + panel.reach,
 									width: EXTENSION_WIDTH,
 								}}
 								onHeight={(next) =>
@@ -387,16 +402,18 @@ function useManagerTargets(
 					.elementsFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
 					.find((candidate) => !candidate.closest('[data-slot="manager-overlay"]'))
 				if (!hit || !element.contains(hit)) continue
+				const box = {
+					left: rect.left,
+					top: rect.top,
+					width: rect.width,
+					height: rect.height,
+				}
 				next.set(id, {
 					id,
 					label: element.getAttribute(MANAGER_LABEL_ATTRIBUTE),
-					rect: {
-						left: rect.left,
-						top: rect.top,
-						width: rect.width,
-						height: rect.height,
-					},
+					rect: box,
 					radius: radiusOf(element),
+					reach: Math.max(0, reachOf(element, box)),
 				})
 			}
 			const list = [...next.values()]

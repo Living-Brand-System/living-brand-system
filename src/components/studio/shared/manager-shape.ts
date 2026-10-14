@@ -35,12 +35,13 @@ export function roundedPolygonPath(points: readonly Point[], radius: number): st
 }
 
 /**
- * 패널 테두리(frame) 하나, 또는 frame에 캔버스 쪽으로 붙은 새 패널(extension)까지 합친 외곽 다각형.
- * extension은 frame 위끝에 맞춰 붙는다 — 높이는 내용이 정하므로 frame보다 길 수도 짧을 수도 있다.
+ * 패널 테두리(frame) 하나, 또는 frame에서 캔버스 쪽으로 다리(bridge)를 건너 붙은 새 패널(extension)까지 합친 외곽 다각형.
+ * 새 패널은 요소가 든 패널 밖에서 열리도록 `reach`만큼 떨어지고, 그 사이를 높이 min(새 패널, frame)인 다리가 잇는다
+ * (사용자 2026-10-14). 셋 다 frame 위끝에 맞춘다 — 새 패널 높이는 내용이 정하므로 frame보다 길 수도 짧을 수도 있다.
  */
 export function managerOutline(
 	frame: Rect,
-	extension?: { width: number; height: number; side: 'left' | 'right' },
+	extension?: { width: number; height: number; side: 'left' | 'right'; reach?: number },
 ): Point[] {
 	const x1 = frame.left
 	const x2 = frame.left + frame.width
@@ -54,27 +55,43 @@ export function managerOutline(
 			[x1, y2],
 		]
 	}
+	const reach = Math.max(0, extension.reach ?? 0)
 	const ey2 = y1 + extension.height
+	const by2 = y1 + Math.min(extension.height, frame.height)
 	if (extension.side === 'left') {
-		const ex1 = x1 - extension.width
-		return [
+		const bx = x1 - reach
+		const ex1 = bx - extension.width
+		return dedupe([
 			[ex1, y1],
 			[x2, y1],
 			[x2, y2],
 			[x1, y2],
-			[x1, ey2],
+			[x1, by2],
+			[bx, by2],
+			[bx, ey2],
 			[ex1, ey2],
-		]
+		])
 	}
-	const ex2 = x2 + extension.width
-	return [
+	const bx = x2 + reach
+	const ex2 = bx + extension.width
+	return dedupe([
 		[x1, y1],
 		[ex2, y1],
 		[ex2, ey2],
-		[x2, ey2],
+		[bx, ey2],
+		[bx, by2],
+		[x2, by2],
 		[x2, y2],
 		[x1, y2],
-	]
+	])
+}
+
+/** 겹친 꼭짓점을 걷는다 — 다리가 없거나(reach 0) 높이가 같으면 꼭짓점이 포개진다. 포개진 채면 둥글리기가 원호를 잃는다. */
+function dedupe(points: Point[]): Point[] {
+	return points.filter(([x, y], i) => {
+		const [px, py] = points[(i - 1 + points.length) % points.length]
+		return Math.abs(x - px) >= 0.5 || Math.abs(y - py) >= 0.5
+	})
 }
 
 /** 패널 자리(구멍) — 원본 패널이 보이고 만져지도록 테두리 안쪽을 뚫는다(evenodd라 그리는 방향은 상관없다). */
