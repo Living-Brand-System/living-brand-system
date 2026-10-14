@@ -61,7 +61,7 @@ export function TemplateManagerOverlay({
 		<ManagerOverlay
 			forms={{
 				text: {
-					title: '칸 설정',
+					title: '',
 					render: (nodeId) => <TemplateTextManagerForm nodeId={nodeId} />,
 				},
 				layers: {

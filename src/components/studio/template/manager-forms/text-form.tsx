@@ -1,17 +1,16 @@
 'use client'
 
-import { useId, useMemo, useState } from 'react'
+import { LetterTt, TextAlignLeft } from '@carbon/icons-react'
+import { type ReactNode, useId, useMemo, useState } from 'react'
 import { parseLayers } from '@/components/admin/templates/template-layers'
-import { LayerAccessToggle } from '@/components/studio/template/manager-forms/layer-access-toggle'
+import { Controller } from '@/components/shared/controller'
+import { useManagerMode } from '@/components/studio/shared/use-manager-mode'
+import { useOptimisticAccess } from '@/components/studio/template/manager-forms/layer-access-toggle'
 import {
 	updateTemplateLayerAccess,
 	updateTemplateNodeConfig,
 } from '@/components/studio/template/manager-forms/template-html-writes'
 import { Button } from '@/components/ui/button'
-import { Field, FieldDescription, FieldLabel, FieldTitle } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Typography } from '@/components/ui/typography'
 import { partitionTemplateSlots } from '@/features/template-customization/domain/template-studio-config'
 import {
@@ -23,8 +22,11 @@ import {
 } from '@/features/template-customization/domain/text-slot-draft'
 import { useTemplateManagerData } from '@/features/template-customization/hooks/use-template-manager-data'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
-import { toTemplateDraft } from '@/features/template-customization/services/template-draft.client'
-import type { TemplateNodeConfig, TemplateNodeConfigMap } from '@/types/template'
+import type {
+	TemplateLayerAccess,
+	TemplateNodeConfig,
+	TemplateNodeConfigMap,
+} from '@/types/template'
 
 type TextSource = {
 	baseHtml?: string | null
@@ -33,9 +35,16 @@ type TextSource = {
 }
 const TEXT_SOURCE_FIELDS = ['baseHtml', 'overrides', 'defaultSession'] as const
 
+/** 「편집」 두 칸(Figma 659:9297) — 숨김은 Layers의 눈 아이콘이 맡고, 숨긴 칸은 화면에 없어 이 패널이 열리지 않는다. */
+const EDIT_OPTIONS = [
+	{ value: 'editable', label: '가능' },
+	{ value: 'readonly', label: '불가능' },
+] as const satisfies readonly { value: TemplateLayerAccess; label: string }[]
+
 /**
- * 텍스트 칸의 관리 폼(`text:<레이어 id>`) — worker가 이 칸을 어떻게 쓰나(권한은 고르는 즉시 반영)와 칸의 설정
- * (레이어 이름·칸 이름·안내 문구·형식·최대 글자/줄·AI 지침·기본 문구, 「저장」으로 반영). 전부 `overrides[nodeId]`다.
+ * 텍스트 칸의 관리 폼(`text:<레이어 id>`, Figma 659:9297) — worker가 이 칸을 고칠 수 있나(고르는 즉시 반영)와
+ * 레이어 이름·기본 문구·형식·최대 글자/줄(「저장」으로 반영). 전부 `overrides[nodeId]`다.
+ * 🔑 칸 이름·안내 문구·AI 지침은 화면에서만 뺐다(2026-10-14) — 초안이 저장된 값에서 시작하므로 그대로 남는다.
  */
 export function TemplateTextManagerForm({ nodeId }: { nodeId: string }) {
 	const { config } = useTemplateStudio()
@@ -53,28 +62,25 @@ export function TemplateTextManagerForm({ nodeId }: { nodeId: string }) {
 	const slot = partitionTemplateSlots(config.template.slots).text.find(
 		(item) => item.id === nodeId,
 	)
+	const access = useOptimisticAccess(slot?.access ?? 'editable', source.busy, (next) =>
+		source.save(
+			() => updateTemplateLayerAccess(config.id, nodeId, next, 'input'),
+			'편집 권한을 바꾸지 못했어요.',
+		),
+	)
 	if (!slot) return null
 	const nodeConfig = data?.overrides?.[nodeId] ?? {}
-	const savedText = toTemplateDraft(data?.defaultSession)?.text?.[nodeId]
 	return (
 		<div className="flex flex-col gap-4">
-			<div className="flex flex-col gap-1.5">
-				<LayerAccessToggle
-					label={`${slot.label}: worker가 쓰는 방법`}
-					access={slot.access}
-					busy={source.busy}
-					onChange={(access) =>
-						void source.save(
-							() => updateTemplateLayerAccess(config.id, nodeId, access, 'input'),
-							'편집 권한을 바꾸지 못했어요.',
-						)
-					}
-					withAiReview
+			{/* 패널 제목과 4px — 셸의 머리 간격(16px)을 이 줄만 당긴다(Figma 659:9593). */}
+			<Controller.Row label="편집" className="-mt-3">
+				<Controller.Segmented
+					options={EDIT_OPTIONS}
+					value={access.shown}
+					onChange={access.press}
+					aria-label={`${slot.label}: worker가 고칠 수 있나`}
 				/>
-				<Typography size="xs" tone="muted">
-					고르면 모든 사용자에게 바로 반영돼요. 숨긴 칸은 Layers의 Text 묶음에서 되살려요.
-				</Typography>
-			</div>
+			</Controller.Row>
 			{data ? (
 				<TextSlotFields
 					// 저장하면 다시 읽은 값으로 새로 시작한다(권한만 바뀌면 입력 중인 값을 지킨다).
@@ -82,7 +88,6 @@ export function TemplateTextManagerForm({ nodeId }: { nodeId: string }) {
 					config={nodeConfig}
 					figmaName={figma?.name ?? slot.layer}
 					figmaText={figma?.text ?? ''}
-					savedText={typeof savedText === 'string' ? savedText : undefined}
 					busy={source.busy}
 					onSave={(draft) =>
 						void source.save(
@@ -98,11 +103,9 @@ export function TemplateTextManagerForm({ nodeId }: { nodeId: string }) {
 					}
 				/>
 			) : null}
-			<FormNote
-				error={source.error}
-				busy={source.busy}
-				note={data ? '저장하면 모든 사용자에게 바로 반영돼요.' : '불러오는 중…'}
-			/>
+			{(source.error || source.busy || !data) && (
+				<FormNote error={source.error} busy={source.busy} note="불러오는 중…" />
+			)}
 		</div>
 	)
 }
@@ -111,150 +114,147 @@ function TextSlotFields({
 	config,
 	figmaName,
 	figmaText,
-	savedText,
 	busy,
 	onSave,
 }: {
 	config: TemplateNodeConfig
 	figmaName: string
 	figmaText: string
-	/** 기본 화면(`defaultSession`)에 저장된 이 칸 문구 — 있으면 스튜디오는 기본 문구 대신 이것으로 시작한다. */
-	savedText: string | undefined
 	busy: boolean
 	onSave: (draft: TextSlotDraft) => void
 }) {
 	const id = useId()
+	const manager = useManagerMode()
 	const [draft, setDraft] = useState(() => toTextSlotDraft(config))
 	const set = (patch: Partial<TextSlotDraft>) => setDraft((current) => ({ ...current, ...patch }))
 	const valid = applyTextSlotDraft(config, draft) !== null
 	const countInvalid = (raw: string) => parseSlotCount(raw) === null
+	const maxLength = parseSlotCount(draft.maxLength)
+	const errorId = `${id}-count-error`
 	return (
-		<div className="flex flex-col gap-3">
-			<div className="flex flex-col gap-3">
-				<Field className="gap-1">
-					<FieldLabel htmlFor={`${id}-layer`}>레이어 이름</FieldLabel>
-					<Input
-						id={`${id}-layer`}
-						value={draft.layerLabel}
-						placeholder={figmaName}
-						aria-describedby={`${id}-layer-description`}
-						onChange={(event) => set({ layerLabel: event.target.value })}
-					/>
-					<FieldDescription id={`${id}-layer-description`} className="text-xs">
-						Layers 목록과 인쇄 PDF의 레이어 이름이에요. 비우면 Figma 이름을 써요.
-					</FieldDescription>
-				</Field>
-				<Field className="gap-1">
-					<FieldLabel htmlFor={`${id}-label`}>칸 이름</FieldLabel>
-					<Input
-						id={`${id}-label`}
-						value={draft.label}
-						placeholder={draft.layerLabel || figmaName}
-						aria-describedby={`${id}-label-description`}
-						onChange={(event) => set({ label: event.target.value })}
-					/>
-					<FieldDescription id={`${id}-label-description`} className="text-xs">
-						worker가 보는 이 칸의 제목이에요. 비우면 레이어 이름을 써요.
-					</FieldDescription>
-				</Field>
-				<Field className="gap-1">
-					<FieldLabel htmlFor={`${id}-placeholder`}>안내 문구</FieldLabel>
-					<Input
-						id={`${id}-placeholder`}
-						value={draft.placeholder}
-						placeholder="입력 전 칸에 흐리게 보여요"
-						onChange={(event) => set({ placeholder: event.target.value })}
-					/>
-				</Field>
-				<Field className="gap-1">
-					<FieldTitle id={`${id}-format`}>입력 형식</FieldTitle>
-					<ToggleGroup
-						type="single"
-						variant="outline"
-						size="sm"
-						spacing={0}
-						value={draft.inputFormat}
-						onValueChange={(value) =>
-							value && set({ inputFormat: value as TextSlotDraft['inputFormat'] })
-						}
-						aria-labelledby={`${id}-format`}
-						className="w-full"
+		<div className="flex flex-col gap-4">
+			<Controller.GroupList>
+				<Controller.Group title="Basic" collapsible={false}>
+					<Controller.Row label="레이어 이름">
+						<Controller.Input
+							value={draft.layerLabel}
+							placeholder={figmaName}
+							// 칸 이름은 레이어 이름과 하나다(2026-10-14) — 따로 저장된 칸 이름을 비워 레이어 이름이 그대로 보이게 한다.
+							onChange={(event) => set({ layerLabel: event.target.value, label: '' })}
+						/>
+					</Controller.Row>
+					<Controller.Field
+						label="기본 문구"
+						// 최대 글자가 있을 때만 분모가 있다 — 제한이 없으면 셀 기준이 없어 감춘다.
+						counter={maxLength ? `${draft.text.length}/${maxLength}` : undefined}
 					>
-						{TEXT_INPUT_FORMATS.map((format) => (
-							<ToggleGroupItem key={format.value} value={format.value}>
-								{format.label}
-							</ToggleGroupItem>
-						))}
-					</ToggleGroup>
-				</Field>
-				<div className="grid grid-cols-2 gap-2">
-					<Field className="gap-1">
-						<FieldLabel htmlFor={`${id}-max-length`}>최대 글자</FieldLabel>
-						<Input
-							id={`${id}-max-length`}
-							inputMode="numeric"
+						<Controller.Textarea
+							rows={3}
+							value={draft.text}
+							placeholder={figmaText}
+							onChange={(event) => set({ text: event.target.value })}
+						/>
+					</Controller.Field>
+				</Controller.Group>
+				<Controller.Group title="Input" collapsible={false}>
+					<Controller.Row label="입력 형식">
+						<Controller.Select
+							options={TEXT_INPUT_FORMATS}
+							value={draft.inputFormat}
+							onChange={(value) =>
+								set({ inputFormat: value as TextSlotDraft['inputFormat'] })
+							}
+						/>
+					</Controller.Row>
+					<div className="grid grid-cols-2 gap-1">
+						<CountRow
+							label="최대 글자"
+							icon={<LetterTt aria-hidden className="size-4" />}
+							unit="자"
 							value={draft.maxLength}
-							placeholder="없음"
-							aria-invalid={countInvalid(draft.maxLength) || undefined}
-							aria-describedby={`${id}-count-hint`}
-							onChange={(event) => set({ maxLength: event.target.value })}
+							invalid={countInvalid(draft.maxLength)}
+							errorId={errorId}
+							onChange={(maxLength) => set({ maxLength })}
 						/>
-					</Field>
-					<Field className="gap-1">
-						<FieldLabel htmlFor={`${id}-max-lines`}>최대 줄</FieldLabel>
-						<Input
-							id={`${id}-max-lines`}
-							inputMode="numeric"
+						<CountRow
+							label="최대 줄"
+							icon={<TextAlignLeft aria-hidden className="size-4" />}
+							unit="줄"
 							value={draft.maxLines}
-							placeholder="없음"
-							aria-invalid={countInvalid(draft.maxLines) || undefined}
-							aria-describedby={`${id}-count-hint`}
-							onChange={(event) => set({ maxLines: event.target.value })}
+							invalid={countInvalid(draft.maxLines)}
+							errorId={errorId}
+							onChange={(maxLines) => set({ maxLines })}
 						/>
-					</Field>
-				</div>
-				<Typography
-					id={`${id}-count-hint`}
-					aria-live="polite"
-					size="xs"
-					tone={valid ? 'muted' : 'destructive'}
-					className="-mt-2"
+					</div>
+					{!valid && (
+						<Typography id={errorId} role="alert" size="xs" tone="destructive">
+							최대 글자·줄은 비우거나 1 이상의 정수로 적어 주세요.
+						</Typography>
+					)}
+				</Controller.Group>
+			</Controller.GroupList>
+			<div className="flex gap-2">
+				<Button
+					disabled={!valid || busy}
+					className="h-11 min-w-0 flex-1 rounded-lg"
+					onClick={() => onSave(draft)}
 				>
-					{valid
-						? '자유 형식이 아니거나 최대 줄이 1이면 한 줄 칸이 돼요.'
-						: '최대 글자·줄은 비우거나 1 이상의 정수로 적어 주세요.'}
-				</Typography>
-				<Field className="gap-1">
-					<FieldLabel htmlFor={`${id}-ai`}>AI에게 전달할 문구</FieldLabel>
-					<Textarea
-						id={`${id}-ai`}
-						rows={2}
-						value={draft.aiInstruction}
-						placeholder="예: 영문 이름만, 성-이름 순"
-						onChange={(event) => set({ aiInstruction: event.target.value })}
-					/>
-				</Field>
-				<Field className="gap-1">
-					<FieldLabel htmlFor={`${id}-text`}>기본 문구</FieldLabel>
-					<Textarea
-						id={`${id}-text`}
-						rows={2}
-						value={draft.text}
-						placeholder={figmaText}
-						aria-describedby={`${id}-text-description`}
-						onChange={(event) => set({ text: event.target.value })}
-					/>
-					<FieldDescription id={`${id}-text-description`} className="text-xs">
-						{savedText === undefined
-							? '비우면 Figma 문구로 돌아가요. 지금 화면은 템플릿 카드의 Reset을 눌러야 바뀌고, 이 템플릿을 작업 중인 사람에겐 자기 임시 저장(24시간)이 먼저 보여요.'
-							: '「지금 상태를 기본값으로 저장」한 기본 화면에 이 칸 문구가 따로 있어서, 여기서 바꾼 기본 문구는 새로 열거나 Reset해도 보이지 않아요. 스튜디오의 이 칸에 새 문구를 넣고 기본값으로 다시 저장해야 바뀌어요.'}
-					</FieldDescription>
-				</Field>
+					저장
+				</Button>
+				{/* 패널의 ×와 같다 — 닫으면 고치던 값은 패널과 함께 버려진다. */}
+				<Button
+					variant="outline"
+					disabled={busy}
+					className="h-11 min-w-0 flex-1 rounded-lg"
+					onClick={manager.close}
+				>
+					취소
+				</Button>
 			</div>
-			<Button size="sm" disabled={!valid || busy} onClick={() => onSave(draft)}>
-				저장
-			</Button>
 		</div>
+	)
+}
+
+/** 최대 글자·줄 칸 — 아이콘 라벨 · 숫자 · 단위(Figma 659:9489). 비우면 「없음」(제한 없음)이다. */
+function CountRow({
+	label,
+	icon,
+	unit,
+	value,
+	invalid,
+	errorId,
+	onChange,
+}: {
+	label: string
+	icon: ReactNode
+	unit: string
+	value: string
+	invalid: boolean
+	errorId: string
+	onChange: (value: string) => void
+}) {
+	return (
+		<Controller.Row
+			label={
+				<>
+					{icon}
+					<span className="sr-only">{label}</span>
+				</>
+			}
+			errorId={invalid ? errorId : undefined}
+		>
+			<span className="flex min-w-0 items-center gap-1">
+				<Controller.Input
+					inputMode="numeric"
+					value={value}
+					placeholder="없음"
+					onChange={(event) => onChange(event.target.value)}
+				/>
+				<span aria-hidden className="shrink-0 text-sm text-muted-foreground">
+					{unit}
+				</span>
+			</span>
+		</Controller.Row>
 	)
 }
 

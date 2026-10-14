@@ -34,5 +34,7 @@ export function useManagerMode() {
 		toggle: () => write(on ? null : ''),
 		/** 같은 칸을 다시 누르면 선택을 푼다. */
 		select: (itemId: string) => write(selected === itemId ? '' : itemId),
+		/** 열린 관리 패널을 닫는다 — 패널의 ×와 폼의 「취소」가 같은 이 함수다(고치던 값은 패널과 함께 버려진다). */
+		close: () => write(''),
 	}
 }
