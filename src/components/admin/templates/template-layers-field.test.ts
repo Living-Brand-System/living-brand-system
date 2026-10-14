@@ -149,7 +149,9 @@ describe('canAssignImage — 주소 매트릭스', () => {
 		expect(allows('text')).toBe(false)
 		expect(allows('vector')).toBe(false)
 		expect(allows('polygon')).toBe(false)
-		expect(byId.get('polygon')?.isVector).toBe(true)
+		// POLYGON은 가져오기가 PNG로 대체하는 래스터다(figma-node-to-html 계약) — 벡터 편집 대상이 아니고,
+		// 스튜디오·에이전트의 벡터 슬롯 판정(isTemplateVectorNodeType)과도 같아야 한다.
+		expect(byId.get('polygon')?.isVector).toBe(false)
 	})
 })
 

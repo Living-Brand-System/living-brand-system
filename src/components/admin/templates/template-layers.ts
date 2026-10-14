@@ -129,7 +129,7 @@ export function parseLayers(html: string): LayerRow[] {
 			tag,
 			isText,
 			isVector:
-				(isTemplateVectorNodeType(figmaType) || figmaType === 'POLYGON') &&
+				isTemplateVectorNodeType(figmaType) &&
 				(tag === 'img' ||
 					(element instanceof HTMLElement && Boolean(element.style.maskImage))),
 			...(element.getAttribute('data-asset-collection') === 'brand-logos' &&
