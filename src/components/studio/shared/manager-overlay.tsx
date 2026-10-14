@@ -38,6 +38,8 @@ export type ManagerForm = {
 	 * 섞여 있을 때. 없으면 전부 받는다.
 	 */
 	accepts?: (key: string) => boolean
+	/** `false`면 패널 머리에 제목을 그리지 않는다(닫기만) — 요소 자체가 무엇인지 말해 주는 작은 패널. 접근 이름에는 남는다. */
+	heading?: boolean
 }
 
 /** 종류 → 폼. 등록되지 않은 종류의 표시는 무시한다(그 칸에는 테두리가 안 생긴다). */
@@ -191,6 +193,7 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 						{selected && (
 							<ManagerExtension
 								title={title}
+								heading={form.heading !== false}
 								style={{
 									top: frame.top,
 									left:
@@ -225,12 +228,14 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
  */
 function ManagerExtension({
 	title,
+	heading,
 	style,
 	onHeight,
 	onClose,
 	children,
 }: {
 	title: string
+	heading: boolean
 	style: { top: number; left: number; width: number }
 	onHeight: (height: number) => void
 	onClose: () => void
@@ -263,7 +268,7 @@ function ManagerExtension({
 			style={{ ...style, maxHeight: `max(12rem, calc(100dvh - ${style.top}px - 1rem))` }}
 		>
 			<header className="flex items-center justify-between gap-2">
-				<span className="text-base font-semibold">{title}</span>
+				{heading ? <span className="text-base font-semibold">{title}</span> : <span />}
 				<button
 					type="button"
 					aria-label="닫기"
@@ -359,6 +364,12 @@ function useManagerTargets(
 		let frame = 0
 		let last = ''
 		const read = () => {
+			// 패널 안 Select 같은 모달 층이 열리면 body가 `pointer-events: none`이 되어 `elementsFromPoint`가 원본을 못 찾는다
+			// — 그대로 읽으면 칸이 전부 가려진 것으로 나와 열린 패널이 사라진다. 닫힐 때까지 지난 위치를 쓴다.
+			if (document.body.style.pointerEvents === 'none') {
+				frame = requestAnimationFrame(read)
+				return
+			}
 			const next = new Map<string, ManagerTarget>()
 			for (const element of document.querySelectorAll<HTMLElement>(
 				`[${MANAGER_TARGET_ATTRIBUTE}]`,
