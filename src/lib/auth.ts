@@ -7,12 +7,19 @@ import type { User } from '@/payload-types'
  * UI 표시 여부와 무관하게 REST/GraphQL/Local API 모두 여기를 통과해야 한다.
  */
 
-export type Role = 'admin' | 'manager' | 'worker'
+/** 사용자 역할 — Users 컬렉션 select와 권한 판정이 이 목록 하나를 읽는다. */
+export const ROLE_OPTIONS = [
+	{ label: 'Admin', value: 'admin' },
+	{ label: 'Manager', value: 'manager' },
+	{ label: 'Worker', value: 'worker' },
+] as const
+export type Role = (typeof ROLE_OPTIONS)[number]['value']
+const ROLES: readonly string[] = ROLE_OPTIONS.map((option) => option.value)
 
 const roleOf = (user: unknown): Role | null => {
 	if (user && typeof user === 'object' && 'role' in user) {
 		const r = (user as { role?: unknown }).role
-		if (r === 'admin' || r === 'manager' || r === 'worker') return r
+		if (typeof r === 'string' && ROLES.includes(r)) return r as Role
 	}
 	return null
 }

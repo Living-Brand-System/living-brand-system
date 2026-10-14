@@ -10,3 +10,10 @@ export const IMAGE_BATCH_SIZES = [1, 2, 3, 4] as const
 export const IMAGE_BATCH_MAX = IMAGE_BATCH_SIZES[IMAGE_BATCH_SIZES.length - 1]
 
 export const IMAGE_BATCH_DEFAULT = 4
+
+/**
+ * 어드민 생성(`/api/admin/generate-image`)의 상한 — 프로파일을 저장 전에 시험하는 자리라 일부러 넓다
+ * (2026-08-03 「이미지 생성 프롬프트 제한 확장」). 스튜디오·에이전트·MCP는 위의 상한을 쓴다.
+ */
+export const ADMIN_IMAGE_PROMPT_MAX_LENGTH = 2_500
+export const ADMIN_IMAGE_BATCH_MAX = 6

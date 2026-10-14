@@ -10,9 +10,9 @@ import type {
 } from '@/features/graphic-generation/domain/graphic-studio-config'
 import { graphicRuntimeManifests } from '@/features/graphic-generation/graphic-runtimes/catalog/manifest.generated'
 
+// 런타임 id 타입은 생성 카탈로그가 정본이다 — 여기서 다시 계산하지 않고 내보내기만 한다.
+export type { GraphicRuntimeId } from '@/features/graphic-generation/graphic-runtimes/catalog/manifest.generated'
 export { graphicRuntimeManifests }
-
-export type GraphicRuntimeId = (typeof graphicRuntimeManifests)[number]['id']
 
 export const GRAPHIC_RUNTIME_OPTIONS = toCanvasRuntimeOptions(graphicRuntimeManifests)
 

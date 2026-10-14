@@ -1,5 +1,7 @@
 import type { CollectionConfig } from 'payload'
+import { AGENT_CHAT_REACTION_OPTIONS } from '@/features/agent-chat/types'
 import { managerOrAdmin } from '@/lib/auth'
+import { AI_USAGE_TOTALS_FIELDS } from '@/modules/ai-usage/ai-usage'
 
 export const AgentChatSessions: CollectionConfig = {
 	slug: 'agent-chat-sessions',
@@ -135,59 +137,12 @@ export const AgentChatSessions: CollectionConfig = {
 					admin: {
 						description: '이 메시지를 생성한 모델과 토큰 사용량입니다.',
 					},
-					fields: [
-						{
-							name: 'model',
-							type: 'text',
-						},
-						{
-							name: 'callCount',
-							type: 'number',
-							admin: { step: 1 },
-						},
-						{
-							name: 'inputTokens',
-							type: 'number',
-							admin: { step: 1 },
-						},
-						{
-							name: 'outputTokens',
-							type: 'number',
-							admin: { step: 1 },
-						},
-						{
-							name: 'totalTokens',
-							type: 'number',
-							admin: { step: 1 },
-						},
-						{
-							name: 'cacheReadInputTokens',
-							type: 'number',
-							admin: { step: 1 },
-						},
-						{
-							name: 'cacheWriteInputTokens',
-							type: 'number',
-							admin: { step: 1 },
-						},
-						{
-							name: 'reasoningTokens',
-							type: 'number',
-							admin: { step: 1 },
-						},
-						{
-							name: 'rawUsage',
-							type: 'json',
-						},
-					],
+					fields: AI_USAGE_TOTALS_FIELDS,
 				},
 				{
 					name: 'reaction',
 					type: 'select',
-					options: [
-						{ label: 'Good', value: 'good' },
-						{ label: 'Bad', value: 'bad' },
-					],
+					options: [...AGENT_CHAT_REACTION_OPTIONS],
 					admin: {
 						description: '이 Agent 답변 버블에 대한 사용자 피드백입니다.',
 					},

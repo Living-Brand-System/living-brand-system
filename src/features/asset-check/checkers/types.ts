@@ -5,8 +5,14 @@
  * rule schema나 Payload 문서 타입은 여기에 들이지 않는다.
  */
 
+import type {
+	MeasureOperator,
+	ObservationValue,
+	PresenceExpected,
+} from '@/features/asset-check/domain/heuristic-criterion'
 import type { CheckImageMediaType } from '@/features/asset-check/utils/image-format'
 import type { RuleExecutor } from '@/features/quality-rule/rule-executor'
+import type { AiUsageTotals } from '@/modules/ai-usage/ai-usage'
 import type { Rgb, Swatch } from './palette-match'
 
 /** 기준(expected) 대비 측정값(actual)을 분리해 실은 구조화 필드. */
@@ -96,13 +102,13 @@ export type HeuristicCriterion =
 			question: string
 			/** 미지정은 presence — 기존 저장 데이터·스냅샷 호환 */
 			kind?: 'presence'
-			expected: 'present' | 'absent'
+			expected: PresenceExpected
 	  }
 	| {
 			id: string
 			question: string
 			kind: 'measure'
-			operator: 'gte' | 'lte' | 'between'
+			operator: MeasureOperator
 			expected: number
 			/** between 상한 */
 			max?: number
@@ -122,27 +128,20 @@ export interface AiCheckResult extends CheckResultBase {
 		criterionId: string
 		question: string
 		kind?: 'presence' | 'measure'
-		expected: 'present' | 'absent' | number
-		operator?: 'gte' | 'lte' | 'between'
+		expected: PresenceExpected | number
+		operator?: MeasureOperator
 		max?: number
 		unit?: string
-		actual: 'present' | 'absent' | 'uncertain' | 'not_applicable' | number
+		actual: ObservationValue | number
 		confidence: number
 		reason: string
 		satisfied: boolean | null
 	}[]
 }
 
-export interface AiUsage {
+/** 검수 한 번의 AI 사용량 합산 — 모양은 ai-usage의 합산 계약이고, 검수는 모델을 늘 남긴다. */
+export interface AiUsage extends AiUsageTotals {
 	model: string
-	callCount?: number
-	inputTokens?: number
-	outputTokens?: number
-	totalTokens?: number
-	cacheReadInputTokens?: number
-	cacheWriteInputTokens?: number
-	reasoningTokens?: number
-	rawUsage?: Record<string, unknown>
 }
 
 export type RawCheckResult = AlgorithmCheckResult | AiCheckResult

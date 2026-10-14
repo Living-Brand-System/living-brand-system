@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
 import type { GraphicBrowserArtifacts } from '@/features/graphic-generation/runtime/client/graphic-runtime.client'
 import { getGraphicStudioVectorArtifact } from '@/features/graphic-generation/runtime/graphic-studio-runtime'
+import { isPrintExportFormat, type PrintExportFormat } from '@/features/studio-export/print-policy'
 import type { ControllerValues } from '@/modules/studio-controller/controller-definition'
 import type { ExportRequest, StudioOutputFormat, VideoExportSpec } from '../export-contract'
 import { exportFileName } from '../export-file-name'
@@ -38,7 +39,7 @@ export type GraphicOutputDraft =
 	// 🔑 `ppi`는 여기 없다 — 해상도는 형식이 아니라 **판**의 성질이라 draft 밖에 산다.
 	//    형식을 갈아도 판의 물리 크기가 따라 바뀌면 안 된다.
 	| {
-			format: 'tiff' | 'pdf'
+			format: PrintExportFormat
 			width: number | null
 			height: number | null
 	  }
@@ -116,7 +117,7 @@ export function useGraphicExport({
 			}
 			// 🔴 인쇄 형식은 서버가 픽셀 한도를 판정하고 그 결과가 400 「Invalid PNG」로 온다 —
 			//    화면 문구가 크기 얘기를 못 하므로 렌더는 되고 저장만 실패한다. 여기서 막는다.
-			if (isPrintFormat(draft.format) && !fitsPrintOutput(size.width, size.height)) {
+			if (isPrintExportFormat(draft.format) && !fitsPrintOutput(size.width, size.height)) {
 				return false
 			}
 			setDraft((current) => (current ? { ...current, ...size } : current))
@@ -233,11 +234,6 @@ export function useGraphicExport({
 	}
 }
 
-/** 픽셀 한도가 걸리는 형식. 서버가 판정하는 대상과 같다. */
-function isPrintFormat(format: GraphicOutputDraft['format']): boolean {
-	return format === 'tiff' || format === 'pdf'
-}
-
 function createGraphicOutputDraft(
 	config: GraphicStudioConfig,
 	requestedFormat?: StudioOutputFormat,
@@ -266,7 +262,7 @@ function createGraphicOutputDraft(
 	if (format === 'png' || format === 'jpeg') {
 		return { format, width: size.width, height: size.height }
 	}
-	if (format === 'tiff' || format === 'pdf') {
+	if (isPrintExportFormat(format)) {
 		return { format, width: size.width, height: size.height }
 	}
 	return null

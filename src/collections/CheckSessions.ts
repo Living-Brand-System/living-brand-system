@@ -1,5 +1,11 @@
 import type { CollectionConfig } from 'payload'
+import {
+	CHECK_IMAGE_MEDIA_TYPE_OPTIONS,
+	CHECK_SESSION_SOURCE_OPTIONS,
+	CHECK_SESSION_STATUS_OPTIONS,
+} from '@/features/asset-check/domain/check-session'
 import { managerOrAdmin } from '@/lib/auth'
+import { AI_USAGE_TOTALS_FIELDS } from '@/modules/ai-usage/ai-usage'
 
 export const CheckSessions: CollectionConfig = {
 	slug: 'check-sessions',
@@ -26,11 +32,7 @@ export const CheckSessions: CollectionConfig = {
 			type: 'select',
 			required: true,
 			defaultValue: 'review-page',
-			options: [
-				{ label: 'MCP Call', value: 'mcp-call' },
-				{ label: 'Review Page', value: 'review-page' },
-				{ label: 'Chat', value: 'chat' },
-			],
+			options: [...CHECK_SESSION_SOURCE_OPTIONS],
 			admin: {
 				description: '검수가 시작된 진입점입니다.',
 			},
@@ -40,11 +42,7 @@ export const CheckSessions: CollectionConfig = {
 			type: 'select',
 			required: true,
 			defaultValue: 'running',
-			options: [
-				{ label: 'Running', value: 'running' },
-				{ label: 'Completed', value: 'completed' },
-				{ label: 'Failed', value: 'failed' },
-			],
+			options: [...CHECK_SESSION_STATUS_OPTIONS],
 		},
 		{
 			name: 'targetType',
@@ -67,11 +65,7 @@ export const CheckSessions: CollectionConfig = {
 		{
 			name: 'inputMediaType',
 			type: 'select',
-			options: [
-				{ label: 'JPEG', value: 'image/jpeg' },
-				{ label: 'PNG', value: 'image/png' },
-				{ label: 'WebP', value: 'image/webp' },
-			],
+			options: CHECK_IMAGE_MEDIA_TYPE_OPTIONS,
 		},
 		{
 			name: 'inputByteLength',
@@ -117,51 +111,7 @@ export const CheckSessions: CollectionConfig = {
 			admin: {
 				description: 'AI 검수 비용 분석에 쓰는 모델과 토큰 사용량입니다.',
 			},
-			fields: [
-				{
-					name: 'model',
-					type: 'text',
-				},
-				{
-					name: 'callCount',
-					type: 'number',
-					admin: { step: 1 },
-				},
-				{
-					name: 'inputTokens',
-					type: 'number',
-					admin: { step: 1 },
-				},
-				{
-					name: 'outputTokens',
-					type: 'number',
-					admin: { step: 1 },
-				},
-				{
-					name: 'totalTokens',
-					type: 'number',
-					admin: { step: 1 },
-				},
-				{
-					name: 'cacheReadInputTokens',
-					type: 'number',
-					admin: { step: 1 },
-				},
-				{
-					name: 'cacheWriteInputTokens',
-					type: 'number',
-					admin: { step: 1 },
-				},
-				{
-					name: 'reasoningTokens',
-					type: 'number',
-					admin: { step: 1 },
-				},
-				{
-					name: 'rawUsage',
-					type: 'json',
-				},
-			],
+			fields: AI_USAGE_TOTALS_FIELDS,
 		},
 		{
 			name: 'errorMessage',

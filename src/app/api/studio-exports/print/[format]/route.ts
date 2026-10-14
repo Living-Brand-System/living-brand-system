@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { isCmykIccProfile } from '@/features/studio-export/color-profile'
 import {
 	MAX_PRINT_PNG_BYTES,
+	PRINT_EXPORT_FORMATS,
 	type PrintExportFormat,
 	parsePrintPpi,
 } from '@/features/studio-export/print-policy'
@@ -13,7 +14,7 @@ import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
 
 export const maxDuration = 30
 
-const routeParamsSchema = z.object({ format: z.enum(['pdf', 'tiff']) })
+const routeParamsSchema = z.object({ format: z.enum(PRINT_EXPORT_FORMATS) })
 const RATE_WINDOW_MS = 60_000
 const MAX_EXPORTS_PER_WINDOW = 30
 const MAX_EXPORTS_PER_CLIENT = 6

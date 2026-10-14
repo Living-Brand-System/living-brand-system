@@ -45,13 +45,14 @@ import {
 	type PublishedTemplateView,
 	partitionTemplateSlots,
 	type ResolvedTemplateImageConfig,
+	TEMPLATE_BACKGROUND_TYPES,
 	type TemplateBackgroundSlot,
 	type TemplateBackgroundType,
 	type TemplateImageConfigSlot,
 	type TemplateStudioConfig,
 	type TemplateStudioConfigSlot,
 	type TemplateTextSlot,
-	type TemplateVectorSlot,
+	type TemplateVectorConfigSlot,
 } from '@/features/template-customization/domain/template-studio-config'
 import {
 	composeTemplateStudioHtml,
@@ -358,7 +359,7 @@ function useTemplateImageSession(
 }
 
 function useTemplateVectorSession(
-	vectorSlots: readonly TemplateVectorSlot[],
+	vectorSlots: readonly TemplateVectorConfigSlot[],
 	draft: TemplateDraft | null,
 ): TemplateStudioValue['vectors'] {
 	const [variants, setVariants] = useState<Record<string, string | undefined>>(() => ({
@@ -1459,7 +1460,7 @@ function resolvedPrompt(prompt: string, contract: ResolvedTemplateImageConfig) {
 }
 
 function isBackgroundType(value: string | null): value is TemplateBackgroundType {
-	return value === 'color' || value === 'image' || value === 'graphic'
+	return TEMPLATE_BACKGROUND_TYPES.includes(value as TemplateBackgroundType)
 }
 
 /** 고른 순간의 표시 정보까지 세션에 담는다 — 목록을 다시 열지 않아도 카드가 그려진다. */

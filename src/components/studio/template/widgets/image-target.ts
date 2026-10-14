@@ -3,6 +3,7 @@ import type { SampleImageOption } from '@/features/template-customization/domain
 import type {
 	ResolvedTemplateImageConfig,
 	TemplateImageConfigSlot,
+	TemplateImageMode,
 } from '@/features/template-customization/domain/template-studio-config'
 import type {
 	ControllerControlValue,
@@ -25,7 +26,7 @@ export type TemplateImageTarget = {
 	onSample: (option: SampleImageOption) => void
 	onGenerate: () => void
 	/** 슬롯 방식(Preset/Generate) — 배경 방식은 배경 컴포지션이 갖는다(없음). */
-	onMode?: (mode: 'preset' | 'generate') => void
+	onMode?: (mode: TemplateImageMode) => void
 	/** 슬롯 Transform — 배경에는 없다. */
 	transform?: {
 		limits: TemplateImageConfigSlot['transform']['limits']

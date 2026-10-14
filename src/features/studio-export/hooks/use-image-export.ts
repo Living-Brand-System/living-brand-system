@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react'
 import type { ImageGenerationMetadata } from '@/features/image-generation/contexts/image-studio-context'
 import type { ImageArtifacts } from '@/features/image-generation/runtime/image-artifact.client'
 import { exportFileName, numberedExportFileName } from '@/features/studio-export/export-file-name'
+import { isPrintExportFormat } from '@/features/studio-export/print-policy'
 import { exportResultsToZip } from '../adapters/export-results-to-zip.client'
 import type {
 	ExportRequest,
@@ -119,7 +120,7 @@ export function useImageExport({
 		},
 		// 인쇄 해상도는 TIFF·PDF만 쓴다 — 결과를 만든 프로파일(capability)의 인쇄 계약 기준이다.
 		print:
-			capability.print && (format === 'tiff' || format === 'pdf')
+			capability.print && isPrintExportFormat(format)
 				? {
 						ppi: effectivePpi,
 						options: capability.print.ppi,

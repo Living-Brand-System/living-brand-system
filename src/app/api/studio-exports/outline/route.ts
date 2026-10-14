@@ -1,28 +1,16 @@
 import { z } from 'zod'
 import {
+	OUTLINE_MAX_RUNS,
 	type OutlineTextResult,
 	outlineTextRun,
+	outlineTextRunSchema,
 } from '@/features/studio-export/services/outline-text.service'
 import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
 
 export const maxDuration = 30
 
-/** 한 판의 글줄 수 상한. 넘으면 템플릿이 아니라 잘못된 호출이다. */
-const MAX_RUNS = 500
-
 const requestSchema = z.object({
-	runs: z
-		.array(
-			z.object({
-				text: z.string().min(1).max(2_000),
-				fontFamily: z.string().min(1).max(200),
-				fontSize: z.number().positive().max(2_000),
-				fontWeight: z.number().min(1).max(1_000).optional(),
-				letterSpacing: z.number().min(-100).max(100).optional(),
-			}),
-		)
-		.min(1)
-		.max(MAX_RUNS),
+	runs: z.array(outlineTextRunSchema).min(1).max(OUTLINE_MAX_RUNS),
 })
 
 /**

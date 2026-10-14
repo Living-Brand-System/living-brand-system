@@ -51,6 +51,7 @@ import {
 	type TextFormatId,
 	textFormatOf,
 } from '@/modules/studio-controller/text-formats'
+import type { Template } from '@/payload-types'
 import type { TemplateNodeConfig } from '@/types/template'
 
 const BACKGROUND_TYPE_CONTROL_ID = 'background.type'
@@ -107,7 +108,7 @@ export type TemplateImageConfigSlot = TemplateEditableSlotBase & {
 	transform: { enabled: boolean; limits: TransformLimits }
 }
 
-export type TemplateVectorSlot = TemplateEditableSlotBase & {
+export type TemplateVectorConfigSlot = TemplateEditableSlotBase & {
 	kind: 'vector'
 	/** 고를 수 있는 CI 색 버전(CI_VARIANTS 순서). 브랜드 로고가 아닌 벡터면 빈 배열이다. */
 	variants: readonly CiVariantOption[]
@@ -126,11 +127,24 @@ export type TemplateBackgroundSlot = TemplateSlotBindingBase & {
 	imageConfig: { mode: 'selectable'; allowedConfigIds?: readonly number[] }
 }
 
-export type TemplateEditableLayer = TemplateTextSlot | TemplateImageConfigSlot | TemplateVectorSlot
+export type TemplateEditableLayer =
+	| TemplateTextSlot
+	| TemplateImageConfigSlot
+	| TemplateVectorConfigSlot
 
 export type TemplateStudioConfigSlot = TemplateEditableLayer | TemplateBackgroundSlot
 
-export type TemplateBackgroundType = 'color' | 'image' | 'graphic'
+/** 배경 형식 — 고정 순서는 스튜디오 Mode 행(`buildBackgroundGroup`)과 같다. */
+export const TEMPLATE_BACKGROUND_TYPES = ['color', 'image', 'graphic'] as const
+export type TemplateBackgroundType = (typeof TEMPLATE_BACKGROUND_TYPES)[number]
+
+/** 이미지 칸·배경 이미지를 채우는 방식 — 프리셋(샘플)과 생성. */
+export const TEMPLATE_IMAGE_MODES = ['preset', 'generate'] as const
+export type TemplateImageMode = (typeof TEMPLATE_IMAGE_MODES)[number]
+export const TEMPLATE_IMAGE_MODE_OPTIONS = [
+	{ value: 'preset', label: 'Preset' },
+	{ value: 'generate', label: 'Generate' },
+] as const satisfies readonly { value: TemplateImageMode; label: string }[]
 
 /** Admin이 정하는 배경 정책. 목록이 없으면 전부 허용이다 — exportPolicy와 같은 규칙. */
 export type TemplateBackgroundPolicy = {
@@ -424,7 +438,7 @@ export const isTextSlot = (slot: TemplateStudioConfigSlot): slot is TemplateText
 	slot.kind === 'text'
 export const isImageSlot = (slot: TemplateStudioConfigSlot): slot is TemplateImageConfigSlot =>
 	slot.kind === 'image'
-export const isVectorSlot = (slot: TemplateStudioConfigSlot): slot is TemplateVectorSlot =>
+export const isVectorSlot = (slot: TemplateStudioConfigSlot): slot is TemplateVectorConfigSlot =>
 	slot.kind === 'vector'
 export const isBackgroundSlot = (slot: TemplateStudioConfigSlot): slot is TemplateBackgroundSlot =>
 	slot.kind === 'background'
@@ -508,7 +522,7 @@ export function mapTemplateNodeLayers(
 export function partitionTemplateSlots(slots: readonly TemplateStudioConfigSlot[]) {
 	const text: TemplateTextSlot[] = []
 	const image: TemplateImageConfigSlot[] = []
-	const vector: TemplateVectorSlot[] = []
+	const vector: TemplateVectorConfigSlot[] = []
 	let background: TemplateBackgroundSlot | undefined
 	for (const slot of slots) {
 		switch (slot.kind) {
@@ -861,7 +875,7 @@ export function deriveTemplateStudioConfig(
 				transform: { enabled: slot.transformEnabled, limits: IMAGE_EDIT_TRANSFORM_LIMITS },
 			}),
 		),
-		...vectorSlots.map((slot): TemplateVectorSlot => {
+		...vectorSlots.map((slot): TemplateVectorConfigSlot => {
 			const variants = template.ciVariants?.[slot.nodeId] ?? []
 			const variant = variants.find((option) => option.id === slot.logoId)?.variant
 			return {
@@ -953,7 +967,7 @@ export function deriveTemplateStudioConfig(
 export const TEMPLATE_KIND_FORMATS = {
 	digital: ['png', 'jpeg', 'mp4'],
 	print: ['pdf', 'tiff', 'svg'],
-} as const satisfies Record<'digital' | 'print', readonly StudioOutputFormat[]>
+} as const satisfies Record<Template['outputKind'], readonly StudioOutputFormat[]>
 
 function withTemplateKindFormats(
 	output: StudioOutputCapability,

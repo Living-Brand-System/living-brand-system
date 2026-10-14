@@ -4,6 +4,7 @@ import { z } from 'zod/v3'
 import { findTemplatesForRequest } from '@/features/agent-chat/services/agent-template-request.service'
 import { searchAgentGuidelines } from '@/features/agent-chat/services/get-agent-guideline-context.service'
 import { buildAiObservationTask } from '@/features/asset-check/domain/ai-observation-task'
+import { OBSERVATION_VALUES } from '@/features/asset-check/domain/heuristic-criterion'
 import {
 	aiReferenceAssetKey,
 	findUnavailableAiReferenceCheckKeys,
@@ -59,7 +60,7 @@ const mcpListParameters = {
 	page: z.number().int().min(1).optional(),
 }
 const clientObservationSchema = z.strictObject({
-	value: z.union([z.number(), z.enum(['present', 'absent', 'uncertain', 'not_applicable'])]),
+	value: z.union([z.number(), z.enum(OBSERVATION_VALUES)]),
 	confidence: z.number().min(0).max(100),
 	reason: z.string().trim().min(1).max(300),
 })

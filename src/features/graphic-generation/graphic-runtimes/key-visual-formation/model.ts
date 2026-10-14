@@ -26,6 +26,8 @@ export {
 	KEY_VISUAL_FORMATION_REFERENCE_BASE,
 } from './definition'
 
+import { HEX_COLOR_PATTERN } from '@/lib/color'
+
 const colorIds = KEY_VISUAL_FORMATION_COLOR_LEVELS.map(
 	(color) => color.key,
 ) as KeyVisualFormationColorId[]
@@ -33,14 +35,8 @@ const anchorIds = Object.keys(KEY_VISUAL_FORMATION_ANCHORS) as KeyVisualFormatio
 
 export const keyVisualFormationInputSchema = z.strictObject({
 	// 새 두 색 UI가 명시적으로 전달할 때만 사용한다. 기존 팔레트 입력은 그대로 유지한다.
-	foregroundColor: z
-		.string()
-		.regex(/^#[0-9a-f]{6}$/i)
-		.optional(),
-	backgroundColor: z
-		.string()
-		.regex(/^#[0-9a-f]{6}$/i)
-		.optional(),
+	foregroundColor: z.string().regex(HEX_COLOR_PATTERN).optional(),
+	backgroundColor: z.string().regex(HEX_COLOR_PATTERN).optional(),
 	planeColor: z.enum(colorIds),
 	lineColor: z.enum(colorIds),
 	planeImage: z.string().min(1).nullable(),

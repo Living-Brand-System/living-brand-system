@@ -11,6 +11,7 @@ import type {
 	PublishedTemplateNodeConfig,
 } from '@/features/template-customization/domain/template-studio-config'
 import { toStudioPreviewImage } from '@/modules/studio-controller/controller-definition'
+import type { Template } from '@/payload-types'
 import type { TemplateNodeConfigMap } from '@/types/template'
 
 // 노출 경계: 스튜디오가 쓰는 creator·input(aiInstruction 제외)·imageInput·imageColorize만 남긴다.
@@ -96,7 +97,7 @@ async function resolveCiVariants(
  * 디지털판이 아직 판형 크기를 저장하지 않았으면(가져오기 직후) Figma 판 크기가 곧 판형 크기다.
  */
 function toTemplateSize(template: {
-	outputKind?: 'digital' | 'print' | null
+	outputKind?: Template['outputKind'] | null
 	width?: number | null
 	height?: number | null
 	size?: { width?: number | null; height?: number | null } | null

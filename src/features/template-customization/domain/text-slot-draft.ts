@@ -38,6 +38,9 @@ export function parseSlotCount(raw: string): number | undefined | null {
 	return /^[1-9]\d*$/.test(value) ? Number(value) : null
 }
 
+/** 이름·안내·지침 칸 — 앞뒤 공백을 걷고, 공백뿐이면 「없음」이다. 어드민 레이어 편집기도 이 규칙을 쓴다. */
+export const cleanSlotText = (raw: string): string | undefined => raw.trim() || undefined
+
 /**
  * 고친 값을 노드 설정에 얹는다. 숫자 칸이 틀리면 `null` — 조용히 「제한 없음」으로 바꾸지 않는다.
  * 이름·안내·지침은 앞뒤 공백을 걷는다(공백뿐이면 빈 칸 — Layers 폼의 이름 바꾸기와 같다). 기본 문구는 그대로 쓴다.
@@ -51,16 +54,16 @@ export function applyTextSlotDraft(
 	const maxLines = parseSlotCount(draft.maxLines)
 	if (maxLength === null || maxLines === null) return null
 	const input: TemplateSlotSpec = {
-		label: draft.label.trim() || undefined,
-		placeholder: draft.placeholder.trim() || undefined,
+		label: cleanSlotText(draft.label),
+		placeholder: cleanSlotText(draft.placeholder),
 		inputFormat: draft.inputFormat === 'free' ? undefined : draft.inputFormat,
 		maxLength,
 		maxLines,
-		aiInstruction: draft.aiInstruction.trim() || undefined,
+		aiInstruction: cleanSlotText(draft.aiInstruction),
 	}
 	return {
 		...config,
-		label: draft.layerLabel.trim() || undefined,
+		label: cleanSlotText(draft.layerLabel),
 		text: draft.text || undefined,
 		input: Object.fromEntries(
 			Object.entries(input).filter(([, value]) => value !== undefined),

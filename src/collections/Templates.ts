@@ -3,6 +3,7 @@ import { MAX_PRINT_SIDE_PIXELS } from '@/features/studio-export/print-policy'
 import { findTemplateDefaultSessionBlocker } from '@/features/template-core/domain/template-default-session'
 import { prepareTemplateSave } from '@/features/template-import/services/prepare-template-save.service'
 import { isManager, managerManagedPublishedAccess } from '@/lib/auth'
+import type { Template } from '@/payload-types'
 import { previewImageField } from './fields/preview-image-field'
 import { studioExportPolicyField } from './fields/studio-controller-field'
 import { templateBackgroundPolicyField } from './fields/template-policy-field'
@@ -12,7 +13,7 @@ import { draftVersions, keepPublishedOnRestore } from './shared'
 const TEMPLATE_SIZE_UNIT = '/components/admin/templates/template-size-unit#TemplateSizeUnit'
 
 type TemplateSizeData = {
-	outputKind?: 'digital' | 'print' | null
+	outputKind?: Template['outputKind'] | null
 	width?: number | null
 	height?: number | null
 	size?: { width?: number | null; height?: number | null } | null

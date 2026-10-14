@@ -6,6 +6,7 @@ import {
 	managedRowsOnly,
 	managerFieldOnly,
 	managerOrAdmin,
+	ROLE_OPTIONS,
 	selfOrManaged,
 } from '@/lib/auth'
 
@@ -54,11 +55,7 @@ export const Users: CollectionConfig = {
 			required: true,
 			defaultValue: 'worker',
 			saveToJWT: true,
-			options: [
-				{ label: 'Admin', value: 'admin' },
-				{ label: 'Manager', value: 'manager' },
-				{ label: 'Worker', value: 'worker' },
-			],
+			options: [...ROLE_OPTIONS],
 			access: {
 				// 승급·강등은 manager 이상 (worker가 스스로 올라가지 못하게)
 				create: managerFieldOnly,

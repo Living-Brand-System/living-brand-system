@@ -1,11 +1,12 @@
 import { z } from 'zod'
 import { saveAgentChatReaction } from '@/features/agent-chat/services/save-agent-chat-reaction.service'
+import { AGENT_CHAT_REACTIONS } from '@/features/agent-chat/types'
 import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
 
 const reactionSchema = z.object({
 	agentChatSessionId: z.number().int().positive(),
 	messageId: z.string().min(1),
-	reaction: z.enum(['good', 'bad']),
+	reaction: z.enum(AGENT_CHAT_REACTIONS),
 })
 
 /**

@@ -1,5 +1,7 @@
 import { z } from 'zod'
+import { IMAGE_PROMPT_MAX_LENGTH } from '@/features/image-generation/domain/image-generation-limits'
 import { CI_VARIANT_VALUES } from '@/features/template-core/domain/ci-variants'
+import { TEMPLATE_BACKGROUND_TYPES, TEMPLATE_IMAGE_MODES } from './template-studio-config'
 
 /**
  * 챗이 만들어 스튜디오 세션에 얹는 편집 패치 — 「자연어 한 번으로 템플릿을 채운다」의 계약이다.
@@ -24,19 +26,19 @@ import { CI_VARIANT_VALUES } from '@/features/template-core/domain/ci-variants'
 /** 이미지 슬롯 하나에 얹을 값. 🔑 `profileId`가 바뀌면 세션이 프롬프트·색 기본값을 갈아 끼운다. */
 export const templateImageSlotPatchSchema = z.object({
 	profileId: z.number().int().positive().optional(),
-	prompt: z.string().max(2000).optional(),
-	imageMode: z.enum(['preset', 'generate']).optional(),
+	prompt: z.string().max(IMAGE_PROMPT_MAX_LENGTH).optional(),
+	imageMode: z.enum(TEMPLATE_IMAGE_MODES).optional(),
 	/** 프로파일이 여는 색 조정 등 — 키는 컨트롤 id다. */
 	featureValues: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
 })
 
 export const templateBackgroundPatchSchema = z.object({
-	type: z.enum(['color', 'image', 'graphic']).optional(),
+	type: z.enum(TEMPLATE_BACKGROUND_TYPES).optional(),
 	/** `null`은 저작 배경으로 되돌린다. */
 	color: z.string().nullable().optional(),
-	imageMode: z.enum(['preset', 'generate']).optional(),
+	imageMode: z.enum(TEMPLATE_IMAGE_MODES).optional(),
 	profileId: z.number().int().positive().optional(),
-	prompt: z.string().max(2000).optional(),
+	prompt: z.string().max(IMAGE_PROMPT_MAX_LENGTH).optional(),
 	featureValues: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
 	graphicConfigId: z.string().max(120).optional(),
 	graphicValues: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),

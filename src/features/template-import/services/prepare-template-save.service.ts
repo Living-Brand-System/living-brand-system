@@ -1,6 +1,6 @@
 import type { PayloadRequest } from 'payload'
 import { publishDraftImportedApplicationImages } from '@/features/application-image/repositories/imported-application-image.payload.repository'
-import { findPrintOutputBlocker } from '@/features/studio-export/print-policy'
+import { findPrintOutputBlocker, isPrintExportFormat } from '@/features/studio-export/print-policy'
 import {
 	inspectTemplateFragment,
 	type TemplateFragmentInspection,
@@ -117,5 +117,5 @@ function allowsPrint(policy: unknown): boolean {
 	const allowed = (policy as { allowedFormats?: unknown }).allowedFormats
 	// 빈 배열은 「설정한 적 없음」이다 — `projectStudioOutputPolicy`와 같은 이유로 좁히지 않는다.
 	if (!Array.isArray(allowed) || allowed.length === 0) return true
-	return allowed.includes('tiff') || allowed.includes('pdf')
+	return allowed.some(isPrintExportFormat)
 }

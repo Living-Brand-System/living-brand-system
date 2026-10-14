@@ -12,6 +12,7 @@ import {
 	type TemplateLayerSource,
 } from '@/features/template-customization/services/template-records.client'
 import { requestFigmaHtmlImport } from '@/features/template-import/services/import-figma-html.client'
+import type { Template } from '@/payload-types'
 import type {
 	TemplateLayerAccess,
 	TemplateNodeConfig,
@@ -146,7 +147,7 @@ export async function reimportTemplateFromFigma(templateId: number, sourceUrl: s
 		size,
 	} = await readTemplateFields<{
 		overrides?: TemplateNodeConfigMap | null
-		outputKind?: 'digital' | 'print' | null
+		outputKind?: Template['outputKind'] | null
 		size?: { width?: number | null; height?: number | null } | null
 	}>(templateId, ['overrides', 'outputKind', 'size'])
 	const ratioChanged =

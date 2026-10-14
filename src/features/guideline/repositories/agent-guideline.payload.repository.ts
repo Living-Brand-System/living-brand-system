@@ -1,6 +1,6 @@
 import config from '@payload-config'
 import { getPayload, type Where } from 'payload'
-import type { GuidelineDocument } from '@/payload-types'
+import { relationshipId } from '@/features/quality-rule/relationship-id'
 import type { PaletteCatalog } from '../domain/contract/palette'
 import type { GuidelineSourceDocument } from '../domain/reading/read-document'
 import { needsPaletteCatalog } from '../sections/model'
@@ -147,9 +147,4 @@ export async function findAgentGuidelineDocument(
 			? await findPaletteCatalog({ payload, user: user as never, locale: 'ko' })
 			: {},
 	}
-}
-
-function relationshipId(value: GuidelineDocument['chapter']): number | null {
-	if (typeof value === 'number') return value
-	return value?.id ?? null
 }

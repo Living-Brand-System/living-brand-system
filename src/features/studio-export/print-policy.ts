@@ -31,7 +31,13 @@ export const MAX_PRINT_PPI = 1200
 
 /** 인쇄 해상도(ppi). 프리셋 밖의 값이 직접 입력으로 들어오므로 유니온이 아니다. */
 export type PrintPpi = number
-export type PrintExportFormat = 'pdf' | 'tiff'
+/** 인쇄(CMYK) 경로로 가는 형식 — 픽셀 한도·인쇄 판정이 모두 이 목록을 기준으로 한다. */
+export const PRINT_EXPORT_FORMATS = ['pdf', 'tiff'] as const
+export type PrintExportFormat = (typeof PRINT_EXPORT_FORMATS)[number]
+
+export function isPrintExportFormat(format: string): format is PrintExportFormat {
+	return (PRINT_EXPORT_FORMATS as readonly string[]).includes(format)
+}
 
 /**
  * 🔴 **정수가 아니어도 된다**(2026-09-10). 정수만 받으면 **표준 판형을 정확히 선언할 수 없다** —

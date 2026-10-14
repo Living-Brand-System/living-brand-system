@@ -2,6 +2,10 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import * as fontkit from 'fontkit'
 import { z } from 'zod'
+import {
+	OUTLINE_MAX_RUNS,
+	OUTLINE_TEXT_MAX_LENGTH,
+} from '@/features/studio-export/services/outline-text.service'
 import { isCrossOriginRequest } from '@/lib/request-auth'
 
 /*
@@ -22,13 +26,13 @@ const FONT_PATH = path.join(process.cwd(), 'public', 'fonts', 'hd', 'Isamanru-Me
 
 /**
  * 🔴 인증 없는 공개 경로다(가이드라인 페이지가 공개) — 그래서 상한이 유일한 방어선이다.
- *    수치는 같은 일을 하는 `studio-exports/outline`과 맞춘다. 락업은 몇 줄뿐이라 여유가 크다.
+ *    수치는 같은 일을 하는 `studio-exports/outline`의 상한을 그대로 읽는다. 락업은 몇 줄뿐이라 여유가 크다.
  */
 const requestSchema = z.object({
 	runs: z
-		.array(z.object({ text: z.string().max(2_000) }))
+		.array(z.object({ text: z.string().max(OUTLINE_TEXT_MAX_LENGTH) }))
 		.min(1)
-		.max(500),
+		.max(OUTLINE_MAX_RUNS),
 })
 
 /** 파싱은 한 번만 — 요청마다 12,260자 폰트를 다시 열지 않는다. */

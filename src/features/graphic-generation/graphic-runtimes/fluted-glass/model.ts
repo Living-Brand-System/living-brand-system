@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { GraphicModelAdapter } from '@/features/graphic-generation/runtime/graphic-plugin'
+import { HEX_COLOR_PATTERN } from '@/lib/color'
 import {
 	type ControllerRuntimeBindings,
 	type ControllerValues,
@@ -15,7 +16,7 @@ import flutedGlassRuntimeManifest, {
 	type FlutedGlassStyleId,
 } from './definition'
 
-const hexColorSchema = z.string().regex(/^#[0-9a-f]{6}$/i)
+const hexColorSchema = z.string().regex(HEX_COLOR_PATTERN)
 const unitPointSchema = z.strictObject({
 	x: z.number().min(-1).max(1),
 	y: z.number().min(-1).max(1),
