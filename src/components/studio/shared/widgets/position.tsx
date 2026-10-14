@@ -7,6 +7,7 @@ import {
 	ControllerPadPair,
 } from '@/components/shared/controller'
 import type { ControllerWidgetProps } from '@/components/studio/panel/studio-panel-slot'
+import { cn } from '@/lib/utils'
 import {
 	isControllerPadPairValue,
 	isControllerPadValue,
@@ -24,13 +25,16 @@ export function PositionWidget({
 	const control = controls.value
 	if (!control) return null
 	const value = values[control.id]
-	const disabled = resolveControlAvailability(control, bindings?.[control.id]) !== 'enabled'
+	const availability = resolveControlAvailability(control, bindings?.[control.id])
+	const disabled = availability === 'disabled'
+	const readonly = availability === 'readonly'
 	return (
 		<ControllerCompound label={cluster.title} className="gap-0">
 			<div className="px-3 pb-3">
 				{control.kind === 'select' && (
 					<QuadrantPosition
 						disabled={disabled}
+						readonly={readonly}
 						value={String(value)}
 						onChange={(next) => onChange(control.id, next)}
 					/>
@@ -38,6 +42,7 @@ export function PositionWidget({
 				{control.kind === 'pad' && isControllerPadValue(value) && (
 					<ControllerPad
 						disabled={disabled}
+						readonly={readonly}
 						contained
 						aria-label={cluster.title}
 						value={value}
@@ -48,6 +53,7 @@ export function PositionWidget({
 				{control.kind === 'pad-pair' && isControllerPadPairValue(value) && (
 					<ControllerPadPair
 						disabled={disabled}
+						readonly={readonly}
 						aria-label={cluster.title}
 						value={value}
 						onChange={(next) => onChange(control.id, next)}
@@ -84,10 +90,13 @@ const DIRECTIONS = [
 /** Figma의 대각선 네 영역은 연속 좌표가 아니라 네 방향 선택이다. */
 function QuadrantPosition({
 	disabled,
+	readonly,
 	value,
 	onChange,
 }: {
 	disabled?: boolean
+	/** 편집 불가 — 판이 자기 표면이라 스스로 흐리고 포인터를 끈다(docs/10 §3.6). */
+	readonly?: boolean
 	value: string
 	onChange: (value: string) => void
 }) {
@@ -97,7 +106,11 @@ function QuadrantPosition({
 			data-slot="formation-position"
 			role="radiogroup"
 			aria-label="Position"
-			className="relative h-53 overflow-hidden rounded-controller-pad border border-border bg-muted has-focus-visible:ring-2 has-focus-visible:ring-ring/30"
+			aria-readonly={readonly || undefined}
+			className={cn(
+				'relative h-53 overflow-hidden rounded-controller-pad border border-border bg-muted has-focus-visible:ring-2 has-focus-visible:ring-ring/30',
+				readonly && 'pointer-events-none opacity-50',
+			)}
 		>
 			<svg
 				aria-hidden="true"
@@ -134,7 +147,7 @@ function QuadrantPosition({
 						name={name}
 						value={direction.value}
 						checked={value === direction.value}
-						onChange={() => onChange(direction.value)}
+						onChange={() => !readonly && onChange(direction.value)}
 						aria-label={direction.label}
 						className="sr-only"
 					/>

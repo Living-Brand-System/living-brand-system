@@ -56,9 +56,10 @@ export function ColorPairWidget({
 			: { identity, colorMode: 'swatch' as const, swatch: '' }
 	const foregroundId = cluster.members.foreground
 	const backgroundId = cluster.members.background
+	const availabilityOf = (control: ControllerControlDefinition | undefined) =>
+		control ? resolveControlAvailability(control, bindings?.[control.id]) : 'disabled'
 	const enabled = (control: ControllerControlDefinition | undefined) =>
-		control !== undefined &&
-		resolveControlAvailability(control, bindings?.[control.id]) === 'enabled'
+		availabilityOf(control) === 'enabled'
 	const colors = Object.values(controls).filter((control) => control.kind === 'color')
 	const free =
 		controls.foreground?.kind === 'color' &&
@@ -138,7 +139,13 @@ export function ColorPairWidget({
 		<StudioColorCompound
 			allowCustom={false}
 			swatches={swatches}
-			disabled={![background, controls.foreground].every(enabled)}
+			// 둘 중 하나라도 잠기면 조합째 잠근다 — 비활성이 읽기 전용보다 앞선다(docs/10 §3.6).
+			disabled={[background, controls.foreground].some(
+				(c) => availabilityOf(c) === 'disabled',
+			)}
+			readonly={[background, controls.foreground].some(
+				(c) => availabilityOf(c) === 'readonly',
+			)}
 			value={{
 				colorMode: 'swatch',
 				swatch: current?.id ?? '',

@@ -55,6 +55,35 @@ describe('ColorPairWidget', () => {
 		expect(onChange).toHaveBeenCalledWith('ray', '#ffffff')
 	})
 
+	it('🔴 읽기 전용 조합은 비활성으로 뭉치지 않는다 — 흐린 채 보이고 값은 바뀌지 않는다', () => {
+		const select = (
+			id: string,
+			options: { value: string; label: string; colors: string[] }[],
+		) =>
+			({
+				id,
+				label: id,
+				kind: 'select',
+				defaultValue: null,
+				options,
+				availability: 'readonly',
+			}) as ControllerControlDefinition
+		const onChange = renderPair({
+			controls: {
+				foreground: select('line', [{ value: 'w', label: '흰 선', colors: ['#ffffff'] }]),
+				background: select('fill', [{ value: 'n', label: '남색 면', colors: ['#002c5f'] }]),
+			},
+		})
+		const swatch = screen.getByRole('radio', { name: '남색 면 · 흰 선' })
+		expect(swatch).not.toBeDisabled()
+		expect(swatch.closest('[data-slot=controller-compound]')).toHaveAttribute(
+			'data-readonly',
+			'true',
+		)
+		fireEvent.click(swatch)
+		expect(onChange).not.toHaveBeenCalled()
+	})
+
 	it('색 선택지끼리면 허용 조합만 스와치로 만들고 면을 먼저 바꾼다', () => {
 		const select = (
 			id: string,
