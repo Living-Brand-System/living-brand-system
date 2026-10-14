@@ -19,6 +19,9 @@ export function TemplateTextFieldWidget({ controls, values, onChange }: Controll
 	return (
 		<div
 			data-text-slot={slot.id}
+			// Manager mode 층이 찾는 표시 — 모드와 상관없이 늘 같다(원본은 모드를 모른다).
+			data-manager-target={definition.id}
+			data-manager-label={definition.label}
 			className="flex flex-col gap-1"
 			{...rowFocusProps(focus, {
 				sectionId: TEMPLATE_TEXT_SECTION_ID,

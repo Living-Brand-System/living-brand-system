@@ -13,6 +13,7 @@ import {
 	useTemplateDefaults,
 } from '@/components/studio/template/template-defaults-button'
 import { TemplateEditingPanel } from '@/components/studio/template/template-editing-panel'
+import { TemplateManagerOverlay } from '@/components/studio/template/template-manager-overlay'
 import { TemplateManagerRail } from '@/components/studio/template/template-manager-rail'
 import { useTemplatePanel } from '@/components/studio/template/template-panel'
 import { Typography } from '@/components/ui/typography'
@@ -116,6 +117,8 @@ export function TemplateWorkspace({
 					}}
 				/>
 			</div>
+			{/* body 포털이라 이 자리에 DOM을 남기지 않는다 — 원본 화면은 그대로다. */}
+			{canManageProfiles && <TemplateManagerOverlay />}
 		</div>
 	)
 }

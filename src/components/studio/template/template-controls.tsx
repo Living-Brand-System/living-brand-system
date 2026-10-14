@@ -82,6 +82,9 @@ export function TemplateLayerGroups() {
 					<div
 						key={kind}
 						data-slot="template-layer-group"
+						// Manager mode가 찾는 표시 — 모드와 상관없이 늘 같다. 배경은 편집 권한이 없어 달지 않는다.
+						data-manager-target={kind === 'background' ? undefined : `layers:${kind}`}
+						data-manager-label={label}
 						className={cn(
 							'group flex h-9 items-center gap-1 rounded-lg pr-1.5',
 							// 호버·포커스 면은 행 전체가 갖는다 — 표시·숨김 버튼까지 한 덩어리로 읽힌다.

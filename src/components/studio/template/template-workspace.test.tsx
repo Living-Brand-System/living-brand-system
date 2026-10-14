@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { StudioCapabilitiesProvider } from '@/components/studio/shared/studio-capabilities'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { resolveGraphicStudioOutput } from '@/features/graphic-generation/domain/graphic-studio-manifest'
 import manifest from '@/features/graphic-generation/graphic-runtimes/key-visual-pattern/definition'
@@ -11,11 +12,16 @@ import {
 import { TemplateGenerator } from './template-generator'
 
 const mocks = vi.hoisted(() => ({
+	search: '',
 	export: vi.fn(),
 	generate: vi.fn(),
 	graphicUpdate: vi.fn(),
 }))
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
+vi.mock('next/navigation', () => ({
+	useRouter: () => ({ push: vi.fn() }),
+	usePathname: () => '/studio/template/test',
+	useSearchParams: () => new URLSearchParams(mocks.search),
+}))
 vi.mock('@/features/template-core/services/template-editor-options.client', async (original) => ({
 	...(await original<object>()),
 	requestPublishedBrandColors: async () => [{ hex: '#007332' }, { hex: '#ffffff' }],
@@ -466,4 +472,34 @@ it('패널 탐색은 실제 템플릿 세션을 유지하고 왼쪽 종류 선�
 	await waitFor(() =>
 		expect(mocks.export).toHaveBeenCalledWith(expect.objectContaining({ format: 'jpeg' })),
 	)
+})
+
+it('🔴 Manager mode는 원본 화면을 바꾸지 않는다 — 켜도 끈 것과 DOM이 같고, 층은 body 포털에만 선다', async () => {
+	const renderAs = async (search: string) => {
+		mocks.search = search
+		const data = studio()
+		const { container } = render(
+			<StudioCapabilitiesProvider canManageProfiles>
+				<TemplateGenerator
+					config={data.config}
+					template={data.template}
+					highlightColor={data.highlightColor}
+					categoryTitle="포스터"
+				/>
+			</StudioCapabilitiesProvider>,
+			{ wrapper: TooltipProvider },
+		)
+		await screen.findByRole('textbox', { name: '제목' })
+		// 레일 맨 아래 버튼은 모드를 켜고 끄는 스위치 자신이라 비교에서 뺀다. useId 값은 마운트마다 다르다.
+		for (const footer of container.querySelectorAll('[data-slot="studio-rail-footer"]'))
+			footer.remove()
+		const html = container.innerHTML.replace(/_r_[0-9a-z]+_/g, 'id')
+		cleanup()
+		return html
+	}
+	const off = await renderAs('')
+	const on = await renderAs('manager=text%3Atitle')
+	expect(on).toBe(off)
+	expect(on).toContain('data-manager-target="text:title"')
+	mocks.search = ''
 })

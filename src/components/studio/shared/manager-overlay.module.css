@@ -1,0 +1,58 @@
+/*
+ * Manager mode 패널 테두리 — 두꺼운 흰 면(fill) + 흐르는 그라디언트 테두리(edge) + 그 그라디언트의 번진 광선(glow).
+ * 색은 앱 강조색(`--highlight-background`와 같은 초록 · 하늘색). 상태: idle(약하게) → hover(세게) → selected(가장 세게).
+ */
+/* 그라디언트 정지점은 `--highlight-background`의 두 색 — 작품 그라디언트라 L0 참조 규칙의 예외다(color-tokens.css와 같은 이유). */
+.stopA {
+	stop-color: #00ff66;
+}
+
+.stopB {
+	stop-color: #00c8ff;
+}
+
+.fill {
+	fill: var(--color-white, white);
+	pointer-events: visiblePainted;
+	cursor: pointer;
+}
+
+.edge {
+	fill: none;
+	stroke-width: 2;
+	transition: stroke-width 200ms ease-out;
+}
+
+.glow {
+	fill: none;
+	stroke-width: 8;
+	opacity: 0.35;
+	transition:
+		opacity 200ms ease-out,
+		stroke-width 200ms ease-out;
+}
+
+.panel[data-state="hover"] .glow {
+	opacity: 0.9;
+	stroke-width: 16;
+}
+
+.panel[data-state="hover"] .edge {
+	stroke-width: 3;
+}
+
+.panel[data-state="selected"] .glow {
+	opacity: 1;
+	stroke-width: 12;
+}
+
+.panel[data-state="selected"] .fill {
+	cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.edge,
+	.glow {
+		transition: none;
+	}
+}

@@ -86,6 +86,8 @@ vi.mock('@/features/template-core/services/template-editor-options.client', asyn
 
 vi.mock('next/navigation', () => ({
 	useRouter: () => ({ push: mocks.push }),
+	usePathname: () => '/studio/template/test',
+	useSearchParams: () => new URLSearchParams(),
 }))
 vi.mock('@/features/image-generation/services/generate-image.client', () => ({
 	requestImageGeneration: mocks.requestImageGeneration,

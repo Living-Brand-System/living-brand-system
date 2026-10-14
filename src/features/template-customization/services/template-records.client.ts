@@ -2,6 +2,7 @@ import {
 	type StudioPreviewImage,
 	toStudioPreviewImage,
 } from '@/modules/studio-controller/controller-definition'
+import type { TemplateNodeConfigMap } from '@/types/template'
 
 /**
  * 앱의 템플릿 데이터 편집(manager 이상)이 쓰는 Payload REST 호출 — 목록·생성·휴지통.
@@ -141,7 +142,10 @@ export type TemplateInfoPatch = {
 	size: { width: number; height: number }
 }
 
-export function updateTemplateInfo(templateId: number, patch: TemplateInfoPatch): Promise<void> {
+export function updateTemplateInfo(
+	templateId: number,
+	patch: Partial<TemplateInfoPatch>,
+): Promise<void> {
 	return patchTemplate(templateId, patch, '템플릿을 저장하지 못했어요.')
 }
 
@@ -169,4 +173,41 @@ export function trashTemplate(templateId: number): Promise<void> {
 		{ deletedAt: new Date().toISOString() },
 		'휴지통으로 옮기지 못했어요.',
 	)
+}
+
+/** 레이어 원본과 노드 설정 — Manager mode의 레이어 묶음 폼이 숨김 레이어까지 그리려고 읽는다. */
+export type TemplateLayerSource = { baseHtml: string; overrides: TemplateNodeConfigMap }
+
+export async function readTemplateLayerSource(templateId: number): Promise<TemplateLayerSource> {
+	const response = await fetch(
+		`/api/templates/${templateId}?depth=0&draft=true&select[baseHtml]=true&select[overrides]=true`,
+	)
+	if (!response.ok) throw await failure(response, '템플릿을 읽지 못했어요.')
+	const doc = (await response.json()) as {
+		baseHtml?: string | null
+		overrides?: TemplateNodeConfigMap | null
+	}
+	if (!doc.baseHtml) throw new Error('Figma에서 가져온 원본이 없는 템플릿이에요.')
+	return { baseHtml: doc.baseHtml, overrides: doc.overrides ?? {} }
+}
+
+/** 판형(디지털 px / 인쇄 mm)과 크기. 비율·정수 검증은 서버(`validateTemplateSize`)가 한다. */
+export function updateTemplateOutput(
+	templateId: number,
+	output: { outputKind: 'digital' | 'print'; size: { width: number; height: number } },
+): Promise<void> {
+	return patchTemplate(templateId, output, '판형을 저장하지 못했어요.')
+}
+
+/**
+ * 템플릿 필드 몇 개를 최신 초안 기준으로 읽는다(Manager mode 폼 공용). 관계는 펼치지 않는다(depth=0).
+ */
+export async function readTemplateFields<T extends Record<string, unknown>>(
+	templateId: number,
+	fields: readonly (keyof T & string)[],
+): Promise<T> {
+	const select = fields.map((field) => `select[${field}]=true`).join('&')
+	const response = await fetch(`/api/templates/${templateId}?depth=0&draft=true&${select}`)
+	if (!response.ok) throw await failure(response, '템플릿을 읽지 못했어요.')
+	return (await response.json()) as T
 }
