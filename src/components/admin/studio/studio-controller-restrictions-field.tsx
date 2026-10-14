@@ -506,14 +506,20 @@ function DefaultValueEditor({
 			/>
 		)
 	}
-	return (
-		<Controller.Row label="기본값" disabled={disabled}>
-			<Controller.Input
-				value={typeof value === 'string' ? value : ''}
-				onChange={(event) => onChange(event.currentTarget.value)}
-			/>
-		</Controller.Row>
-	)
+	if (control.kind === 'text' || control.kind === 'asset') {
+		return (
+			<Controller.Row label="기본값" disabled={disabled}>
+				<Controller.Input
+					value={typeof value === 'string' ? value : ''}
+					onChange={(event) => onChange(event.currentTarget.value)}
+				/>
+			</Controller.Row>
+		)
+	}
+	// 🔑 kind를 추가하고 기본값 편집기를 빠뜨리면 여기서 typecheck가 떨어진다 — 글자 칸으로 조용히 떨어지지 않게.
+	const _everyKindHasDefaultEditor: never = control
+	void _everyKindHasDefaultEditor
+	return null
 }
 
 /** 패드 점 하나(x·y, -1~1). 칸을 비우거나 범위 밖이면 반영하지 않고 직전 값으로 돌아간다. */
