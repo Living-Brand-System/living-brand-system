@@ -9,9 +9,9 @@ import type {
 } from '@/features/graphic-generation/domain/graph-studio-config'
 import { graphRuntimeManifests } from '@/features/graphic-generation/graph-runtimes/catalog/manifest.generated'
 
+// 런타임 id 타입은 생성 카탈로그가 정본이다 — 여기서 다시 계산하지 않고 내보내기만 한다.
+export type { GraphRuntimeId } from '@/features/graphic-generation/graph-runtimes/catalog/manifest.generated'
 export { graphRuntimeManifests }
-
-export type GraphRuntimeId = (typeof graphRuntimeManifests)[number]['id']
 
 /** Admin의 runtime 드롭다운. 카탈로그가 곧 목록이라 손으로 적지 않는다. */
 export const GRAPH_RUNTIME_OPTIONS = toCanvasRuntimeOptions(graphRuntimeManifests)
