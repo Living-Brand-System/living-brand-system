@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { PALETTE_FAMILY_OPTIONS } from '@/features/guideline/domain/contract/palette'
 import { managerManagedAccess } from '@/lib/auth'
 import { draftVersions } from './shared'
 
@@ -34,11 +35,7 @@ export const BrandColorGroups: CollectionConfig = {
 			type: 'select',
 			label: '팔레트 분류',
 			unique: true,
-			options: [
-				{ label: 'Primary', value: 'primary' },
-				{ label: 'Supportive', value: 'supportive' },
-				{ label: 'Monotone', value: 'monotone' },
-			],
+			options: [...PALETTE_FAMILY_OPTIONS],
 			admin: {
 				description:
 					'신규 팔레트의 안정적인 분류입니다. Brand는 Primary + Supportive로 자동 조합합니다.',

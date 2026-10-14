@@ -1,5 +1,10 @@
 /** 기본 색상군은 세 가지이며 Brand는 저장하지 않고 조합합니다. */
-export type PaletteFamily = 'primary' | 'supportive' | 'monotone'
+export const PALETTE_FAMILY_OPTIONS = [
+	{ label: 'Primary', value: 'primary' },
+	{ label: 'Supportive', value: 'supportive' },
+	{ label: 'Monotone', value: 'monotone' },
+] as const
+export type PaletteFamily = (typeof PALETTE_FAMILY_OPTIONS)[number]['value']
 export const PALETTES = [
 	{ id: 'primary', name: 'Primary Palette', families: ['primary'] },
 	{ id: 'supportive', name: 'Supportive Palette', families: ['supportive'] },

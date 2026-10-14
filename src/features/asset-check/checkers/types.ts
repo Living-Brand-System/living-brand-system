@@ -5,6 +5,11 @@
  * rule schema나 Payload 문서 타입은 여기에 들이지 않는다.
  */
 
+import type {
+	MeasureOperator,
+	ObservationValue,
+	PresenceExpected,
+} from '@/features/asset-check/domain/heuristic-criterion'
 import type { CheckImageMediaType } from '@/features/asset-check/utils/image-format'
 import type { RuleExecutor } from '@/features/quality-rule/rule-executor'
 import type { Rgb, Swatch } from './palette-match'
@@ -96,13 +101,13 @@ export type HeuristicCriterion =
 			question: string
 			/** 미지정은 presence — 기존 저장 데이터·스냅샷 호환 */
 			kind?: 'presence'
-			expected: 'present' | 'absent'
+			expected: PresenceExpected
 	  }
 	| {
 			id: string
 			question: string
 			kind: 'measure'
-			operator: 'gte' | 'lte' | 'between'
+			operator: MeasureOperator
 			expected: number
 			/** between 상한 */
 			max?: number
@@ -122,11 +127,11 @@ export interface AiCheckResult extends CheckResultBase {
 		criterionId: string
 		question: string
 		kind?: 'presence' | 'measure'
-		expected: 'present' | 'absent' | number
-		operator?: 'gte' | 'lte' | 'between'
+		expected: PresenceExpected | number
+		operator?: MeasureOperator
 		max?: number
 		unit?: string
-		actual: 'present' | 'absent' | 'uncertain' | 'not_applicable' | number
+		actual: ObservationValue | number
 		confidence: number
 		reason: string
 		satisfied: boolean | null
