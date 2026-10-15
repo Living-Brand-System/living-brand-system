@@ -17,6 +17,8 @@ type ImageTransformControlProps = {
 	onChange: (value: ImageTransformValue) => void
 	/** compose가 transform을 배정된 이미지에만 적용하므로, 생성 전에는 비활성으로 둔다. */
 	disabled?: boolean
+	/** 편집 불가(잠긴 슬롯) — 패드·슬라이더가 각자 흐려지고 값이 바뀌지 않는다. */
+	readonly?: boolean
 	/** 대상 슬롯 박스의 종횡비(w/h) — 패드가 같은 비율로 그려진다. */
 	aspectRatio?: number
 	/** 슬롯별 조작 레인지(편집 계약 소유) — 생략하면 compose 전역 계약. 최종 clamp는 compose가 한다. */
@@ -31,6 +33,7 @@ export function ImageTransformControl({
 	value,
 	onChange,
 	disabled,
+	readonly,
 	aspectRatio,
 	limits = IMAGE_EDIT_TRANSFORM_LIMITS,
 }: ImageTransformControlProps) {
@@ -46,6 +49,7 @@ export function ImageTransformControl({
 				aria-label="이미지 위치"
 				value={{ x: value.x, y: value.y }}
 				disabled={disabled}
+				readonly={readonly}
 				aspectRatio={aspectRatio}
 				onChange={({ x, y }) => onChange({ ...value, x, y })}
 			/>
@@ -56,6 +60,7 @@ export function ImageTransformControl({
 				max={scaleRange.max}
 				step={scaleRange.step}
 				disabled={disabled}
+				readonly={readonly}
 				format={(scale) => scale.toFixed(2).replace(/\.?0+$/, '')}
 				onChange={(scale) => onChange({ ...value, scale })}
 			/>
@@ -66,6 +71,7 @@ export function ImageTransformControl({
 				max={rotateRange.max}
 				step={rotateRange.step}
 				disabled={disabled}
+				readonly={readonly}
 				format={(rotate) => `${Math.round(rotate)}deg`}
 				onChange={(rotate) => onChange({ ...value, rotate })}
 			/>

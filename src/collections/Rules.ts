@@ -1,8 +1,13 @@
 import type { ArrayField, CollectionConfig, FieldHook } from 'payload'
+import {
+	HEURISTIC_CRITERION_KIND_OPTIONS,
+	MEASURE_OPERATOR_OPTIONS,
+	PRESENCE_EXPECTED_OPTIONS,
+} from '@/features/asset-check/domain/heuristic-criterion'
 import { checkKeyFromEnglishTitle } from '@/features/quality-rule/check-key-from-english-title'
 import { relationshipId } from '@/features/quality-rule/relationship-id'
 import { getRuleCheckerSummary } from '@/features/quality-rule/repositories/rule-checker.payload.repository'
-import type { RuleExecutor } from '@/features/quality-rule/rule-executor'
+import { RULE_EXECUTOR_OPTIONS, type RuleExecutor } from '@/features/quality-rule/rule-executor'
 import { assertRuleDeletable } from '@/features/quality-rule/services/guard-rule-deletion.service'
 import { validateRuleOptions } from '@/features/quality-rule/validate-rule-options'
 import { managerManagedAccess } from '@/lib/auth'
@@ -116,11 +121,7 @@ export const Rules: CollectionConfig = {
 			name: 'executor',
 			type: 'select',
 			required: true,
-			options: [
-				{ label: 'Deterministic', value: 'deterministic' },
-				{ label: 'Heuristic (AI)', value: 'heuristic' },
-				{ label: 'Advisory (AI)', value: 'manual' },
-			],
+			options: [...RULE_EXECUTOR_OPTIONS],
 			hooks: { beforeValidate: [populateRuleExecutor] },
 			admin: {
 				hidden: true,
@@ -186,10 +187,7 @@ export const Rules: CollectionConfig = {
 							required: true,
 							defaultValue: 'presence',
 							label: '기준 유형',
-							options: [
-								{ label: '관찰형', value: 'presence' },
-								{ label: '수치형', value: 'measure' },
-							],
+							options: [...HEURISTIC_CRITERION_KIND_OPTIONS],
 							admin: { width: '20%' },
 						},
 						{
@@ -197,10 +195,7 @@ export const Rules: CollectionConfig = {
 							enumName: 'enum_heuristic_criterion_expected',
 							type: 'select',
 							label: '적합 기준',
-							options: [
-								{ label: '있어야 함', value: 'present' },
-								{ label: '없어야 함', value: 'absent' },
-							],
+							options: [...PRESENCE_EXPECTED_OPTIONS],
 							admin: {
 								width: '25%',
 								condition: (_data, siblingData) =>
@@ -217,11 +212,7 @@ export const Rules: CollectionConfig = {
 							enumName: 'enum_heuristic_criterion_operator',
 							type: 'select',
 							label: '연산',
-							options: [
-								{ label: '이상 (≥)', value: 'gte' },
-								{ label: '이하 (≤)', value: 'lte' },
-								{ label: '범위', value: 'between' },
-							],
+							options: [...MEASURE_OPERATOR_OPTIONS],
 							admin: { width: '25%', condition: measureCriterionCondition },
 						},
 						{

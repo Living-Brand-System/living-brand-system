@@ -1,4 +1,5 @@
 import type { PayloadRequest } from 'payload'
+import { SLUG_PATTERN } from '@/lib/slug'
 import { findPublishedRules } from '../repositories/rules.payload.repository'
 import type { RuleExecutor } from '../rule-executor'
 
@@ -27,7 +28,7 @@ export async function listAvailableScenarioChecks(
 /** CheckScenario key 형식을 검증한다. 외부 I/O는 없다. */
 export function validateCheckScenarioKey(value: unknown) {
 	return (
-		(typeof value === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)) ||
+		(typeof value === 'string' && SLUG_PATTERN.test(value)) ||
 		'Key는 영문 소문자, 숫자, 하이픈만 사용할 수 있습니다.'
 	)
 }

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { GraphicModelAdapter } from '@/features/graphic-generation/runtime/graphic-plugin'
+import { HEX_COLOR_PATTERN } from '@/lib/color'
 import type { VectorSceneArtifact } from '@/modules/studio-artifact/studio-artifact'
 import {
 	type ControllerRuntimeBindings,
@@ -10,7 +11,7 @@ import { FORWARD_STRAIGHT_DEFAULT_INPUT, FORWARD_STRAIGHT_REFERENCE_BASE } from 
 
 export { FORWARD_STRAIGHT_DEFAULT_INPUT, FORWARD_STRAIGHT_REFERENCE_BASE } from './definition'
 
-const hexColorSchema = z.string().regex(/^#[0-9a-f]{6}$/i)
+const hexColorSchema = z.string().regex(HEX_COLOR_PATTERN)
 
 export const forwardStraightInputSchema = z.strictObject({
 	backgroundColor: hexColorSchema,

@@ -11,6 +11,8 @@ type ControllerChipsProps<T extends string> = {
 	'aria-label': string
 	/** 어드민 고정 값 — 포커스·조작이 막힌다. Row 안에서는 행의 disabled를 자동으로 따른다. */
 	disabled?: boolean
+	/** 편집 불가 — 눌러도 값이 바뀌지 않는다. Row 안에서는 행을 따른다. */
+	readonly?: boolean
 	/** 끌 수 없는 칩(예: 마지막 남은 형식) — 켜진 채 잠긴다. */
 	disabledValues?: readonly T[]
 }
@@ -26,17 +28,19 @@ export function ControllerChips<T extends string>({
 	onChange,
 	'aria-label': ariaLabel,
 	disabled,
+	readonly,
 	disabledValues,
 }: ControllerChipsProps<T>) {
 	const row = useRowControl()
 	const resolvedDisabled = disabled ?? row?.disabled
+	const locked = readonly ?? row?.readonly
 	return (
 		// 정본(83:1563) 수치: 칩 높이 32px·간격 2px·radius 8px·min-w 48px, 행 오른끝 2px 인셋.
 		<div data-slot="controller-chips" className="-mr-2.5 flex h-9 shrink-0 items-center py-0.5">
 			<ToggleGroup
 				type="multiple"
 				value={[...value]}
-				onValueChange={(next) => onChange(next as T[])}
+				onValueChange={(next) => !locked && onChange(next as T[])}
 				aria-label={ariaLabel}
 				disabled={resolvedDisabled}
 				spacing={0.5}

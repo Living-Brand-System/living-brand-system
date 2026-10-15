@@ -1,9 +1,34 @@
 import type { AiUsage, CheckResult } from '@/features/asset-check/checkers/types'
 import type { RuntimeCheck } from '@/features/asset-check/domain/runtime-check'
-import type { CheckImageMediaType } from '@/features/asset-check/utils/image-format'
+import {
+	CHECK_IMAGE_MEDIA_TYPES,
+	type CheckImageMediaType,
+} from '@/features/asset-check/utils/image-format'
 
-export type CheckSessionStatus = 'running' | 'completed' | 'failed'
-export type CheckSessionSource = 'mcp-call' | 'review-page' | 'chat'
+/** 검수 세션 상태·출처·입력 형식 — CheckSessions 컬렉션 select와 도메인 타입이 이 목록을 읽는다. */
+export const CHECK_SESSION_STATUS_OPTIONS = [
+	{ label: 'Running', value: 'running' },
+	{ label: 'Completed', value: 'completed' },
+	{ label: 'Failed', value: 'failed' },
+] as const
+export type CheckSessionStatus = (typeof CHECK_SESSION_STATUS_OPTIONS)[number]['value']
+
+export const CHECK_SESSION_SOURCE_OPTIONS = [
+	{ label: 'MCP Call', value: 'mcp-call' },
+	{ label: 'Review Page', value: 'review-page' },
+	{ label: 'Chat', value: 'chat' },
+] as const
+export type CheckSessionSource = (typeof CHECK_SESSION_SOURCE_OPTIONS)[number]['value']
+
+const MEDIA_TYPE_LABEL: Record<CheckImageMediaType, string> = {
+	'image/jpeg': 'JPEG',
+	'image/png': 'PNG',
+	'image/webp': 'WebP',
+}
+export const CHECK_IMAGE_MEDIA_TYPE_OPTIONS = CHECK_IMAGE_MEDIA_TYPES.map((value) => ({
+	label: MEDIA_TYPE_LABEL[value],
+	value,
+}))
 
 /** 종결(completed/failed)된 세션에 전이를 시도했을 때의 방어선. 정상 경로에서는 나오지 않는다. */
 export class CheckSessionStateError extends Error {}

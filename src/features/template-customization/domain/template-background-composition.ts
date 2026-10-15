@@ -3,6 +3,7 @@ import type { ControllerGroupDefinition } from '@/modules/studio-controller/cont
 import {
 	findTemplateControl,
 	partitionTemplateSlots,
+	TEMPLATE_IMAGE_MODE_OPTIONS,
 	type TemplateStudioConfig,
 } from './template-studio-config'
 
@@ -48,10 +49,7 @@ export function deriveTemplateBackgroundComposition(
 									label: 'Image Mode',
 									defaultValue: 'preset',
 									variant: 'segmented' as const,
-									options: [
-										{ value: 'preset', label: 'Preset' },
-										{ value: 'generate', label: 'Generate' },
-									],
+									options: TEMPLATE_IMAGE_MODE_OPTIONS,
 									visibleWhen: { control: type.id, equals: 'image' },
 								},
 							]

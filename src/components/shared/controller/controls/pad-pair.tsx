@@ -14,6 +14,8 @@ type ControllerPadPairProps = {
 	onChange: (value: ControllerPadPairValue) => void
 	'aria-label': string
 	disabled?: boolean
+	/** 편집 불가 — 0.5로 흐려지고 끌기·화살표가 값을 바꾸지 않는다(포커스는 남는다). */
+	readonly?: boolean
 	/** 조작 대상의 종횡비(w/h) — Wide/Portrait/Square를 별도 variant 없이 표현한다. */
 	aspectRatio?: number
 	className?: string
@@ -32,6 +34,7 @@ export function ControllerPadPair({
 	onChange,
 	'aria-label': ariaLabel,
 	disabled,
+	readonly = false,
 	aspectRatio,
 	className,
 }: ControllerPadPairProps) {
@@ -41,7 +44,7 @@ export function ControllerPadPair({
 	//    "처음인가"를 그 값으로 물으면 렌더 타이밍에 기댄 판정이 된다. 제스처 시작은 ref가 소유한다.
 	const graspedRef = useRef(false)
 	const drag = useControllerPointerDrag({
-		disabled,
+		disabled: disabled || readonly,
 		onDrag: (ratioX, ratioY) => {
 			const point = { x: ratioX * 2 - 1, y: ratioY * 2 - 1 }
 			if (!graspedRef.current) {
@@ -53,7 +56,7 @@ export function ControllerPadPair({
 	})
 
 	function nudge(event: KeyboardEvent<HTMLElement>) {
-		if (disabled) return
+		if (disabled || readonly) return
 		// 키보드로는 잡을 점을 가리킬 수 없으므로 Tab이 아니라 Space·Enter로 두 점을 오간다.
 		if (event.key === ' ' || event.key === 'Enter') {
 			event.preventDefault()
@@ -91,7 +94,12 @@ export function ControllerPadPair({
 			<div
 				// 판 위의 두 점을 직접 집는 위젯이라 대응하는 HTML 요소가 없다 — 키를 위젯이 직접 받는다.
 				role="application"
-				aria-label={`${ariaLabel} — 두 점. 스페이스로 점을 바꾸고 화살표로 움직입니다.`}
+				// application 역할은 aria-readonly를 받지 않는다 — 읽기 전용은 이름으로 알린다.
+				aria-label={
+					readonly
+						? `${ariaLabel} — 두 점. 읽기 전용입니다.`
+						: `${ariaLabel} — 두 점. 스페이스로 점을 바꾸고 화살표로 움직입니다.`
+				}
 				aria-disabled={disabled || undefined}
 				tabIndex={disabled ? -1 : 0}
 				onKeyDown={nudge}
@@ -108,6 +116,7 @@ export function ControllerPadPair({
 				className={cn(
 					'group/pad relative m-0 min-w-0 shrink-0 touch-none rounded-lg border-0 bg-muted p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring/30',
 					!aspectRatio && 'h-36 w-full',
+					readonly && 'pointer-events-none opacity-50',
 					disabled && 'pointer-events-none opacity-50',
 					className,
 				)}

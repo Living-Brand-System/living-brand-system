@@ -1,4 +1,8 @@
 import { z } from 'zod'
+import {
+	ADMIN_IMAGE_BATCH_MAX,
+	ADMIN_IMAGE_PROMPT_MAX_LENGTH,
+} from '@/features/image-generation/domain/image-generation-limits'
 import { IMAGE_MODEL_PRESETS } from '@/features/image-generation/domain/image-model'
 import {
 	IMAGE_ASPECT_RATIOS,
@@ -15,9 +19,10 @@ import { authenticateRequest, isCrossOriginRequest } from '@/lib/request-auth'
 
 export const maxDuration = 120
 
+// 상한은 image-generation-limits가 단일 소유한다 — 어드민 상한도 거기서 이름으로 읽는다.
 const baseFields = {
-	prompt: z.string().trim().min(1).max(2_500),
-	count: z.number().int().min(1).max(6).default(1),
+	prompt: z.string().trim().min(1).max(ADMIN_IMAGE_PROMPT_MAX_LENGTH),
+	count: z.number().int().min(1).max(ADMIN_IMAGE_BATCH_MAX).default(1),
 }
 
 const requestSchema = z.union([

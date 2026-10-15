@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import { AdminSectionHeading } from '@/components/admin/shared/admin-section-heading'
 import { CONTROLLER_TOGGLE_OPTIONS, Controller } from '@/components/shared/controller'
 import type { StudioOutputFormat } from '@/features/studio-export/export-contract'
+import { isPrintExportFormat } from '@/features/studio-export/print-policy'
 import {
 	resolveStudioArtifactOutputFormats,
 	resolveStudioOutputCapability,
@@ -230,21 +231,18 @@ export function StudioExportPolicyField({
 							</Controller.Row>
 						</Controller.Group>
 
-						{output?.print &&
-							supportedFormats.some(
-								(format) => format === 'tiff' || format === 'pdf',
-							) && (
-								<Controller.Group title="인쇄" collapsible={false}>
-									<NumberOptionChips
-										label="사용할 인쇄 해상도"
-										unit="ppi"
-										numbers={output.print.ppi}
-										value={ppiField.value}
-										disabled={ppiField.disabled}
-										onChange={(next) => ppiField.setValue(next)}
-									/>
-								</Controller.Group>
-							)}
+						{output?.print && supportedFormats.some(isPrintExportFormat) && (
+							<Controller.Group title="인쇄" collapsible={false}>
+								<NumberOptionChips
+									label="사용할 인쇄 해상도"
+									unit="ppi"
+									numbers={output.print.ppi}
+									value={ppiField.value}
+									disabled={ppiField.disabled}
+									onChange={(next) => ppiField.setValue(next)}
+								/>
+							</Controller.Group>
+						)}
 
 						{output?.video && supportedFormats.includes('mp4') && (
 							<Controller.Group title="영상" collapsible={false}>

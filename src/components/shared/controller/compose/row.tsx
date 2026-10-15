@@ -7,6 +7,8 @@ type RowControlValue = {
 	/** 행 라벨이 가리키는 컨트롤 id — 킷 컨트롤이 자기 id로 쓴다. */
 	controlId: string
 	disabled: boolean
+	/** 편집 불가 — 안의 킷 컨트롤은 값을 바꾸지 않는다(포커스·읽기는 그대로). 흐림은 표면(Row·Field)이 건다. */
+	readonly: boolean
 	/** 이 행의 오류 문구 id — 있으면 안의 킷 입력이 `aria-invalid`·`aria-describedby`로 잇는다. */
 	errorId?: string
 }
@@ -30,7 +32,9 @@ export function RowControlProvider({
 
 type ControllerRowProps = React.ComponentProps<'div'> & {
 	label: React.ReactNode
-	/** 컨트롤 없이 값만 보여주는 행 — 라벨이 span이 되고 자동 배선이 꺼진다(컨트롤러 API의 readonly). */
+	/** 컨트롤 없이 값만 보여주는 행(계정 이메일·발급 시각) — 라벨이 span이 되고 흐리지 않는다. */
+	display?: boolean
+	/** 편집 불가(docs/10 §3.6) — 행이 0.5로 흐려지고 자식의 포인터가 꺼지며, 안의 킷 컨트롤은 컨텍스트로 값을 바꾸지 않는다. */
 	readonly?: boolean
 	/** 킷 밖 컨트롤의 id — 킷 컨트롤(Select/Input/Textarea 등)은 자동 배선되므로 보통 불필요. */
 	htmlFor?: string
@@ -45,6 +49,7 @@ type ControllerRowProps = React.ComponentProps<'div'> & {
 export function ControllerRow({
 	label,
 	htmlFor,
+	display = false,
 	readonly = false,
 	disabled = false,
 	errorId,
@@ -54,28 +59,32 @@ export function ControllerRow({
 }: ControllerRowProps) {
 	const generatedId = React.useId()
 	const controlId = htmlFor ?? generatedId
-	// readonly 행은 label을 쓰지 않는다 — 아무것도 가리키지 않는 label은 클릭이 죽은 거짓 어포던스다.
-	const LabelTag = readonly ? 'span' : 'label'
+	// 값만 보이는 행은 label을 쓰지 않는다 — 아무것도 가리키지 않는 label은 클릭이 죽은 거짓 어포던스다.
+	const LabelTag = display ? 'span' : 'label'
 	return (
 		<div
 			data-slot="controller-row"
 			aria-disabled={disabled || undefined}
+			data-readonly={readonly || undefined}
 			className={cn(
 				// relative + --controller-row-px: 셀렉트 트리거가 행 전체(border box)를 덮는 기준이다.
 				// 패딩을 변수로 내보내야 트리거가 그만큼 밖으로 나가 행과 같은 폭을 잰다(ROW_SELECT_TRIGGER).
 				'relative flex h-9 w-full shrink-0 items-center justify-between gap-3 rounded-lg bg-muted px-3 [--controller-row-px:0.75rem] focus-within:ring-2 focus-within:ring-ring/30',
+				// 🔑 포인터는 자식에서만 끈다 — 표면 자신까지 끄면 Manager mode의 보임 판정(elementsFromPoint)이
+				//    이 칸을 건너뛰어 readonly 칸을 관리할 수 없다.
+				readonly && 'opacity-50 *:pointer-events-none',
 				disabled && 'pointer-events-none opacity-50',
 				className,
 			)}
 			{...props}
 		>
 			<LabelTag
-				{...(readonly ? {} : { htmlFor: controlId })}
+				{...(display ? {} : { htmlFor: controlId })}
 				className="shrink-0 text-sm text-muted-foreground"
 			>
 				{label}
 			</LabelTag>
-			<RowControlProvider value={{ controlId, disabled, errorId }}>
+			<RowControlProvider value={{ controlId, disabled, readonly, errorId }}>
 				{children}
 			</RowControlProvider>
 		</div>

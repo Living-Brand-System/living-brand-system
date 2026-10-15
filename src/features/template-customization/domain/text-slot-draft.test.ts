@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { applyTextSlotDraft, toTextSlotDraft } from './text-slot-draft'
+import {
+	applyTextSlotDraft,
+	cleanSlotText,
+	parseSlotCount,
+	toTextSlotDraft,
+} from './text-slot-draft'
 
 describe('applyTextSlotDraft', () => {
 	const config = {
@@ -27,5 +32,19 @@ describe('applyTextSlotDraft', () => {
 			creator: { access: 'editable' },
 			input: { maxLength: 10, aiInstruction: '짧게' },
 		})
+	})
+})
+
+describe('어드민과 함께 쓰는 칸 규칙', () => {
+	it('숫자 칸은 1 이상의 정수만 받는다 — 1.5를 1로 자르지 않는다', () => {
+		expect(parseSlotCount('12')).toBe(12)
+		expect(parseSlotCount('')).toBeUndefined()
+		expect(parseSlotCount('1.5')).toBeNull()
+		expect(parseSlotCount('0')).toBeNull()
+	})
+
+	it('글자 칸은 앞뒤 공백을 걷고, 공백뿐이면 없음이다', () => {
+		expect(cleanSlotText('  영문 이름 ')).toBe('영문 이름')
+		expect(cleanSlotText('   ')).toBeUndefined()
 	})
 })

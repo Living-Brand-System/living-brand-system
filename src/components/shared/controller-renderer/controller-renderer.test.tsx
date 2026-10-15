@@ -123,9 +123,14 @@ describe('ControllerRenderer', () => {
 			.getByText('Published readonly')
 			.closest('[data-slot=controller-row]')
 		expect(readonlyRow).not.toBeNull()
-		expect(within(readonlyRow as HTMLElement).getByText('On')).toBeInTheDocument()
-		expect(within(readonlyRow as HTMLElement).queryByRole('radio')).not.toBeInTheDocument()
-		const disabled = screen.getByRole('radio', { name: 'Off' })
+		// 발행 readonly는 binding이 다시 열지 못한다 — 같은 세그먼트가 흐린 채 편집만 막힌다.
+		expect(readonlyRow).toHaveAttribute('data-readonly', 'true')
+		expect(within(readonlyRow as HTMLElement).getByRole('radio', { name: 'On' })).toBeChecked()
+		fireEvent.click(within(readonlyRow as HTMLElement).getByRole('radio', { name: 'Off' }))
+		const disabledRow = screen
+			.getByText('Runtime disabled')
+			.closest('[data-slot=controller-row]') as HTMLElement
+		const disabled = within(disabledRow).getByRole('radio', { name: 'Off' })
 		expect(disabled).toBeDisabled()
 		fireEvent.click(disabled)
 		expect(onChange).not.toHaveBeenCalled()
@@ -169,8 +174,9 @@ describe('ControllerRenderer', () => {
 			/>,
 		)
 
-		expect(screen.getByText('입력 유지')).toBeInTheDocument()
-		expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+		// 발행 readonly는 binding이 다시 열지 못한다 — 같은 입력이 편집만 막힌 채 남는다.
+		expect(screen.getByRole('textbox')).toHaveValue('입력 유지')
+		expect(screen.getByRole('textbox')).toHaveAttribute('readonly')
 		expect(screen.getByRole('alert')).toHaveTextContent('최대 길이를 초과했습니다.')
 	})
 

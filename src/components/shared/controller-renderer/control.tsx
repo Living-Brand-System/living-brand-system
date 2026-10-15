@@ -94,10 +94,10 @@ function ControllerControl({
 	switch (definition.kind) {
 		case 'text': {
 			const text = typeof value === 'string' ? value : ''
-			if (readonly) return <ReadonlyRow label={definition.label} value={text || '—'} />
 			if (definition.multiline) {
 				// 되돌릴 것이 없으면 버튼도 없다 — 눌러도 아무 일이 없는 조작 요소를 두지 않는다.
-				const resettable = definition.resettable && text !== (definition.defaultValue ?? '')
+				const resettable =
+					!readonly && definition.resettable && text !== (definition.defaultValue ?? '')
 				return (
 					<Controller.Field
 						label={definition.label}
@@ -119,6 +119,7 @@ function ControllerControl({
 							) : undefined
 						}
 						disabled={disabled}
+						readonly={readonly}
 					>
 						{definition.grid && (
 							<Controller.DataGrid
@@ -140,7 +141,12 @@ function ControllerControl({
 				)
 			}
 			return (
-				<Controller.Row label={definition.label} disabled={disabled} errorId={errorId}>
+				<Controller.Row
+					label={definition.label}
+					disabled={disabled}
+					readonly={readonly}
+					errorId={errorId}
+				>
 					<Controller.Input
 						value={text}
 						maxLength={definition.maxLength}
@@ -152,10 +158,8 @@ function ControllerControl({
 		}
 		case 'toggle': {
 			const enabled = value === true
-			if (readonly)
-				return <ReadonlyRow label={definition.label} value={enabled ? 'On' : 'Off'} />
 			return (
-				<Controller.Row label={definition.label} disabled={disabled}>
+				<Controller.Row label={definition.label} disabled={disabled} readonly={readonly}>
 					<Controller.Segmented
 						aria-label={definition.label}
 						options={CONTROLLER_TOGGLE_OPTIONS}
@@ -167,43 +171,44 @@ function ControllerControl({
 		}
 		case 'select': {
 			const selected = typeof value === 'string' ? value : undefined
-			const selectedLabel =
-				definition.options.find((option) => option.value === selected)?.label ?? '—'
-			if (!disabled && (readonly || definition.options.length <= 1)) {
-				return <ReadonlyRow label={definition.label} value={selectedLabel} />
-			}
+			// 고를 것이 하나뿐이어도 읽기 전용이다(docs/10 §3.6) — 같은 컨트롤에 편집만 막는다.
+			const locked = !disabled && (readonly || definition.options.length <= 1)
+			// 🔴 빈 목록은 칩·세그먼트로 보내지 않는다 — `every`는 빈 목록에 참이고, 세그먼트는 첫 선택지를 읽는다.
+			const hasOptions = definition.options.length > 0
 			// 🔑 선택지 전부가 색 조합이면 칩 그리드다 — 여기서는 라벨이 아니라 **색이 정보**라서
 			//    목록도 pill도 무엇을 고르는지 보여주지 못한다. 계약이 부분 선언을 막지만,
 			//    검증을 거치지 않은 정의도 화면이 죽지 않게 every로 판정한다(섞이면 목록으로 떨어진다).
 			// 🔑 선택지 전부가 형태면 썸네일 그리드다 — 색 조합과 같은 근거로, 이름은 무엇을 고르는지
 			//    보여주지 못한다. 색 판정보다 먼저 본다(둘을 함께 든 선택지는 형태가 더 큰 정보다).
-			if (definition.options.every((option) => option.preview?.length)) {
+			if (hasOptions && definition.options.every((option) => option.preview?.length)) {
 				return (
 					<Controller.PreviewChips
 						label={definition.label}
 						options={definition.options}
 						value={selected}
 						disabled={disabled}
+						readonly={locked}
 						onChange={onChange}
 					/>
 				)
 			}
-			if (definition.options.every((option) => option.colors?.length)) {
+			if (hasOptions && definition.options.every((option) => option.colors?.length)) {
 				return (
 					<Controller.ColorChips
 						label={definition.label}
 						options={definition.options}
 						value={selected}
 						disabled={disabled}
+						readonly={locked}
 						onChange={onChange}
 					/>
 				)
 			}
 			// 🔑 선택지를 펼쳐 두는 축은 segmented다 — 드롭다운은 누르기 전까지 무엇이 있는지 숨긴다.
 			//    값이 비어 있을 수 없으므로(항상 하나가 켜져 있다) 첫 선택지로 떨군다.
-			if (definition.variant === 'segmented') {
+			if (hasOptions && definition.variant === 'segmented') {
 				return (
-					<Controller.Row label={definition.label} disabled={disabled}>
+					<Controller.Row label={definition.label} disabled={disabled} readonly={locked}>
 						<Controller.Segmented
 							aria-label={definition.label}
 							options={definition.options}
@@ -218,7 +223,7 @@ function ControllerControl({
 				)
 			}
 			return (
-				<Controller.Row label={definition.label} disabled={disabled}>
+				<Controller.Row label={definition.label} disabled={disabled} readonly={locked}>
 					<Controller.Select
 						options={definition.options}
 						value={selected}
@@ -230,7 +235,6 @@ function ControllerControl({
 		}
 		case 'color': {
 			const color = typeof value === 'string' ? value : null
-			if (readonly) return <ReadonlyRow label={definition.label} value={color ?? '—'} />
 			return (
 				<Controller.ColorRow
 					label={definition.label}
@@ -238,6 +242,7 @@ function ControllerControl({
 					isEmpty={color === null}
 					values={definition.values}
 					disabled={disabled}
+					readonly={readonly}
 					onReset={() => onChange(null)}
 					onChange={onChange}
 				/>
@@ -246,7 +251,6 @@ function ControllerControl({
 		case 'range': {
 			const number = typeof value === 'number' ? value : definition.defaultValue
 			const format = (next: number) => formatRange(next, definition.display)
-			if (readonly) return <ReadonlyRow label={definition.label} value={format(number)} />
 			return (
 				<Controller.Range
 					label={definition.label}
@@ -256,26 +260,20 @@ function ControllerControl({
 					step={definition.step}
 					format={format}
 					disabled={disabled}
+					readonly={readonly}
 					onChange={onChange}
 				/>
 			)
 		}
 		case 'pad': {
 			const point = isControllerPadValue(value) ? value : definition.defaultValue
-			if (readonly) {
-				return (
-					<ReadonlyRow
-						label={definition.label}
-						value={`${Math.round(point.x * 100)}, ${Math.round(point.y * 100)}`}
-					/>
-				)
-			}
 			return (
 				<Controller.Pad
 					aria-label={definition.label}
 					value={point}
 					aspectRatio={padAspectRatio ?? definition.aspectRatio}
 					disabled={disabled}
+					readonly={readonly}
 					onChange={onChange}
 				/>
 			)
@@ -283,9 +281,17 @@ function ControllerControl({
 		case 'asset': {
 			const asset = typeof value === 'string' ? value : null
 			const Source = assetSources?.[definition.source]
-			// 출처 화면이 없으면 읽기 전용이다 — 킷이 목록을 모르므로 대신 그릴 수 있는 것이 없다.
+			// 출처 화면이 없으면 값만 보인다 — 킷이 목록을 모르므로 대신 그릴 수 있는 것이 없다.
+			// ponytail: 출처 화면(도메인 브라우저)은 아직 readonly를 받지 않아 readonly도 값 행으로 둔다.
+			//           출처 계약에 readonly가 생기면 같은 화면에 넘긴다.
 			if (readonly || !Source) {
-				return <ReadonlyRow label={definition.label} value={asset ? '선택됨' : '없음'} />
+				return (
+					<Controller.Row label={definition.label} display>
+						<span className="text-sm text-muted-foreground">
+							{asset ? '선택됨' : '없음'}
+						</span>
+					</Controller.Row>
+				)
 			}
 			return (
 				<Source
@@ -298,37 +304,24 @@ function ControllerControl({
 		}
 		case 'pad-pair': {
 			const pair = isControllerPadPairValue(value) ? value : definition.defaultValue
-			if (readonly) {
-				return (
-					<ReadonlyRow
-						label={definition.label}
-						value={`${formatPoint(pair.a)} / ${formatPoint(pair.b)}`}
-					/>
-				)
-			}
 			return (
 				<Controller.PadPair
 					aria-label={definition.label}
 					value={pair}
 					aspectRatio={padAspectRatio ?? definition.aspectRatio}
 					disabled={disabled}
+					readonly={readonly}
 					onChange={onChange}
 				/>
 			)
 		}
+		default: {
+			// 🔑 kind를 추가하고 그리는 case를 빠뜨리면 여기서 typecheck가 떨어진다 — 조용히 빈 칸이 되지 않게.
+			const _everyKindIsRendered: never = definition
+			void _everyKindIsRendered
+			return null
+		}
 	}
-}
-
-function formatPoint(point: { x: number; y: number }) {
-	return `${Math.round(point.x * 100)}, ${Math.round(point.y * 100)}`
-}
-
-export function ReadonlyRow({ label, value }: { label: string; value: string }) {
-	return (
-		<Controller.Row label={label} readonly>
-			<span className="text-sm text-muted-foreground">{value}</span>
-		</Controller.Row>
-	)
 }
 
 function formatRange(value: number, display?: { unit?: string; precision?: number }) {

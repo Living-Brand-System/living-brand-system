@@ -162,7 +162,7 @@ studio·global·home 같은 표면의 화면 컴포넌트도 위 계약을 그�
 
 `Controller.GroupList`는 세로 그룹 목록의 시작 여백 4px과 그룹 사이 간격 12px을 소유하며 끝 여백은 추가하지 않습니다(Figma `529:24992`). 단일 그룹에도 시작 여백만 적용합니다. `Group`은 높이 36px의 제목과 컨트롤 사이·컨트롤 사이의 간격 6px을 소유하고 배경·구분선·바깥 패딩을 갖지 않습니다. 접으면 제목 아래 간격과 본문이 함께 사라지고 목록 간격은 유지합니다. `attached` 하위 그룹은 부모 본문 간격에 6px을 더해 앞 컨트롤과 12px을 확보합니다. 접기 애니메이션은 포커스 링의 바깥 2px을 자르지 않습니다. 패널 패딩·카드 간격·Compound 내부 간격·오류 문구 간격은 별도 계약이며, 가로 배치용 `Controller.Stack`과 구분합니다.
 
-`Group.active`는 편집 대상과 제목 강조만 연결하며 그룹 배경이나 부모 여백을 바꾸지 않습니다. 패널의 배경·높이·여백은 바깥 레이아웃이, 입력 표면과 포커스 링은 `Row`·`Field`가 소유합니다. 활성화 콜백과 접기 트리거의 구분은 유지합니다. 템플릿의 편집 가능한 텍스트 슬롯은 운영 Studio와 Playground 모두 `Field` 안에 투명한 `Input`·`Textarea`를 놓습니다. 단일 입력을 `Compound`로 감싸거나 입력에 배경을 중복 지정하지 않습니다. readonly는 기존 공통 값 표시 계약을 따릅니다.
+`Group.active`는 편집 대상과 제목 강조만 연결하며 그룹 배경이나 부모 여백을 바꾸지 않습니다. 패널의 배경·높이·여백은 바깥 레이아웃이, 입력 표면과 포커스 링은 `Row`·`Field`가 소유합니다. 활성화 콜백과 접기 트리거의 구분은 유지합니다. 템플릿의 편집 가능한 텍스트 슬롯은 운영 Studio와 Playground 모두 `Field` 안에 투명한 `Input`·`Textarea`를 놓습니다. 단일 입력을 `Compound`로 감싸거나 입력에 배경을 중복 지정하지 않습니다. readonly도 같은 `Field`·입력에 `readonly`만 겁니다(아래 `readonly` 항목).
 
 Runtime Manifest부터 Effective Config, Provider, Artifact, Export까지 이어지는 전체 데이터 흐름은 [Studio](features/studio.md)를 정본으로 삼습니다. 이 절은 Controller의 표현과 상호작용 계약만 설명합니다.
 
@@ -237,7 +237,7 @@ type ControllerAvailability = 'enabled' | 'readonly' | 'disabled'
 type ControllerInteraction = 'idle' | 'hover' | 'focused' | 'error'
 ```
 
-`ControllerAvailability`는 서로 배타적입니다. `enabled`는 조작 가능, `readonly`는 값을 정상 대비로 읽을 수 있지만 변경 불가, `disabled`는 조작·포커스가 모두 불가한 상태입니다. `ControllerInteraction`은 `enabled`일 때만 적용합니다. `idle`은 기본, `hover`는 포인터 진입, `focused`는 포커스 진입, `error`는 검증 실패가 표시된 상태입니다. 시각 상태가 겹치면 `disabled` → `readonly` → `error` → `focused` → `hover` → `idle` 순으로 우선합니다.
+`ControllerAvailability`는 서로 배타적입니다. `enabled`는 조작 가능, `readonly`는 값을 읽을 수 있고 키보드 포커스도 받지만 변경 불가(0.5로 흐리고 포인터·터치 차단), `disabled`는 조작·포커스가 모두 불가한 상태입니다. `ControllerInteraction`은 `enabled`일 때만 적용합니다. `idle`은 기본, `hover`는 포인터 진입, `focused`는 포커스 진입, `error`는 검증 실패가 표시된 상태입니다. 시각 상태가 겹치면 `disabled` → `readonly` → `error` → `focused` → `hover` → `idle` 순으로 우선합니다.
 
 `hover`와 `focused`는 세션 데이터나 Context에 저장하지 않고 각각 CSS `:hover`와 `:focus-visible`/`:focus-within`으로 표현합니다. `error`만 검증 결과에서 명시적으로 전달합니다. 선택(`selected`), 펼침(`open`), 값 없음(`empty`)은 컨트롤별 값 상태이므로 이 두 공통 타입에 합치지 않습니다.
 
@@ -245,11 +245,20 @@ type ControllerInteraction = 'idle' | 'hover' | 'focused' | 'error'
 
 - Definition의 `label`은 직렬화 가능한 `string`입니다. React primitive의 `label`은 아이콘 노드를 받을 수 있지만 접근 가능한 이름(sr-only 텍스트)을 반드시 동반합니다.
 - `Controller.Compound`는 두 개 이상의 컨트롤을 하나의 기능과 표면으로 결합하는 컴포지션입니다. 가로 등분 배치인 Stack과 구분합니다. `label`·`control`(헤더 조작)·`children`(본문)만 받고 값·모드·On/Off 상태는 소비자가 소유합니다. 하나의 muted 표면과 12px 모서리, 36px 헤더, 4px 본문 간격을 제공합니다. 헤더는 `Segmented compact`의 24px 선택 표시를 사용합니다. Color(모드+색 조합/개별 색), Reference Image(토글+첨부), Camera Control(토글+프리뷰+축 선택)이 첫 예시입니다. Type처럼 헤더 조작이 없는 경우 `control`을 생략합니다. `PreviewChips compound`는 기존 preview 좌표와 라디오 동작을 재사용하는 원형 4열이며 라벨은 접근 가능한 이름으로 유지합니다. Position은 기존 Pad를 합성하고 `rounded-controller-pad`를 소비합니다. Definition에 새 kind를 추가하지 않습니다.
-- `Controller.Stack`은 `items` 1~3개를 한 줄의 같은 너비로 배치합니다. 각 항목은 `id`·텍스트 `label`·`icon`·행 내부 컨트롤(`children`)을 제공합니다. 간격은 4px이며 3열 행의 좌우 패딩은 10px입니다. 1~2개는 기본 텍스트 라벨이고 `labelDisplay="icon"`으로 아이콘을 지정할 수 있습니다. 3개는 항상 아이콘만 표시하되 원래 라벨을 sr-only와 툴팁으로 유지합니다. Row의 라벨 연결·readonly·disabled 계약을 재사용하며, 범위를 벗어난 항목 수는 거부합니다. 값과 이벤트는 소비자가 소유합니다.
-- `readonly` — 값은 유효하며 읽혀야 하는 상태. 정상 대비를 유지하고 컨트롤·chevron 없이 값만 보입니다 — `Controller.Row`의 `readonly`(라벨이 span이 되고 자동 배선이 꺼짐) + 값 텍스트 구성으로 표현합니다. opacity로 흐리지 않습니다.
+- `Controller.Stack`은 `items` 1~3개를 한 줄의 같은 너비로 배치합니다. 각 항목은 `id`·텍스트 `label`·`icon`·행 내부 컨트롤(`children`)을 제공합니다. 간격은 4px이며 3열 행의 좌우 패딩은 10px입니다. 1~2개는 기본 텍스트 라벨이고 `labelDisplay="icon"`으로 아이콘을 지정할 수 있습니다. 3개는 항상 아이콘만 표시하되 원래 라벨을 sr-only와 툴팁으로 유지합니다. Row의 라벨 연결·readonly·display·disabled 계약을 재사용하며, 범위를 벗어난 항목 수는 거부합니다. 값과 이벤트는 소비자가 소유합니다.
+- `readonly` (2026-10-14) — 편집 불가 상태. **편집할 때와 같은 컴포넌트에 `readonly: boolean`만 겁니다** — 다른 부품(값 글자 행)으로 갈아타지 않습니다. 갈아타면 배치가 바뀝니다(여러 줄 값이 36px 행을 넘쳐 앞 행을 덮은 실제 사고).
+  - 보임: **표면이 `opacity-50`**이고 포인터·터치 이벤트가 꺼집니다. 흐림·차단은 표면을 가진 쪽이 한 번만 겁니다 — `Row`·`Field`·`Compound`, 그리고 자기 표면을 그리는 `Range`·`Pad`·`PadPair`. 위젯도 이 계약을 따릅니다: availability를 `!== 'enabled'` 하나로 뭉쳐 disabled로 넘기지 않고, `disabled`와 `readonly`를 나눠 넘깁니다. 안쪽 컨트롤은 흐리지 않습니다(겹치면 0.25가 된다).
+  - 🔴 `Row`·`Field`는 포인터를 **자식에서만** 끕니다(`*:pointer-events-none`). 표면 자신까지 끄면 Manager mode의 보임 판정(`elementsFromPoint`)이 그 칸을 건너뛰어 readonly 칸을 관리할 수 없습니다.
+  - 동작: 값이 바뀌지 않습니다. 키보드 포커스와 읽기는 남습니다(disabled와 다른 점). 입력은 `readOnly`, Select는 열리지 않음, 칩·세그먼트·스와치는 누름을 버림, 색 입력은 피커를 여는 클릭·키를 막음, 범위·패드는 끌기·화살표를 무시, 초기화·행 추가 같은 편집 동작은 숨기거나 막습니다.
+  - 배선: 모든 킷 컨트롤이 `readonly` prop을 받고, 없으면 `Row`·`Field` 컨텍스트를 따릅니다(`disabled`와 같은 모양). 렌더러는 `availability === 'readonly'`와 「선택지가 하나뿐」을 같은 컨트롤의 `readonly`로 넘깁니다.
+  - 예외: `asset`은 출처 화면(도메인 브라우저)이 아직 `readonly`를 받지 않아 값 행으로 둡니다.
+- `display` — 컨트롤이 아니라 **값만 보여 주는 행**(계정 이메일·발급 시각·출력 크기). 라벨이 span이 되고 흐리지 않습니다. 편집 상태가 아니므로 `readonly`와 섞지 않습니다.
 - `disabled` — 조정 자체가 불가한 상태(어드민 고정 등). 행 전체 흐림(opacity-50 관례) + 포인터·포커스 차단(안의 킷 컨트롤은 컨텍스트로 함께 비활성). readonly와 절대 혼용하지 않습니다.
 
 리프 컨트롤 8종 — 값 형태와 제약은 종류(kind)가 소유합니다:
+
+- **kind를 새로 만드는 기준은 값 모양입니다(2026-10-14).** 값 모양이 다를 때만 kind를 만듭니다. 생김새만 다르면 렌더러·위젯에서(`variant`, 선택지의 `colors`·`preview`), 검사 규칙만 다르면 kind의 제약에서 다룹니다 — 텍스트 입력 형식(자유·숫자·이메일·날짜)이 제약의 예입니다.
+- **kind를 추가하면 `pnpm typecheck`가 고칠 곳을 전부 알려 줍니다.** 값 모양 검사·어드민 제한 적용·정의 파싱(`controller-definition.ts`), 렌더러(`controller-renderer/control.tsx`), 어드민 기본값 편집기(`studio-controller-restrictions-field.tsx`) 다섯 곳이 kind 분기 끝에 `never` 검사를 둡니다. 새 kind 분기를 만들 때도 같은 검사를 둡니다.
 
 | kind | value | 종류별 제약·부속 | 킷 대응 |
 | --- | --- | --- | --- |

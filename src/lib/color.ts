@@ -18,6 +18,20 @@ export function hexToRgb(hex: string): Rgb {
 	}
 }
 
+/**
+ * 저장·계약 검증용 색 — `#rrggbb`만 받는다. 컬렉션·노드 설정·컨트롤러 정의·그래픽 런타임 입력이 이것을 쓴다.
+ * zod에는 `.regex(HEX_COLOR_PATTERN)`으로 건다.
+ */
+export const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i
+
+export function isHexColor(value: string): boolean {
+	return HEX_COLOR_PATTERN.test(value)
+}
+
+/**
+ * 읽기용 너그러운 판정 — `#`이 없어도 받는다. 예전에 `#` 없이 저장됐을 수 있는 브랜드 색을 읽어
+ * 팔레트에서 빠뜨리지 않으려는 자리에서만 쓴다. 값을 검증할 때는 `isHexColor`를 쓴다.
+ */
 export function isValidHex(hex: string): boolean {
 	return /^#?[0-9a-fA-F]{6}$/.test(hex)
 }

@@ -10,6 +10,12 @@ describe('templateSessionPatchSchema', () => {
 		expect(parsed.success).toBe(true)
 	})
 
+	it('이미지 프롬프트는 생성 상한(500자)까지만 받는다 — 넘기면 생성 라우트에서 거부된다', () => {
+		const prompt = (length: number) => ({ images: { slot: { prompt: 'a'.repeat(length) } } })
+		expect(templateSessionPatchSchema.safeParse(prompt(500)).success).toBe(true)
+		expect(templateSessionPatchSchema.safeParse(prompt(501)).success).toBe(false)
+	})
+
 	it('null 색을 허용한다 — 저작 색으로 되돌리는 값이다', () => {
 		expect(templateSessionPatchSchema.safeParse({ textColor: null }).success).toBe(true)
 		expect(templateSessionPatchSchema.safeParse({ background: { color: null } }).success).toBe(

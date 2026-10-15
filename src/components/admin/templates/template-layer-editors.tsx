@@ -7,6 +7,11 @@ import {
 	type ImageProfileOption,
 	requestPublishedImageProfiles,
 } from '@/features/image-generation/services/generate-image.client'
+import {
+	cleanSlotText,
+	parseSlotCount,
+} from '@/features/template-customization/domain/text-slot-draft'
+import { TEXT_FORMAT_OPTIONS } from '@/modules/studio-controller/text-formats'
 import type { TemplateLayerAccess, TemplateNodeConfig, TemplateSlotSpec } from '@/types/template'
 import {
 	canAssignImage,
@@ -103,10 +108,14 @@ function SlotSpecEditor({
 	onChange: (input: TemplateSlotSpec) => void
 }) {
 	const patch = (part: Partial<TemplateSlotSpec>) => onChange({ ...input, ...part })
-	const positiveInt = (raw: string) => {
-		const parsed = Number.parseInt(raw, 10)
-		return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
+	// Manager mode 폼과 같은 규칙(text-slot-draft) — 정수가 아니면 반영하지 않고(1.5를 1로 자르지 않는다),
+	// 글자 칸은 입력 중엔 그대로 두고 떠날 때 공백을 걷는다(키마다 걷으면 단어 사이 공백을 칠 수 없다).
+	const count = (key: 'maxLength' | 'maxLines') => (raw: string) => {
+		const next = parseSlotCount(raw)
+		if (next !== null) patch({ [key]: next })
 	}
+	const tidy = (key: 'label' | 'placeholder' | 'aiInstruction') => (raw: string) =>
+		patch({ [key]: cleanSlotText(raw) })
 
 	return (
 		<Controller.Group title="세부 설정" collapsible={false} trailing={layerTypeTag('텍스트')}>
@@ -116,6 +125,7 @@ function SlotSpecEditor({
 					<Controller.Input
 						value={input.label ?? ''}
 						onChange={(event) => patch({ label: event.target.value || undefined })}
+						onBlur={(event) => tidy('label')(event.target.value)}
 						placeholder="예: 영문 이름"
 					/>
 				</Controller.Row>
@@ -125,17 +135,13 @@ function SlotSpecEditor({
 						onChange={(event) =>
 							patch({ placeholder: event.target.value || undefined })
 						}
+						onBlur={(event) => tidy('placeholder')(event.target.value)}
 						placeholder="입력 전 안내 문구"
 					/>
 				</Controller.Row>
 				<Controller.Row label="형식">
 					<Controller.Select
-						options={[
-							{ value: 'free', label: '자유 텍스트' },
-							{ value: 'number', label: '숫자' },
-							{ value: 'email', label: '이메일' },
-							{ value: 'date', label: '날짜' },
-						]}
+						options={TEXT_FORMAT_OPTIONS}
 						value={input.inputFormat ?? 'free'}
 						onChange={(value) =>
 							patch({ inputFormat: value as TemplateSlotSpec['inputFormat'] })
@@ -147,7 +153,7 @@ function SlotSpecEditor({
 						type="number"
 						min={1}
 						value={input.maxLength ?? ''}
-						onChange={(event) => patch({ maxLength: positiveInt(event.target.value) })}
+						onChange={(event) => count('maxLength')(event.target.value)}
 						placeholder="없음"
 					/>
 				</Controller.Row>
@@ -156,7 +162,7 @@ function SlotSpecEditor({
 						type="number"
 						min={1}
 						value={input.maxLines ?? ''}
-						onChange={(event) => patch({ maxLines: positiveInt(event.target.value) })}
+						onChange={(event) => count('maxLines')(event.target.value)}
 						placeholder="없음"
 					/>
 				</Controller.Row>
@@ -165,6 +171,7 @@ function SlotSpecEditor({
 				<Controller.Textarea
 					value={input.aiInstruction ?? ''}
 					onChange={(event) => patch({ aiInstruction: event.target.value || undefined })}
+					onBlur={(event) => tidy('aiInstruction')(event.target.value)}
 					rows={2}
 					placeholder="예: 영문 이름만, 성-이름 순"
 				/>

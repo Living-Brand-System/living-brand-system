@@ -2,7 +2,7 @@
 
 import { type ReactNode, useId, useMemo, useRef, useState } from 'react'
 import { parseLayers } from '@/components/admin/templates/template-layers'
-import { LayerAccessToggle } from '@/components/studio/template/manager-forms/layer-access-toggle'
+import { useOptimisticAccess } from '@/components/studio/template/manager-forms/layer-access-toggle'
 import {
 	updateTemplateLayerAccess,
 	updateTemplateNodeConfig,
@@ -23,14 +23,18 @@ import { Typography } from '@/components/ui/typography'
 import { partitionTemplateSlots } from '@/features/template-customization/domain/template-studio-config'
 import {
 	applyTextSlotDraft,
-	TEXT_INPUT_FORMATS,
 	TEXT_LAYER_ROLES,
 	type TextSlotDraft,
 	toTextSlotDraft,
 } from '@/features/template-customization/domain/text-slot-draft'
 import { useTemplateManagerData } from '@/features/template-customization/hooks/use-template-manager-data'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
-import type { TemplateNodeConfig, TemplateNodeConfigMap } from '@/types/template'
+import { TEXT_FORMAT_OPTIONS } from '@/modules/studio-controller/text-formats'
+import type {
+	TemplateLayerAccess,
+	TemplateNodeConfig,
+	TemplateNodeConfigMap,
+} from '@/types/template'
 
 type TextSource = { baseHtml?: string | null; overrides?: TemplateNodeConfigMap | null }
 const TEXT_SOURCE_FIELDS = ['baseHtml', 'overrides'] as const
@@ -60,6 +64,10 @@ export function TemplateTextManagerForm({ nodeId }: { nodeId: string }) {
 	const slot = partitionTemplateSlots(config.template.slots).text.find(
 		(item) => item.id === nodeId,
 	)
+	// 누른 권한은 저장을 기다리지 않고 바로 보인다 — 실패하면 되돌린다(`useOptimisticAccess`, Layers 폼과 같다).
+	const access = useOptimisticAccess(slot?.access ?? 'editable', source.busy, (next) =>
+		source.save(() => updateTemplateLayerAccess(config.id, nodeId, next, 'input')),
+	)
 	if (!slot) return null
 	return (
 		<div className="flex flex-col gap-4">
@@ -72,23 +80,26 @@ export function TemplateTextManagerForm({ nodeId }: { nodeId: string }) {
 					access={
 						<Field className="gap-1.5">
 							<FieldTitle>권한</FieldTitle>
-							<LayerAccessToggle
-								label={`${slot.label}: 권한`}
-								access={slot.access}
-								busy={source.busy}
-								onChange={(access) =>
-									source.save(() =>
-										updateTemplateLayerAccess(
-											config.id,
-											nodeId,
-											access,
-											'input',
-										),
-									)
+							{/* 숨김은 없다 — 숨기기·되살리기는 Layers 묶음 패널이 한다(사용자 2026-10-14). */}
+							<ToggleGroup
+								type="single"
+								variant="outline"
+								size="sm"
+								spacing={0}
+								value={access.shown}
+								onValueChange={(value) =>
+									value && access.press(value as TemplateLayerAccess)
 								}
-								withAiReview
-								withHidden={false}
-							/>
+								aria-label={`${slot.label}: 권한`}
+								className="w-full flex-wrap"
+							>
+								<ToggleGroupItem value="readonly">값 고정</ToggleGroupItem>
+								<ToggleGroupItem value="editable">입력 가능</ToggleGroupItem>
+								{/* ponytail: 자리만 — 저장할 값도, 입력 단계 검수 흐름도 아직 없다. */}
+								<ToggleGroupItem value="ai-review" disabled>
+									AI 검수 후 입력
+								</ToggleGroupItem>
+							</ToggleGroup>
 						</Field>
 					}
 					onSave={(draft) =>
@@ -191,7 +202,7 @@ function TextSlotFields({
 					aria-labelledby={`${id}-format`}
 					className="w-full"
 				>
-					{TEXT_INPUT_FORMATS.map((format) => (
+					{TEXT_FORMAT_OPTIONS.map((format) => (
 						<ToggleGroupItem key={format.value} value={format.value}>
 							{format.label}
 						</ToggleGroupItem>

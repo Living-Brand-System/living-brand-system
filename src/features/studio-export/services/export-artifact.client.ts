@@ -1,6 +1,7 @@
 'use client'
 
 import { toCanvas } from 'html-to-image'
+import type { PrintExportFormat } from '@/features/studio-export/print-policy'
 import type {
 	BlobOriginalSource,
 	CanvasVideoSource,
@@ -231,7 +232,7 @@ export async function exportRasterArtifactAsJpeg(
 export async function exportRasterArtifactAsPrint(
 	fileName: string,
 	artifact: RasterArtifact,
-	request: Extract<ExportRequest, { artifact: 'raster'; format: 'tiff' | 'pdf' }>,
+	request: Extract<ExportRequest, { artifact: 'raster'; format: PrintExportFormat }>,
 	renderSize?: { width: number; height: number },
 ): Promise<ExportResult> {
 	const data = await requestPrintExport({

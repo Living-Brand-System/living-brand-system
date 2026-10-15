@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import * as fontkit from 'fontkit'
+import { z } from 'zod'
 
 /**
  * 글자를 윤곽선 path로 바꾼다. 인쇄용 벡터 내보내기가 서체 설치에 의존하지 않게 하는 단계다.
@@ -44,14 +45,20 @@ const FONT_FAMILIES: Record<string, FontFamily> = {
 /** 가변 서체에서 기본 굵기로부터 이만큼 벗어나면 아웃라인하지 않는다. */
 const VARIABLE_WEIGHT_TOLERANCE = 50
 
-export type OutlineTextRun = {
-	text: string
+/** 한 판의 글줄 수·글줄 하나의 글자 수 상한 — 넘으면 템플릿이 아니라 잘못된 호출이다. ci-outline 라우트도 같은 값을 쓴다. */
+export const OUTLINE_MAX_RUNS = 500
+export const OUTLINE_TEXT_MAX_LENGTH = 2_000
+
+/** 글줄 하나 — 아웃라인 라우트의 검증과 이 서비스의 입력이 이 스키마 하나에서 나온다. */
+export const outlineTextRunSchema = z.object({
+	text: z.string().min(1).max(OUTLINE_TEXT_MAX_LENGTH),
 	/** CSS `font-family` 값 그대로. 목록이면 우리가 가진 첫 서체를 쓴다. */
-	fontFamily: string
-	fontSize: number
-	fontWeight?: number
-	letterSpacing?: number
-}
+	fontFamily: z.string().min(1).max(200),
+	fontSize: z.number().positive().max(2_000),
+	fontWeight: z.number().min(1).max(1_000).optional(),
+	letterSpacing: z.number().min(-100).max(100).optional(),
+})
+export type OutlineTextRun = z.infer<typeof outlineTextRunSchema>
 
 /**
  * 🔴 못 할 때 다른 서체로 대신 그리지 않는다. 인쇄물이 조용히 다른 서체로 나가는 것보다,

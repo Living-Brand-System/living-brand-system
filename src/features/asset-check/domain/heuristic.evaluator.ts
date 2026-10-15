@@ -6,11 +6,12 @@
 import { z } from 'zod'
 import type { AiCheckResult, HeuristicCriterion } from '@/features/asset-check/checkers/types'
 import { needsReview } from '@/features/asset-check/domain/needs-review'
+import { OBSERVATION_VALUES } from './heuristic-criterion'
 
 // 길이 상한·숫자 범위 제약은 structured output 문법 컴파일 크기를 폭발시켜 뺀다.
 // 길이·범위 안내는 프롬프트가 담당하고, 판정은 value(enum·숫자)만 사용한다.
 export const presenceObservationSchema = z.strictObject({
-	value: z.enum(['present', 'absent', 'uncertain', 'not_applicable']),
+	value: z.enum(OBSERVATION_VALUES),
 	confidence: z.number(),
 	reason: z.string().min(1),
 })

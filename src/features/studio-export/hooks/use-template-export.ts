@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useState } from 'react'
+import { isPrintExportFormat } from '@/features/studio-export/print-policy'
 import type {
 	TemplateRasterArtifactProducer,
 	TemplateVectorArtifactResult,
@@ -330,7 +331,7 @@ export function useTemplateExport({
 			ppiApplies &&
 			effectivePpi !== null &&
 			printPpiOptions.length > 0 &&
-			(printSize || format === 'tiff' || format === 'pdf' || format === 'svg')
+			(printSize || isPrintExportFormat(format) || format === 'svg')
 				? {
 						ppi: effectivePpi,
 						/** 창작자가 고를 수 있는 해상도. 인쇄판은 브라우저가 그릴 수 있는 것만 남는다. */

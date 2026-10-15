@@ -1,3 +1,4 @@
+import { isHexColor } from '@/lib/color'
 import {
 	parseStudioArtifactCapabilities,
 	type StudioArtifactCapabilities,
@@ -280,7 +281,6 @@ export type ControllerValues = Record<string, ControllerControlValue>
 
 const STUDIO_KINDS: readonly StudioKind[] = ['template', 'image', 'graphic', 'graph']
 const AVAILABILITIES: readonly ControllerAvailability[] = ['enabled', 'readonly', 'disabled']
-const COLOR_PATTERN = /^#[0-9a-f]{6}$/i
 const CONTROL_BASE_KEYS = [
 	'id',
 	'kind',
@@ -601,7 +601,7 @@ function isControllerValueShape(
 			)
 		case 'color':
 			if (value === null) return true
-			if (typeof value !== 'string' || !COLOR_PATTERN.test(value)) return false
+			if (typeof value !== 'string' || !isHexColor(value)) return false
 			// 팔레트가 정해진 control은 목록 밖 색을 받지 않는다 — select가 options 밖 값을 막는 것과 같다.
 			return !control.values || control.values.includes(value.toLowerCase())
 		case 'range':
@@ -683,7 +683,9 @@ function validateControl(value: unknown, path: string) {
 		invalid(`${path}.availability`, '지원하지 않는 값입니다.')
 	}
 
-	switch (control.kind) {
+	// 🔑 kind로 좁혀 분기한다 — kind를 추가하고 여기 case를 빠뜨리면 default의 never 검사가 typecheck에서 떨어진다.
+	const kind = control.kind as ControllerControlDefinition['kind']
+	switch (kind) {
 		case 'text':
 			assertOnlyKeys(
 				control,
@@ -798,7 +800,7 @@ function validateControl(value: unknown, path: string) {
 		case 'color': {
 			assertOnlyKeys(control, [...CONTROL_BASE_KEYS, 'values'], path)
 			assertNullableString(control.defaultValue, `${path}.defaultValue`)
-			if (control.defaultValue !== null && !COLOR_PATTERN.test(control.defaultValue)) {
+			if (control.defaultValue !== null && !isHexColor(control.defaultValue)) {
 				invalid(`${path}.defaultValue`, '#rrggbb 형식이어야 합니다.')
 			}
 			if (control.values !== undefined) {
@@ -862,8 +864,11 @@ function validateControl(value: unknown, path: string) {
 			assertPadAspectRatio(control.aspectRatio, path)
 			return
 		}
-		default:
+		default: {
+			const _everyKindIsParsed: never = kind
+			void _everyKindIsParsed
 			invalid(`${path}.kind`, '지원하지 않는 값입니다.')
+		}
 	}
 }
 
@@ -1388,7 +1393,7 @@ function assertColorValues(value: unknown, path: string): ReadonlySet<string> {
 	const values = new Set<string>()
 	for (const [index, item] of value.entries()) {
 		assertNonEmptyString(item, `${path}[${index}]`)
-		if (!COLOR_PATTERN.test(item)) invalid(`${path}[${index}]`, '#rrggbb 형식이어야 합니다.')
+		if (!isHexColor(item)) invalid(`${path}[${index}]`, '#rrggbb 형식이어야 합니다.')
 		const normalized = item.toLowerCase()
 		if (values.has(normalized)) invalid(`${path}[${index}]`, '중복되었습니다.')
 		values.add(normalized)

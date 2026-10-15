@@ -26,11 +26,11 @@ import {
 } from '@/features/template-customization/hooks/use-template-record'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import type { TemplateRecord } from '@/features/template-customization/services/template-records.client'
+// 서버 slug 검증과 같은 규칙 — 초안은 서버 검증을 건너뛰어 여기서 먼저 막는다.
+import { SLUG_PATTERN } from '@/lib/slug'
 
 const adminTemplateHref = (templateId: number) => `/admin/collections/templates/${templateId}`
 
-/** 서버 slug 검증(`url-slug-field.ts`)과 같은 모양 — 초안은 서버 검증을 건너뛰어 여기서 먼저 막는다. */
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 /**
  * 선택 카드 제목의 관리 폼(`name:`) — 템플릿 이름·주소·설명. 칸을 벗어날 때 초안에 쌓는다.

@@ -26,11 +26,13 @@ export function ColorwayWidget(props: ControllerWidgetProps) {
 			: []
 	if (!colorway || !swatches.length) return <ColorRows {...props} />
 	const current = swatches.find((swatch) => swatch.id === values[colorway.id])
+	const availability = resolveControlAvailability(colorway, bindings?.[colorway.id])
 	return (
 		<StudioColorCompound
 			allowCustom={false}
 			swatches={swatches}
-			disabled={resolveControlAvailability(colorway, bindings?.[colorway.id]) !== 'enabled'}
+			disabled={availability === 'disabled'}
+			readonly={availability === 'readonly'}
 			value={{
 				colorMode: 'swatch',
 				swatch: current?.id ?? '',

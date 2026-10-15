@@ -25,6 +25,7 @@ import { useTemplateAuthoringHandoff } from '@/features/template-customization/p
 import { createTemplateRasterArtifact } from '@/features/template-customization/runtime/template-runtime.client'
 import { getStudioTemplateRoute } from '@/lib/routes'
 import { createControllerValues } from '@/modules/studio-controller/controller-definition'
+import { textFormatOf } from '@/modules/studio-controller/text-formats'
 
 /**
  * 아직 생성되지 않은 이미지 슬롯을 미리보기에서 **비워 보이게** 만드는 CSS.
@@ -65,11 +66,12 @@ export function AgentChatTemplateAttachment({ attachment }: AgentChatTemplateAtt
 				Object.fromEntries(
 					Object.entries(attachment.patch.text ?? {}).map(([nodeId, text]) => [
 						nodeId,
-						{ text },
+						// 스튜디오 캔버스와 같은 출력 계약 — 패치는 원값, 미리보기는 형식의 표기.
+						{ text: textFormatOf(attachment.textFormats?.[nodeId]).toText(text) },
 					]),
 				),
 			),
-		[attachment.html, attachment.patch.text],
+		[attachment.html, attachment.patch.text, attachment.textFormats],
 	)
 	const exportMetadata: TemplateExportMetadata = {
 		fileName: attachment.name,

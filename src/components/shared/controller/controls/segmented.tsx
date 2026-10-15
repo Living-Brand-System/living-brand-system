@@ -25,6 +25,8 @@ type ControllerSegmentedProps<T extends string> = {
 	'aria-label': string
 	/** 어드민 고정 값 — 포커스·조작이 막힌다. Row 안에서는 행의 disabled를 자동으로 따른다. */
 	disabled?: boolean
+	/** 편집 불가 — 눌러도 값이 바뀌지 않는다. Row 안에서는 행을 따른다. */
+	readonly?: boolean
 	/** 컴파운드 헤더의 24px 알약형 선택 표시. */
 	compact?: boolean
 }
@@ -44,10 +46,12 @@ export function ControllerSegmented<T extends string>({
 	onChange,
 	'aria-label': ariaLabel,
 	disabled,
+	readonly,
 	compact = false,
 }: ControllerSegmentedProps<T>) {
 	const row = useRowControl()
 	const resolvedDisabled = disabled ?? row?.disabled
+	const locked = readonly ?? row?.readonly
 	const groupRef = React.useRef<HTMLDivElement>(null)
 	const [pill, setPill] = React.useState<{ left: number; width: number } | null>(null)
 	const transition = useMotionTransition('indicator')
@@ -69,7 +73,7 @@ export function ControllerSegmented<T extends string>({
 					type="single"
 					value={value}
 					// 세그먼트는 항상 하나가 선택돼 있다 — 같은 칩 재클릭(빈 값)은 무시.
-					onValueChange={(next) => next && onChange(next as T)}
+					onValueChange={(next) => next && !locked && onChange(next as T)}
 					aria-label={ariaLabel}
 					disabled={resolvedDisabled}
 					spacing={0}

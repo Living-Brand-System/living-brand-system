@@ -17,6 +17,8 @@ type ControllerPreviewChipsProps = {
 	value?: string
 	onChange?: (value: string) => void
 	disabled?: boolean
+	/** 편집 불가 — 표면이 0.5로 흐려지고 칩을 눌러도 값이 바뀌지 않는다. */
+	readonly?: boolean
 	/** Type 컴파운드의 원형 썸네일 4열. */
 	compound?: boolean
 }
@@ -36,6 +38,7 @@ export function ControllerPreviewChips({
 	value,
 	onChange,
 	disabled,
+	readonly,
 	compound = false,
 }: ControllerPreviewChipsProps) {
 	// 🔴 라벨이 가리키는 것은 첫 칩이 아니라 묶음이다 — 첫 라디오를 가리키면 라벨 클릭이
@@ -43,7 +46,7 @@ export function ControllerPreviewChips({
 	const groupId = useId()
 	if (compound) {
 		return (
-			<ControllerCompound label={label}>
+			<ControllerCompound label={label} readonly={readonly}>
 				<div className="px-3 pt-2 pb-3">
 					<ChipGrid
 						label={label}
@@ -52,6 +55,7 @@ export function ControllerPreviewChips({
 						onChange={onChange}
 						groupName={groupId}
 						disabled={disabled}
+						readonly={readonly}
 						compound
 					/>
 				</div>
@@ -59,7 +63,7 @@ export function ControllerPreviewChips({
 		)
 	}
 	return (
-		<ControllerField label={label} htmlFor={groupId} disabled={disabled}>
+		<ControllerField label={label} htmlFor={groupId} disabled={disabled} readonly={readonly}>
 			<PreviewChipGrid label={label} options={options} value={value} onChange={onChange} />
 		</ControllerField>
 	)
@@ -97,6 +101,7 @@ function PreviewChipGrid({
 							onChange={onChange}
 							groupName={groupName}
 							disabled={row?.disabled}
+							readonly={row?.readonly}
 						/>
 					</div>
 				))}
@@ -111,6 +116,7 @@ function PreviewChipGrid({
 			onChange={onChange}
 			groupName={groupName}
 			disabled={row?.disabled}
+			readonly={row?.readonly}
 			id={row?.controlId}
 		/>
 	)
@@ -123,11 +129,13 @@ function ChipGrid({
 	onChange,
 	groupName,
 	disabled,
+	readonly,
 	id,
 	compound = false,
 }: Pick<ControllerPreviewChipsProps, 'label' | 'options' | 'value' | 'onChange'> & {
 	groupName: string
 	disabled?: boolean
+	readonly?: boolean
 	id?: string
 	compound?: boolean
 }) {
@@ -139,6 +147,7 @@ function ChipGrid({
 			id={id}
 			role="radiogroup"
 			aria-label={label}
+			aria-readonly={readonly || undefined}
 			// 선택지가 많으면 2열은 스크롤이 된다 — 한 눈에 다 보이는 것이 이 칩의 존재 이유다.
 			className={cn(
 				'grid gap-1.5',
@@ -170,7 +179,7 @@ function ChipGrid({
 							className="sr-only"
 							checked={current}
 							disabled={disabled || undefined}
-							onChange={() => onChange?.(option.value)}
+							onChange={() => !readonly && onChange?.(option.value)}
 						/>
 						<PreviewGlyph shapes={option.preview ?? []} compound={compound} />
 						<span

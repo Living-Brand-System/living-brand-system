@@ -40,6 +40,8 @@ type ControllerDataGridProps = {
 	/** 열 제목. 없으면 첫 행이 곧 데이터라 제목 줄을 세우지 않는다. */
 	columnLabels?: readonly string[]
 	addRowLabel?: string
+	/** 편집 불가 — 칸은 읽기 전용, 행 추가·삭제는 막힌다. Field 안에서는 필드를 따른다. */
+	readonly?: boolean
 }
 
 export function ControllerDataGrid({
@@ -47,12 +49,14 @@ export function ControllerDataGrid({
 	onChange,
 	columnLabels,
 	addRowLabel = '행 추가',
+	readonly,
 }: ControllerDataGridProps) {
 	const row = useRowControl()
 	const rows = parseGrid(value)
 	// 가장 긴 줄이 열 수를 정한다 — 짧은 줄은 빈 칸으로 채워 격자가 어긋나지 않게 한다.
 	const columns = Math.max(1, columnLabels?.length ?? 0, ...rows.map((cells) => cells.length))
 	const disabled = row?.disabled || undefined
+	const locked = readonly ?? row?.readonly
 	const track = `repeat(${columns}, minmax(${MIN_CELL}, 1fr))`
 
 	const write = (next: string[][]) => onChange(formatGrid(next))
@@ -93,6 +97,7 @@ export function ControllerDataGrid({
 								key={column}
 								value={cells[column] ?? ''}
 								disabled={disabled}
+								readOnly={locked}
 								aria-label={`${rowIndex + 1}행 ${columnLabels?.[column] ?? `${column + 1}열`}`}
 								className={cn(
 									BARE_INPUT,
@@ -108,7 +113,7 @@ export function ControllerDataGrid({
 						))}
 						<ControllerAction
 							aria-label={`${rowIndex + 1}행 삭제`}
-							disabled={disabled}
+							disabled={disabled || locked}
 							onClick={() => write(rows.filter((_, index) => index !== rowIndex))}
 						>
 							<TrashCan aria-hidden />
@@ -118,7 +123,7 @@ export function ControllerDataGrid({
 			</div>
 			<button
 				type="button"
-				disabled={disabled}
+				disabled={disabled || locked}
 				className={cn(
 					'mt-0.5 flex h-7 items-center justify-center gap-1 rounded-md border border-border border-dashed text-muted-foreground text-xs',
 					'hover:bg-muted/60 disabled:pointer-events-none disabled:opacity-50',

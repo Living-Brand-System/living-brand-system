@@ -56,14 +56,12 @@ it.each(['readonly', 'disabled'] as const)('%s 입력은 값을 바꾸지 않는
 			onChange={onChange}
 		/>,
 	)
-	if (availability === 'readonly') {
-		expect(screen.queryByRole('textbox')).toBeNull()
-		expect(screen.getByText('고정 제목')).toBeInTheDocument()
-	} else {
-		const input = screen.getByRole('textbox', { name: '제목' })
-		expect(input).toBeDisabled()
-		fireEvent.change(input, { target: { value: '변경' } })
-	}
+	// readonly도 같은 입력이다 — 부품을 갈아타지 않고 편집만 막는다(배치가 그대로다).
+	const input = screen.getByRole('textbox', { name: '제목' })
+	expect(input).toHaveValue('고정 제목')
+	if (availability === 'readonly') expect(input).toHaveAttribute('readonly')
+	else expect(input).toBeDisabled()
+	fireEvent.change(input, { target: { value: '변경' } })
 	expect(onChange).not.toHaveBeenCalled()
 })
 
@@ -77,4 +75,26 @@ it('이메일 형식 오류를 유지한다', () => {
 		/>,
 	)
 	expect(screen.getByRole('alert')).toHaveTextContent('이메일 형식이 아니에요.')
+})
+
+it('날짜 칸은 날짜 선택기이고, ISO가 아닌 기본 문구는 오류가 아니다', () => {
+	const { container, rerender } = render(
+		<TextSlotInput
+			definition={{ ...definition, defaultValue: 'December 2025' }}
+			input={{ format: 'date' }}
+			value="December 2025"
+			onChange={() => {}}
+		/>,
+	)
+	expect(container.querySelector('input')).toHaveAttribute('type', 'date')
+	expect(screen.queryByRole('alert')).toBeNull()
+	rerender(
+		<TextSlotInput
+			definition={{ ...definition, defaultValue: 'December 2025' }}
+			input={{ format: 'date' }}
+			value="2026-02-30"
+			onChange={() => {}}
+		/>,
+	)
+	expect(screen.getByRole('alert')).toHaveTextContent('날짜 형식이 아니에요.')
 })

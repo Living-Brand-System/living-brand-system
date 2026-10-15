@@ -30,7 +30,7 @@ const MANAGER_PASSTHROUGH_ATTRIBUTE = 'data-manager-passthrough'
  * 폼은 원본 컨트롤러 밖에 놓이고 종류(`<종류>:`)로만 짝지어진다. 폼이 CMS(Payload)를 고친다.
  */
 export type ManagerForm = {
-	/** 제목 — 「편집 권한」. 한 종류에 여러 폼이 섞이면(`control:`) 열쇠로 고른다. */
+	/** 제목 — 「편집 권한」. 비우면 칸 이름만 쓴다. 한 종류에 여러 폼이 섞이면(`control:`) 열쇠로 고른다. */
 	title: string | ((key: string) => string)
 	render: (key: string) => ReactNode
 	/**
@@ -66,7 +66,8 @@ type ManagerTarget = {
 const FRAME = 6
 /** 원본 자리 안쪽 가장자리의 흰 테두리 두께(사용자 2026-10-14). */
 const RIM = 2
-const EXTENSION_WIDTH = 320
+/** 새 패널 폭(Figma 659:9297). */
+const EXTENSION_WIDTH = 280
 /**
  * 테두리 바깥에서 새 패널까지의 거리 — 요소를 담은 패널 padding의 절반(사용자 2026-10-14). 바깥 방향에 padding이 있는
  * 첫 조상이 그 패널이다. 요소마다 한 번만 잰다(매 프레임 getComputedStyle을 부르지 않게). 못 찾으면 0이라 바로 붙는다.
@@ -228,7 +229,8 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 				const form = forms[kind]
 				if (!form) return null
 				const formTitle = typeof form.title === 'function' ? form.title(key) : form.title
-				const title = panel.label ? `${panel.label} · ${formTitle}` : formTitle
+				// 폼 제목이 비면 칸 이름만 쓴다(텍스트 칸 — Figma 659:9297).
+				const title = [panel.label, formTitle].filter(Boolean).join(' · ')
 				return (
 					<div key={panel.id}>
 						{/* 키보드로도 고를 수 있게 테두리 윗변에 버튼을 둔다(마우스는 테두리 어디를 눌러도 된다). */}
@@ -264,7 +266,7 @@ export function ManagerOverlay({ forms }: { forms: ManagerFormRegistry }) {
 											: { ...prev, [panel.id]: next },
 									)
 								}
-								onClose={() => manager.select(panel.id)}
+								onClose={manager.close}
 							>
 								{form.render(key)}
 							</ManagerExtension>
@@ -319,7 +321,7 @@ function ManagerExtension({
 				onClose()
 			}}
 			// 흰 테두리 위라 밝은 토큰으로 그린다(선택 카드와 같은 `light` 범위).
-			className="light pointer-events-auto absolute flex flex-col gap-4 overflow-y-auto p-5 text-foreground"
+			className="light pointer-events-auto absolute flex flex-col gap-4 overflow-y-auto p-3 text-foreground"
 			style={{ ...style, maxHeight: `max(12rem, calc(100dvh - ${style.top}px - 1rem))` }}
 		>
 			<header className="flex items-center justify-between gap-2">

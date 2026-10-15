@@ -267,7 +267,7 @@ function AllowedList<T extends string | number>({
 
 function linksFor(
 	focus: BackgroundPolicyFocus | undefined,
-	mode: 'image' | 'graphic' | 'color' | undefined,
+	mode: TemplateBackgroundType | undefined,
 	state: { profileId?: number; graphicConfigId?: string },
 ): ManagerLink[] {
 	if (!focus) {

@@ -1,14 +1,8 @@
 import { slugField } from 'payload'
+import { SLUG_PATTERN, toSlug } from '@/lib/slug'
 
-/** 영문 소문자·숫자만 남기고 나머지 연속 구간은 하이픈 하나로 — 한글만 있으면 빈 값이다. */
-export const toUrlSlug = (value: unknown): string =>
-	typeof value === 'string'
-		? value
-				.trim()
-				.toLowerCase()
-				.replace(/[^a-z0-9]+/g, '-')
-				.replace(/^-+|-+$/g, '')
-		: ''
+/** 영문 소문자·숫자만 남기고 나머지 연속 구간은 하이픈 하나로 — 규칙은 lib/slug가 소유한다. */
+export const toUrlSlug = toSlug
 
 /**
  * 주소로 쓰는 slug — 영문 소문자·숫자·하이픈만 받는다.
@@ -38,7 +32,7 @@ export function urlSlugField({ useAsSlug, localized }: { useAsSlug: string; loca
 					],
 				}
 				slug.validate = (value: unknown) =>
-					typeof value === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)
+					typeof value === 'string' && SLUG_PATTERN.test(value)
 						? true
 						: '영문 소문자·숫자·하이픈만 사용하세요. 예: summer-poster'
 			}

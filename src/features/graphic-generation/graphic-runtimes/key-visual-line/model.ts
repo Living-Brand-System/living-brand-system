@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { GraphicModelAdapter } from '@/features/graphic-generation/runtime/graphic-plugin'
+import { HEX_COLOR_PATTERN } from '@/lib/color'
 import type { VectorSceneArtifact } from '@/modules/studio-artifact/studio-artifact'
 import {
 	type ControllerControlValue,
@@ -26,14 +27,8 @@ const pointSchema = z.strictObject({
 
 export const keyVisualLineInputSchema = z.strictObject({
 	// 새 두 색 UI가 명시적으로 전달할 때만 사용한다. 기존 팔레트 입력은 그대로 유지한다.
-	foregroundColor: z
-		.string()
-		.regex(/^#[0-9a-f]{6}$/i)
-		.optional(),
-	backgroundColor: z
-		.string()
-		.regex(/^#[0-9a-f]{6}$/i)
-		.optional(),
+	foregroundColor: z.string().regex(HEX_COLOR_PATTERN).optional(),
+	backgroundColor: z.string().regex(HEX_COLOR_PATTERN).optional(),
 	colorway: z.enum(colorwayIds),
 	lineCount: z.number().int().min(4).max(24),
 	angleStart: z.number().min(0).max(180),

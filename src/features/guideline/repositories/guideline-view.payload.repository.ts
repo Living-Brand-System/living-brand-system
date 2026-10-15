@@ -1,7 +1,7 @@
 import config from '@payload-config'
 import { getPayload } from 'payload'
+import { relationshipId } from '@/features/quality-rule/relationship-id'
 import { FALLBACK_LOCALE, DEFAULT_LOCALE as LOCALE } from '@/lib/locale'
-import type { GuidelineDocument } from '@/payload-types'
 import type {
 	GuidelineChapterData,
 	GuidelineMetadataData,
@@ -164,11 +164,6 @@ export async function findPublishedTopicBySlug(
 				title: topic.title,
 			}
 		: null
-}
-
-function relationshipId(value: GuidelineDocument['chapter']): number | null {
-	if (typeof value === 'number') return value
-	return value?.id ?? null
 }
 
 function relationshipString(value: unknown, key: string): string | null {

@@ -26,13 +26,6 @@ export const TEXT_LAYER_ROLES = [
 	'Address',
 ] as const
 
-export const TEXT_INPUT_FORMATS = [
-	{ value: 'free', label: '자유' },
-	{ value: 'number', label: '숫자' },
-	{ value: 'email', label: '이메일' },
-	{ value: 'date', label: '날짜' },
-] as const satisfies readonly { value: TextSlotDraft['inputFormat']; label: string }[]
-
 export function toTextSlotDraft(config: TemplateNodeConfig): TextSlotDraft {
 	const input = config.input ?? {}
 	return {
@@ -42,6 +35,16 @@ export function toTextSlotDraft(config: TemplateNodeConfig): TextSlotDraft {
 		text: config.text ?? '',
 	}
 }
+
+/** 최대 글자·줄 칸 — 비우면 제한 없음(`undefined`), 1 이상의 정수가 아니면 `null`(저장하지 않는다). 어드민 레이어 편집기가 쓴다. */
+export function parseSlotCount(raw: string): number | undefined | null {
+	const value = raw.trim()
+	if (!value) return undefined
+	return /^[1-9]\d*$/.test(value) ? Number(value) : null
+}
+
+/** 이름·안내·지침 칸 — 앞뒤 공백을 걷고, 공백뿐이면 「없음」이다. 어드민 레이어 편집기도 이 규칙을 쓴다. */
+export const cleanSlotText = (raw: string): string | undefined => raw.trim() || undefined
 
 /**
  * 고친 값을 노드 설정에 얹는다. 이름·안내는 앞뒤 공백을 걷는다(공백뿐이면 빈 칸). 기본 문구는 그대로 쓴다.
@@ -54,12 +57,12 @@ export function applyTextSlotDraft(
 	const { label: _fieldName, ...kept } = config.input ?? {}
 	const input: TemplateSlotSpec = {
 		...kept,
-		placeholder: draft.placeholder.trim() || undefined,
+		placeholder: cleanSlotText(draft.placeholder),
 		inputFormat: draft.inputFormat === 'free' ? undefined : draft.inputFormat,
 	}
 	return {
 		...config,
-		label: draft.layerLabel.trim() || undefined,
+		label: cleanSlotText(draft.layerLabel),
 		text: draft.text || undefined,
 		input: Object.fromEntries(
 			Object.entries(input).filter(([, value]) => value !== undefined),

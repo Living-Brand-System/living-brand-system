@@ -1,5 +1,5 @@
 import type { CollectionConfig, SelectFieldValidation, TextFieldValidation } from 'payload'
-import type { RuleExecutor } from '@/features/quality-rule/rule-executor'
+import { RULE_EXECUTOR_OPTIONS, type RuleExecutor } from '@/features/quality-rule/rule-executor'
 import { managerManagedAccess } from '@/lib/auth'
 import { draftVersions } from './shared'
 
@@ -67,11 +67,7 @@ export const RuleCheckers: CollectionConfig = {
 			name: 'executor',
 			type: 'select',
 			required: true,
-			options: [
-				{ label: 'Deterministic', value: 'deterministic' },
-				{ label: 'Heuristic (AI)', value: 'heuristic' },
-				{ label: 'Advisory (AI)', value: 'manual' },
-			],
+			options: [...RULE_EXECUTOR_OPTIONS],
 		},
 		{
 			name: 'checkerKey',

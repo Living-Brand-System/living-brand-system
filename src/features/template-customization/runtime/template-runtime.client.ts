@@ -10,13 +10,14 @@ import {
 	type ImageTransformValue,
 	toImageEditTransform,
 } from '@/features/template-customization/domain/image-edit-transform'
+import type { TemplateImageMode } from '@/features/template-customization/domain/template-studio-config'
 import {
 	isTemplateBackgroundVisible,
 	type ResolvedTemplateImageConfig,
 	type TemplateBackgroundType,
 	type TemplateImageConfigSlot,
 	type TemplateTextSlot,
-	type TemplateVectorSlot,
+	type TemplateVectorConfigSlot,
 } from '@/features/template-customization/domain/template-studio-config'
 import type {
 	CanvasVideoSource,
@@ -26,6 +27,7 @@ import type {
 	VideoArtifact,
 } from '@/modules/studio-artifact/studio-artifact'
 import type { ControllerValues } from '@/modules/studio-controller/controller-definition'
+import { textFormatOf } from '@/modules/studio-controller/text-formats'
 import type { TemplateNodeConfigMap } from '@/types/template'
 import { withTemplateRasterStage } from './render-template-raster-stage.client'
 import { templateDomToVectorScene } from './template-dom-to-vector-scene.client'
@@ -195,7 +197,7 @@ export type TemplateSessionOverridesInput = {
 			{
 				profileId?: number
 				featureValues: ControllerValues
-				imageMode: 'preset' | 'generate'
+				imageMode: TemplateImageMode
 				image?: TemplateAssignedImage
 				transform?: ImageTransformValue
 				dimmer?: boolean
@@ -205,7 +207,7 @@ export type TemplateSessionOverridesInput = {
 	>
 	imageSlots: readonly TemplateImageConfigSlot[]
 	imageContracts: Readonly<Record<string, readonly ResolvedTemplateImageConfig[]>>
-	vectorSlots: readonly TemplateVectorSlot[]
+	vectorSlots: readonly TemplateVectorConfigSlot[]
 	ciVariants: Readonly<Record<string, string | undefined>>
 	layerVisibility: Readonly<Record<string, boolean>>
 	width: number
@@ -232,7 +234,8 @@ function buildTemplateSessionOverrides({
 		textSlots.flatMap((slot) => {
 			const override: { text?: string; color?: string } = {}
 			const text = textValues[slot.id]
-			if (text !== undefined) override.text = text
+			// 출력 계약 — 세션은 원값(날짜는 2026-10-14)을 갖고, 캔버스에는 형식의 표기로 쓴다.
+			if (text !== undefined) override.text = textFormatOf(slot.input.format).toText(text)
 			if (textColor) override.color = textColor
 			return Object.keys(override).length > 0 ? [[slot.id, override] as const] : []
 		}),

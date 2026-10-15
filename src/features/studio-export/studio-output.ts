@@ -14,7 +14,7 @@ import type {
 	VideoExportSpec,
 } from './export-contract'
 import { STUDIO_OUTPUT_FORMATS } from './export-contract'
-import { isPrintPpi, PRINT_PPI_VALUES, type PrintPpi } from './print-policy'
+import { isPrintExportFormat, isPrintPpi, PRINT_PPI_VALUES, type PrintPpi } from './print-policy'
 
 /**
  * video 사양을 선언하지 않은 Raster runtime의 MP4 폴백.
@@ -264,7 +264,7 @@ export function resolveStudioOutputCapability(
 	options: { packages?: readonly 'zip'[] } = {},
 ): StudioOutputCapability {
 	const formats = resolveStudioArtifactOutputFormats(artifacts, policy?.allowedFormats)
-	const printFormats = formats.some((format) => format === 'tiff' || format === 'pdf')
+	const printFormats = formats.some(isPrintExportFormat)
 	const video =
 		artifacts.video ?? (artifacts.raster ? DEFAULT_RASTER_VIDEO_CAPABILITY : undefined)
 	const allowedPpi = narrowPrintPpi(policy?.print?.allowedPpi)
@@ -340,6 +340,7 @@ export function supportsStudioExportRequest(
 	}
 	if (
 		request.artifact === 'raster' &&
+		// 직접 비교한다 — 판별 유니온(request)을 좁혀야 아래에서 ppi를 읽을 수 있고, 함수로 감싸면 좁혀지지 않는다.
 		(request.format === 'tiff' || request.format === 'pdf') &&
 		!acceptsPrintPpi(capability, request.options.ppi)
 	) {
