@@ -113,10 +113,11 @@ export function DataEditor({ subject, tabs, initial, trigger }: DataEditorProps)
 					</TooltipContent>
 				</Tooltip>
 			)}
-			{/* ponytail: 크기는 「아주 큰 팝업」(사용자)의 임시값 — look은 UI 담당이 정한다. */}
+			{/* 크기는 내용과 상관없이 고정 — 탭을 바꿀 때 창이 들썩이지 않게(사용자 2026-10-15). 넘치는 내용은 안에서 스크롤.
+			    ponytail: 85vh·5xl은 「아주 큰 팝업」(사용자)의 임시값 — look은 UI 담당이 정한다. */}
 			<DialogContent
 				data-slot="data-editor"
-				className="flex max-h-[85vh] flex-col sm:max-w-5xl"
+				className="flex h-[85vh] w-full flex-col sm:max-w-5xl"
 			>
 				<DialogHeader>
 					<DialogTitle>{subject} 데이터 편집</DialogTitle>
