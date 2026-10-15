@@ -29,6 +29,17 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 const EDIT_PARAM = 'edit'
 const ITEM_PARAM = 'edit-item'
 
+/**
+ * 화면 어디서든 데이터 편집 모달의 한 탭을 연다 — 그 탭을 가진 모달이 화면에 있으면 열린다(파운데이션 모달처럼
+ * 여러 경로에서 여는 공용 모달). 서버 왕복 없이 주소만 바꾼다.
+ */
+export function openDataEditorTab(tabId: string): void {
+	const next = new URLSearchParams(window.location.search)
+	next.set(EDIT_PARAM, tabId)
+	next.delete(ITEM_PARAM)
+	window.history.replaceState(null, '', `${window.location.pathname}?${next.toString()}`)
+}
+
 export type DataEditorNavigation = {
 	/** 다른 탭으로 옮긴다 — 목록의 「생성」 → 생성 탭, 행의 「수정」 → 수정 탭 + 그 항목. */
 	goTo: (tabId: string, itemId?: string | number) => void

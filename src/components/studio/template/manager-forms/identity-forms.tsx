@@ -2,6 +2,8 @@
 
 import { Renew, TrashCan } from '@carbon/icons-react'
 import { useRef, useState } from 'react'
+import { openDataEditorTab } from '@/components/studio/shared/data-editor'
+import { FOUNDATION_TABS } from '@/components/studio/template/foundation-editor'
 import { ManagerLinkForm } from '@/components/studio/template/manager-forms/link-form'
 import { reimportTemplateFromFigma } from '@/components/studio/template/manager-forms/template-html-writes'
 import { FormNote } from '@/components/studio/template/manager-forms/text-form'
@@ -136,17 +138,12 @@ export function TemplateCategoryManagerForm() {
 				<FormNote error={state.error} busy={state.busy} />
 			</Field>
 			<ManagerLinkForm
-				note="카테고리 이름·순서는 모든 템플릿이 같이 써서 admin에서 고쳐요."
+				note="카테고리 이름·순서는 모든 템플릿이 같이 써서 파운데이션에서 고쳐요."
 				links={[
-					...(record.categoryId
-						? [
-								{
-									label: '이 카테고리',
-									href: `/admin/collections/template-categories/${record.categoryId}`,
-								},
-							]
-						: []),
-					{ label: '카테고리 목록', href: '/admin/collections/template-categories' },
+					{
+						label: '파운데이션 템플릿 분류 열기',
+						onOpen: () => openDataEditorTab(FOUNDATION_TABS.category),
+					},
 				]}
 			/>
 		</div>

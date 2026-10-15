@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState, useSyncExternalStore } from 'react'
 import { StudioRailIcon } from '@/components/studio/panel/studio-rail'
 import { useManagerMode } from '@/components/studio/shared/use-manager-mode'
+import { FoundationEditor } from '@/components/studio/template/foundation-editor'
 import { TemplateDataEditor } from '@/components/studio/template/template-data-editor'
 import { Button } from '@/components/ui/button'
 import {
@@ -73,6 +74,8 @@ export function TemplateManagerRail({ templateId }: { templateId: number }) {
 
 	return (
 		<>
+			{/* 파운데이션 모달 — 여는 버튼은 따로 없고, Manager mode 패널의 링크가 주소로 그 탭을 연다. */}
+			<FoundationEditor trigger={() => null} />
 			<TemplateDataEditor
 				currentTemplateId={templateId}
 				trigger={(open) => (
