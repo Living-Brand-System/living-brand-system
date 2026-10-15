@@ -1,6 +1,9 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { openDataEditorTab } from '@/components/studio/shared/data-editor'
+import { FOUNDATION_TABS } from '@/components/studio/template/foundation-editor'
+import { ManagerLinkForm } from '@/components/studio/template/manager-forms/link-form'
 import { FormNote } from '@/components/studio/template/manager-forms/text-form'
 import { FieldError, FieldTitle } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -89,6 +92,15 @@ function OutputFormBody({ record, state }: { record: TemplateRecord; state: Temp
 				error={state.error}
 				busy={state.busy}
 				note={`Figma 판(${record.width}×${record.height}px)과 가로세로 비율이 같아야 해요.`}
+			/>
+			<ManagerLinkForm
+				note="판형 종류(사전 정의 판형)는 여러 템플릿·스튜디오가 같이 써서 파운데이션에서 관리해요."
+				links={[
+					{
+						label: '파운데이션 판형 종류 열기',
+						onOpen: () => openDataEditorTab(FOUNDATION_TABS.artboard),
+					},
+				]}
 			/>
 		</div>
 	)
