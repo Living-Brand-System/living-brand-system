@@ -31,7 +31,6 @@ import { SLUG_PATTERN } from '@/lib/slug'
 
 const adminTemplateHref = (templateId: number) => `/admin/collections/templates/${templateId}`
 
-
 /**
  * 선택 카드 제목의 관리 폼(`name:`) — 템플릿 이름·주소·설명. 칸을 벗어날 때 초안에 쌓는다.
  * 주소는 Manager mode를 끄며 저장할 때 바뀌고, 그때 새 주소로 옮겨 간다(레일).
