@@ -64,6 +64,8 @@ type DataEditorProps = {
 	trigger?: (open: () => void) => ReactNode
 	/** 버튼으로 열 때 처음 보일 탭과 항목 — 템플릿 편집 화면은 지금 그 템플릿의 수정 탭으로 연다. */
 	initial?: { tabId: string; itemId?: string | number }
+	/** 「앱 데이터를 고친다」 경고 띠 — 파운데이션 모달은 두지 않는다(사용자 2026-10-15). 기본은 둔다. */
+	notice?: boolean
 }
 
 /**
@@ -71,7 +73,7 @@ type DataEditorProps = {
  * 화면마다 넘기는 탭(무엇을 보여 주고 고치나)만 다르다. 이 컴포넌트는 권한을 보지 않는다 — 보일지는
  * 부르는 화면이, 막는 것은 Payload access가 정한다.
  */
-export function DataEditor({ subject, tabs, initial, trigger }: DataEditorProps) {
+export function DataEditor({ subject, tabs, initial, trigger, notice = true }: DataEditorProps) {
 	const pathname = usePathname()
 	const searchParams = useSearchParams()
 	const requested = searchParams.get(EDIT_PARAM)
@@ -113,19 +115,26 @@ export function DataEditor({ subject, tabs, initial, trigger }: DataEditorProps)
 					</TooltipContent>
 				</Tooltip>
 			)}
-			{/* ponytail: 크기는 「아주 큰 팝업」(사용자)의 임시값 — look은 UI 담당이 정한다. */}
+			{/* 크기는 내용과 상관없이 고정 — 탭을 바꿀 때 창이 들썩이지 않게(사용자 2026-10-15). 넘치는 내용은 안에서 스크롤.
+			    ponytail: 85vh·5xl은 「아주 큰 팝업」(사용자)의 임시값 — look은 UI 담당이 정한다. */}
 			<DialogContent
 				data-slot="data-editor"
-				className="flex max-h-[85vh] flex-col sm:max-w-5xl"
+				className="flex h-[85vh] w-full flex-col sm:max-w-5xl"
 			>
 				<DialogHeader>
 					<DialogTitle>{subject} 데이터 편집</DialogTitle>
 					{/* 내 작업물(휘발)과 앱 데이터를 헷갈리지 않게 상태 색으로 띄운다(사용자 2026-10-13). */}
-					<DialogDescription className="rounded-md bg-warning/15 px-3 py-2 text-warning">
-						<DataBase aria-hidden className="mr-1 inline align-text-bottom" />
-						지금 고치는 것은 내 작업물이 아니라 앱의 데이터예요. 저장하면 모든
-						사용자에게 바로 반영돼요.
-					</DialogDescription>
+					{notice ? (
+						<DialogDescription className="rounded-md bg-warning/15 px-3 py-2 text-warning">
+							<DataBase aria-hidden className="mr-1 inline align-text-bottom" />
+							지금 고치는 것은 내 작업물이 아니라 앱의 데이터예요. 저장하면 모든
+							사용자에게 바로 반영돼요.
+						</DialogDescription>
+					) : (
+						<DialogDescription className="sr-only">
+							{subject} 데이터 편집
+						</DialogDescription>
+					)}
 				</DialogHeader>
 				<ToggleGroup
 					type="single"

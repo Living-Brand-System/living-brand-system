@@ -2,6 +2,8 @@
 
 import { type ReactNode, useEffect, useState } from 'react'
 import { toggleAllowedId } from '@/components/admin/templates/template-layers'
+import { openDataEditorTab } from '@/components/studio/shared/data-editor'
+import { FOUNDATION_TABS } from '@/components/studio/template/foundation-editor'
 import {
 	type ManagerLink,
 	ManagerLinkForm,
@@ -41,6 +43,11 @@ type Choice<T> = { id: T; name: string }
 export type BackgroundPolicyFocus = 'types' | 'dimmer' | 'profile'
 
 const loadGraphicChoices = () => fetchCanvasStudioConfigs('graphic')
+/** 브랜드 컬러는 파운데이션 모달의 컬러 탭에서 관리한다. */
+const BRAND_COLOR_LINK: ManagerLink = {
+	label: '파운데이션 컬러 열기',
+	onOpen: () => openDataEditorTab(FOUNDATION_TABS.color),
+}
 
 /**
  * 배경 정책의 관리 폼(`background:` · `control:background.type|dimmer` · `profile:background`) — 허용 형식·처음 형식·
@@ -194,7 +201,7 @@ export function BackgroundPolicyForm({ focus }: { focus?: BackgroundPolicyFocus 
 
 			{links.length > 0 && (
 				<ManagerLinkForm
-					note="프로파일과 브랜드 컬러는 여러 템플릿이 같이 써서 각자의 페이지에서 고쳐요."
+					note="프로파일과 브랜드 컬러는 여러 템플릿이 같이 써서 따로 관리해요(브랜드 컬러는 파운데이션)."
 					links={links}
 				/>
 			)}
@@ -272,7 +279,7 @@ function linksFor(
 ): ManagerLink[] {
 	if (!focus) {
 		return [
-			{ label: '브랜드 컬러', href: '/admin/collections/brand-colors' },
+			BRAND_COLOR_LINK,
 			{ label: '이미지 프로파일', href: '/admin/collections/image-profiles' },
 			{ label: '그래픽 프로파일', href: '/admin/collections/graphic-profiles' },
 		]
@@ -297,7 +304,7 @@ function linksFor(
 			},
 		]
 	}
-	return [{ label: '브랜드 컬러', href: '/admin/collections/brand-colors' }]
+	return [BRAND_COLOR_LINK]
 }
 
 function noteFor(focus: BackgroundPolicyFocus | undefined): string | undefined {
