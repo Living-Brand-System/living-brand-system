@@ -36,6 +36,7 @@ export function FoundationEditor({ trigger }: { trigger?: (open: () => void) => 
 		<DataEditor
 			subject="파운데이션"
 			trigger={trigger}
+			notice={false}
 			tabs={[
 				{ id: FOUNDATION_TABS.color, label: '컬러', render: () => <ColorTab /> },
 				{ id: FOUNDATION_TABS.logo, label: '로고', render: () => <LogoTab /> },
