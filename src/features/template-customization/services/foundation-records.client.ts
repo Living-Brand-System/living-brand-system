@@ -1,3 +1,8 @@
+import {
+	type StudioPreviewImage,
+	toStudioPreviewImage,
+} from '@/modules/studio-controller/controller-definition'
+
 /**
  * 파운데이션(여러 템플릿이 같이 쓰는 브랜드 데이터) 읽기 — 파운데이션 모달이 목록으로 보인다.
  * 권한(`managerManagedAccess` 등)은 서버가 집행한다. 쓰기는 아직 없다(모달은 배치부터, 사용자 2026-10-15).
@@ -28,6 +33,8 @@ export type FoundationLogo = {
 	url?: string | null
 	alt?: string | null
 }
+
+export type FoundationTemplateThumb = { id: number; name: string; image?: StudioPreviewImage }
 
 export type FoundationCategory = {
 	id: number
@@ -81,4 +88,30 @@ export async function listFoundationCategories(): Promise<FoundationCategory[]> 
 		...category,
 		templateCount: templates?.totalDocs ?? 0,
 	}))
+}
+
+/** 분류마다 최근에 고친 템플릿 몇 개 — 분류 카드의 썸네일로 쓴다(사용자 2026-10-15). */
+export async function listLatestTemplatesByCategory(
+	perCategory: number,
+): Promise<Map<number, FoundationTemplateThumb[]>> {
+	const docs = await list<{
+		id: number
+		name: string
+		category?: { id: number } | number | null
+		previewImage?: unknown
+	}>(
+		'/api/templates?depth=1&limit=200&sort=-updatedAt&select[name]=true&select[category]=true&select[previewImage]=true',
+		'템플릿을 불러오지 못했어요.',
+	)
+	const byCategory = new Map<number, FoundationTemplateThumb[]>()
+	for (const { id, name, category, previewImage } of docs) {
+		const categoryId = typeof category === 'object' ? category?.id : category
+		if (categoryId == null) continue
+		const thumbs = byCategory.get(categoryId) ?? []
+		if (thumbs.length < perCategory) {
+			thumbs.push({ id, name, image: toStudioPreviewImage(previewImage) })
+			byCategory.set(categoryId, thumbs)
+		}
+	}
+	return byCategory
 }
