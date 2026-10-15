@@ -24,6 +24,34 @@ describe('managerOutline + roundedPolygonPath', () => {
 		expect(arcs(d)).toEqual([1, 1, 1, 1, 0, 1])
 	})
 
+	it('다리를 건너 떨어진 새 패널은 다리 높이가 짧은 쪽을 따르고, 이음매 둘이 오목하다', () => {
+		const outline = managerOutline(
+			{ left: 100, top: 0, width: 200, height: 60 },
+			{ width: 80, height: 300, side: 'left', reach: 40 },
+		)
+		// 다리 높이 = min(300, 60) = 60 → frame 왼아래와 다리 아래가 일직선이라 그 꼭짓점은 걷힌다.
+		expect(outline).toEqual([
+			[-20, 0],
+			[300, 0],
+			[300, 60],
+			[60, 60],
+			[60, 300],
+			[-20, 300],
+		])
+		expect(arcs(roundedPolygonPath(outline, 10))).toEqual([1, 1, 1, 0, 1, 1])
+	})
+
+	it('오목한 꼭짓점만 따로 키울 수 있다 — 일직선 꼭짓점이 걷혀 짧은 다리 토막에 잘리지 않는다', () => {
+		const outline = managerOutline(
+			{ left: 100, top: 0, width: 200, height: 60 },
+			{ width: 80, height: 300, side: 'left', reach: 8 },
+		)
+		const d = roundedPolygonPath(outline, 12, 20)
+		expect([...d.matchAll(/A([\d.]+) /g)].map((m) => Number(m[1]))).toEqual([
+			12, 12, 12, 20, 12, 12,
+		])
+	})
+
 	it('새 패널이 없으면 둥근 사각형이고, 반지름은 짧은 변의 절반을 넘지 않는다', () => {
 		const d = roundedPolygonPath(
 			managerOutline({ left: 0, top: 0, width: 30, height: 400 }),

@@ -23,6 +23,7 @@ import {
 	slotHighlightStyle,
 	slotHoverStyle,
 } from '@/components/studio/template/slot-highlight'
+import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
 import type { GraphicStudioConfig } from '@/features/graphic-generation/domain/graphic-studio-config'
 import {
@@ -52,7 +53,8 @@ const CLICK_SLOP_PX = 4
  * 🔑 **판을 클릭하면 거기 있는 것이 선택된다** — 레이어 패널과 같은 `select()`를 부르므로 우측
  *    컨트롤과 판 하이라이트가 한 번에 따라온다. 입구가 둘이 됐을 뿐 상태는 그대로다.
  */
-export function TemplateCanvas() {
+/** `onReset`: 작업을 처음으로 — Preview Size 옆에 둔다(사용자 2026-10-14). 확인을 한 번 거친다. */
+export function TemplateCanvas({ onReset }: { onReset?: () => void }) {
 	const { config, canvas, background, focus, layers, editing } = useTemplateStudio()
 	const { width, height } = config.template.exportOption.canvas
 	const stageRef = useRef<HTMLDivElement>(null)
@@ -257,7 +259,6 @@ export function TemplateCanvas() {
 			    클릭 상자가 맡는다(주입 HTML과 그래픽 배경만 가둔다). */}
 			<div
 				data-slot="template-preview"
-				data-manager-target="canvas:"
 				className="relative m-auto shrink-0 shadow-lg transition-transform duration-(--motion-layout) ease-out motion-reduce:transition-none lg:[transform:scale(var(--preview-scale))]"
 				style={
 					{
@@ -359,6 +360,18 @@ export function TemplateCanvas() {
 			</div>
 			<ControllerBar placement="canvas">
 				<PreviewSizeControl value={previewSize} onChange={setPreviewSize} />
+				{onReset && (
+					<Button
+						size="sm"
+						variant="outline"
+						onClick={() => {
+							// ponytail: 브라우저 확인창 — 데이터 편집 모달의 휴지통과 같은 방식.
+							if (window.confirm('작업한 내용을 처음 상태로 되돌릴까요?')) onReset()
+						}}
+					>
+						Reset
+					</Button>
+				)}
 			</ControllerBar>
 		</div>
 	)

@@ -1,11 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { FormNote } from '@/components/studio/template/manager-forms/text-form'
-import { Button } from '@/components/ui/button'
+import { FieldError, FieldTitle } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { Typography } from '@/components/ui/typography'
 import {
 	type TemplateRecordState,
 	useTemplateRecord,
@@ -13,19 +12,15 @@ import {
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import type { TemplateRecord } from '@/features/template-customization/services/template-records.client'
 
-/** Output 크기 줄의 관리 폼(`output:`) — 판형 종류(디지털 px / 인쇄 mm)와 크기. */
+/**
+ * Output 크기 줄의 관리 폼(`output:`) — 판형 종류(디지털 px / 인쇄 mm)와 크기.
+ * 종류와 크기는 같이 맞아야 하므로(단위가 다르다) 폼 밖으로 나갈 때 한 번에 초안에 쌓는다.
+ */
 export function TemplateOutputManagerForm() {
 	const { config } = useTemplateStudio()
 	const state = useTemplateRecord(config.id)
-	if (!state.record) {
-		return (
-			<Typography size="xs" tone={state.error ? 'destructive' : 'muted'}>
-				{state.error ?? '불러오는 중…'}
-			</Typography>
-		)
-	}
-	// 저장하면 다시 읽은 값으로 새로 시작한다.
-	return <OutputFormBody key={state.record.updatedAt} record={state.record} state={state} />
+	if (!state.record) return <FormNote error={state.error} loading />
+	return <OutputFormBody record={state.record} state={state} />
 }
 
 function OutputFormBody({ record, state }: { record: TemplateRecord; state: TemplateRecordState }) {
@@ -34,9 +29,24 @@ function OutputFormBody({ record, state }: { record: TemplateRecord; state: Temp
 	const [height, setHeight] = useState(String(record.size?.height ?? record.height ?? ''))
 	const unit = outputKind === 'print' ? 'mm' : 'px'
 	const size = { width: Number(width), height: Number(height) }
-	const valid = size.width > 0 && size.height > 0
+	const widthValid = size.width > 0
+	const heightValid = size.height > 0
+	const written = useRef(JSON.stringify({ outputKind, size }))
+	const commit = () => {
+		const next = JSON.stringify({ outputKind, size })
+		if (!widthValid || !heightValid || next === written.current) return
+		written.current = next
+		void state.saveOutput({ outputKind, size })
+	}
 	return (
-		<div className="flex flex-col gap-2">
+		// biome-ignore lint/a11y/noStaticElementInteractions: 입력칸들의 focusout을 모아 받을 뿐 스스로 조작되지 않는다
+		<div
+			className="flex flex-col gap-2"
+			onBlur={(event) => {
+				if (!event.currentTarget.contains(event.relatedTarget)) commit()
+			}}
+		>
+			<FieldTitle>판형 종류</FieldTitle>
 			<ToggleGroup
 				type="single"
 				variant="outline"
@@ -52,9 +62,11 @@ function OutputFormBody({ record, state }: { record: TemplateRecord; state: Temp
 				<ToggleGroupItem value="digital">디지털 (px)</ToggleGroupItem>
 				<ToggleGroupItem value="print">인쇄 (mm)</ToggleGroupItem>
 			</ToggleGroup>
+			<FieldTitle>크기 ({unit})</FieldTitle>
 			<div className="flex items-center gap-2">
 				<Input
 					aria-label={`가로 ${unit}`}
+					aria-invalid={!widthValid || undefined}
 					inputMode="numeric"
 					value={width}
 					onChange={(event) => setWidth(event.target.value)}
@@ -62,25 +74,21 @@ function OutputFormBody({ record, state }: { record: TemplateRecord; state: Temp
 				<span aria-hidden>×</span>
 				<Input
 					aria-label={`세로 ${unit}`}
+					aria-invalid={!heightValid || undefined}
 					inputMode="numeric"
 					value={height}
 					onChange={(event) => setHeight(event.target.value)}
 				/>
 			</div>
-			<Typography size="xs" tone="muted">
-				Figma 판({record.width}×{record.height}px)과 가로세로 비율이 같아야 해요.
-			</Typography>
-			<Button
-				size="sm"
-				disabled={!valid || state.busy}
-				onClick={() => void state.saveOutput({ outputKind, size })}
-			>
-				저장
-			</Button>
+			{(!widthValid || !heightValid) && (
+				<FieldError className="text-xs">
+					가로·세로를 0보다 큰 숫자로 적어 주세요.
+				</FieldError>
+			)}
 			<FormNote
 				error={state.error}
 				busy={state.busy}
-				note="저장하면 모든 사용자에게 바로 반영돼요."
+				note={`Figma 판(${record.width}×${record.height}px)과 가로세로 비율이 같아야 해요.`}
 			/>
 		</div>
 	)

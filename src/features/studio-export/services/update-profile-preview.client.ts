@@ -39,15 +39,19 @@ export async function uploadProfilePreview({
 	studio,
 	profileId,
 	file,
+	draft = false,
 }: {
 	studio: StudioPreviewKind
 	profileId: string | number
 	file: Blob
+	/** 게시본은 두고 초안으로만 쌓는다(템플릿 Manager mode). */
+	draft?: boolean
 }): Promise<StudioPreviewImage | undefined> {
 	const body = new FormData()
 	body.set('studio', studio)
 	body.set('profileId', String(profileId))
 	body.set('file', file, 'preview.png')
+	if (draft) body.set('draft', 'true')
 
 	const response = await fetch('/api/studio/preview', { method: 'POST', body })
 	if (!response.ok) {

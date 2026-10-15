@@ -47,8 +47,9 @@ function projectStudioNodeConfigs(
  */
 export async function getPublishedTemplate(
 	templateSlug: string,
+	options?: { draft?: boolean },
 ): Promise<PublishedHtmlTemplate | null> {
-	const template = await findPublishedTemplate(templateSlug)
+	const template = await findPublishedTemplate(templateSlug, options)
 
 	if (!template) {
 		return null

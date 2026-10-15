@@ -108,7 +108,11 @@ it('실제 합성 캔버스·출력에 연결하고 Reset은 텍스트·색·출
 	fireEvent.keyDown(format, { key: 'ArrowDown' })
 	fireEvent.click(await screen.findByRole('option', { name: /^JPEG$/ }))
 	expect(format).toHaveTextContent('JPEG')
+	// Reset은 확인을 한 번 거친다.
+	const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
 	fireEvent.click(screen.getByRole('button', { name: 'Reset' }))
+	expect(confirm).toHaveBeenCalledOnce()
+	confirm.mockRestore()
 	expect(await screen.findByRole('textbox', { name: '제목' })).toHaveValue('원본 제목')
 	expect(screen.getByRole('radio', { name: '텍스트 색상 #007332' })).not.toBeChecked()
 	expect(screen.getByRole('combobox', { name: 'Format' })).toHaveTextContent('PNG')
@@ -490,10 +494,14 @@ it('🔴 Manager mode는 원본 화면을 바꾸지 않는다 — 켜도 끈 것
 			{ wrapper: TooltipProvider },
 		)
 		await screen.findByRole('textbox', { name: '제목' })
-		// 레일 맨 아래 버튼은 모드를 켜고 끄는 스위치 자신이라 비교에서 뺀다. useId 값은 마운트마다 다르다.
+		// 레일 맨 아래 버튼은 모드를 켜고 끄는 스위치 자신이라 비교에서 뺀다.
 		for (const footer of container.querySelectorAll('[data-slot="studio-rail-footer"]'))
 			footer.remove()
-		const html = container.innerHTML.replace(/_r_[0-9a-z]+_/g, 'id')
+		// useId 값은 마운트마다 다르다. 나타나는 애니메이션(캔버스 아래 Preview Size 막대)의 인라인 opacity·transform은
+		// 찍는 순간마다 다르다 — 둘 다 모드와 무관한 차이라 걷고 비교한다.
+		const html = container.innerHTML
+			.replace(/_r_[0-9a-z]+_/g, 'id')
+			.replace(/ style="opacity: [^"]*"/g, '')
 		cleanup()
 		return html
 	}

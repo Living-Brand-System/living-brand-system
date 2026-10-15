@@ -1,9 +1,8 @@
 'use client'
 
-import { type ReactNode, useId, useState } from 'react'
+import { type ReactNode, useId, useRef, useState } from 'react'
 import { FormNote } from '@/components/studio/template/manager-forms/text-form'
-import { Button } from '@/components/ui/button'
-import { FieldError } from '@/components/ui/field'
+import { Field, FieldError, FieldTitle } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Typography } from '@/components/ui/typography'
@@ -50,13 +49,7 @@ const VIDEO_LIMITS = [
 export function TemplateExportManagerForm({ axis }: { axis: TemplateExportAxis }) {
 	const { config } = useTemplateStudio()
 	const manager = useTemplateManagerData<ExportFields>(config.id, FIELDS)
-	if (!manager.data) {
-		return (
-			<Typography size="xs" tone={manager.error ? 'destructive' : 'muted'}>
-				{manager.error ?? '불러오는 중…'}
-			</Typography>
-		)
-	}
+	if (!manager.data) return <FormNote error={manager.error} loading />
 	const policy = manager.data.exportPolicy ?? {}
 	const change = (update: (current: TemplateExportPolicyDoc) => TemplateExportPolicyDoc) =>
 		void manager.save(() => updateTemplateExportPolicy(config.id, update))
@@ -165,18 +158,15 @@ export function TemplateExportManagerForm({ axis }: { axis: TemplateExportAxis }
 		)
 	}
 
-	// 저장하면 다시 읽은 값으로 새로 시작한다.
 	return (
 		<VideoLimitsForm
-			key={JSON.stringify(policy.video ?? null)}
 			stored={policy.video}
 			caps={video}
-			busy={manager.busy}
 			onSave={(limits) =>
 				change((current) => ({ ...current, video: { ...current.video, ...limits } }))
 			}
 		>
-			{note('비우면 Runtime 한도까지 쓸 수 있어요. 저장하면 모든 사용자에게 바로 반영돼요.')}
+			{note('비우면 Runtime 한도까지 쓸 수 있어요.')}
 		</VideoLimitsForm>
 	)
 }
@@ -186,13 +176,11 @@ type VideoLimitKey = (typeof VIDEO_LIMITS)[number]['key']
 function VideoLimitsForm({
 	stored,
 	caps,
-	busy,
 	onSave,
 	children,
 }: {
 	stored: TemplateExportPolicyDoc['video']
 	caps: Record<VideoLimitKey, number>
-	busy: boolean
 	onSave: (limits: Record<VideoLimitKey, number | null>) => void
 	children: ReactNode
 }) {
@@ -212,8 +200,16 @@ function VideoLimitsForm({
 	) as Record<VideoLimitKey, number | null | undefined>
 	const valid = VIDEO_LIMITS.every(({ key }) => parsed[key] !== undefined)
 	const id = useId()
+	const written = useRef(JSON.stringify(parsed))
+	// 칸을 벗어날 때 바뀌었고 올바르면 초안에 쓴다.
+	const commit = () => {
+		if (!valid || JSON.stringify(parsed) === written.current) return
+		written.current = JSON.stringify(parsed)
+		onSave(parsed as Record<VideoLimitKey, number | null>)
+	}
 	return (
-		<div className="flex flex-col gap-2">
+		// biome-ignore lint/a11y/noStaticElementInteractions: 입력칸들의 focusout을 모아 받을 뿐 스스로 조작되지 않는다
+		<div className="flex flex-col gap-2" onBlur={commit}>
 			{VIDEO_LIMITS.map(({ key, label, unit, min }) => (
 				<div key={key} className="flex flex-col gap-1">
 					<div className="flex items-center gap-2">
@@ -240,19 +236,12 @@ function VideoLimitsForm({
 					</FieldError>
 				</div>
 			))}
-			<Button
-				size="sm"
-				disabled={!valid || busy}
-				onClick={() => onSave(parsed as Record<VideoLimitKey, number | null>)}
-			>
-				저장
-			</Button>
 			{children}
 		</div>
 	)
 }
 
-/** 여러 개를 켜고 끄는 줄 — 고르는 즉시 반영된다. */
+/** 여러 개를 켜고 끄는 줄 — 고르는 즉시 초안에 쌓인다. */
 function ChoiceToggle({
 	label,
 	options,
@@ -271,28 +260,31 @@ function ChoiceToggle({
 	onChange: (next: string[]) => void
 }) {
 	return (
-		<ToggleGroup
-			type="multiple"
-			variant="outline"
-			size="sm"
-			spacing={0}
-			value={[...selected]}
-			disabled={busy}
-			onValueChange={onChange}
-			aria-label={label}
-			className="w-full"
-		>
-			{options.map((value) => (
-				<ToggleGroupItem
-					key={value}
-					value={value}
-					disabled={locked(value)}
-					className="flex-1"
-				>
-					{format(value)}
-				</ToggleGroupItem>
-			))}
-		</ToggleGroup>
+		<Field className="gap-1.5">
+			<FieldTitle>{label}</FieldTitle>
+			<ToggleGroup
+				type="multiple"
+				variant="outline"
+				size="sm"
+				spacing={0}
+				value={[...selected]}
+				disabled={busy}
+				onValueChange={onChange}
+				aria-label={label}
+				className="w-full"
+			>
+				{options.map((value) => (
+					<ToggleGroupItem
+						key={value}
+						value={value}
+						disabled={locked(value)}
+						className="flex-1"
+					>
+						{format(value)}
+					</ToggleGroupItem>
+				))}
+			</ToggleGroup>
+		</Field>
 	)
 }
 

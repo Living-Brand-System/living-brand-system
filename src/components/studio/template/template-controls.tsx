@@ -100,6 +100,8 @@ export function TemplateLayerGroups() {
 							className="h-full min-w-0 flex-1 justify-start gap-2 rounded-lg px-3 group-hover:text-foreground hover:bg-transparent focus-visible:bg-transparent dark:hover:bg-transparent dark:focus-visible:bg-transparent"
 							disabled={!slots.length || Boolean(editing.targetId)}
 							aria-pressed={selected}
+							// Manager mode에서 이 줄을 눌러도 평소처럼 고른다(사용자 2026-10-14) — 층이 이 버튼을 대신 누른다.
+							data-manager-passthrough=""
 							onClick={() => {
 								layers.select(slots[0]?.id ?? null)
 								if (slots[0]) editing.begin(slots[0].id)

@@ -13,13 +13,11 @@ import {
 import { LayerAccessToggle } from '@/components/studio/template/manager-forms/layer-access-toggle'
 import {
 	moveTemplateLayer,
-	renameTemplateLayer,
 	stackedLayersOf,
 	updateTemplateLayerAccess,
 } from '@/components/studio/template/manager-forms/template-html-writes'
 import { FormNote } from '@/components/studio/template/manager-forms/text-form'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Typography } from '@/components/ui/typography'
 import { useTemplateLayerSource } from '@/features/template-customization/hooks/use-template-layer-source'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
@@ -53,9 +51,9 @@ export function isManagedLayerKind(kind: string): kind is LayerKind {
 }
 
 /**
- * 이름·순서·권한 저장 — 바로 반영하고 목록(`onChanged`)과 스튜디오 화면을 새로 그린다.
- * 🔑 컨트롤을 막지 않고 차례로 줄 세운다 — 이름 칸의 blur 저장이 막 시작된 순간 누른 ▲/▼·권한이
- *    막힌 버튼에 떨어져 조용히 사라지지 않게. 각 쓰기는 최신 값을 다시 읽어 고친다.
+ * 순서·권한 쓰기 — 초안에 쌓고 목록(`onChanged`)과 스튜디오 화면을 새로 그린다.
+ * 🔑 컨트롤을 막지 않고 차례로 줄 세운다 — 쓰기가 도는 중에 누른 ▲/▼·권한이 막힌 버튼에 떨어져
+ *    조용히 사라지지 않게. 각 쓰기는 최신 값을 다시 읽어 고친다.
  */
 function useLayerEdit(onChanged: () => void) {
 	const router = useRouter()
@@ -87,7 +85,8 @@ function useLayerEdit(onChanged: () => void) {
 
 /**
  * Layers 묶음 줄의 관리 폼(`layers:<묶음>`) — 그 묶음의 레이어를 **숨김까지** 전부 나열하고 하나씩
- * 이름·겹침 순서·권한을 정한다. 화면의 칸은 숨김 레이어를 그리지 않으므로, 숨긴 것을 되살리는 자리는 여기다.
+ * 겹침 순서·권한(보일지·편집 가능·값 고정)만 정한다. 화면의 칸은 숨김 레이어를 그리지 않으므로, 숨긴 것을 되살리는 자리는 여기다.
+ * 레이어 이름과 그 밖의 설정은 오른쪽 패널의 그 요소에서만 고친다(사용자 2026-10-14).
  * 어느 레이어가 이 묶음인지와 Figma 이름은 원본(baseHtml)에서, 순서는 합성 결과에서 읽는다 — 맨 위 레이어가 맨 위.
  */
 export function TemplateLayersManagerForm({ kind }: { kind: LayerKind }) {
@@ -105,18 +104,14 @@ export function TemplateLayersManagerForm({ kind }: { kind: LayerKind }) {
 		return { figmaNames, stack, rows: stack.filter((row) => figmaNames.has(row.id)).reverse() }
 	}, [layers.source, kind])
 	if (!layers.source || !parsed) {
-		return (
-			<Typography size="xs" tone={layers.error ? 'destructive' : 'muted'}>
-				{layers.error ?? '불러오는 중…'}
-			</Typography>
-		)
+		return <FormNote error={layers.error} loading />
 	}
 	const overrides = layers.source.overrides
 	const canMove = (id: string, direction: 'up' | 'down') =>
 		moveLayer(overrides, parsed.stack, id, direction) !== null
 	return (
 		<div className="flex flex-col gap-3">
-			<ul className="flex max-h-80 flex-col gap-3 overflow-y-auto">
+			<ul className="flex flex-col gap-3">
 				{parsed.rows.map((row) => {
 					const label = overrides[row.id]?.label ?? ''
 					const figmaName = parsed.figmaNames.get(row.id) ?? row.name
@@ -124,24 +119,9 @@ export function TemplateLayersManagerForm({ kind }: { kind: LayerKind }) {
 					return (
 						<li key={row.id} className="flex flex-col gap-1">
 							<div className="flex items-center gap-0.5">
-								<Input
-									// 저장해 다시 읽으면 새 값으로 다시 시작한다.
-									key={label}
-									aria-label={`${name}: 레이어 이름`}
-									defaultValue={label}
-									placeholder={figmaName}
-									className="h-7 min-w-0 flex-1"
-									onKeyDown={(event) => {
-										if (event.key === 'Enter') event.currentTarget.blur()
-									}}
-									onBlur={(event) => {
-										const value = event.currentTarget.value
-										if (value.trim() === label) return
-										void edit.run(() =>
-											renameTemplateLayer(config.id, row.id, value),
-										)
-									}}
-								/>
+								<Typography size="sm" className="min-w-0 flex-1 truncate">
+									{name}
+								</Typography>
 								<Button
 									type="button"
 									variant="ghost"
@@ -172,10 +152,10 @@ export function TemplateLayersManagerForm({ kind }: { kind: LayerKind }) {
 								</Button>
 							</div>
 							<LayerAccessToggle
-								label={`${name}: worker가 쓰는 방법`}
+								label={`${name}: 편집 권한`}
 								access={accessOf(overrides[row.id], kind)}
 								onChange={(access) =>
-									void edit.run(() =>
+									edit.run(() =>
 										updateTemplateLayerAccess(
 											config.id,
 											row.id,
@@ -192,7 +172,7 @@ export function TemplateLayersManagerForm({ kind }: { kind: LayerKind }) {
 			<FormNote
 				error={edit.error}
 				busy={edit.busy}
-				note="고치면 모든 사용자에게 바로 반영돼요. 이름을 비우면 Figma 이름으로 돌아가요. 순서는 같은 묶음 밖의 레이어와도 바뀔 수 있으니 캔버스에서 확인해 주세요."
+				note="이름은 오른쪽 패널의 그 요소에서 고쳐요. 순서는 같은 묶음 밖의 레이어와도 바뀔 수 있으니 캔버스에서 확인해 주세요."
 			/>
 		</div>
 	)

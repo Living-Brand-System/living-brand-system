@@ -32,6 +32,7 @@ export function useProfilePreview({
 	artifact,
 	viewport,
 	onUpdated,
+	asDraft,
 }: {
 	studio: StudioPreviewKind
 	profileId: string | number
@@ -40,6 +41,8 @@ export function useProfilePreview({
 	viewport: { width: number; height: number } | null | undefined
 	/** 갱신에 성공한 뒤 호출된다 — 교체 후보 목록이 옛 썸네일을 들고 있으므로 다시 가져오게 한다. */
 	onUpdated?: () => void
+	/** 저장할 때 초안으로 쌓을지 — 템플릿의 Manager mode가 켜져 있으면 그렇다(모드를 끌 때 저장·버리기를 고른다). */
+	asDraft?: () => boolean
 }) {
 	const { canManageProfiles } = useStudioCapabilities()
 	const [refreshing, setRefreshing] = useState(false)
@@ -82,7 +85,7 @@ export function useProfilePreview({
 			if (refreshing) return
 			setRefreshing(true)
 			setError(null)
-			void uploadProfilePreview({ studio, profileId, file })
+			void uploadProfilePreview({ studio, profileId, file, draft: asDraft?.() ?? false })
 				.then((next) => {
 					setImage(next)
 					closeDraft()
@@ -92,7 +95,7 @@ export function useProfilePreview({
 				.catch(fail)
 				.finally(() => setRefreshing(false))
 		},
-		[closeDraft, fail, onUpdated, profileId, refreshing, studio],
+		[asDraft, closeDraft, fail, onUpdated, profileId, refreshing, studio],
 	)
 
 	const mode: SquareFrameMode = studio === 'template' ? 'inset' : 'crop'

@@ -59,6 +59,7 @@ export async function POST(request: Request) {
 			profileId,
 			png: Buffer.from(await file.arrayBuffer()),
 			user,
+			draft: form.get('draft') === 'true',
 		})
 		return Response.json({ previewImage })
 	} catch (error) {

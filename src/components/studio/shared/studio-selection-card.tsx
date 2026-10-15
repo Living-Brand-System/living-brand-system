@@ -16,11 +16,8 @@ export type StudioSelectionCardProps = {
 	disabled?: boolean
 	actions?: ReactNode
 	children?: ReactNode
-	/** Manager mode가 찾는 표시(`data-manager-target`) — 모드와 상관없이 늘 같은 값이다. */
+	/** Manager mode가 찾는 표시(`data-manager-target`) — 모드와 상관없이 늘 같은 값이다. 카드 하나가 한 대상이다. */
 	managerTarget?: string
-	/** 제목·부제 줄의 Manager mode 표시 — `managerTarget`과 같은 규칙(늘 같은 값). */
-	titleManagerTarget?: string
-	subtitleManagerTarget?: string
 }
 
 /**
@@ -37,8 +34,6 @@ export function StudioSelectionCard({
 	actions,
 	children,
 	managerTarget,
-	titleManagerTarget,
-	subtitleManagerTarget,
 }: StudioSelectionCardProps) {
 	return (
 		<div
@@ -56,20 +51,11 @@ export function StudioSelectionCard({
 			/>
 			<div className="relative flex items-start justify-between gap-2 text-inverted-foreground">
 				<div className="min-w-0">
-					<Typography
-						size="sm"
-						weight="medium"
-						className="truncate"
-						data-manager-target={titleManagerTarget}
-					>
+					<Typography size="sm" weight="medium" className="truncate">
 						{title}
 					</Typography>
 					{subtitle && (
-						<Typography
-							size="xs"
-							className="truncate"
-							data-manager-target={subtitleManagerTarget}
-						>
+						<Typography size="xs" className="truncate">
 							{subtitle}
 						</Typography>
 					)}

@@ -55,17 +55,20 @@ export class StudioProfileDraftPendingError extends Error {
  * 브라우저가 옛 이미지를 계속 보여준다(교체했는데 안 바뀌는 것처럼 보이는 원인).
  * 🔴 발행본 위에 초안이 얹혀 있으면 갱신하지 않는다. update는 최신(초안) 버전 위에 쓰므로
  *    `draft`로 되쓰면 발행이 풀리고, `published`로 되쓰면 그 초안이 몰래 발행된다.
+ * `draft`: 게시본은 두고 초안으로만 쌓는다(템플릿 Manager mode — 모드를 끌 때 저장·버리기를 고른다).
  */
 export async function updateProfilePreview({
 	studio,
 	profileId,
 	png,
 	user,
+	draft = false,
 }: {
 	studio: StudioPreviewKind
 	profileId: string
 	png: Buffer
 	user: User
+	draft?: boolean
 }): Promise<StudioPreviewImage | undefined> {
 	const target = PROFILE_TARGETS[studio]
 	const lookup: StudioProfileLookup =
@@ -76,6 +79,7 @@ export async function updateProfilePreview({
 	const current = await findStudioProfile(lookup, { draft: true, user })
 	if (!current) throw new StudioProfileNotFoundError()
 	if (
+		!draft &&
 		current._status === 'draft' &&
 		(await findStudioProfile(lookup, { draft: false, user }))?._status === 'published'
 	) {
@@ -96,7 +100,8 @@ export async function updateProfilePreview({
 		collection: target.collection,
 		id: current.id,
 		previewImageId: image.id,
-		status: current._status,
+		status: draft ? 'draft' : current._status,
+		draft,
 		user,
 	})
 	return toStudioPreviewImage(updated.previewImage)

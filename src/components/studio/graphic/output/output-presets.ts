@@ -22,7 +22,7 @@ type OutputSizeUnit = 'px' | 'mm'
  * 🔴 배너가 72인 이유는 화질이 아니라 크기다 — 600×1800mm를 300ppi로 채우면 7,087×21,260px이
  *    되어 브라우저 캔버스 한도(16,384px)를 넘는다.
  */
-const ARTBOARD_PRESETS = {
+export const ARTBOARD_PRESETS = {
 	square: {
 		label: '1:1',
 		caption: '인스타·프로필',

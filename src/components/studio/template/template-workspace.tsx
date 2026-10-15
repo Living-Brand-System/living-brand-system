@@ -1,17 +1,12 @@
 'use client'
 
 import { useEffect } from 'react'
-import { PreviewRefreshButton } from '@/components/studio/shared/preview-refresh-button'
 import { useStudioCapabilities } from '@/components/studio/shared/studio-capabilities'
 import { StudioSelectionChange } from '@/components/studio/shared/studio-selection-card'
 import { StudioShell } from '@/components/studio/shared/studio-shell'
 import { useProfilePreview } from '@/components/studio/shared/use-profile-preview'
 import { TemplateOutput } from '@/components/studio/template/output/template-output'
 import { TemplateCanvas } from '@/components/studio/template/template-canvas'
-import {
-	TemplateDefaultsButton,
-	useTemplateDefaults,
-} from '@/components/studio/template/template-defaults-button'
 import { TemplateEditingPanel } from '@/components/studio/template/template-editing-panel'
 import { TemplateManagerOverlay } from '@/components/studio/template/template-manager-overlay'
 import { TemplateManagerRail } from '@/components/studio/template/template-manager-rail'
@@ -19,6 +14,7 @@ import { useTemplatePanel } from '@/components/studio/template/template-panel'
 import { Typography } from '@/components/ui/typography'
 import { useTemplateExport } from '@/features/studio-export/hooks/use-template-export'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
+import { isManagerDraft } from '@/features/template-customization/services/template-records.client'
 import { TemplateLayerGroups } from './template-controls'
 import { TemplateProfilePicker } from './template-profile-picker'
 export function TemplateWorkspace({
@@ -57,8 +53,8 @@ export function TemplateWorkspace({
 		artifact: canvas.artifact,
 		viewport: config.template.exportOption.canvas,
 		onUpdated: navigation.browse.reload,
+		asDraft: () => isManagerDraft(config.id),
 	})
-	const defaults = useTemplateDefaults()
 	const { canManageProfiles } = useStudioCapabilities()
 
 	return (
@@ -70,22 +66,17 @@ export function TemplateWorkspace({
 							title: config.name,
 							subtitle: navigation.categoryTitle ?? 'Template',
 							image: preview.image ?? config.previewImage,
-							onReset,
-							managerTarget: 'thumbnail:',
-							titleManagerTarget: 'name:',
-							subtitleManagerTarget: 'category:',
+							managerTarget: 'card:',
 							actions: (
 								<>
-									<PreviewRefreshButton preview={preview} />
-									<TemplateDefaultsButton defaults={defaults} />
 									<StudioSelectionChange label="템플릿 변경" tabs={['Templates']}>
 										<TemplateProfilePicker onSelect={onChange} />
 									</StudioSelectionChange>
 								</>
 							),
-							children: (preview.error || defaults.message) && (
+							children: preview.error && (
 								<Typography role="alert" size="xs">
-									{preview.error ?? defaults.message}
+									{preview.error}
 								</Typography>
 							),
 						},
@@ -108,7 +99,7 @@ export function TemplateWorkspace({
 							// Figma 529:19461 — 작품 축은 화면(상단 메뉴) 중심이다. 오른쪽 패널이 왼쪽보다
 							// 56px 넓어 캔버스 열 중심과 28px 어긋나므로 왼쪽에 그만큼 더 비운다.
 							<div className="h-full min-h-96 w-full lg:min-h-0 lg:pl-14">
-								<TemplateCanvas />
+								<TemplateCanvas onReset={onReset} />
 							</div>
 						),
 						panel: {

@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import {
+	isManagerDraft,
 	listTemplateCategoryOptions,
 	readTemplateRecord,
 	type TemplateCategoryOption,
@@ -47,7 +48,9 @@ export function useTemplateRecord(templateId: number, onSaved?: () => void) {
 			await updateTemplateInfo(templateId, patch)
 			await reload()
 			onSaved?.()
+			// Manager mode에서는 초안이라 주소가 아직 안 바뀌었다 — 옮기는 것은 저장할 때 레일이 한다.
 			if (
+				!isManagerDraft(templateId) &&
 				record &&
 				patch.slug !== undefined &&
 				patch.slug !== record.slug &&

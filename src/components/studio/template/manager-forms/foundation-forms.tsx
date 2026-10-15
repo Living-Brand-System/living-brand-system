@@ -1,5 +1,7 @@
 'use client'
 
+import { openDataEditorTab } from '@/components/studio/shared/data-editor'
+import { FOUNDATION_TABS } from '@/components/studio/template/foundation-editor'
 import {
 	type ManagerLink,
 	ManagerLinkForm,
@@ -7,8 +9,7 @@ import {
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 
 const BRAND_COLOR_LINKS: readonly ManagerLink[] = [
-	{ label: '컬러 열기', href: '/admin/collections/brand-colors' },
-	{ label: '컬러 그룹 열기', href: '/admin/collections/brand-color-groups' },
+	{ label: '파운데이션 컬러 열기', onOpen: () => openDataEditorTab(FOUNDATION_TABS.color) },
 	{ label: '가이드라인 Color 보기', href: '/guideline/brand-elements/color' },
 ]
 
@@ -20,7 +21,7 @@ export function TemplateColorManagerForm({ controlId }: { controlId: string }) {
 	const subject = controlId.startsWith('background.') ? '배경' : '텍스트'
 	return (
 		<ManagerLinkForm
-			note={`${subject} 스와치는 게시된 컬러 그룹에 담긴 게시된 컬러예요(그룹 순서대로). 색을 더하거나 빼려면 「컬러」와 「컬러 그룹」에서 관리해요. 모든 템플릿에 같이 반영돼요.`}
+			note={`${subject} 스와치는 게시된 컬러 그룹에 담긴 게시된 컬러예요(그룹 순서대로). 색을 더하거나 빼려면 파운데이션의 「컬러」에서 관리해요. 모든 템플릿에 같이 반영돼요.`}
 			links={BRAND_COLOR_LINKS}
 		/>
 	)
