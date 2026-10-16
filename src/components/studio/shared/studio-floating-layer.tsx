@@ -115,13 +115,13 @@ export function StudioFloatingLayer({ floating }: { floating: StudioFloating | n
 							className="pointer-events-auto min-h-0 lg:h-full lg:w-88"
 							{...floatingEnter('left', reducedMotion, transition)}
 						>
-							{/* 자산 브라우저는 스크롤 상자 밖(Root)으로 옮겨 붙는다 — 안에 두면 잘린다. */}
+							{/* 자산 브라우저는 카드 묶음 밖(Root)으로 옮겨 붙는다. */}
 							<ControllerBrowser.Root className="min-h-0">
 								<section
 									ref={left}
 									tabIndex={-1}
 									aria-label={floating.label}
-									className="scrollbar-none flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-4 outline-none"
+									className="flex flex-col gap-4 p-4 outline-none"
 								>
 									{floating.left}
 								</section>

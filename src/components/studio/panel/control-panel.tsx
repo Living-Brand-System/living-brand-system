@@ -22,9 +22,10 @@ import { StudioRail, StudioRailIcon } from './studio-rail'
 /**
  * 카드 본문 여백(Figma 529:19501·529:27179). 기본 16px이고, 그룹 제목으로 시작하면 위만 줄인다 —
  * 제목 행(36px)이 자기 여백을 갖고, GroupList는 시작 4px을 더한다. 둘 다 카드 상단에서 8px이 된다.
+ * 🔴 스크롤하지 않는다 — 패널은 내용 높이이고, 열을 넘는 구성은 코드가 아니라 UI/UX가 정한다(docs/features/studio.md 패널 높이 규칙).
  */
 const CARD_BODY =
-	'scrollbar-none min-h-0 overflow-y-auto p-4 has-[>[data-slot=controller-group-list]:first-child]:pt-1 has-[>[data-slot=controller-group]:first-child]:pt-2 has-[>:first-child>[data-slot=controller-group-list]:first-child]:pt-1'
+	'p-4 has-[>[data-slot=controller-group-list]:first-child]:pt-1 has-[>[data-slot=controller-group]:first-child]:pt-2 has-[>:first-child>[data-slot=controller-group-list]:first-child]:pt-1'
 
 /**
  * 패널 컴포지션 입력(docs/10 §3.7) — 화면이 `arrangeStudioPanel`로 역할을 슬롯에 놓은 결과와 그릴 값.
@@ -119,13 +120,12 @@ function ControlPanelView({
 								key={floating.identity}
 								aria-label={floating.label}
 								data-slot="studio-floating-panel"
-								// height:auto — 내용만큼 서고, 넘치면 열 높이에서 멈춰 안에서 스크롤한다(사용자 2026-10-16).
-								className="absolute inset-x-0 top-0 z-30 flex max-h-full min-h-0 flex-col"
+								className="absolute inset-x-0 top-0 z-30"
 								{...floatingEnter('right', reducedMotion, transition)}
 							>
 								{/* 층마다 패널 렌더 기록이 따로다 — 아래 층의 기록을 건드리지 않는다. */}
 								<PanelRenderScope>
-									<PanelColumn column={top} transition={transition} fit />
+									<PanelColumn column={top} transition={transition} />
 								</PanelRenderScope>
 							</m.aside>
 						)}
@@ -214,37 +214,27 @@ function usePanelColumn(
 	}
 }
 
-/** 내용 열 — 고정 영역과 내용 영역은 바뀌는 때가 달라 따로 다시 그린다(내용만 바뀌었는데 그대로인 위 카드가 움직이지 않게). */
+/**
+ * 내용 열 — 고정 영역과 내용 영역은 바뀌는 때가 달라 따로 다시 그린다(내용만 바뀌었는데 그대로인 위 카드가 움직이지 않게).
+ * 🔴 모든 패널은 내용 높이다(height:auto) — 남은 높이를 채우거나 열 안에서 스크롤하는 패널은 두지 않는다(사용자 2026-10-16).
+ */
 function PanelColumn({
 	column: { id, fixed, fixedKey, contentKey, tabs, active },
 	transition,
-	fit = false,
 }: {
 	column: ReturnType<typeof usePanelColumn>
 	transition: ReturnType<typeof useMotionTransition>
-	/** 내용 높이만큼만 선다(플로팅 층) — 기본 층은 열 높이를 채운다. 흐림·흐림 여백은 열을 채울 때만 둔다. */
-	fit?: boolean
 }) {
 	return (
-		<div className={cn('flex min-h-0 w-80 flex-col gap-3', !fit && 'h-full')}>
+		<div className="flex w-80 flex-col gap-3">
 			{fixed && (
-				<PanelRenderTarget
-					side="right"
-					region="fixed"
-					renderKey={fixedKey}
-					className="flex min-h-0 shrink-0 flex-col lg:max-h-[50%]"
-				>
+				<PanelRenderTarget side="right" region="fixed" renderKey={fixedKey}>
 					<ControllerRoot data-slot="studio-control-fixed" className="lg:h-auto">
 						<div className={CARD_BODY}>{fixed}</div>
 					</ControllerRoot>
 				</PanelRenderTarget>
 			)}
-			<PanelRenderTarget
-				side="right"
-				region="content"
-				renderKey={contentKey}
-				className="flex min-h-0 flex-1 flex-col"
-			>
+			<PanelRenderTarget side="right" region="content" renderKey={contentKey}>
 				{tabs.map((tab) => (
 					// 탭은 상태를 지키려고 모두 띄워 둔다 — 다시 그리지 않고, 보이게 될 때 패널 렌더를 재생한다.
 					// 숨을 때는 즉시 숨김 값으로 돌려 두고(첫 렌더는 제자리에서 시작), 나타날 때만 움직인다.
@@ -252,12 +242,6 @@ function PanelColumn({
 						key={tab.id}
 						id={`${id}-${tab.id}`}
 						hidden={active !== tab.id}
-						// 높이가 auto면 안쪽 h-full이 먹지 않는다 — 보이는 탭만 flex로 이어 목록이 열 안에서 스크롤되게 한다.
-						// (숨은 탭에 flex를 주면 hidden을 덮는다.)
-						className={cn(
-							'min-h-0 flex-1',
-							fit && active === tab.id && 'flex flex-col',
-						)}
 						style={{ transformOrigin: PANEL_RENDER.right.origin }}
 						initial={false}
 						animate={
@@ -265,43 +249,24 @@ function PanelColumn({
 						}
 						transition={active === tab.id ? transition : { duration: 0 }}
 					>
-						<div className="flex h-full min-h-0 flex-col">
-							{/* 목록 카드도 조건으로 생기고 빠진다(Fluted Style) — 다른 조건부 행과 같은 높이 펼침이다.
-							    카드 사이 간격은 부모 gap이 아니라 펼치는 상자의 아래 여백이 갖는다(높이 0일 때 남지 않게). */}
-							<ControllerPresence itemClassName="flex min-h-0 shrink flex-col pb-3">
-								{tab.list && (
-									<ControllerRoot
-										key="list"
-										data-slot="studio-preset-list"
-										className="min-h-0 shrink lg:h-auto"
-									>
-										<div className={CARD_BODY}>{tab.list}</div>
-									</ControllerRoot>
-								)}
-							</ControllerPresence>
-							{tab.content && (
+						{/* 목록 카드도 조건으로 생기고 빠진다(Fluted Style) — 다른 조건부 행과 같은 높이 펼침이다.
+						    카드 사이 간격은 부모 gap이 아니라 펼치는 상자의 아래 여백이 갖는다(높이 0일 때 남지 않게). */}
+						<ControllerPresence itemClassName="pb-3">
+							{tab.list && (
 								<ControllerRoot
-									className={
-										tab.list
-											? 'relative min-h-0 shrink-0 lg:h-auto max-h-[60%]'
-											: 'relative min-h-0 flex-1 lg:h-auto'
-									}
+									key="list"
+									data-slot="studio-preset-list"
+									className="lg:h-auto"
 								>
-									{/* 끝까지 내리면 마지막 컨트롤이 흐림 위로 올라오도록 아래 여백을 흐림 높이만큼 둔다. */}
-									<div className={cn(CARD_BODY, !fit && 'pb-16')}>
-										{tab.content}
-									</div>
-									{/* Figma 529:19501·529:25146 — 스크롤 본문 아래 64px 흐림. */}
-									{!fit && (
-										<div
-											aria-hidden="true"
-											data-slot="studio-control-fade"
-											className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-b from-transparent to-background to-75%"
-										/>
-									)}
+									<div className={CARD_BODY}>{tab.list}</div>
 								</ControllerRoot>
 							)}
-						</div>
+						</ControllerPresence>
+						{tab.content && (
+							<ControllerRoot className="lg:h-auto">
+								<div className={CARD_BODY}>{tab.content}</div>
+							</ControllerRoot>
+						)}
 					</m.div>
 				))}
 			</PanelRenderTarget>

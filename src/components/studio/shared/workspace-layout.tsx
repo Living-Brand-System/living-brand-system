@@ -28,13 +28,13 @@ export function WorkspaceLayout({ left, right, children, layer }: WorkspaceLayou
 
 type PanelProps = { top: ReactNode; bottom: ReactNode }
 
-/** 왼쪽은 카드 묶음 전체가 스크롤된다. 콘텐츠가 비어도 두 카드는 남는다. */
+/** 왼쪽 카드 묶음 — 카드는 내용 높이이고 스크롤하지 않는다(docs/features/studio.md 패널 높이 규칙). 콘텐츠가 비어도 두 카드는 남는다. */
 export function SelectionPanel({ top, bottom }: PanelProps) {
 	return (
 		<aside
 			aria-label="작업 대상과 출력"
 			data-slot="studio-layout-selection"
-			className="scrollbar-none flex min-h-0 flex-col gap-4 p-4 lg:h-full lg:w-88 lg:overflow-y-auto"
+			className="flex min-h-0 flex-col gap-4 p-4 lg:h-full lg:w-88"
 		>
 			<ControllerRoot
 				data-slot="studio-layout-identity"
