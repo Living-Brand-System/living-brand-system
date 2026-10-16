@@ -102,7 +102,7 @@ function ControlPanelView({
 			>
 				{/* 레일은 고정 크롬이라 움직이지 않는다 — 플로팅 층도 레일을 덮지 않고 내용 열만 덮는다(사용자 2026-10-16). */}
 				<div data-slot="studio-control-columns" className="relative flex min-h-0 w-80">
-					<StudioFloatingRecede side="right" floating={Boolean(floating)}>
+					<StudioFloatingRecede floating={Boolean(floating)}>
 						<PanelColumn column={base} transition={transition} />
 					</StudioFloatingRecede>
 					<AnimatePresence initial={false}>

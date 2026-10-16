@@ -67,7 +67,7 @@ export function StudioShell({ surface }: { surface: StudioSurface }) {
 		<WorkspaceLayout
 			left={
 				<ControllerBrowser.Root className="min-h-0">
-					<StudioFloatingRecede side="left" floating={Boolean(floating)}>
+					<StudioFloatingRecede floating={Boolean(floating)}>
 						<SelectionPanel
 							top={<StudioSelectionCard {...selection} />}
 							bottom={output}
