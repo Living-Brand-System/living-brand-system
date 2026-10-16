@@ -33,7 +33,8 @@ export type StudioSurface = {
 	/** 왼쪽 아래 카드 — Output(템플릿은 레이어 목록 + Output). */
 	output: ReactNode
 	/**
-	 * 플로팅 층 — 있으면 왼쪽·오른쪽 패널이 뒤로 밀려 잠기고 그 위에 새 층이 선다(`StudioFloatingLayer`).
+	 * 플로팅 층 — 있으면 왼쪽 카드 묶음과 오른쪽 내용 열이 뒤로 밀려 잠기고 그 위에 새 층이 선다
+	 * (왼쪽은 `StudioFloatingLayer`, 오른쪽은 `ControlPanel`의 `floating`). 🔴 레일은 층에 들지 않는다.
 	 * 템플릿의 프로파일 조정이 쓴다.
 	 */
 	floating?: StudioFloating | null
@@ -76,19 +77,25 @@ export function StudioShell({ surface }: { surface: StudioSurface }) {
 			}
 			right={
 				<div data-slot="studio-sidebar" className="h-full min-h-0">
-					<StudioFloatingRecede side="right" floating={Boolean(floating)}>
-						<PanelRenderScope>
-							<ControllerBrowser.Root className="min-h-0 h-full">
-								<ControlPanel
-									key={panel.identity}
-									compositions={panel.compositions}
-									extras={panel.extras}
-									target={panel.target}
-									railFooter={panel.railFooter}
-								/>
-							</ControllerBrowser.Root>
-						</PanelRenderScope>
-					</StudioFloatingRecede>
+					<PanelRenderScope>
+						<ControllerBrowser.Root className="min-h-0 h-full">
+							<ControlPanel
+								key={panel.identity}
+								compositions={panel.compositions}
+								extras={panel.extras}
+								target={panel.target}
+								railFooter={panel.railFooter}
+								// 플로팅 층의 오른쪽은 레일을 남기고 내용 열만 덮는다.
+								floating={
+									floating?.panel && {
+										...floating.panel,
+										label: floating.label,
+										identity: floating.identity,
+									}
+								}
+							/>
+						</ControllerBrowser.Root>
+					</PanelRenderScope>
 				</div>
 			}
 			layer={<StudioFloatingLayer floating={floating} />}

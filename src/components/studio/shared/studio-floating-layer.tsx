@@ -4,26 +4,26 @@ import { AnimatePresence, domAnimation, LazyMotion, useReducedMotion } from 'mot
 import * as m from 'motion/react-m'
 import { type ReactNode, useEffect, useRef } from 'react'
 import { ControllerBrowser } from '@/components/shared/controller'
-import {
-	ControlPanel,
-	type ControlPanelComposition,
-	type ControlPanelExtras,
+import type {
+	ControlPanelComposition,
+	ControlPanelExtras,
 } from '@/components/studio/panel/control-panel'
-import { PANEL_RENDER, useMotionTransition } from '@/lib/motion'
+import { PANEL_RENDER, type PanelSide, useMotionTransition } from '@/lib/motion'
 
 /**
- * 플로팅 층 — 켜지면 셸의 **모든 것 위에** 새 층을 연다(사용자 2026-10-16).
- * 🔑 공간이 모자라 위에 얹는 것이 아니라 위계다. 아래 층(기본 패널 둘)은 뒤로 밀려 잠기고, 이 층의 내용만 만질 수 있다.
+ * 플로팅 층 — 켜지면 왼쪽·오른쪽 패널 **위에** 새 층을 연다(사용자 2026-10-16).
+ * 🔑 공간이 모자라 위에 얹는 것이 아니라 위계다. 아래 층(왼쪽 카드 묶음·오른쪽 내용 열)은 뒤로 밀려 잠기고, 이 층만 만질 수 있다.
  *    아래 층의 내용을 이 층으로 옮기거나 섞지 않는다 — 이 층에 서는 것은 이 층이 연 일뿐이다.
+ * 🔴 레일은 층에 들지 않는다 — 스튜디오 어느 화면에나 늘 있는 하나이고, 맨 위 층의 탭을 가리킬 뿐이다.
  */
 export type StudioFloating = {
-	/** 층의 이름 — 왼쪽 카드와 오른쪽 패널의 접근 이름. */
+	/** 층의 이름 — 왼쪽 카드와 오른쪽 열의 접근 이름. */
 	label: string
 	/** 무엇을 띄웠나 — 바뀌면 층이 다시 들어온다. */
 	identity: string
 	/** 왼쪽 카드 자리. */
 	left: ReactNode
-	/** 오른쪽 패널 자리 — 기본 패널과 같은 모양(레일·고정 카드·탭)이다. 없으면 오른쪽은 비운다. */
+	/** 오른쪽 내용 열 자리 — 기본 패널의 내용 열과 같은 모양(고정 카드·탭)이다(`ControlPanel`의 `floating`). 없으면 비운다. */
 	panel?: {
 		compositions: readonly ControlPanelComposition[]
 		extras?: ControlPanelExtras
@@ -51,7 +51,7 @@ export function StudioFloatingRecede({
 	floating,
 	children,
 }: {
-	side: 'left' | 'right'
+	side: PanelSide
 	floating: boolean
 	children: ReactNode
 }) {
@@ -71,7 +71,24 @@ export function StudioFloatingRecede({
 	)
 }
 
-/** 플로팅 층 자체 — 작업 영역 전체를 덮는 자리에 왼쪽 카드·오른쪽 패널을 기본 패널과 같은 자리에 세운다. */
+/** 층의 한 쪽이 들어오고 나가는 모양 — 공용 패널 렌더(`PANEL_RENDER`). 퇴장 중에는 클릭을 받지 않는다. */
+export function floatingEnter(
+	side: PanelSide,
+	reducedMotion: boolean | null,
+	transition: ReturnType<typeof useMotionTransition>,
+) {
+	return {
+		style: { transformOrigin: PANEL_RENDER[side].origin },
+		initial: reducedMotion ? false : PANEL_RENDER[side].hidden,
+		animate: PANEL_RENDER[side].shown,
+		exit: reducedMotion
+			? undefined
+			: { ...PANEL_RENDER[side].hidden, pointerEvents: 'none' as const },
+		transition,
+	}
+}
+
+/** 플로팅 층의 왼쪽 — 작업 영역 위에 겹쳐 왼쪽 카드 묶음과 같은 자리·폭에 선다. 오른쪽 열은 `ControlPanel`이 레일 옆에 세운다. */
 export function StudioFloatingLayer({ floating }: { floating: StudioFloating | null }) {
 	const left = useRef<HTMLElement>(null)
 	const reducedMotion = useReducedMotion()
@@ -85,26 +102,18 @@ export function StudioFloatingLayer({ floating }: { floating: StudioFloating | n
 		left.current?.focus()
 		return () => previous?.focus()
 	}, [identity])
-	const enter = (side: 'left' | 'right') => ({
-		style: { transformOrigin: PANEL_RENDER[side].origin },
-		initial: reducedMotion ? false : PANEL_RENDER[side].hidden,
-		animate: PANEL_RENDER[side].shown,
-		// 퇴장 중에는 마지막 화면이 남아 있으므로 클릭을 받지 않는다.
-		exit: reducedMotion ? undefined : { ...PANEL_RENDER[side].hidden, pointerEvents: 'none' },
-		transition,
-	})
 	return (
 		<LazyMotion features={domAnimation}>
 			<div
 				data-slot="studio-floating-layer"
-				className="pointer-events-none absolute inset-0 z-30 flex flex-col lg:flex-row lg:justify-between"
+				className="pointer-events-none absolute inset-y-0 left-0 z-30 flex"
 			>
 				<AnimatePresence initial={false}>
 					{floating && (
 						<m.div
-							key={`left:${floating.identity}`}
+							key={floating.identity}
 							className="pointer-events-auto min-h-0 lg:h-full lg:w-88"
-							{...enter('left')}
+							{...floatingEnter('left', reducedMotion, transition)}
 						>
 							{/* 자산 브라우저는 스크롤 상자 밖(Root)으로 옮겨 붙는다 — 안에 두면 잘린다. */}
 							<ControllerBrowser.Root className="min-h-0">
@@ -116,24 +125,6 @@ export function StudioFloatingLayer({ floating }: { floating: StudioFloating | n
 								>
 									{floating.left}
 								</section>
-							</ControllerBrowser.Root>
-						</m.div>
-					)}
-				</AnimatePresence>
-				<AnimatePresence initial={false}>
-					{floating?.panel && (
-						<m.div
-							key={`right:${floating.identity}`}
-							className="pointer-events-auto h-full min-h-0"
-							{...enter('right')}
-						>
-							<ControllerBrowser.Root className="h-full min-h-0">
-								<ControlPanel
-									label={floating.label}
-									compositions={floating.panel.compositions}
-									extras={floating.panel.extras}
-									target={floating.panel.target}
-								/>
 							</ControllerBrowser.Root>
 						</m.div>
 					)}

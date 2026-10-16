@@ -432,20 +432,13 @@ function selectLayer(label: string) {
 	openProfile()
 }
 
-/** 탭은 맨 위 층의 패널에서 누른다 — 플로팅 층이 열려 있으면 그 패널, 아니면 기본 패널. */
+/** 탭은 레일에서 누른다 — 레일은 하나뿐이고 맨 위 층의 탭을 가리킨다. */
 function panelTab(name: string) {
-	fireEvent.click(within(topPanel()).getByRole('button', { name }))
-}
-
-function topPanel() {
-	return (
-		screen.queryByRole('complementary', { name: '선택한 레이어 편집' }) ??
-		screen.getByRole('complementary', { name: '편집 도구' })
-	)
+	fireEvent.click(screen.getByRole('button', { name }))
 }
 
 function openImageColors() {
-	const adjustment = within(topPanel()).queryByRole('button', { name: 'Adjustment' })
+	const adjustment = screen.queryByRole('button', { name: 'Adjustment' })
 	if (adjustment) fireEvent.click(adjustment)
 	const custom = screen.queryByRole('radio', { name: 'Custom' })
 	if (custom) fireEvent.click(custom)

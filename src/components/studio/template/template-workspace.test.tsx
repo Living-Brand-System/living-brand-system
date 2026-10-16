@@ -91,12 +91,9 @@ function renderTemplate(data: ReturnType<typeof studio> = studio()) {
 	)
 }
 
-/** 탭은 맨 위 층의 패널에서 누른다 — 플로팅 층이 열려 있으면 그 패널, 아니면 기본 패널. */
+/** 탭은 레일에서 누른다 — 레일은 하나뿐이고 맨 위 층의 탭을 가리킨다. */
 function panelTab(name: string) {
-	const panel =
-		screen.queryByRole('complementary', { name: '선택한 레이어 편집' }) ??
-		screen.getByRole('complementary', { name: '편집 도구' })
-	fireEvent.click(within(panel).getByRole('button', { name }))
+	fireEvent.click(screen.getByRole('button', { name }))
 }
 
 it('실제 합성 캔버스·출력에 연결하고 Reset은 텍스트·색·출력 설정을 초기화한다', async () => {
@@ -296,27 +293,32 @@ it('배경은 패널 컴포지션으로 선다 — 방식을 바꿔도 Dimming �
 	expect(dimming).not.toBeNull()
 })
 
-it('🔴 플로팅 층은 모든 것 위의 새 층이다 — 아래 층은 바뀌지 않고 잠기며, 층에는 프로파일 값만 선다', async () => {
+it('🔴 플로팅 층은 패널 위의 새 층이다 — 아래 층은 바뀌지 않고 잠기며, 레일은 하나로 남고, 층에는 프로파일 값만 선다', async () => {
 	const { container } = renderTemplate()
 	await screen.findByRole('textbox', { name: '제목' })
 	const layers = screen.getByRole('region', { name: 'Layers' })
 	fireEvent.click(within(layers).getByRole('button', { name: /^Background$/ }))
-	const base = screen.getByRole('complementary', { name: '편집 도구' })
+	const panel = screen.getByRole('complementary', { name: '편집 도구' })
 	fireEvent.click(
-		within(within(base).getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {
+		within(within(panel).getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {
 			name: 'Image',
 		}),
 	)
-	const before = base.innerHTML
+	const column = panel.querySelector('[data-slot="studio-control-columns"] > div > div')
+	const rail = panel.querySelector('[data-slot="studio-rail"]')
+	if (!column || !rail) throw new Error('패널의 내용 열·레일이 없습니다.')
+	const before = column.innerHTML
 	fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 조정' }))
 	// 아래 층은 그대로 뒤에 남아 잠긴다 — 내용을 옮기거나 섞지 않는다.
-	expect(base.innerHTML).toBe(before)
-	expect(base.closest('[inert]')).not.toBeNull()
+	expect(column.innerHTML).toBe(before)
+	expect(column.closest('[inert]')).not.toBeNull()
 	expect(layers.closest('[inert]')).not.toBeNull()
-	const layer = container.querySelector<HTMLElement>('[data-slot="studio-floating-layer"]')
-	if (!layer) throw new Error('플로팅 층이 없습니다.')
-	expect(layer.closest('[inert]')).toBeNull()
-	const floating = within(layer).getByRole('complementary', { name: '선택한 레이어 편집' })
+	// 🔴 레일은 층에 들지 않는다 — 같은 레일 하나가 잠기지 않고 남는다.
+	expect(container.querySelectorAll('[data-slot="studio-rail"]')).toHaveLength(1)
+	expect(panel.querySelector('[data-slot="studio-rail"]')).toBe(rail)
+	expect(rail.closest('[inert]')).toBeNull()
+	const floating = screen.getByRole('complementary', { name: '선택한 레이어 편집' })
+	expect(floating.closest('[inert]')).toBeNull()
 	// 배경 종류·Dimming은 아래 층의 것이다.
 	expect(within(floating).queryByRole('radiogroup', { name: 'Mode' })).toBeNull()
 	expect(within(floating).queryByRole('radiogroup', { name: 'Use' })).toBeNull()
@@ -439,9 +441,7 @@ it('Graphic 공통 패널의 팔레트와 Position을 템플릿 배경 런타임
 	await screen.findByRole('textbox', { name: '제목' })
 	fireEvent.click(screen.getByRole('button', { name: /^Background$/ }))
 	fireEvent.click(screen.getByRole('button', { name: '그래픽 프로파일 조정' }))
-	const top = container.querySelector<HTMLElement>(
-		'[data-slot="studio-floating-layer"] [data-slot="studio-control-panel"]',
-	)
+	const top = container.querySelector<HTMLElement>('[data-slot="studio-floating-panel"]')
 	const detail = top
 	if (!top || !detail) throw new Error('공통 편집 패널이 없습니다.')
 	expect(within(top).getByText('Presets')).toBeInTheDocument()
