@@ -285,9 +285,15 @@ it('배경은 패널 컴포지션으로 선다 — 방식을 바꿔도 Dimming �
 	expect(
 		within(fixed() as HTMLElement).queryByRole('button', { name: /프로파일 조정$/ }),
 	).toBeNull()
+	const opener = within(editing()).getByRole('button', { name: '이미지 프로파일 조정' })
+	// 컬러 카드와 같은 그룹 컴포넌트·섹션이다 — 배경을 고른 상태라 컬러 카드처럼 제목이 활성으로 선다.
+	expect(opener.closest('[data-slot="controller-group"]')).toHaveAttribute('data-active', 'true')
+	// 위 카드의 「Background」(종류)도 같은 섹션이다 — 두 「Background」 제목이 같아야 한다.
 	expect(
-		within(editing()).getByRole('button', { name: '이미지 프로파일 조정' }),
-	).toBeInTheDocument()
+		within(fixed() as HTMLElement)
+			.getByRole('radiogroup', { name: 'Mode' })
+			.closest('[data-slot="controller-group"]'),
+	).toHaveAttribute('data-active', 'true')
 	// 패널은 셸이 소유하는 하나다(docs/10 §3.7 공통 셸) — 방식을 바꿔도 패널·레일·고정 카드가 같은 DOM이다.
 	// 고정 영역은 구조가 같아(Dimming) 다시 그리지 않는다.
 	expect(editing()).toBe(panel)

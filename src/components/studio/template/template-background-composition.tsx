@@ -17,6 +17,7 @@ import {
 } from '@/modules/studio-controller/controller-composition'
 import type {
 	ControllerControlValue,
+	ControllerGroupDefinition,
 	ControllerValues,
 } from '@/modules/studio-controller/controller-definition'
 
@@ -30,6 +31,22 @@ export const TEMPLATE_BACKGROUND_PANEL_POLICY: StudioPanelPolicy = {
 	fixed: ['source', 'overlay'],
 	basic: ['palette'],
 }
+
+/**
+ * 배경 콘텐츠 카드(이미지·그래픽 프로파일 조정을 여는 자리)의 그룹 — 컬러 카드(`background-color`)와 같은 자리·제목·섹션이다.
+ * 컨트롤은 없고 여는 버튼만 품는다. 🔑 컬러 카드와 같은 컴포넌트(`ControllerDefinitionGroup`)로 그려야 제목이 같다(사용자 2026-10-16).
+ */
+export const TEMPLATE_BACKGROUND_CONTENT_GROUP: ControllerGroupDefinition = {
+	id: 'background-content',
+	title: 'Background',
+	controls: [],
+}
+
+const BACKGROUND_SECTION_GROUPS = new Set([
+	'background-source',
+	'background-color',
+	TEMPLATE_BACKGROUND_CONTENT_GROUP.id,
+])
 
 /**
  * 배경 세션을 패널 컴포지션으로 잇는다 — 값은 세션이 갖고, 바꾸기는 세션 액션으로 보낸다(순수, 훅 없음).
@@ -73,8 +90,9 @@ export function buildTemplateBackgroundComposition({
 		// 배경색은 텍스트·심볼 색과 같은 스와치 위젯이 그린다.
 		widgets: TEMPLATE_LAYER_WIDGETS,
 		// 배경 종류·색을 만지면 캔버스가 도화지를 짚는다 — 둘 다 「Background」 섹션이다.
+		// 「Background」 제목을 단 그룹은 전부 같은 섹션이다 — 위 카드(종류)와 아래 카드(컬러·이미지·그래픽)의 제목이 같아야 한다.
 		groupSection: (group) =>
-			group.id === 'background-color' || group.id === 'background-source'
+			BACKGROUND_SECTION_GROUPS.has(group.id)
 				? {
 						active: focus.target?.kind === 'canvas',
 						onActivate: () =>

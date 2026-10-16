@@ -1,14 +1,17 @@
 'use client'
 
 import { useEffect } from 'react'
-import { Controller } from '@/components/shared/controller'
+import { ControllerDefinitionGroup } from '@/components/shared/controller-renderer'
 import type {
 	ControlPanelComposition,
 	ControlPanelExtras,
 } from '@/components/studio/panel/control-panel'
 import type { StudioFloating } from '@/components/studio/shared/studio-floating-layer'
 import type { StudioSurface } from '@/components/studio/shared/studio-shell'
-import { buildTemplateBackgroundComposition } from '@/components/studio/template/template-background-composition'
+import {
+	buildTemplateBackgroundComposition,
+	TEMPLATE_BACKGROUND_CONTENT_GROUP,
+} from '@/components/studio/template/template-background-composition'
 import {
 	buildTemplateLayerPanel,
 	useTextCaretHandoff,
@@ -79,6 +82,10 @@ export function useTemplatePanel(): {
 			: type === 'image' || (selected.kind === 'image' && selected.access === 'editable')
 				? '이미지 프로파일 조정'
 				: null
+	const opening =
+		kind === 'background'
+			? TEMPLATE_BACKGROUND_CONTENT_GROUP
+			: { id: 'image-profile', title: 'Image', controls: [] }
 	return {
 		panel: {
 			identity: config.id,
@@ -94,8 +101,13 @@ export function useTemplatePanel(): {
 					? {
 							...base.extras,
 							basic: (
-								<Controller.Group
-									title={kind === 'background' ? 'Background' : 'Image'}
+								// 컬러 카드와 같은 컴포넌트·섹션 연결로 그린다 — 제목·활성 표시가 같아야 한다.
+								// 컨트롤이 없는 그룹이라 값·바꾸기는 비어 있다.
+								<ControllerDefinitionGroup
+									group={opening}
+									values={{}}
+									onChange={() => {}}
+									section={shared?.groupSection?.(opening)}
 								>
 									<Button
 										variant="muted"
@@ -105,7 +117,7 @@ export function useTemplatePanel(): {
 									>
 										{opener}
 									</Button>
-								</Controller.Group>
+								</ControllerDefinitionGroup>
 							),
 						}
 					: base.extras,

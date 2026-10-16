@@ -1577,7 +1577,13 @@ describe('TemplateGenerator', () => {
 		expect(named('Text')).toBeUndefined()
 		// 🔴 배경은 집을 노드가 없다 — 도화지를 집는다(`kind: 'canvas'`). 그래도 활성 면이 켜진다.
 		//    전에는 대상이 슬롯 하나로 고정돼 있어 이것이 안 됐다.
-		expect(named('Background')).toHaveAttribute('data-active', 'true')
+		//    섹션은 아래 콘텐츠 카드(컬러·이미지·그래픽)다 — 위 카드의 종류 그룹도 제목이 Background라 그것은 건너뛴다.
+		const content = groups().find(
+			(group) =>
+				group.querySelector('span')?.textContent?.trim() === 'Background' &&
+				!group.closest('[data-slot="studio-control-fixed"]'),
+		)
+		expect(content).toHaveAttribute('data-active', 'true')
 	})
 
 	it('입력칸에서 포커스가 빠져도 활성 섹션이 꺼지지 않는다 — 다음 대상이 덮어쓸 뿐이다', () => {
