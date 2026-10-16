@@ -21,6 +21,8 @@ export type StudioFloating = {
 	label: string
 	/** 무엇을 띄웠나 — 바뀌면 층이 다시 들어온다. */
 	identity: string
+	/** 층 밖의 빈 곳을 누르면 부른다 — 층을 닫는다(사용자 2026-10-16). */
+	onDismiss?: () => void
 	/** 왼쪽 카드 자리. */
 	left: ReactNode
 	/** 오른쪽 내용 열 자리 — 기본 패널의 내용 열과 같은 모양(고정 카드·탭)이다(`ControlPanel`의 `floating`). 없으면 비운다. */
@@ -45,6 +47,10 @@ const IN_PLACE = {
 	filter: 'blur(0px)',
 	transitionEnd: { filter: 'none' },
 } as const
+
+/** 누르면 층을 닫지 않는 자리 — 층의 두 쪽, 레일, 포털로 뜬 고르기 창(셀렉트·대화상자), Manager mode 층. */
+const INSIDE_FLOATING =
+	'[data-floating-part], [data-slot="studio-rail"], [data-radix-popper-content-wrapper], [role="dialog"], [data-slot="manager-overlay"]'
 
 /** 아래 층 한 쪽 — 플로팅 층이 열려 있으면 뒤로 밀리고 잠긴다. */
 export function StudioFloatingRecede({
@@ -95,6 +101,17 @@ export function StudioFloatingLayer({ floating }: { floating: StudioFloating | n
 	const reducedMotion = useReducedMotion()
 	const transition = useMotionTransition('tight')
 	const identity = floating?.identity
+	const onDismiss = floating?.onDismiss
+	// 층 밖을 누르면 닫는다. 층 안·레일(층의 탭)·떠 있는 고르기 창·Manager mode 층은 밖이 아니다.
+	useEffect(() => {
+		if (!identity || !onDismiss) return
+		const dismiss = (event: PointerEvent) => {
+			if (event.target instanceof Element && event.target.closest(INSIDE_FLOATING)) return
+			onDismiss()
+		}
+		document.addEventListener('pointerdown', dismiss, true)
+		return () => document.removeEventListener('pointerdown', dismiss, true)
+	}, [identity, onDismiss])
 	// 열리면 층으로 포커스를 옮기고, 닫히면 연 자리로 돌려준다.
 	useEffect(() => {
 		if (!identity) return
@@ -113,6 +130,7 @@ export function StudioFloatingLayer({ floating }: { floating: StudioFloating | n
 					{floating && (
 						<m.div
 							key={floating.identity}
+							data-floating-part=""
 							className="pointer-events-auto min-h-0 lg:h-full lg:w-88"
 							{...floatingEnter('left', reducedMotion, transition)}
 						>

@@ -111,6 +111,7 @@ function ControlPanelView({
 								key={floating.identity}
 								aria-label={floating.label}
 								data-slot="studio-floating-panel"
+								data-floating-part=""
 								className="absolute inset-x-0 top-0 z-30"
 								{...floatingEnter('right', reducedMotion, transition)}
 							>

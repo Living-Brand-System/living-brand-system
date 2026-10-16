@@ -378,6 +378,34 @@ it('🔴 플로팅 층은 패널 위의 새 층이다 — 아래 층은 바뀌�
 	expect(within(floating).queryByRole('radiogroup', { name: 'Use' })).toBeNull()
 })
 
+it('플로팅 층 밖의 빈 곳을 누르면 취소된다 — 층 안·레일은 밖이 아니다', async () => {
+	const { container } = renderTemplate()
+	await screen.findByRole('textbox', { name: '제목' })
+	const layers = screen.getByRole('region', { name: 'Layers' })
+	fireEvent.click(within(layers).getByRole('button', { name: /^Background$/ }))
+	fireEvent.click(
+		within(screen.getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {
+			name: 'Image',
+		}),
+	)
+	fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 조정' }))
+	const selection = screen.getByRole('region', { name: '선택한 레이어 편집' })
+	// 층 안과 레일을 눌러도 그대로다.
+	fireEvent.pointerDown(selection)
+	fireEvent.pointerDown(container.querySelector('[data-slot="studio-rail"]') as Element)
+	expect(screen.getByRole('region', { name: '선택한 레이어 편집' })).toBeInTheDocument()
+	fireEvent.click(within(selection).getByRole('radio', { name: 'Generate' }))
+	// 캔버스(층 밖)를 누르면 취소 — 층에서 바꾼 값도 되돌아간다.
+	fireEvent.pointerDown(container.querySelector('[data-slot="studio-layout-canvas"]') as Element)
+	await waitFor(() =>
+		expect(
+			screen.queryByRole('region', { name: '선택한 레이어 편집' }),
+		).not.toBeInTheDocument(),
+	)
+	fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 조정' }))
+	expect(screen.getByRole('radio', { name: 'Preset' })).toBeChecked()
+})
+
 it('배경 종류는 오른쪽에서, Image Mode는 프로파일 조정(플로팅)에서 전환한다', async () => {
 	renderTemplate()
 	await screen.findByRole('textbox', { name: '제목' })

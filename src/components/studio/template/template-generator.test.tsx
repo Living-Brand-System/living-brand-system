@@ -834,7 +834,8 @@ describe('TemplateGenerator', () => {
 		)
 		const dimmer = () => container.querySelector<HTMLElement>('[data-image-dimmer]')
 
-		selectLayerGroup('image')
+		// Dimming은 아래 층(기본 패널)이다 — 프로파일 조정을 열기 전에 켠다.
+		fireEvent.click(layerGroupRow('image'))
 		expect(dimmer()).toBeNull()
 
 		await user.click(
@@ -843,6 +844,7 @@ describe('TemplateGenerator', () => {
 			}),
 		)
 		await waitFor(() => expect(dimmer()?.style.backgroundColor).toBe('rgba(0, 0, 0, 0.2)'))
+		openProfile()
 
 		await user.click(screen.getByRole('radio', { name: 'Preset' }))
 		// 배경 Dimming처럼 방식이 바뀌어도 그대로다(2026-10-02 결정).
@@ -1991,6 +1993,8 @@ describe('TemplateGenerator', () => {
 		)
 		expect(canvasOf().style.background).toBe('transparent')
 
+		// 배경 종류는 아래 층이다 — 프로파일 조정을 마치고 바꾼다(열린 채 아래 층을 누르면 취소다).
+		fireEvent.click(screen.getByRole('button', { name: '완료' }))
 		await user.click(
 			within(screen.getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {
 				name: 'Color',

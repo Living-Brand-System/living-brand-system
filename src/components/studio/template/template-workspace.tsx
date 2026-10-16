@@ -92,6 +92,8 @@ export function TemplateWorkspace({
 							? {
 									label: '선택한 레이어 편집',
 									identity: editing.targetId,
+									// 층 밖의 빈 곳을 누르면 취소다 — 취소 버튼과 같다.
+									onDismiss: editing.cancel,
 									left: (
 										<TemplateEditingPanel settings={templatePanel.settings} />
 									),
