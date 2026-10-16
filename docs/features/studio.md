@@ -344,7 +344,7 @@ Template Studio의 Output은 왼쪽에 둡니다.
 ### 공통 StudioRail
 
 `StudioRail`은 세 Generator의 오른쪽 패널에 공통으로 배치합니다. Figma `529:17049`·`529:17075` 기준으로 버튼은 44px, 원본 아이콘은 20px, 모서리는 12px, 버튼 간격은 6px입니다. 본문과 레일 사이 간격은 12px입니다.
-`StudioRailIcon`은 `active`·`idle`·`disabled`를 표현합니다. Active는 배경·테두리·그림자와 `aria-pressed`로 구분하고, Disabled는 네이티브 `disabled`로 클릭과 키보드 실행을 막습니다. 아이콘 윤곽은 `public/studio/rail/`의 Figma 원본 SVG를 사용합니다.
+`StudioRailIcon`은 `active`·`idle`·`disabled`를 표현합니다. Active는 레일보다 한 단계 떠오른 면(라이트는 배경색, 다크는 `foreground/20` — 다크 배경색은 레일보다 어두워 꺼져 보인다)·테두리·그림자와 `aria-pressed`로 구분하고, Disabled는 네이티브 `disabled`로 클릭과 키보드 실행을 막습니다. 아이콘 윤곽은 `public/studio/rail/`의 Figma 원본 SVG를 사용합니다.
 레일은 편집 상태를 소유하지 않습니다. 기존 `ControlPanel`의 전환 상태를 연결하고, 아직 보기 분리가 없는 패널은 Basic 한 개를 표시합니다. 미지원 보기를 억지로 추가하지 않습니다.
 
 ### 템플릿 패널 탐색과 편집 세션

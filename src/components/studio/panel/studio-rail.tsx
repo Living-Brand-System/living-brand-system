@@ -5,7 +5,9 @@ import type { ComponentProps, ReactElement } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-const ACTIVE = 'border-muted bg-background text-foreground shadow-lg hover:bg-background'
+// 고른 탭은 레일(muted)보다 한 단계 떠오른 면이다. 다크에서는 배경이 muted보다 어두워 꺼져 보이므로 밝게 띄운다(사용자 QA 2026-10-16).
+const ACTIVE =
+	'border-muted bg-background text-foreground shadow-lg hover:bg-background dark:bg-foreground/20 dark:hover:bg-foreground/20'
 
 const iconVariants = cva('size-11 rounded-lg p-0 disabled:opacity-100', {
 	variants: {
