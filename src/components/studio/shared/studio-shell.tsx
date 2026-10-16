@@ -9,6 +9,11 @@ import {
 } from '@/components/studio/panel/control-panel'
 import { PanelRenderScope } from '@/components/studio/panel/panel-render'
 import {
+	type StudioFloating,
+	StudioFloatingLayer,
+	StudioFloatingRecede,
+} from '@/components/studio/shared/studio-floating-layer'
+import {
 	StudioSelectionCard,
 	type StudioSelectionCardProps,
 } from '@/components/studio/shared/studio-selection-card'
@@ -28,10 +33,11 @@ export type StudioSurface = {
 	/** 왼쪽 아래 카드 — Output(템플릿은 레이어 목록 + Output). */
 	output: ReactNode
 	/**
-	 * 왼쪽 위에 겹치는 자리 — 템플릿의 편집 오버레이(대상 카드·설정 카드·완료/취소)가 기본 카드 묶음을 감싼다.
-	 * 없으면 기본 카드 묶음만 선다.
+	 * 플로팅 층 — 있으면 왼쪽 카드 묶음과 오른쪽 내용 열이 뒤로 밀려 잠기고 그 위에 새 층이 선다
+	 * (왼쪽은 `StudioFloatingLayer`, 오른쪽은 `ControlPanel`의 `floating`). 🔴 레일은 층에 들지 않는다.
+	 * 템플릿의 프로파일 조정이 쓴다.
 	 */
-	frame?: (master: ReactNode) => ReactNode
+	floating?: StudioFloating | null
 	/** 가운데 — 작업 결과. */
 	canvas: ReactNode
 	panel: {
@@ -56,13 +62,17 @@ export type StudioSurface = {
  *    통째로 다시 마운트된다(템플릿에서 실측). 패널 렌더 범위도 여기 깔아 둔다 — 첫 진입만 움직이지 않는다.
  */
 export function StudioShell({ surface }: { surface: StudioSurface }) {
-	const { selection, output, frame, canvas, panel } = surface
-	const master = <SelectionPanel top={<StudioSelectionCard {...selection} />} bottom={output} />
+	const { selection, output, floating = null, canvas, panel } = surface
 	return (
 		<WorkspaceLayout
 			left={
 				<ControllerBrowser.Root className="min-h-0">
-					{frame ? frame(master) : master}
+					<StudioFloatingRecede side="left" floating={Boolean(floating)}>
+						<SelectionPanel
+							top={<StudioSelectionCard {...selection} />}
+							bottom={output}
+						/>
+					</StudioFloatingRecede>
 				</ControllerBrowser.Root>
 			}
 			right={
@@ -75,11 +85,20 @@ export function StudioShell({ surface }: { surface: StudioSurface }) {
 								extras={panel.extras}
 								target={panel.target}
 								railFooter={panel.railFooter}
+								// 플로팅 층의 오른쪽은 레일을 남기고 내용 열만 덮는다.
+								floating={
+									floating?.panel && {
+										...floating.panel,
+										label: floating.label,
+										identity: floating.identity,
+									}
+								}
 							/>
 						</ControllerBrowser.Root>
 					</PanelRenderScope>
 				</div>
 			}
+			layer={<StudioFloatingLayer floating={floating} />}
 		>
 			<WorkspaceCanvas>{canvas}</WorkspaceCanvas>
 		</WorkspaceLayout>

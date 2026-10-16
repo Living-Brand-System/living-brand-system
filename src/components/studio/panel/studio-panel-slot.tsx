@@ -61,7 +61,7 @@ export type StudioPanelSlotRenderProps = {
 
 /**
  * 패널 슬롯 하나를 그린다(docs/10 §3.7) — 그룹은 `ControllerRenderer`와 같은 컴포넌트로, 묶음은 레지스트리 위젯으로.
- * 둘을 한 `GroupList`에 담아 간격과 생기고 빠질 때의 펼침(`ControllerPresence`)이 같다.
+ * 그룹·묶음 무리는 각각 패널 섹션 하나이고, 섹션은 생기고 빠질 때 높이로 펼친다(`Controller.Sections`).
  */
 export function StudioPanelSlot({
 	entries,
@@ -77,7 +77,7 @@ export function StudioPanelSlot({
 	 * 행 사이 4px, 생기고 빠지는 행은 같은 펼침이다.
 	 */
 	flat?: boolean
-	/** 계약 슬롯 뒤에 같은 목록으로 이어 붙이는 화면 고유 그룹(예: 생성 버튼) — 간격·펼침이 같다. */
+	/** 계약 슬롯 뒤에 이어 붙이는 화면 고유 섹션(예: 생성 버튼) — `Controller.Section`으로 감싸 넘긴다. 선·펼침이 같다. */
 	children?: ReactNode
 }) {
 	if (flat)
@@ -105,50 +105,61 @@ export function StudioPanelSlot({
 				{children}
 			</Controller.Reveal>
 		)
-	// 연이은 묶음 위젯은 6px 간격으로 쌓고(Figma 345:17104·350:2664 — 표면끼리 붙는 컴파운드), 그룹은 목록의 12px를
-	// 따른다. 그룹만 있으면 목록 하나 그대로라 지금 조립과 같은 DOM이다.
+	// 패널 규칙(docs/features/studio.md) — 그룹 하나가 섹션 하나다. 섹션 사이 선은 패널이 긋는다(`Controller.Sections`).
+	// 연이은 묶음 위젯은 한 섹션에 6px 간격으로 쌓는다(Figma 345:17104·350:2664 — 표면끼리 붙는 컴파운드).
 	const runs = entries.reduce<StudioPanelEntry[][]>((all, entry) => {
 		const last = all.at(-1)
-		if (last && last[0].type === entry.type) last.push(entry)
+		if (entry.type === 'cluster' && last?.[0].type === 'cluster') last.push(entry)
 		else all.push([entry])
 		return all
 	}, [])
-	const renderRun = (run: StudioPanelEntry[], index: number, extra?: ReactNode) =>
-		run[0]?.type === 'cluster' ? (
-			<Controller.Reveal key={`run:${index}`} gap={1.5}>
-				{run.map((entry) =>
-					entry.type === 'cluster' ? renderWidget(entry, widgets, props) : null,
-				)}
-				{extra}
-			</Controller.Reveal>
-		) : (
-			<Controller.GroupList key={`run:${index}`}>
-				{run.map((entry) =>
-					entry.type === 'group' ? (
-						<ControllerDefinitionGroup
-							key={`group:${entry.group.id}:${entry.group.role}`}
-							group={entry.group}
-							section={groupSection?.(entry.group)}
-							{...props}
-						>
-							{entry.clusters?.map((cluster) =>
-								renderWidget(cluster, widgets, props),
-							)}
-						</ControllerDefinitionGroup>
-					) : null,
-				)}
-				{extra}
-			</Controller.GroupList>
-		)
-	if (runs.length <= 1) return renderRun(runs[0] ?? [], 0, children)
 	return (
-		<div data-slot="studio-panel-slot" className="flex flex-col gap-1.5">
-			{runs.map((run, index) =>
-				renderRun(run, index, index === runs.length - 1 ? children : undefined),
-			)}
-		</div>
+		<Controller.Sections>
+			{runs.map((run) => {
+				const first = run[0]
+				if (first.type === 'group')
+					return (
+						<Controller.Section
+							key={`group:${first.group.id}:${first.group.role}`}
+							start="title"
+						>
+							<ControllerDefinitionGroup
+								group={first.group}
+								section={groupSection?.(first.group)}
+								{...props}
+							>
+								{first.clusters?.map((cluster) =>
+									renderWidget(cluster, widgets, props),
+								)}
+							</ControllerDefinitionGroup>
+						</Controller.Section>
+					)
+				return (
+					<Controller.Section
+						key={`cluster:${first.cluster.id}`}
+						start={TITLED_WIDGETS.has(first.cluster.widget) ? 'title' : 'content'}
+					>
+						<Controller.Reveal gap={1.5}>
+							{run.map((entry) =>
+								entry.type === 'cluster'
+									? renderWidget(entry, widgets, props)
+									: null,
+							)}
+						</Controller.Reveal>
+					</Controller.Section>
+				)
+			})}
+			{/* 계약 밖의 것(생성 버튼·안내) — 소비처가 `Controller.Section`으로 감싸 넘긴다. */}
+			{children}
+		</Controller.Sections>
 	)
 }
+
+/**
+ * 스스로 그룹 제목 행을 그리는 위젯 — 그 위젯으로 시작하는 섹션은 제목으로 시작한다(위 4px).
+ * ponytail: 위젯 종류로 판정한다. 제목을 그리는 위젯이 늘면 여기 더한다(패널 규칙 검사가 첫 제목 높이로 잡는다).
+ */
+const TITLED_WIDGETS: ReadonlySet<ControllerWidget> = new Set(['preset-list', 'transform'])
 
 function renderWidget(
 	{ cluster, controls }: StudioPanelClusterEntry,

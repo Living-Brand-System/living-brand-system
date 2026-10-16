@@ -1,9 +1,13 @@
 'use client'
 
-import { domAnimation, LazyMotion } from 'motion/react'
+import { AnimatePresence, domAnimation, LazyMotion, useReducedMotion } from 'motion/react'
 import * as m from 'motion/react-m'
 import { type ReactNode, useId, useState } from 'react'
-import { ControllerPresence, ControllerRoot } from '@/components/shared/controller'
+import { Controller, ControllerPresence } from '@/components/shared/controller'
+import {
+	floatingEnter,
+	StudioFloatingRecede,
+} from '@/components/studio/shared/studio-floating-layer'
 import { PANEL_RENDER, useMotionTransition } from '@/lib/motion'
 import {
 	controllerStructureSignature,
@@ -13,13 +17,6 @@ import {
 import { PanelRenderScope, PanelRenderTarget, useHasPanelRenderScope } from './panel-render'
 import { StudioPanelSlot as Slot, type StudioPanelSlotRenderProps } from './studio-panel-slot'
 import { StudioRail, StudioRailIcon } from './studio-rail'
-
-/**
- * 카드 본문 여백(Figma 529:19501·529:27179). 기본 16px이고, 그룹 제목으로 시작하면 위만 줄인다 —
- * 제목 행(36px)이 자기 여백을 갖고, GroupList는 시작 4px을 더한다. 둘 다 카드 상단에서 8px이 된다.
- */
-const CARD_BODY =
-	'scrollbar-none min-h-0 overflow-y-auto p-4 has-[>[data-slot=controller-group-list]:first-child]:pt-1 has-[>[data-slot=controller-group]:first-child]:pt-2 has-[>:first-child>[data-slot=controller-group-list]:first-child]:pt-1'
 
 /**
  * 패널 컴포지션 입력(docs/10 §3.7) — 화면이 `arrangeStudioPanel`로 역할을 슬롯에 놓은 결과와 그릴 값.
@@ -50,6 +47,19 @@ type ControlPanelProps = {
 	target?: string
 	/** 레일 맨 아래에 붙는 화면별 버튼(템플릿의 Manager mode 등) — 패널 탭과 상관없다. */
 	railFooter?: ReactNode
+	/**
+	 * 플로팅 층의 오른쪽 패널(docs/10 「플로팅 층」) — 있으면 내용 열이 뒤로 밀려 잠기고 그 위에 이 열이 선다.
+	 * 🔴 레일은 덮지 않는다 — 레일은 스튜디오 어느 화면에나 늘 있는 하나다. 레일 탭은 맨 위 층의 것을 가리킨다.
+	 */
+	floating?: {
+		/** 층의 접근 이름. */
+		label: string
+		/** 무엇을 띄웠나 — 바뀌면 층이 다시 들어온다. */
+		identity: string
+		compositions: readonly ControlPanelComposition[]
+		extras?: ControlPanelExtras
+		target?: string
+	} | null
 }
 
 /**
@@ -73,52 +83,15 @@ function ControlPanelView({
 	extras,
 	target,
 	railFooter,
+	floating = null,
 }: ControlPanelProps & {
 	compositions: readonly ControlPanelComposition[]
 }) {
-	const pick = (name: StudioPanelSlot) =>
-		compositions.find((item) => item.slots[name].length) ?? compositions[0]
-	const slot = (name: Exclude<StudioPanelSlot, 'settings'>) => {
-		const extra = extras?.[name]
-		const composition = pick(name)
-		if (!composition) return extra || undefined
-		const { slots, ...render } = composition
-		return slots[name].length || extra ? (
-			<Slot entries={slots[name]} {...render}>
-				{extra}
-			</Slot>
-		) : undefined
-	}
-	const fixed = slot('fixed')
-	const basic = slot('basic')
-	const presets = slot('presets')
-	const adjustment = slot('adjustment')
-	const basicPresets = slot('basicPresets')
-	// 구조 서명 — 보이는 것이 바뀐 영역만 다시 그린다. 손으로 정한 키는 없다.
-	const signature = (names: readonly StudioPanelSlot[]) =>
-		compositions.length
-			? names
-					.map((name) => controllerStructureSignature(pick(name)?.slots[name] ?? []))
-					.join('/')
-			: undefined
-	const fixedKey = signature(['fixed'])
-	const contentKey = signature(['basicPresets', 'basic', 'presets', 'adjustment'])
-	// 탭 선택은 편집 대상마다다 — 대상이 바뀌면 Basic부터 보인다(패널은 다시 마운트하지 않는다).
-	const [choice, setChoice] = useState({ target, tab: 'basic' })
-	const selected = choice.target === target ? choice.tab : 'basic'
-	const setSelected = (tab: string) => setChoice({ target, tab })
-	const id = useId()
-	const tabs = [
-		{ id: 'basic' as const, label: 'Basic', content: basic, list: basicPresets },
-		{ id: 'presets' as const, label: 'Presets', content: presets, list: undefined },
-		{
-			id: 'adjustment' as const,
-			label: 'Adjustment',
-			content: adjustment,
-			list: undefined,
-		},
-	].filter((tab) => tab.content || tab.list)
-	const active = tabs.find((tab) => tab.id === selected)?.id ?? tabs[0]?.id
+	const base = usePanelColumn(compositions, extras, target)
+	const top = usePanelColumn(floating?.compositions ?? [], floating?.extras, floating?.target)
+	// 레일은 하나뿐이다 — 맨 위 층의 탭을 가리킨다.
+	const rail = floating ? top : base
+	const reducedMotion = useReducedMotion()
 	const transition = useMotionTransition('tight')
 	return (
 		<LazyMotion features={domAnimation}>
@@ -127,95 +100,40 @@ function ControlPanelView({
 				data-slot="studio-control-panel"
 				className="flex h-full min-h-0 w-102 gap-3 p-4"
 			>
-				{/* 레일은 고정 크롬이라 움직이지 않는다. 고정 영역과 내용 영역은 바뀌는 때가 달라
-				    따로 다시 그린다 — 내용만 바뀌었는데 그대로인 위 카드가 움직이지 않게. */}
-				<div className="flex min-h-0 w-80 flex-col gap-3">
-					{fixed && (
-						<PanelRenderTarget
-							side="right"
-							region="fixed"
-							renderKey={fixedKey}
-							className="flex min-h-0 shrink-0 flex-col lg:max-h-[50%]"
-						>
-							<ControllerRoot data-slot="studio-control-fixed" className="lg:h-auto">
-								<div className={CARD_BODY}>{fixed}</div>
-							</ControllerRoot>
-						</PanelRenderTarget>
-					)}
-					<PanelRenderTarget
-						side="right"
-						region="content"
-						renderKey={contentKey}
-						className="flex min-h-0 flex-1 flex-col"
-					>
-						{tabs.map((tab) => (
-							// 탭은 상태를 지키려고 모두 띄워 둔다 — 다시 그리지 않고, 보이게 될 때 패널 렌더를 재생한다.
-							// 숨을 때는 즉시 숨김 값으로 돌려 두고(첫 렌더는 제자리에서 시작), 나타날 때만 움직인다.
-							<m.div
-								key={tab.id}
-								id={`${id}-${tab.id}`}
-								hidden={active !== tab.id}
-								className="min-h-0 flex-1"
-								style={{ transformOrigin: PANEL_RENDER.right.origin }}
-								initial={false}
-								animate={
-									active === tab.id
-										? PANEL_RENDER.right.shown
-										: PANEL_RENDER.right.hidden
-								}
-								transition={active === tab.id ? transition : { duration: 0 }}
+				{/* 레일은 고정 크롬이라 움직이지 않는다 — 플로팅 층도 레일을 덮지 않고 내용 열만 덮는다(사용자 2026-10-16). */}
+				<div data-slot="studio-control-columns" className="relative flex min-h-0 w-80">
+					<StudioFloatingRecede side="right" floating={Boolean(floating)}>
+						<PanelColumn column={base} transition={transition} />
+					</StudioFloatingRecede>
+					<AnimatePresence initial={false}>
+						{floating && (
+							<m.aside
+								key={floating.identity}
+								aria-label={floating.label}
+								data-slot="studio-floating-panel"
+								className="absolute inset-x-0 top-0 z-30"
+								{...floatingEnter('right', reducedMotion, transition)}
 							>
-								<div className="flex h-full min-h-0 flex-col">
-									{/* 목록 카드도 조건으로 생기고 빠진다(Fluted Style) — 다른 조건부 행과 같은 높이 펼침이다.
-									    카드 사이 간격은 부모 gap이 아니라 펼치는 상자의 아래 여백이 갖는다(높이 0일 때 남지 않게). */}
-									<ControllerPresence itemClassName="flex min-h-0 shrink flex-col pb-3">
-										{tab.list && (
-											<ControllerRoot
-												key="list"
-												data-slot="studio-preset-list"
-												className="min-h-0 shrink lg:h-auto"
-											>
-												<div className={CARD_BODY}>{tab.list}</div>
-											</ControllerRoot>
-										)}
-									</ControllerPresence>
-									{tab.content && (
-										<ControllerRoot
-											className={
-												tab.list
-													? 'relative min-h-0 shrink-0 lg:h-auto max-h-[60%]'
-													: 'relative min-h-0 flex-1 lg:h-auto'
-											}
-										>
-											{/* 끝까지 내리면 마지막 컨트롤이 흐림 위로 올라오도록 아래 여백을 흐림 높이만큼 둔다. */}
-											<div className={`${CARD_BODY} pb-16`}>
-												{tab.content}
-											</div>
-											{/* Figma 529:19501·529:25146 — 스크롤 본문 아래 64px 흐림. */}
-											<div
-												aria-hidden="true"
-												data-slot="studio-control-fade"
-												className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-b from-transparent to-background to-75%"
-											/>
-										</ControllerRoot>
-									)}
-								</div>
-							</m.div>
-						))}
-					</PanelRenderTarget>
+								{/* 층마다 패널 렌더 기록이 따로다 — 아래 층의 기록을 건드리지 않는다. */}
+								<PanelRenderScope>
+									<PanelColumn column={top} transition={transition} />
+								</PanelRenderScope>
+							</m.aside>
+						)}
+					</AnimatePresence>
 				</div>
 				<StudioRail>
-					{tabs.length === 0 && (
+					{rail.tabs.length === 0 && (
 						<StudioRailIcon icon="basic" label="Basic" state="disabled" />
 					)}
-					{tabs.map(({ id: tabId, label }) => (
+					{rail.tabs.map(({ id: tabId, label }) => (
 						<StudioRailIcon
 							key={tabId}
 							icon={tabId}
 							label={label}
-							state={active === tabId ? 'active' : 'idle'}
-							aria-controls={`${id}-${tabId}`}
-							onClick={() => setSelected(tabId)}
+							state={rail.active === tabId ? 'active' : 'idle'}
+							aria-controls={`${rail.id}-${tabId}`}
+							onClick={() => rail.select(tabId)}
 						/>
 					))}
 					{railFooter && (
@@ -229,5 +147,111 @@ function ControlPanelView({
 				</StudioRail>
 			</aside>
 		</LazyMotion>
+	)
+}
+
+/** 한 층의 내용 열(고정 카드·탭 본문)이 그릴 것 — 탭 선택도 층마다 따로다. */
+function usePanelColumn(
+	compositions: readonly ControlPanelComposition[],
+	extras: ControlPanelExtras | undefined,
+	target: string | undefined,
+) {
+	const pick = (name: StudioPanelSlot) =>
+		compositions.find((item) => item.slots[name].length) ?? compositions[0]
+	const slot = (name: Exclude<StudioPanelSlot, 'settings'>) => {
+		const extra = extras?.[name]
+		const composition = pick(name)
+		if (!composition) return extra || undefined
+		const { slots, ...render } = composition
+		return slots[name].length || extra ? (
+			<Slot entries={slots[name]} {...render}>
+				{extra}
+			</Slot>
+		) : undefined
+	}
+	const basic = slot('basic')
+	const presets = slot('presets')
+	const adjustment = slot('adjustment')
+	const basicPresets = slot('basicPresets')
+	// 구조 서명 — 보이는 것이 바뀐 영역만 다시 그린다. 손으로 정한 키는 없다.
+	const signature = (names: readonly StudioPanelSlot[]) =>
+		compositions.length
+			? names
+					.map((name) => controllerStructureSignature(pick(name)?.slots[name] ?? []))
+					.join('/')
+			: undefined
+	// 탭 선택은 편집 대상마다다 — 대상이 바뀌면 Basic부터 보인다(패널은 다시 마운트하지 않는다).
+	const [choice, setChoice] = useState({ target, tab: 'basic' })
+	const selected = choice.target === target ? choice.tab : 'basic'
+	const tabs = [
+		{ id: 'basic' as const, label: 'Basic', content: basic, list: basicPresets },
+		{ id: 'presets' as const, label: 'Presets', content: presets, list: undefined },
+		{
+			id: 'adjustment' as const,
+			label: 'Adjustment',
+			content: adjustment,
+			list: undefined,
+		},
+	].filter((tab) => tab.content || tab.list)
+	const id = useId()
+	return {
+		id,
+		fixed: slot('fixed'),
+		fixedKey: signature(['fixed']),
+		contentKey: signature(['basicPresets', 'basic', 'presets', 'adjustment']),
+		tabs,
+		active: tabs.find((tab) => tab.id === selected)?.id ?? tabs[0]?.id,
+		select: (tab: string) => setChoice({ target, tab }),
+	}
+}
+
+/**
+ * 내용 열 — 고정 영역과 내용 영역은 바뀌는 때가 달라 따로 다시 그린다(내용만 바뀌었는데 그대로인 위 카드가 움직이지 않게).
+ * 🔴 모든 패널은 내용 높이다(height:auto) — 남은 높이를 채우거나 열 안에서 스크롤하는 패널은 두지 않는다(사용자 2026-10-16).
+ */
+function PanelColumn({
+	column: { id, fixed, fixedKey, contentKey, tabs, active },
+	transition,
+}: {
+	column: ReturnType<typeof usePanelColumn>
+	transition: ReturnType<typeof useMotionTransition>
+}) {
+	return (
+		// 패널 사이 16px — 왼쪽 열과 같은 값(패널 규칙, 사용자 2026-10-16).
+		<div className="flex w-80 flex-col gap-4">
+			{fixed && (
+				<PanelRenderTarget side="right" region="fixed" renderKey={fixedKey}>
+					<Controller.Panel data-slot="studio-control-fixed">{fixed}</Controller.Panel>
+				</PanelRenderTarget>
+			)}
+			<PanelRenderTarget side="right" region="content" renderKey={contentKey}>
+				{tabs.map((tab) => (
+					// 탭은 상태를 지키려고 모두 띄워 둔다 — 다시 그리지 않고, 보이게 될 때 패널 렌더를 재생한다.
+					// 숨을 때는 즉시 숨김 값으로 돌려 두고(첫 렌더는 제자리에서 시작), 나타날 때만 움직인다.
+					<m.div
+						key={tab.id}
+						id={`${id}-${tab.id}`}
+						hidden={active !== tab.id}
+						style={{ transformOrigin: PANEL_RENDER.right.origin }}
+						initial={false}
+						animate={
+							active === tab.id ? PANEL_RENDER.right.shown : PANEL_RENDER.right.hidden
+						}
+						transition={active === tab.id ? transition : { duration: 0 }}
+					>
+						{/* 목록 카드도 조건으로 생기고 빠진다(Fluted Style) — 다른 조건부 행과 같은 높이 펼침이다.
+						    카드 사이 간격은 부모 gap이 아니라 펼치는 상자의 아래 여백이 갖는다(높이 0일 때 남지 않게). */}
+						<ControllerPresence itemClassName="pb-4">
+							{tab.list && (
+								<Controller.Panel key="list" data-slot="studio-preset-list">
+									{tab.list}
+								</Controller.Panel>
+							)}
+						</ControllerPresence>
+						{tab.content && <Controller.Panel>{tab.content}</Controller.Panel>}
+					</m.div>
+				))}
+			</PanelRenderTarget>
+		</div>
 	)
 }

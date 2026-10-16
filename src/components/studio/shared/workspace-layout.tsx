@@ -1,50 +1,50 @@
 import type { ReactNode } from 'react'
-import { ControllerRoot } from '@/components/shared/controller'
+import { Controller } from '@/components/shared/controller'
 
 type WorkspaceLayoutProps = {
 	left: ReactNode
 	right: ReactNode
 	children: ReactNode
+	/** 세 열 전체 위에 겹치는 층(플로팅 층) — 열 배치에 끼지 않는다. */
+	layer?: ReactNode
 }
 
 /** 작업 영역은 세 열만 배치한다. 카드 구성과 스크롤은 각 패널이 소유한다. */
-export function WorkspaceLayout({ left, right, children }: WorkspaceLayoutProps) {
+export function WorkspaceLayout({ left, right, children, layer }: WorkspaceLayoutProps) {
 	return (
 		<div
 			data-slot="studio-layout-workspace"
-			className="grid min-h-0 lg:h-full lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:grid-rows-[minmax(0,1fr)]"
+			className="relative grid min-h-0 lg:h-full lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:grid-rows-[minmax(0,1fr)]"
 		>
 			<div data-slot="studio-layout-left" className="min-h-0 min-w-0">
 				{left}
 			</div>
 			{children}
 			{right}
+			{layer}
 		</div>
 	)
 }
 
-type PanelProps = { top: ReactNode; bottom: ReactNode }
+type PanelProps = {
+	top: ReactNode
+	/** `Controller.Section`들 — 패널 규칙(docs/features/studio.md). */
+	bottom: ReactNode
+}
 
-/** 왼쪽은 카드 묶음 전체가 스크롤된다. 콘텐츠가 비어도 두 카드는 남는다. */
+/** 왼쪽 카드 묶음 — 카드는 내용 높이이고 스크롤하지 않는다(docs/features/studio.md 패널 높이 규칙). 콘텐츠가 비어도 두 카드는 남는다. */
 export function SelectionPanel({ top, bottom }: PanelProps) {
 	return (
 		<aside
 			aria-label="작업 대상과 출력"
 			data-slot="studio-layout-selection"
-			className="scrollbar-none flex min-h-0 flex-col gap-4 p-4 lg:h-full lg:w-88 lg:overflow-y-auto"
+			className="flex min-h-0 flex-col gap-4 p-4 lg:h-full lg:w-88"
 		>
-			<ControllerRoot
-				data-slot="studio-layout-identity"
-				className="aspect-square shrink-0 lg:h-auto"
-			>
-				{top}
-			</ControllerRoot>
-			<ControllerRoot
-				data-slot="studio-layout-output"
-				className="shrink-0 px-4 pt-1 pb-4 lg:h-auto"
-			>
-				{bottom}
-			</ControllerRoot>
+			<Controller.Panel data-slot="studio-layout-identity" square>
+				<Controller.Section bleed>{top}</Controller.Section>
+			</Controller.Panel>
+			{/* 아래 카드의 내용은 Section들이다 — 템플릿은 Layers·Output 둘(사이 선은 Panel이 긋는다), 다른 스튜디오는 Output 하나. */}
+			<Controller.Panel data-slot="studio-layout-output">{bottom}</Controller.Panel>
 		</aside>
 	)
 }

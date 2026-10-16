@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
+import { Controller } from '@/components/shared/controller'
 import {
 	arrangeStudioPanel,
 	type ControllerCluster,
@@ -163,13 +164,20 @@ it('extras는 계약 슬롯을 대체하지 않고 같은 목록 뒤에 이어 �
 					onChange: () => {},
 				},
 			]}
-			extras={{ fixed: <section data-slot="controller-group">생성 버튼 자리</section> }}
+			extras={{
+				fixed: <Controller.Section start="title">생성 버튼 자리</Controller.Section>,
+			}}
 		/>,
 	)
 	const fixed = document.querySelector('[data-slot="studio-control-fixed"]') as HTMLElement
-	const list = fixed.querySelector('[data-slot="controller-group-list"]') as HTMLElement
-	// 계약 슬롯의 Dimming 그룹 다음, 같은 목록 안에 선다 — 간격(상자 위 여백)과 펼침이 이어진다.
-	expect(within(list).getByRole('radiogroup', { name: 'Use' })).toBeInTheDocument()
-	expect(within(list).getByText('생성 버튼 자리')).toBeInTheDocument()
-	expect(list.children).toHaveLength(2)
+	// 패널 규칙 — 계약 슬롯의 Dimming 그룹 섹션 다음, 같은 섹션 목록에 섹션으로 선다(선·펼침이 이어진다).
+	const sections = [...fixed.querySelectorAll('[data-panel="section"]')]
+	expect(sections).toHaveLength(2)
+	expect(
+		within(sections[0] as HTMLElement).getByRole('radiogroup', { name: 'Use' }),
+	).toBeInTheDocument()
+	expect(sections[1]).toHaveTextContent('생성 버튼 자리')
+	expect(sections[0]?.parentElement?.parentElement).toBe(
+		sections[1]?.parentElement?.parentElement,
+	)
 })

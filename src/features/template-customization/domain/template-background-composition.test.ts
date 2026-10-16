@@ -23,7 +23,12 @@ const template = (backgroundPolicy?: PublishedHtmlTemplate['backgroundPolicy']) 
 		backgroundPolicy,
 	}) satisfies PublishedHtmlTemplate
 
-const policy: StudioPanelPolicy = { settings: ['source'], fixed: ['overlay'], basic: ['palette'] }
+// 템플릿 셸의 배경 정책(`TEMPLATE_BACKGROUND_PANEL_POLICY`)과 같다 — 종류는 고정 카드, 이미지 방식은 프로파일 조정.
+const policy: StudioPanelPolicy = {
+	settings: ['tuning'],
+	fixed: ['source', 'overlay'],
+	basic: ['palette'],
+}
 const visibleIds = (
 	composition: NonNullable<ReturnType<typeof deriveTemplateBackgroundComposition>>,
 	values: Record<string, unknown>,
@@ -61,9 +66,9 @@ describe('deriveTemplateBackgroundComposition', () => {
 		])
 		// 단색: 색이 서고 Image Mode·Strength는 숨는다.
 		expect(visibleIds(composition, { 'background.type': 'color' })).toMatchObject({
-			settings: ['background.type'],
+			settings: [],
 			basic: ['background.color'],
-			fixed: ['background.dimmer'],
+			fixed: ['background.type', 'background.dimmer'],
 		})
 	})
 
@@ -74,9 +79,9 @@ describe('deriveTemplateBackgroundComposition', () => {
 		expect(
 			visibleIds(composition, { 'background.type': 'image', 'background.dimmer': true }),
 		).toMatchObject({
-			settings: ['background.type', TEMPLATE_BACKGROUND_IMAGE_MODE_ID],
+			settings: [TEMPLATE_BACKGROUND_IMAGE_MODE_ID],
 			basic: [],
-			fixed: ['background.dimmer', 'background.dimmerOpacity'],
+			fixed: ['background.type', 'background.dimmer', 'background.dimmerOpacity'],
 		})
 	})
 

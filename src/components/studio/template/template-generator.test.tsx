@@ -380,11 +380,11 @@ type LayerKind = 'text' | 'image' | 'vector' | 'background'
 
 /** 🔑 라벨이 아니라 종류로 집는다 — 이름에 개수가 붙어(Text3) 라벨 일치로는 못 찾는다. */
 function layerGroupRow(kind: LayerKind) {
+	const layers = screen.queryByRole('region', { name: 'Layers' })
+	// 오른쪽 패널에도 같은 이름의 그룹 제목(Background)이 서므로 Layers 안에서 찾는다.
 	const row =
-		screen
-			.queryByRole('region', { name: 'Layers' })
-			?.querySelector(`[data-slot="template-layer-group"][data-kind="${kind}"]`) ??
-		screen.queryByRole('button', {
+		layers?.querySelector(`[data-slot="template-layer-group"][data-kind="${kind}"]`) ??
+		(layers ? within(layers) : screen).queryByRole('button', {
 			name: (
 				{
 					text: 'Text',
@@ -405,6 +405,13 @@ function layerGroupRow(kind: LayerKind) {
 function selectLayerGroup(kind: LayerKind) {
 	const row = layerGroupRow(kind)
 	fireEvent.click(row)
+	openProfile()
+}
+
+/** 프로파일 값은 플로팅 패널에서만 선다 — 오른쪽의 「… 프로파일 조정」으로 연다(사용자 2026-10-16). 없으면 그대로. */
+function openProfile() {
+	const button = screen.queryByRole('button', { name: /프로파일 조정$/ })
+	if (button) fireEvent.click(button)
 }
 
 function selectLayer(label: string) {
@@ -422,6 +429,12 @@ function selectLayer(label: string) {
 			? within(layers).getByRole('button', { name: group })
 			: screen.getByRole('button', { name: label }),
 	)
+	openProfile()
+}
+
+/** 탭은 레일에서 누른다 — 레일은 하나뿐이고 맨 위 층의 탭을 가리킨다. */
+function panelTab(name: string) {
+	fireEvent.click(screen.getByRole('button', { name }))
 }
 
 function openImageColors() {
@@ -1229,7 +1242,8 @@ describe('TemplateGenerator', () => {
 
 		// 첫 묶음(Text)이 이미 골라져 있으므로, 다른 것을 눌러 옮겨지는지로 본다.
 		clickCanvas(node('i1'))
-		expect(titles()).toContain('Generate')
+		// 프로파일 값(Generate)은 프로파일 조정을 열어야 선다 — 고르기만 하면 Dimming·이동/확대/회전뿐이다.
+		expect(titles()).toContain('Dimming')
 		expect(titles()).not.toContain('Text')
 
 		// 🔑 선택은 텍스트 전체지만 판에서 밝아지는 것은 **누른 하나**다.
@@ -1563,7 +1577,13 @@ describe('TemplateGenerator', () => {
 		expect(named('Text')).toBeUndefined()
 		// 🔴 배경은 집을 노드가 없다 — 도화지를 집는다(`kind: 'canvas'`). 그래도 활성 면이 켜진다.
 		//    전에는 대상이 슬롯 하나로 고정돼 있어 이것이 안 됐다.
-		expect(named('Background')).toHaveAttribute('data-active', 'true')
+		//    섹션은 아래 콘텐츠 카드(컬러·이미지·그래픽)다 — 위 카드의 종류 그룹도 제목이 Background라 그것은 건너뛴다.
+		const content = groups().find(
+			(group) =>
+				group.querySelector('span')?.textContent?.trim() === 'Background' &&
+				!group.closest('[data-slot="studio-control-fixed"]'),
+		)
+		expect(content).toHaveAttribute('data-active', 'true')
 	})
 
 	it('입력칸에서 포커스가 빠져도 활성 섹션이 꺼지지 않는다 — 다음 대상이 덮어쓸 뿐이다', () => {
@@ -1797,22 +1817,25 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 
-		selectLayerGroup('image')
-
-		fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
+		// 이동/확대/회전은 기본 층에 선다 — 프로파일 조정(플로팅 층)을 열기 전에 본다.
+		fireEvent.click(layerGroupRow('image'))
+		panelTab('Adjustment')
 
 		// 생성 전 — Transform 섹션은 닫힌 채 잠긴다(내용 미노출 + 트리거 비활성).
 		expect(screen.getByRole('button', { name: 'Image Transform' })).toBeDisabled()
 		expect(screen.queryByRole('slider', { name: '이미지 위치' })).toBeNull()
-		fireEvent.click(screen.getByRole('button', { name: 'Basic' }))
 
+		// 여는 버튼은 Basic의 별도 카드에 있다.
+		panelTab('Basic')
+		openProfile()
 		fireEvent.change(screen.getByLabelText('Prompt'), { target: { value: '파스텔 배경' } })
 		fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
 		await waitFor(() =>
 			expect(container.innerHTML).toContain('/api/generated-images/file/bg.png'),
 		)
+		fireEvent.click(screen.getByRole('button', { name: '완료' }))
 
-		fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
+		panelTab('Adjustment')
 		// 생성 후 — 잠금이 풀리며 저장된 열림 상태(defaultOpen)로 펼쳐진다.
 		expect(screen.getByRole('button', { name: 'Image Transform' })).toBeEnabled()
 		const pad = screen.getByRole('slider', { name: '이미지 위치' })
@@ -1868,6 +1891,7 @@ describe('TemplateGenerator', () => {
 				name: 'Image',
 			}),
 		)
+		openProfile()
 		await user.click(screen.getByRole('radio', { name: 'Generate' }))
 		fireEvent.change(await screen.findByLabelText('Prompt'), { target: { value: '노을 배경' } })
 		fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
@@ -1907,6 +1931,7 @@ describe('TemplateGenerator', () => {
 				name: 'Image',
 			}),
 		)
+		openProfile()
 		await user.click(screen.getByRole('radio', { name: 'Generate' }))
 		fireEvent.change(await screen.findByLabelText('Prompt'), {
 			target: { value: '사용자 입력' },
@@ -1947,6 +1972,7 @@ describe('TemplateGenerator', () => {
 				name: 'Graphic',
 			}),
 		)
+		openProfile()
 		await waitFor(() => expect(mocks.mountGraphicPreview).toHaveBeenCalledOnce())
 		expect(mocks.mountGraphicPreview).toHaveBeenCalledWith(
 			expect.objectContaining({ values: expect.any(Object), onChange: expect.any(Function) }),
@@ -1959,7 +1985,7 @@ describe('TemplateGenerator', () => {
 		await user.click(screen.getByRole('button', { name: /Fluted Glass/ }))
 		await waitFor(() => expect(mocks.mountGraphicPreview).toHaveBeenCalledTimes(2))
 		expect(mocks.destroyGraphicPreview).toHaveBeenCalledOnce()
-		fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
+		panelTab('Adjustment')
 		fireEvent.keyDown(screen.getByRole('slider', { name: '광선 강도' }), {
 			key: 'ArrowRight',
 		})
@@ -2251,7 +2277,7 @@ describe('TemplateGenerator', () => {
 		fireEvent.change(screen.getByLabelText('Foreground 색상 선택'), {
 			target: { value: '#ff0000' },
 		})
-		fireEvent.click(screen.getByRole('button', { name: 'Basic' }))
+		panelTab('Basic')
 		fireEvent.click(within(slot).getByRole('button', { name: '이미지 생성' }))
 		await waitFor(() =>
 			expect(

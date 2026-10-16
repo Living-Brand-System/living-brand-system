@@ -1,4 +1,7 @@
-import type { ControllerCluster } from '@/modules/studio-controller/controller-composition'
+import type {
+	ControllerCluster,
+	ControllerRole,
+} from '@/modules/studio-controller/controller-composition'
 import type { ControllerGroupDefinition } from '@/modules/studio-controller/controller-definition'
 import {
 	findTemplateControl,
@@ -21,9 +24,11 @@ export const TEMPLATE_BACKGROUND_IMAGE_MODE_ID = 'background.imageMode'
  *    어드민 제한·에이전트 패치·실행 검증과 화면이 갈리지 않는다.
  * 배경 슬롯이 없거나 방식 컨트롤이 없으면 `null`이다.
  */
-export function deriveTemplateBackgroundComposition(
-	config: TemplateStudioConfig,
-): { groups: ControllerGroupDefinition[]; clusters: ControllerCluster[] } | null {
+export function deriveTemplateBackgroundComposition(config: TemplateStudioConfig): {
+	groups: ControllerGroupDefinition[]
+	clusters: ControllerCluster[]
+	roles: Record<string, ControllerRole>
+} | null {
 	const slot = partitionTemplateSlots(config.template.slots).background
 	if (!slot) return null
 	const type = findTemplateControl(config, slot.typeControlId)
@@ -34,6 +39,8 @@ export function deriveTemplateBackgroundComposition(
 	const image = type.options.some((option) => option.value === 'image')
 	const colorVisible = { control: type.id, equals: 'color' }
 	return {
+		// 이미지 방식은 프로파일 조정에 속한다 — 종류와 같은 그룹이지만 자리가 다르다(사용자 2026-10-16).
+		roles: { [TEMPLATE_BACKGROUND_IMAGE_MODE_ID]: 'tuning' },
 		groups: [
 			{
 				id: 'background-source',

@@ -5,7 +5,10 @@ import { buildGraphicPanelComposition } from '@/components/studio/graphic/graphi
 import { graphicProfileCard } from '@/components/studio/graphic/graphic-profile-picker'
 import { imageProfileCard } from '@/components/studio/image/image-profile-picker'
 import { StudioProfileCards } from '@/components/studio/shared/studio-profile-cards'
-import type { TemplateTargetPanel } from '@/components/studio/template/template-panel'
+import type {
+	TemplatePanelLayer,
+	TemplateTargetPanel,
+} from '@/components/studio/template/template-panel'
 import type { TemplateImageTarget } from '@/components/studio/template/widgets/image-target'
 import { TEMPLATE_IMAGE_WIDGETS } from '@/components/studio/template/widgets/registry'
 import { Button } from '@/components/ui/button'
@@ -67,24 +70,27 @@ export function TemplateGraphicSelection() {
 }
 
 /**
- * 이미지 대상 패널의 배치 정책(docs/10 §3.7) — 생성 중인지가 정한다(Figma 529:26114·529:27139). 고를 것뿐이면
- * 샘플 목록이 Basic 위 목록 카드이고, 생성 입력이 Basic을 차지하면 Presets 탭으로 비킨다.
+ * 이미지 대상 패널의 배치 정책(docs/10 §3.7) — 어느 층에 서나(`layer`)와 생성 중인지가 정한다(Figma 529:26114·529:27139).
+ * 기본 층은 프로파일 밖의 값(Dimming·이동/확대/회전)만, 플로팅 층(프로파일 조정)은 프로파일 값만 갖는다(사용자 2026-10-16).
+ * 고를 것뿐이면 샘플 목록이 Basic 위 목록 카드이고, 생성 입력이 Basic을 차지하면 Presets 탭으로 비킨다.
  * 🔑 자리는 패널의 몫이라 매니페스트가 아니라 정책이 방식을 본다.
  */
-export function templateImagePanelPolicy(generating: boolean): StudioPanelPolicy {
+export function templateImagePanelPolicy(
+	generating: boolean,
+	layer: TemplatePanelLayer = 'floating',
+): StudioPanelPolicy {
+	if (layer === 'base') return { fixed: ['overlay'], adjustment: ['placement'] }
 	return generating
 		? {
 				settings: ['source'],
-				fixed: ['overlay'],
 				basic: ['content'],
 				presets: ['preset'],
-				adjustment: ['palette', 'placement'],
+				adjustment: ['palette'],
 			}
 		: {
 				settings: ['source'],
-				fixed: ['overlay'],
 				basicPresets: ['preset'],
-				adjustment: ['palette', 'placement'],
+				adjustment: ['palette'],
 			}
 }
 
@@ -180,6 +186,7 @@ function templateImageTarget(
 export function buildTemplateImagePanel(
 	studio: TemplateStudioValue,
 	isBackground: boolean,
+	layer: TemplatePanelLayer,
 ): TemplateTargetPanel {
 	const target = templateImageTarget(studio, isBackground)
 	if (!target) return { composition: null }
@@ -217,19 +224,28 @@ export function buildTemplateImagePanel(
 			if (next === 'preset' || next === 'generate') target.onMode?.(next)
 		} else target.onFeature(id, next)
 	}
+	// 계약 밖 안내도 패널 섹션 하나다(패널 규칙).
 	const status =
 		generating && state.error ? (
-			<Typography role="alert" size="sm" className="text-destructive">
-				{state.error}
-			</Typography>
+			<Controller.Section>
+				<Typography role="alert" size="sm" className="text-destructive">
+					{state.error}
+				</Typography>
+			</Controller.Section>
 		) : state.imageMode === 'generate' && !contract ? (
-			<Typography size="sm" tone="muted">
-				사용 가능한 이미지 생성 프로파일이 없습니다.
-			</Typography>
+			<Controller.Section>
+				<Typography size="sm" tone="muted">
+					사용 가능한 이미지 생성 프로파일이 없습니다.
+				</Typography>
+			</Controller.Section>
 		) : undefined
 	return {
 		composition: {
-			slots: arrangeStudioPanel(manifest, templateImagePanelPolicy(generating), values),
+			slots: arrangeStudioPanel(
+				manifest,
+				templateImagePanelPolicy(generating, layer),
+				values,
+			),
 			values,
 			bindings: target.bindings,
 			presentation: TEMPLATE_IMAGE_PRESENTATION,
@@ -238,23 +254,25 @@ export function buildTemplateImagePanel(
 			onChange,
 		},
 		extras: {
-			// 생성은 셸 액션이라 계약 밖이다 — Dimming 뒤에 같은 목록으로 잇는다.
-			fixed: generating && contract && (
-				<Controller.Group title="Generate">
-					<Button
-						variant="muted"
-						className="h-11 w-full rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
-						disabled={
-							state.generating ||
-							!acceptsImagePromptExecution(contract.prompt, state.prompt)
-						}
-						onClick={target.onGenerate}
-					>
-						{state.generating ? '생성 중…' : '이미지 생성'}
-					</Button>
-				</Controller.Group>
+			// 생성은 셸 액션이라 계약 밖이다 — 플로팅 층 패널의 고정 카드에 선다.
+			fixed: layer === 'floating' && generating && contract && (
+				<Controller.Section start="title">
+					<Controller.Group title="Generate">
+						<Button
+							variant="muted"
+							className="h-11 w-full rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
+							disabled={
+								state.generating ||
+								!acceptsImagePromptExecution(contract.prompt, state.prompt)
+							}
+							onClick={target.onGenerate}
+						>
+							{state.generating ? '생성 중…' : '이미지 생성'}
+						</Button>
+					</Controller.Group>
+				</Controller.Section>
 			),
-			basic: status,
+			basic: layer === 'floating' ? status : undefined,
 		},
 	}
 }
