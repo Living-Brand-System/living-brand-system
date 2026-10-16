@@ -31,6 +31,7 @@ import {
 } from './layout/layout'
 import { ControllerPresence, ControllerReveal } from './layout/presence'
 import { ControllerTabPanel } from './layout/tab-panel'
+import { ControllerTitle } from './layout/title'
 import { ControllerCard } from './read/card'
 import { ControllerItem } from './read/item'
 import { ControllerListRow } from './read/list-row'
@@ -65,6 +66,8 @@ export const Controller = {
 	Header: ControllerHeader,
 	Content: ControllerContent,
 	Group: ControllerGroup,
+	/** 패널 제목 — 섹션 제목(Layers·Output)과 그룹 제목이 같은 하나다. 상태로 색이 바뀌지 않는다. */
+	Title: ControllerTitle,
 	GroupList: ControllerGroupList,
 	Footer: ControllerFooter,
 	Row: ControllerRow,
@@ -142,4 +145,5 @@ export {
 	ControllerSwatch,
 	ControllerTabPanel,
 	ControllerTextarea,
+	ControllerTitle,
 }

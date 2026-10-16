@@ -162,7 +162,7 @@ studio·global·home 같은 표면의 화면 컴포넌트도 위 계약을 그�
 
 `Controller.GroupList`는 세로 그룹 목록의 시작 여백 4px과 그룹 사이 간격 12px을 소유하며 끝 여백은 추가하지 않습니다(Figma `529:24992`). 단일 그룹에도 시작 여백만 적용합니다. `Group`은 높이 36px의 제목과 컨트롤 사이·컨트롤 사이의 간격 6px을 소유하고 배경·구분선·바깥 패딩을 갖지 않습니다. 접으면 제목 아래 간격과 본문이 함께 사라지고 목록 간격은 유지합니다. `attached` 하위 그룹은 부모 본문 간격에 6px을 더해 앞 컨트롤과 12px을 확보합니다. 접기 애니메이션은 포커스 링의 바깥 2px을 자르지 않습니다. 패널 패딩·카드 간격·Compound 내부 간격·오류 문구 간격은 별도 계약이며, 가로 배치용 `Controller.Stack`과 구분합니다.
 
-`Group.active`는 편집 대상과 제목 강조만 연결하며 그룹 배경이나 부모 여백을 바꾸지 않습니다. 패널의 배경·높이·여백은 바깥 레이아웃이, 입력 표면과 포커스 링은 `Row`·`Field`가 소유합니다. 활성화 콜백과 접기 트리거의 구분은 유지합니다. 템플릿의 편집 가능한 텍스트 슬롯은 운영 Studio와 Playground 모두 `Field` 안에 투명한 `Input`·`Textarea`를 놓습니다. 단일 입력을 `Compound`로 감싸거나 입력에 배경을 중복 지정하지 않습니다. readonly도 같은 `Field`·입력에 `readonly`만 겁니다(아래 `readonly` 항목).
+`Group.active`는 편집 대상만 연결하며(`data-active`) 제목·그룹 배경·부모 여백을 바꾸지 않습니다 — 제목은 `Controller.Title` 한 모양이고 상태로 색이 바뀌지 않습니다(사용자 2026-10-16). 패널의 배경·높이·여백은 바깥 레이아웃이, 입력 표면과 포커스 링은 `Row`·`Field`가 소유합니다. 활성화 콜백과 접기 트리거의 구분은 유지합니다. 템플릿의 편집 가능한 텍스트 슬롯은 운영 Studio와 Playground 모두 `Field` 안에 투명한 `Input`·`Textarea`를 놓습니다. 단일 입력을 `Compound`로 감싸거나 입력에 배경을 중복 지정하지 않습니다. readonly도 같은 `Field`·입력에 `readonly`만 겁니다(아래 `readonly` 항목).
 
 Runtime Manifest부터 Effective Config, Provider, Artifact, Export까지 이어지는 전체 데이터 흐름은 [Studio](features/studio.md)를 정본으로 삼습니다. 이 절은 Controller의 표현과 상호작용 계약만 설명합니다.
 

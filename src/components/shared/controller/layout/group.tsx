@@ -8,13 +8,14 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useMotionTransition } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { ControllerPresence } from './presence'
+import { ControllerTitle } from './title'
 
 /**
  * 섹션 활성화 배선 한 묶음. 정의 기반 렌더러(`ControllerGroupRenderer`)가 이것을 그대로 얹으므로
  * 프롭을 하나씩 늘리지 않는다.
  */
 export type ControllerGroupSectionProps = {
-	/** 이 섹션이 지금 만지는 대상임을 제목으로 표시한다. 배경과 여백은 바꾸지 않는다. */
+	/** 이 섹션이 지금 만지는 대상인가(`data-active`). 🔴 제목 색은 바꾸지 않는다 — 제목은 Layers·Output과 같다(`ControllerTitle`). */
 	active?: boolean
 	/** 🔴 주면 chevron만 접기 트리거가 되고 나머지 클릭은 여기로 온다. */
 	onActivate?: () => void
@@ -53,9 +54,7 @@ type ControllerGroupProps =
 			 * 앞 컨트롤에 종속된 하위 그룹. 본문 간격 6px에 6px을 더해 12px을 확보한다.
 			 */
 			attached?: boolean
-			/**
-			 * 이 섹션이 지금 만지는 대상임을 제목으로 표시한다. 배경과 여백은 바꾸지 않는다.
-			 */
+			/** 이 섹션이 지금 만지는 대상인가(`data-active`). 제목 색은 바꾸지 않는다. */
 			active?: boolean
 			/**
 			 * 🔴 이 값을 주면 **chevron만** 접기 트리거가 되고 헤더의 나머지·본문 클릭은 여기로 온다.
@@ -95,10 +94,8 @@ export function ControllerGroup(props: ControllerGroupProps) {
 			{...sectionProps}
 		>
 			<header className="flex h-9 shrink-0 items-center justify-between gap-2">
-				{/* 제목 스타일은 span이 갖는다 — header에 두면 trailing이 muted 색을 물려받는다. */}
-				<span className="font-semibold text-muted-foreground text-sm group-data-[active]/controller-group:text-foreground">
-					{title}
-				</span>
+				{/* 제목 스타일은 제목이 갖는다 — header에 두면 trailing이 muted 색을 물려받는다. */}
+				<ControllerTitle as="span">{title}</ControllerTitle>
 				{trailing}
 			</header>
 			{/* 제목과의 6px·행 사이 6px는 각 상자의 위 여백이다 — 새로 생기는 행이 높이로 펼쳐진다. */}
@@ -141,7 +138,7 @@ function ControllerCollapsibleGroup({
 	return (
 		<Collapsible
 			data-slot="controller-group"
-			// 활성 표시는 제목에만 적용한다. 표면과 부모 여백은 패널이 소유한다.
+			// 활성 여부는 속성으로만 남긴다 — 제목·표면·여백은 바꾸지 않는다.
 			data-active={active || undefined}
 			open={resolvedOpen}
 			onOpenChange={setOpen}
@@ -158,9 +155,7 @@ function ControllerCollapsibleGroup({
 			<LazyMotion features={domAnimation}>
 				{onActivate ? (
 					<div className="flex h-9 w-full items-center justify-between gap-1.5">
-						<span className="font-semibold text-muted-foreground text-sm group-data-[active]/controller-group:text-foreground">
-							{title}
-						</span>
+						<ControllerTitle as="span">{title}</ControllerTitle>
 						<CollapsibleTrigger
 							// 아이콘만 남으면 접기 트리거의 이름이 사라진다 — 제목으로 만들어 준다.
 							aria-label={`${title} 섹션 접고 펴기`}
@@ -174,9 +169,7 @@ function ControllerCollapsibleGroup({
 					</div>
 				) : (
 					<CollapsibleTrigger className="flex h-9 w-full items-center justify-between gap-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-50">
-						<span className="font-semibold text-muted-foreground text-sm group-data-[active]/controller-group:text-foreground">
-							{title}
-						</span>
+						<ControllerTitle as="span">{title}</ControllerTitle>
 						{chevron}
 					</CollapsibleTrigger>
 				)}

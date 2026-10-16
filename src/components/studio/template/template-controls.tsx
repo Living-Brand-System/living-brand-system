@@ -2,11 +2,10 @@
 
 import { ColorPalette, Image, Shapes, TextFont, View, ViewOff } from '@carbon/icons-react'
 import type { ReactNode } from 'react'
-import { ControllerRoot } from '@/components/shared/controller'
+import { Controller, ControllerRoot } from '@/components/shared/controller'
 import type { ControlPanelComposition } from '@/components/studio/panel/control-panel'
 import { StudioPanelSlot } from '@/components/studio/panel/studio-panel-slot'
 import { Button } from '@/components/ui/button'
-import { Typography } from '@/components/ui/typography'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 import { cn } from '@/lib/utils'
 
@@ -26,15 +25,9 @@ export function TemplateSettings({
 	const selectedKind = selected?.kind
 	return (
 		<ControllerRoot className="shrink-0 px-4 pt-1 pb-4 lg:h-auto">
-			<Typography
-				as="h2"
-				size="sm"
-				weight="semibold"
-				tone="muted"
-				className="flex h-9 items-center"
-			>
+			<Controller.Title>
 				{selectedKind === 'background' ? 'Background Setting' : 'Image Setting'}
-			</Typography>
+			</Controller.Title>
 			<div className="flex flex-col gap-1 pt-1 pb-3">
 				{settings &&
 					(selectedKind === 'image' && selected ? (
@@ -64,15 +57,7 @@ export function TemplateLayerGroups() {
 	const selectedKind = config.template.slots.find((slot) => slot.id === layers.selectedId)?.kind
 	return (
 		<section aria-label="Layers" className="flex flex-col gap-1">
-			<Typography
-				as="h2"
-				size="sm"
-				weight="semibold"
-				tone="muted"
-				className="flex h-9 items-center"
-			>
-				Layers
-			</Typography>
+			<Controller.Title>Layers</Controller.Title>
 			{TEMPLATE_LAYER_ROWS.map(({ kind, label, Icon }) => {
 				const slots = config.template.slots.filter((slot) => slot.kind === kind)
 				// 레이어가 없는 묶음은 줄째 그리지 않는다 — 비활성 줄로 남기면 없는 것을 있는 것처럼 보인다.

@@ -29,15 +29,7 @@ function Root({
 			{...props}
 		>
 			<div className="flex flex-col">
-				<Typography
-					as="h2"
-					size="sm"
-					weight="semibold"
-					tone="muted"
-					className="flex h-9 items-center"
-				>
-					Output
-				</Typography>
+				<Controller.Title>Output</Controller.Title>
 				{/* 제목 아래 행 사이 4px은 각 행의 위 여백이다 — 형식에 따라 생기는 행이 높이로 펼쳐진다. */}
 				<ControllerPresence itemClassName="pt-1">{children}</ControllerPresence>
 			</div>
