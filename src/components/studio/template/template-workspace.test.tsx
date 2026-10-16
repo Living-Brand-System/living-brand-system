@@ -272,7 +272,7 @@ it('배경은 패널 컴포지션으로 선다 — 방식을 바꿔도 Dimming �
 	const card = fixed()
 	// Use를 켜도 카드는 그대로다 — Strength 한 줄만 펼친다(조건부 컨트롤은 구조 서명에 들지 않는다).
 	expect(card).toBe(dimming)
-	// source → 같은 고정 카드. 종류를 바꿔도 플로팅은 열리지 않고 「이미지 프로파일 조정」만 선다.
+	// source → 같은 고정 카드. 종류를 바꿔도 플로팅은 열리지 않는다. 여는 버튼은 고정 카드가 아니라 컬러 카드와 같은 자리(Basic의 별도 카드)다.
 	expect(within(card as HTMLElement).queryByRole('button', { name: /프로파일 조정$/ })).toBeNull()
 	fireEvent.click(
 		within(within(card as HTMLElement).getByRole('radiogroup', { name: 'Mode' })).getByRole(
@@ -283,7 +283,10 @@ it('배경은 패널 컴포지션으로 선다 — 방식을 바꿔도 Dimming �
 	expect(screen.queryByRole('region', { name: '선택한 레이어 편집' })).toBeNull()
 	expect(within(editing()).queryByRole('radiogroup', { name: 'Image Mode' })).toBeNull()
 	expect(
-		within(fixed() as HTMLElement).getByRole('button', { name: '이미지 프로파일 조정' }),
+		within(fixed() as HTMLElement).queryByRole('button', { name: /프로파일 조정$/ }),
+	).toBeNull()
+	expect(
+		within(editing()).getByRole('button', { name: '이미지 프로파일 조정' }),
 	).toBeInTheDocument()
 	// 패널은 셸이 소유하는 하나다(docs/10 §3.7 공통 셸) — 방식을 바꿔도 패널·레일·고정 카드가 같은 DOM이다.
 	// 고정 영역은 구조가 같아(Dimming) 다시 그리지 않는다.

@@ -1819,6 +1819,8 @@ describe('TemplateGenerator', () => {
 		expect(screen.getByRole('button', { name: 'Image Transform' })).toBeDisabled()
 		expect(screen.queryByRole('slider', { name: '이미지 위치' })).toBeNull()
 
+		// 여는 버튼은 Basic의 별도 카드에 있다.
+		panelTab('Basic')
 		openProfile()
 		fireEvent.change(screen.getByLabelText('Prompt'), { target: { value: '파스텔 배경' } })
 		fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))

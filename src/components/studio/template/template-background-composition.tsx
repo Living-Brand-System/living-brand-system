@@ -21,9 +21,9 @@ import type {
 } from '@/modules/studio-controller/controller-definition'
 
 /**
- * 템플릿 편집(배경) 패널의 배치 정책 — 역할을 자리에 놓는다(docs/10 §3.7). 매니페스트는 이것을 모른다.
- * 종류(source)와 가독성 층(overlay)은 오른쪽 위 고정 카드, 색(palette)은 Basic,
- * 이미지 방식(tuning)은 프로파일 조정(플로팅 패널)의 설정 카드다.
+ * 템플릿 배경 패널의 배치 정책 — 역할을 자리에 놓는다(docs/10 §3.7). 매니페스트는 이것을 모른다.
+ * 종류(source)와 가독성 층(overlay)은 오른쪽 위 고정 카드, 색(palette)은 Basic의 별도 카드,
+ * 이미지 방식(tuning)은 프로파일 조정(플로팅 층)의 왼쪽 설정 카드다.
  */
 export const TEMPLATE_BACKGROUND_PANEL_POLICY: StudioPanelPolicy = {
 	settings: ['tuning'],
@@ -33,7 +33,7 @@ export const TEMPLATE_BACKGROUND_PANEL_POLICY: StudioPanelPolicy = {
 
 /**
  * 배경 세션을 패널 컴포지션으로 잇는다 — 값은 세션이 갖고, 바꾸기는 세션 액션으로 보낸다(순수, 훅 없음).
- * 오른쪽 패널(Dimming·색)과 왼쪽 설정 카드(방식)가 같은 결과를 쓴다. 배경 슬롯이 없는 템플릿이면 `null`이다.
+ * 오른쪽 패널(종류·Dimming·색)과 플로팅 층 왼쪽 설정 카드(Image Mode)가 같은 결과를 쓴다. 배경 슬롯이 없는 템플릿이면 `null`이다.
  */
 export function buildTemplateBackgroundComposition({
 	config,

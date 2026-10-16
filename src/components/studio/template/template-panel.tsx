@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { Controller } from '@/components/shared/controller'
 import type {
 	ControlPanelComposition,
 	ControlPanelExtras,
@@ -31,8 +32,9 @@ export type TemplatePanelLayer = 'base' | 'floating'
 /**
  * 템플릿의 패널 모델 — 선택한 대상(레이어·배경 방식)에 맞는 빌더를 고른다(docs/10 §3.7 공통 셸).
  * 🔑 대상이 바뀌어도 **값만 바뀐다** — 화면 갈래가 없으므로 셸의 패널·레일·고정 카드·자산 브라우저가 같은 DOM으로 남는다.
- * 🔑 두 층은 섞이지 않는다(사용자 2026-10-16) — 기본 층(`panel`)은 프로파일 밖의 값과 「프로파일 조정」 버튼,
- *    플로팅 층(`floating`)은 프로파일 값만 갖는다. 플로팅 층이 열려도 기본 층은 바뀌지 않고 뒤로 밀릴 뿐이다.
+ * 🔑 두 층은 섞이지 않는다(사용자 2026-10-16) — 기본 층(`panel`)은 종류·Dimming·색·이동/확대/회전과 여는 버튼,
+ *    플로팅 층(`floating`)은 이미지·그래픽 프로파일 조정만 갖는다.
+ *    플로팅 층이 열려도 기본 층은 바뀌지 않고 뒤로 밀릴 뿐이다.
  * 왼쪽 설정 카드(`settings`)는 플로팅 층의 왼쪽 카드가 쓴다.
  */
 export function useTemplatePanel(): {
@@ -59,22 +61,22 @@ export function useTemplatePanel(): {
 			: kind === 'image'
 				? buildTemplateImagePanel(studio, false, 'base')
 				: { composition: null }
+	const type = kind === 'background' ? background.state.type : null
 	// 편집 중에는 다른 레이어를 고를 수 없으므로 선택한 대상이 곧 플로팅 층의 대상이다.
 	const floating: TemplateTargetPanel | null = !editing.targetId
 		? null
 		: kind === 'image'
 			? buildTemplateImagePanel(studio, false, 'floating')
-			: kind === 'background' && background.state.type === 'graphic'
+			: type === 'graphic'
 				? buildTemplateGraphicPanel(studio)
-				: kind === 'background' && background.state.type === 'image'
+				: type === 'image'
 					? buildTemplateImagePanel(studio, true, 'floating')
 					: null
-	const profile = !selected
+	const opener = !selected
 		? null
-		: kind === 'background' && background.state.type === 'graphic'
+		: type === 'graphic'
 			? '그래픽 프로파일 조정'
-			: (kind === 'background' && background.state.type === 'image') ||
-					(selected.kind === 'image' && selected.access === 'editable')
+			: type === 'image' || (selected.kind === 'image' && selected.access === 'editable')
 				? '이미지 프로파일 조정'
 				: null
 	return {
@@ -85,20 +87,25 @@ export function useTemplatePanel(): {
 			compositions: [base.composition, shared].filter(
 				(item): item is ControlPanelComposition => item !== null,
 			),
-			// 플로팅 층을 여는 것은 이 버튼뿐이다 — 레이어를 고르거나 종류를 바꿔도 열리지 않는다.
+			// 배경 콘텐츠(컬러·이미지·그래픽)는 같은 층위라 같은 자리에 선다 — 고정 카드 아래 Basic의 별도 카드(사용자 2026-10-16).
+			// 컬러는 부피가 작아 그 카드에서 바로 고르고, 이미지·그래픽은 그 카드의 버튼이 플로팅 층을 연다(여는 길은 이것뿐이다).
 			extras:
-				profile && selected
+				opener && selected
 					? {
 							...base.extras,
-							fixed: (
-								<Button
-									variant="muted"
-									className="h-11 w-full rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
-									disabled={editing.busy}
-									onClick={() => editing.begin(selected.id)}
+							basic: (
+								<Controller.Group
+									title={kind === 'background' ? 'Background' : 'Image'}
 								>
-									{profile}
-								</Button>
+									<Button
+										variant="muted"
+										className="h-11 w-full rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
+										disabled={editing.busy}
+										onClick={() => editing.begin(selected.id)}
+									>
+										{opener}
+									</Button>
+								</Controller.Group>
 							),
 						}
 					: base.extras,
