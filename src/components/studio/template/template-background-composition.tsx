@@ -33,12 +33,13 @@ export const TEMPLATE_BACKGROUND_PANEL_POLICY: StudioPanelPolicy = {
 }
 
 /**
- * 배경 콘텐츠 카드(이미지·그래픽 프로파일 조정을 여는 자리)의 그룹 — 컬러 카드(`background-color`)와 같은 자리·제목·섹션이다.
+ * 배경 콘텐츠 카드(이미지·그래픽 프로파일 조정을 여는 자리)의 그룹 — 컬러 카드(`background-color`)와 같은 자리·섹션이다.
+ * 제목은 종류에 따라 「Background Image」·「Background Graphic」(패널 제목 규칙 — 쓰는 쪽이 종류를 붙인다).
  * 컨트롤은 없고 여는 버튼만 품는다. 🔑 컬러 카드와 같은 컴포넌트(`ControllerDefinitionGroup`)로 그려야 제목이 같다(사용자 2026-10-16).
  */
 export const TEMPLATE_BACKGROUND_CONTENT_GROUP: ControllerGroupDefinition = {
 	id: 'background-content',
-	title: 'Background',
+	title: 'Background Image',
 	controls: [],
 }
 

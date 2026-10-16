@@ -46,7 +46,15 @@ export function deriveTemplateTextComposition(
 				controls: slots.map(({ definition }) => definition),
 			},
 			...(color?.kind === 'color'
-				? [{ id: 'text-color', title: 'Color', controls: [color] }]
+				? [
+						// 제목은 「대상 + 무엇」이다(패널 제목 규칙) — 그냥 Color가 아니라 Text Color.
+						{
+							id: 'text-color',
+							title: 'Text Color',
+							role: 'palette' as const,
+							controls: [color],
+						},
+					]
 				: []),
 		],
 		clusters: [
@@ -54,10 +62,13 @@ export function deriveTemplateTextComposition(
 				? [
 						{
 							id: 'text-color',
+							// 스와치 버튼의 이름(「텍스트 색상 #…」)이다 — 카드 제목은 그룹의 「Text Color」.
 							title: '텍스트',
 							role: 'palette' as const,
 							widget: 'swatches' as const,
 							members: { value: color.id },
+							// 「Text Color」 그룹 안에 세운다 — 그룹 제목이 카드 제목이다(배경색과 같은 구조).
+							group: 'text-color',
 						},
 					]
 				: []),
@@ -88,7 +99,7 @@ export function deriveTemplateSymbolComposition(
 		groups: [
 			{
 				id: 'symbol-color',
-				title: 'Color',
+				title: 'Symbol Color',
 				role: 'palette',
 				controls: slots.map(
 					(slot): ControllerControlDefinition => ({

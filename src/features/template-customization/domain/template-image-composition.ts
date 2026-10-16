@@ -115,7 +115,7 @@ export function deriveTemplateImageComposition({
 				? [
 						{
 							id: 'image-color',
-							title: 'Color',
+							title: 'Image Color',
 							controls: [
 								colors.line,
 								...(colors.background ? [colors.background] : []),
@@ -141,7 +141,7 @@ export function deriveTemplateImageComposition({
 				? [
 						{
 							id: 'image-color',
-							title: 'Color',
+							title: 'Image Color',
 							role: 'palette' as const,
 							widget: 'color-pair' as const,
 							members: {

@@ -83,10 +83,14 @@ export function useTemplatePanel(): {
 			: type === 'image' || (selected.kind === 'image' && selected.access === 'editable')
 				? '이미지 프로파일 조정'
 				: null
+	// 제목은 「대상 + 무엇」이다(패널 제목 규칙) — 컬러 카드의 「Background Color」와 같은 짜임.
 	const opening =
 		kind === 'background'
-			? TEMPLATE_BACKGROUND_CONTENT_GROUP
-			: { id: 'image-profile', title: 'Image', controls: [] }
+			? {
+					...TEMPLATE_BACKGROUND_CONTENT_GROUP,
+					title: type === 'graphic' ? 'Background Graphic' : 'Background Image',
+				}
+			: { id: 'image-profile', title: 'Image Profile', controls: [] }
 	return {
 		panel: {
 			identity: config.id,

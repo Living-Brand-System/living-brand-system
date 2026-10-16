@@ -56,8 +56,11 @@ describe('템플릿 텍스트·심볼 컴포지션', () => {
 		const text = deriveTemplateTextComposition(config)
 		if (!text) throw new Error('텍스트 컴포지션이 없습니다.')
 		const slots = arrangeStudioPanel(text, policy, {})
-		// 텍스트 슬롯이 있으면 일괄 텍스트 색 하나가 선다.
-		expect(shape(slots.fixed)).toEqual([{ cluster: 'swatches' }])
+		// 텍스트 슬롯이 있으면 일괄 텍스트 색 하나가 「Text Color」 그룹 안에 선다(패널 제목 규칙).
+		expect(shape(slots.fixed)).toEqual([
+			{ group: 'text-color', rows: 0, clusters: ['swatches'] },
+		])
+		expect(text.groups.find((group) => group.id === 'text-color')?.title).toBe('Text Color')
 		// 행은 전부 슬롯 묶음이 그린다 — 그룹은 제목·섹션으로만 선다.
 		expect(shape(slots.basic)).toEqual([
 			expect.objectContaining({ rows: 0, clusters: ['text-field', 'text-field'] }),

@@ -306,12 +306,23 @@ it('🔴 패널 규칙 — 카드는 전부 Panel·Section이고, 선은 패널�
 	const { container } = renderTemplate()
 	await screen.findByRole('textbox', { name: '제목' })
 	const layers = screen.getByRole('region', { name: 'Layers' })
+	// 패널 제목은 「대상 + 무엇」이고, 한 열에 같은 제목이 둘 서지 않는다.
+	const titlesOf = (column: Element) =>
+		[...column.querySelectorAll('[data-slot="controller-title"]')].map(
+			(title) => title.textContent,
+		)
+	const right = screen.getByRole('complementary', { name: '편집 도구' })
+	expect(titlesOf(right)).toContain('Text Color')
 	// 배경을 고르면 배경 섹션이 활성이 된다 — 활성 그룹 제목도 Layers·Output과 같아야 한다.
 	fireEvent.click(within(layers).getByRole('button', { name: /^Background$/ }))
+	expect(titlesOf(right)).toEqual(['Background', 'Dimming', 'Background Color'])
 	fireEvent.click(
 		within(screen.getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {
 			name: 'Image',
 		}),
+	)
+	await waitFor(() =>
+		expect(titlesOf(right)).toEqual(['Background', 'Dimming', 'Background Image']),
 	)
 	fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 조정' }))
 	const check = () => {

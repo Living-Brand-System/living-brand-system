@@ -67,7 +67,8 @@ export function deriveTemplateBackgroundComposition(config: TemplateStudioConfig
 				? [
 						{
 							id: 'background-color',
-							title: 'Background',
+							// 제목은 「대상 + 무엇」이다(패널 제목 규칙) — 위 카드의 「Background」(종류)와 겹치지 않는다.
+							title: 'Background Color',
 							role: 'palette' as const,
 							visibleWhen: colorVisible,
 							controls: [color],
@@ -90,11 +91,12 @@ export function deriveTemplateBackgroundComposition(config: TemplateStudioConfig
 				: []),
 		],
 		// 텍스트·심볼 색과 같은 스와치로 그린다 — 브랜드 색만 고르고 Custom은 잠근다.
-		// 「Background」 그룹 안에 세워 그룹의 제목·섹션 활성화(도화지 포커스)를 그대로 쓴다.
+		// 「Background Color」 그룹 안에 세워 그룹의 제목·섹션 활성화(도화지 포커스)를 그대로 쓴다.
 		clusters: color
 			? [
 					{
 						id: 'background-color-swatches',
+						// 스와치 버튼의 이름(「Background 색상 #…」)이다 — 카드 제목은 그룹의 「Background Color」.
 						title: 'Background',
 						role: 'palette',
 						widget: 'swatches',
