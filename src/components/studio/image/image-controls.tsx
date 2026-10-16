@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { Controller } from '@/components/shared/controller'
 import { IMAGE_WIDGETS } from '@/components/studio/image/widgets/registry'
 import type { StudioSurface } from '@/components/studio/shared/studio-shell'
 import { Typography } from '@/components/ui/typography'
@@ -64,9 +65,11 @@ export function useImagePanel(): StudioSurface['panel'] {
 		extras: generation.error
 			? {
 					basic: (
-						<Typography role="alert" size="sm" className="text-destructive">
-							{generation.error}
-						</Typography>
+						<Controller.Section>
+							<Typography role="alert" size="sm" className="text-destructive">
+								{generation.error}
+							</Typography>
+						</Controller.Section>
 					),
 				}
 			: undefined,

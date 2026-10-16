@@ -223,6 +223,11 @@ Template이 Image나 Graphic을 포함해도 해당 Studio Provider를 중첩하
 
 세 Generator는 `src/components/studio/shared/workspace-layout.tsx`의 다음 경계를 공유합니다. 레이아웃은 실제 Studio 라우트에서 검증합니다(별도 플레이그라운드는 2026-10-02에 제거).
 
+- **패널 규칙(사용자 2026-10-16)** — 왼쪽·오른쪽 열과 플로팅 층의 카드(패널)에 공통입니다. 레일은 패널이 아닙니다.
+  - **패널은 표면(`Controller.Panel`) 하나에 섹션(`Controller.Section`) 1..n을 담습니다. 여백은 섹션만, 패널 사이 간격은 열만, 섹션 사이 선은 패널만, 제목은 `Controller.Title`만 갖습니다.** 코드는 `src/components/shared/controller/layout/panel.tsx`·`title.tsx` 한 자리에 있고, 셋 다 `className`을 받지 않습니다.
+  - 떨어진 카드는 패널 여럿, 합친 카드(Layers·Output)는 패널 하나에 섹션 여럿, 썸네일 카드는 정사각 패널에 여백 없는 섹션(`bleed`) 하나입니다. 오른쪽 카드에서는 그룹 하나가 섹션 하나입니다(`StudioPanelSlot`).
+  - 값의 기준은 왼쪽 Layers·Output 카드입니다: 패널 사이 16px(양쪽 열), 섹션 여백 좌우·아래 16px, 위는 제목으로 시작하면 4px·아니면 16px, 제목 행 36px(sm·semibold·muted, 상태로 색이 바뀌지 않음), 제목 아래·줄 사이 4px, 섹션 사이 선 1px(좌우 16px 들여, 선 위 16px·아래 4px).
+  - 어기면 `template-workspace.test.tsx`의 「패널 규칙」 테스트가 잡습니다(손 껍데기·`<hr>`·제목 모양 둘 이상). 예외: Change 목록(어두운 유리 대화상자), 캔버스 아래 막대, Manager mode 층, 스튜디오 밖 페이지 카드·어드민·검수 화면.
 - **패널 높이 규칙(사용자 2026-10-16)** — 왼쪽·오른쪽 열의 카드(패널)에 공통입니다.
   - 모든 패널의 높이는 내용만큼(`height: auto`)입니다. 열의 남은 높이를 채우는(fill) 패널은 두지 않습니다.
   - 한 쪽 열에 패널은 2~3개로 구성하고, 웬만해서는 열 높이(100%)를 넘지 않게 합니다. 넘으면 어느 패널을 스크롤할지 정할 수 없기 때문입니다.
@@ -231,8 +236,8 @@ Template이 Image나 Graphic을 포함해도 해당 Studio Provider를 중첩하
   - 알려진 넘침(UI/UX 결정 대기): 템플릿 이미지 프로파일 조정의 샘플 목록(로컬 26장 기준 약 2,500px, 열 약 1,300px).
 - Workspace는 헤더 아래 남은 공간의 좌·중·우 배치만 소유합니다.
 - 왼쪽 패널은 폭 352px(카드 320px + 좌우 여백 16px), 정사각형 위 카드와 콘텐츠 높이의 아래 카드를 소유합니다.
-- 오른쪽 패널은 컨트롤 본문 320px·레일 44px·간격 12px·좌우 여백 16px로 구성합니다. Basic·Adjustment·Image는 공통 ControlPanel과 StudioRail로 전환하며, 고정 카드와 탭 본문 카드를 분리합니다.
-- 카드 표면은 기존 `ControllerRoot`를 재사용합니다. 카드 본문 여백은 `SelectionPanel`·`ControlPanel`이 소유하고 콘텐츠는 여백을 두지 않습니다. 기본은 16px이며, 그룹 제목(36px 행)으로 시작하는 카드는 위만 4px입니다(Figma `529:19501`·`529:27179`). 버튼·행의 모서리는 12px(`rounded-lg`), 카드는 24px입니다.
+- 오른쪽 패널은 컨트롤 본문 320px·레일 44px·본문과 레일 사이 12px·좌우 여백 16px로 구성합니다. Basic·Adjustment·Image는 공통 ControlPanel과 StudioRail로 전환하며, 고정 카드와 탭 본문 카드를 분리합니다.
+- 카드 표면·여백·제목·선은 위 패널 규칙을 따릅니다. 버튼·행의 모서리는 12px(`rounded-lg`), 카드는 24px입니다.
 - Canvas는 결과 영역과 보기 도구 행을 분리합니다. 출력 크기는 레이아웃의 책임이 아닙니다.
 - 빈 콘텐츠에도 열과 카드가 유지됩니다. 자산 브라우저의 포털 프레임은 왼쪽 카드 묶음 밖에 둡니다.
 

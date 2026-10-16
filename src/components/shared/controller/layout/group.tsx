@@ -10,6 +10,9 @@ import { cn } from '@/lib/utils'
 import { ControllerPresence } from './presence'
 import { ControllerTitle } from './title'
 
+/** 제목 아래·줄 사이 간격 — 패널 안에서는 패널 규칙의 4px(`--controller-row-gap`, Panel이 내림), 밖(어드민 등)에서는 6px. */
+const ROW_GAP = 'pt-[var(--controller-row-gap,0.375rem)]'
+
 /**
  * 섹션 활성화 배선 한 묶음. 정의 기반 렌더러(`ControllerGroupRenderer`)가 이것을 그대로 얹으므로
  * 프롭을 하나씩 늘리지 않는다.
@@ -99,7 +102,7 @@ export function ControllerGroup(props: ControllerGroupProps) {
 				{trailing}
 			</header>
 			{/* 제목과의 6px·행 사이 6px는 각 상자의 위 여백이다 — 새로 생기는 행이 높이로 펼쳐진다. */}
-			<ControllerPresence itemClassName="pt-1.5">{children}</ControllerPresence>
+			<ControllerPresence itemClassName={ROW_GAP}>{children}</ControllerPresence>
 		</section>
 	)
 }
@@ -185,7 +188,7 @@ function ControllerCollapsibleGroup({
 						>
 							{/* 제목과의 6px도 접힘 높이에 포함한다(각 행의 위 여백). clipPath의 2px 여유가 필드 링을 보호한다. */}
 							<CollapsibleContent forceMount className="flex flex-col">
-								<ControllerPresence itemClassName="pt-1.5">
+								<ControllerPresence itemClassName={ROW_GAP}>
 									{children}
 								</ControllerPresence>
 							</CollapsibleContent>

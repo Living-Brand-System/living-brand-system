@@ -43,7 +43,10 @@ it('그룹 제거·접기 후에도 목록 간격과 입력값을 유지한다',
 	expect(first).toHaveClass('pt-3')
 	const content = first?.querySelector('[data-slot="controller-group-content"]')
 	expect(content).toHaveStyle({ clipPath: 'inset(-2px -20px)' })
-	expect(content?.querySelector('[data-slot="controller-presence-item"]')).toHaveClass('pt-1.5')
+	// 그룹 줄 간격은 패널 밖에서 6px, 패널 안에서는 패널이 내리는 4px이다(`--controller-row-gap`).
+	expect(content?.querySelector('[data-slot="controller-presence-item"]')).toHaveClass(
+		'pt-[var(--controller-row-gap,0.375rem)]',
+	)
 	await user.click(screen.getByRole('textbox', { name: '제목' }))
 	await user.clear(screen.getByRole('textbox', { name: '제목' }))
 	await user.type(screen.getByRole('textbox', { name: '제목' }), '수정')

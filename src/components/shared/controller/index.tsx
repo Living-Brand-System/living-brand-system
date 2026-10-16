@@ -29,6 +29,7 @@ import {
 	ControllerHeader,
 	ControllerRoot,
 } from './layout/layout'
+import { ControllerPanel, ControllerSection, ControllerSections } from './layout/panel'
 import { ControllerPresence, ControllerReveal } from './layout/presence'
 import { ControllerTabPanel } from './layout/tab-panel'
 import { ControllerTitle } from './layout/title'
@@ -66,6 +67,10 @@ export const Controller = {
 	Header: ControllerHeader,
 	Content: ControllerContent,
 	Group: ControllerGroup,
+	/** 패널 규칙(docs/features/studio.md) — 표면 하나에 섹션 1..n. 여백은 Section, 선은 Panel, 제목은 Title만 갖는다. */
+	Panel: ControllerPanel,
+	Section: ControllerSection,
+	Sections: ControllerSections,
 	/** 패널 제목 — 섹션 제목(Layers·Output)과 그룹 제목이 같은 하나다. 상태로 색이 바뀌지 않는다. */
 	Title: ControllerTitle,
 	GroupList: ControllerGroupList,
@@ -132,12 +137,15 @@ export {
 	ControllerPad,
 	ControllerPadPair,
 	ControllerPagination,
+	ControllerPanel,
 	ControllerPresence,
 	ControllerPreviewChips,
 	ControllerRange,
 	ControllerReveal,
 	ControllerRoot,
 	ControllerRow,
+	ControllerSection,
+	ControllerSections,
 	ControllerSegmented,
 	ControllerSelect,
 	ControllerStack,

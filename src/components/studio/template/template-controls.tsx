@@ -2,7 +2,7 @@
 
 import { ColorPalette, Image, Shapes, TextFont, View, ViewOff } from '@carbon/icons-react'
 import type { ReactNode } from 'react'
-import { Controller, ControllerRoot } from '@/components/shared/controller'
+import { Controller } from '@/components/shared/controller'
 import type { ControlPanelComposition } from '@/components/studio/panel/control-panel'
 import { StudioPanelSlot } from '@/components/studio/panel/studio-panel-slot'
 import { Button } from '@/components/ui/button'
@@ -24,11 +24,11 @@ export function TemplateSettings({
 	const selected = config.template.slots.find((slot) => slot.id === layers.selectedId)
 	const selectedKind = selected?.kind
 	return (
-		<ControllerRoot className="shrink-0 px-4 pt-1 pb-4 lg:h-auto">
-			<Controller.Title>
-				{selectedKind === 'background' ? 'Background Setting' : 'Image Setting'}
-			</Controller.Title>
-			<div className="flex flex-col gap-1 pt-1 pb-3">
+		<Controller.Panel>
+			<Controller.Section
+				title={selectedKind === 'background' ? 'Background Setting' : 'Image Setting'}
+				actions={actions}
+			>
 				{settings &&
 					(selectedKind === 'image' && selected ? (
 						// 슬롯 방식은 그 슬롯의 묶음이다 — 슬롯 이름으로 묶어 읽힌다.
@@ -38,9 +38,8 @@ export function TemplateSettings({
 					) : (
 						<SettingsRows composition={settings} />
 					))}
-			</div>
-			{actions}
-		</ControllerRoot>
+			</Controller.Section>
+		</Controller.Panel>
 	)
 }
 
@@ -56,8 +55,7 @@ export function TemplateLayerGroups() {
 	const { config, layers, focus, editing } = useTemplateStudio()
 	const selectedKind = config.template.slots.find((slot) => slot.id === layers.selectedId)?.kind
 	return (
-		<section aria-label="Layers" className="flex flex-col gap-1">
-			<Controller.Title>Layers</Controller.Title>
+		<Controller.Section title="Layers" aria-label="Layers">
 			{TEMPLATE_LAYER_ROWS.map(({ kind, label, Icon }) => {
 				const slots = config.template.slots.filter((slot) => slot.kind === kind)
 				// 레이어가 없는 묶음은 줄째 그리지 않는다 — 비활성 줄로 남기면 없는 것을 있는 것처럼 보인다.
@@ -130,7 +128,7 @@ export function TemplateLayerGroups() {
 					</div>
 				)
 			})}
-		</section>
+		</Controller.Section>
 	)
 }
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { Controller } from '@/components/shared/controller'
 import type { TemplateTargetPanel } from '@/components/studio/template/template-panel'
 import { sectionProps } from '@/components/studio/template/template-section-focus'
 import { TEMPLATE_LAYER_WIDGETS } from '@/components/studio/template/widgets/registry'
@@ -98,9 +99,11 @@ export function buildTemplateLayerPanel(
 			kind === 'text' && !textColorId
 				? {
 						fixed: (
-							<Typography size="sm" tone="muted">
-								이 템플릿은 원본 텍스트 색상을 사용합니다.
-							</Typography>
+							<Controller.Section>
+								<Typography size="sm" tone="muted">
+									이 템플릿은 원본 텍스트 색상을 사용합니다.
+								</Typography>
+							</Controller.Section>
 						),
 					}
 				: undefined,

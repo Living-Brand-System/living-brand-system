@@ -81,11 +81,9 @@ export function TemplateWorkspace({
 							),
 						},
 						output: (
+							// 한 패널 안의 두 섹션 — 사이 선은 패널이 긋는다(패널 규칙).
 							<>
-								<div className="pb-3">
-									<TemplateLayerGroups />
-								</div>
-								<hr className="my-1 border-border" />
+								<TemplateLayerGroups />
 								<TemplateOutput exporting={exporting} />
 							</>
 						),

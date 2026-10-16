@@ -1,6 +1,6 @@
 'use client'
 
-import { ControllerRoot } from '@/components/shared/controller'
+import { Controller } from '@/components/shared/controller'
 import type { ControlPanelComposition } from '@/components/studio/panel/control-panel'
 import {
 	StudioSelectionCard,
@@ -31,30 +31,34 @@ export function TemplateEditingPanel({
 	const image = target?.mode === 'image'
 	return (
 		<>
-			<ControllerRoot className="aspect-square shrink-0 lg:h-auto">
-				<StudioSelectionCard
-					title={target?.name ?? (image ? 'Image' : graphic ? 'Graphic' : 'Background')}
-					subtitle={target?.subtitle}
-					image={target?.preview}
-					onReset={editing.reset}
-					disabled={editing.busy}
-					managerTarget={`profile:${targetId}`}
-					actions={
-						(image || graphic) && (
-							<StudioSelectionChange
-								label={graphic ? '그래픽 변경' : '이미지 프로파일 변경'}
-								disabled={editing.busy}
-							>
-								{graphic ? (
-									<TemplateGraphicSelection />
-								) : (
-									<TemplateImageSelection />
-								)}
-							</StudioSelectionChange>
-						)
-					}
-				/>
-			</ControllerRoot>
+			<Controller.Panel square>
+				<Controller.Section bleed>
+					<StudioSelectionCard
+						title={
+							target?.name ?? (image ? 'Image' : graphic ? 'Graphic' : 'Background')
+						}
+						subtitle={target?.subtitle}
+						image={target?.preview}
+						onReset={editing.reset}
+						disabled={editing.busy}
+						managerTarget={`profile:${targetId}`}
+						actions={
+							(image || graphic) && (
+								<StudioSelectionChange
+									label={graphic ? '그래픽 변경' : '이미지 프로파일 변경'}
+									disabled={editing.busy}
+								>
+									{graphic ? (
+										<TemplateGraphicSelection />
+									) : (
+										<TemplateImageSelection />
+									)}
+								</StudioSelectionChange>
+							)
+						}
+					/>
+				</Controller.Section>
+			</Controller.Panel>
 			<TemplateSettings
 				settings={settings}
 				actions={

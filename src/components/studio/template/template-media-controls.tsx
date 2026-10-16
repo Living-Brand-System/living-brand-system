@@ -224,15 +224,20 @@ export function buildTemplateImagePanel(
 			if (next === 'preset' || next === 'generate') target.onMode?.(next)
 		} else target.onFeature(id, next)
 	}
+	// 계약 밖 안내도 패널 섹션 하나다(패널 규칙).
 	const status =
 		generating && state.error ? (
-			<Typography role="alert" size="sm" className="text-destructive">
-				{state.error}
-			</Typography>
+			<Controller.Section>
+				<Typography role="alert" size="sm" className="text-destructive">
+					{state.error}
+				</Typography>
+			</Controller.Section>
 		) : state.imageMode === 'generate' && !contract ? (
-			<Typography size="sm" tone="muted">
-				사용 가능한 이미지 생성 프로파일이 없습니다.
-			</Typography>
+			<Controller.Section>
+				<Typography size="sm" tone="muted">
+					사용 가능한 이미지 생성 프로파일이 없습니다.
+				</Typography>
+			</Controller.Section>
 		) : undefined
 	return {
 		composition: {
@@ -251,19 +256,21 @@ export function buildTemplateImagePanel(
 		extras: {
 			// 생성은 셸 액션이라 계약 밖이다 — 플로팅 층 패널의 고정 카드에 선다.
 			fixed: layer === 'floating' && generating && contract && (
-				<Controller.Group title="Generate">
-					<Button
-						variant="muted"
-						className="h-11 w-full rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
-						disabled={
-							state.generating ||
-							!acceptsImagePromptExecution(contract.prompt, state.prompt)
-						}
-						onClick={target.onGenerate}
-					>
-						{state.generating ? '생성 중…' : '이미지 생성'}
-					</Button>
-				</Controller.Group>
+				<Controller.Section start="title">
+					<Controller.Group title="Generate">
+						<Button
+							variant="muted"
+							className="h-11 w-full rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
+							disabled={
+								state.generating ||
+								!acceptsImagePromptExecution(contract.prompt, state.prompt)
+							}
+							onClick={target.onGenerate}
+						>
+							{state.generating ? '생성 중…' : '이미지 생성'}
+						</Button>
+					</Controller.Group>
+				</Controller.Section>
 			),
 			basic: layer === 'floating' ? status : undefined,
 		},

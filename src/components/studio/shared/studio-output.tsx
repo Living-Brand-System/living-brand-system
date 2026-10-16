@@ -1,12 +1,11 @@
 'use client'
 
 import type { ComponentProps, ReactNode } from 'react'
-import { Controller, ControllerPresence } from '@/components/shared/controller'
+import { Controller } from '@/components/shared/controller'
 import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
 import type { StudioOutputView } from '@/features/studio-export/output-view'
 import type { PrintPpi } from '@/features/studio-export/print-policy'
-import { cn } from '@/lib/utils'
 
 /**
  * 스튜디오 왼쪽 Output 카드의 공용 부품(docs/10 §3.7 Output 카드). 각 스튜디오가 자기 고유 행(크기·생성 입력·
@@ -14,27 +13,22 @@ import { cn } from '@/lib/utils'
  * 부품은 받은 대로 그린다.
  */
 
-/** 카드 틀 — 「Output」 제목, 행 목록(생기고 빠지는 행은 높이로 펼친다), 아래 저장·안내. */
+/** Output 섹션 — 「Output」 제목, 행 목록(생기고 빠지는 행은 높이로 펼친다), 아래 저장·안내. 패널 규칙의 Section이다. */
 function Root({
 	children,
 	footer,
-	className,
 	...props
-}: ComponentProps<'section'> & { footer?: ReactNode }) {
+}: Omit<ComponentProps<'section'>, 'className' | 'style' | 'title'> & { footer?: ReactNode }) {
 	return (
-		<section
+		<Controller.Section
+			title="Output"
 			aria-label="출력 설정"
 			data-slot="studio-output"
-			className={cn('flex flex-col gap-4', className)}
+			actions={footer}
 			{...props}
 		>
-			<div className="flex flex-col">
-				<Controller.Title>Output</Controller.Title>
-				{/* 제목 아래 행 사이 4px은 각 행의 위 여백이다 — 형식에 따라 생기는 행이 높이로 펼쳐진다. */}
-				<ControllerPresence itemClassName="pt-1">{children}</ControllerPresence>
-			</div>
-			{footer}
-		</section>
+			{children}
+		</Controller.Section>
 	)
 }
 

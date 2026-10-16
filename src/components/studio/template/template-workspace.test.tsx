@@ -302,6 +302,40 @@ it('배경은 패널 컴포지션으로 선다 — 방식을 바꿔도 Dimming �
 	expect(dimming).not.toBeNull()
 })
 
+it('🔴 패널 규칙 — 카드는 전부 Panel·Section이고, 선은 패널이, 제목은 한 모양(활성이어도 같음)이다', async () => {
+	const { container } = renderTemplate()
+	await screen.findByRole('textbox', { name: '제목' })
+	const layers = screen.getByRole('region', { name: 'Layers' })
+	// 배경을 고르면 배경 섹션이 활성이 된다 — 활성 그룹 제목도 Layers·Output과 같아야 한다.
+	fireEvent.click(within(layers).getByRole('button', { name: /^Background$/ }))
+	fireEvent.click(
+		within(screen.getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {
+			name: 'Image',
+		}),
+	)
+	fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 조정' }))
+	const check = () => {
+		// 손으로 만든 카드 껍데기가 없다(캔버스 아래 막대만 예외 — 패널이 아니다).
+		const shells = [...container.querySelectorAll('.rounded-xl.shadow-lg')].filter(
+			(element) => element.getAttribute('data-slot') !== 'controller-bar',
+		)
+		for (const shell of shells) expect(shell).toHaveAttribute('data-panel', 'surface')
+		// 섹션 사이 선은 패널이 긋는다 — 손으로 넣은 가로줄이 없다.
+		expect(container.querySelector('hr')).toBeNull()
+		for (const section of container.querySelectorAll('[data-panel="section"]'))
+			expect(section.closest('[data-panel="surface"]')).not.toBeNull()
+		const titles = [...container.querySelectorAll('[data-slot="controller-title"]')]
+		expect(titles.length).toBeGreaterThan(3)
+		expect(new Set(titles.map((title) => title.className)).size).toBe(1)
+	}
+	expect(container.querySelector('[data-slot="controller-group"][data-active]')).not.toBeNull()
+	check()
+	// Layers와 Output은 한 패널의 두 섹션이다.
+	expect(layers.closest('[data-panel="surface"]')).toBe(
+		screen.getByRole('region', { name: '출력 설정' }).closest('[data-panel="surface"]'),
+	)
+})
+
 it('🔴 플로팅 층은 패널 위의 새 층이다 — 아래 층은 바뀌지 않고 잠기며, 레일은 하나로 남고, 층에는 프로파일 값만 선다', async () => {
 	const { container } = renderTemplate()
 	await screen.findByRole('textbox', { name: '제목' })

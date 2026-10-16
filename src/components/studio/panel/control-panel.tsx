@@ -3,13 +3,12 @@
 import { AnimatePresence, domAnimation, LazyMotion, useReducedMotion } from 'motion/react'
 import * as m from 'motion/react-m'
 import { type ReactNode, useId, useState } from 'react'
-import { ControllerPresence, ControllerRoot } from '@/components/shared/controller'
+import { Controller, ControllerPresence } from '@/components/shared/controller'
 import {
 	floatingEnter,
 	StudioFloatingRecede,
 } from '@/components/studio/shared/studio-floating-layer'
 import { PANEL_RENDER, useMotionTransition } from '@/lib/motion'
-import { cn } from '@/lib/utils'
 import {
 	controllerStructureSignature,
 	type StudioPanelEntry,
@@ -18,14 +17,6 @@ import {
 import { PanelRenderScope, PanelRenderTarget, useHasPanelRenderScope } from './panel-render'
 import { StudioPanelSlot as Slot, type StudioPanelSlotRenderProps } from './studio-panel-slot'
 import { StudioRail, StudioRailIcon } from './studio-rail'
-
-/**
- * 카드 본문 여백(Figma 529:19501·529:27179). 기본 16px이고, 그룹 제목으로 시작하면 위만 줄인다 —
- * 제목 행(36px)이 자기 여백을 갖고, GroupList는 시작 4px을 더한다. 둘 다 카드 상단에서 8px이 된다.
- * 🔴 스크롤하지 않는다 — 패널은 내용 높이이고, 열을 넘는 구성은 코드가 아니라 UI/UX가 정한다(docs/features/studio.md 패널 높이 규칙).
- */
-const CARD_BODY =
-	'p-4 has-[>[data-slot=controller-group-list]:first-child]:pt-1 has-[>[data-slot=controller-group]:first-child]:pt-2 has-[>:first-child>[data-slot=controller-group-list]:first-child]:pt-1'
 
 /**
  * 패널 컴포지션 입력(docs/10 §3.7) — 화면이 `arrangeStudioPanel`로 역할을 슬롯에 놓은 결과와 그릴 값.
@@ -226,12 +217,11 @@ function PanelColumn({
 	transition: ReturnType<typeof useMotionTransition>
 }) {
 	return (
-		<div className="flex w-80 flex-col gap-3">
+		// 패널 사이 16px — 왼쪽 열과 같은 값(패널 규칙, 사용자 2026-10-16).
+		<div className="flex w-80 flex-col gap-4">
 			{fixed && (
 				<PanelRenderTarget side="right" region="fixed" renderKey={fixedKey}>
-					<ControllerRoot data-slot="studio-control-fixed" className="lg:h-auto">
-						<div className={CARD_BODY}>{fixed}</div>
-					</ControllerRoot>
+					<Controller.Panel data-slot="studio-control-fixed">{fixed}</Controller.Panel>
 				</PanelRenderTarget>
 			)}
 			<PanelRenderTarget side="right" region="content" renderKey={contentKey}>
@@ -251,22 +241,14 @@ function PanelColumn({
 					>
 						{/* 목록 카드도 조건으로 생기고 빠진다(Fluted Style) — 다른 조건부 행과 같은 높이 펼침이다.
 						    카드 사이 간격은 부모 gap이 아니라 펼치는 상자의 아래 여백이 갖는다(높이 0일 때 남지 않게). */}
-						<ControllerPresence itemClassName="pb-3">
+						<ControllerPresence itemClassName="pb-4">
 							{tab.list && (
-								<ControllerRoot
-									key="list"
-									data-slot="studio-preset-list"
-									className="lg:h-auto"
-								>
-									<div className={CARD_BODY}>{tab.list}</div>
-								</ControllerRoot>
+								<Controller.Panel key="list" data-slot="studio-preset-list">
+									{tab.list}
+								</Controller.Panel>
 							)}
 						</ControllerPresence>
-						{tab.content && (
-							<ControllerRoot className="lg:h-auto">
-								<div className={CARD_BODY}>{tab.content}</div>
-							</ControllerRoot>
-						)}
+						{tab.content && <Controller.Panel>{tab.content}</Controller.Panel>}
 					</m.div>
 				))}
 			</PanelRenderTarget>

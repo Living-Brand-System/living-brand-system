@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { ControllerRoot } from '@/components/shared/controller'
+import { Controller } from '@/components/shared/controller'
 
 type WorkspaceLayoutProps = {
 	left: ReactNode
@@ -26,7 +26,11 @@ export function WorkspaceLayout({ left, right, children, layer }: WorkspaceLayou
 	)
 }
 
-type PanelProps = { top: ReactNode; bottom: ReactNode }
+type PanelProps = {
+	top: ReactNode
+	/** `Controller.Section`들 — 패널 규칙(docs/features/studio.md). */
+	bottom: ReactNode
+}
 
 /** 왼쪽 카드 묶음 — 카드는 내용 높이이고 스크롤하지 않는다(docs/features/studio.md 패널 높이 규칙). 콘텐츠가 비어도 두 카드는 남는다. */
 export function SelectionPanel({ top, bottom }: PanelProps) {
@@ -36,18 +40,11 @@ export function SelectionPanel({ top, bottom }: PanelProps) {
 			data-slot="studio-layout-selection"
 			className="flex min-h-0 flex-col gap-4 p-4 lg:h-full lg:w-88"
 		>
-			<ControllerRoot
-				data-slot="studio-layout-identity"
-				className="aspect-square shrink-0 lg:h-auto"
-			>
-				{top}
-			</ControllerRoot>
-			<ControllerRoot
-				data-slot="studio-layout-output"
-				className="shrink-0 px-4 pt-1 pb-4 lg:h-auto"
-			>
-				{bottom}
-			</ControllerRoot>
+			<Controller.Panel data-slot="studio-layout-identity" square>
+				<Controller.Section bleed>{top}</Controller.Section>
+			</Controller.Panel>
+			{/* 아래 카드의 내용은 Section들이다 — 템플릿은 Layers·Output 둘(사이 선은 Panel이 긋는다), 다른 스튜디오는 Output 하나. */}
+			<Controller.Panel data-slot="studio-layout-output">{bottom}</Controller.Panel>
 		</aside>
 	)
 }

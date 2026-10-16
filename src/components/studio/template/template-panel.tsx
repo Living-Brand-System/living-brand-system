@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { Controller } from '@/components/shared/controller'
 import { ControllerDefinitionGroup } from '@/components/shared/controller-renderer'
 import type {
 	ControlPanelComposition,
@@ -103,21 +104,23 @@ export function useTemplatePanel(): {
 							basic: (
 								// 컬러 카드와 같은 컴포넌트·섹션 연결로 그린다 — 제목·활성 표시가 같아야 한다.
 								// 컨트롤이 없는 그룹이라 값·바꾸기는 비어 있다.
-								<ControllerDefinitionGroup
-									group={opening}
-									values={{}}
-									onChange={() => {}}
-									section={shared?.groupSection?.(opening)}
-								>
-									<Button
-										variant="muted"
-										className="h-11 w-full rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
-										disabled={editing.busy}
-										onClick={() => editing.begin(selected.id)}
+								<Controller.Section start="title">
+									<ControllerDefinitionGroup
+										group={opening}
+										values={{}}
+										onChange={() => {}}
+										section={shared?.groupSection?.(opening)}
 									>
-										{opener}
-									</Button>
-								</ControllerDefinitionGroup>
+										<Button
+											variant="muted"
+											className="h-11 w-full rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
+											disabled={editing.busy}
+											onClick={() => editing.begin(selected.id)}
+										>
+											{opener}
+										</Button>
+									</ControllerDefinitionGroup>
+								</Controller.Section>
 							),
 						}
 					: base.extras,
