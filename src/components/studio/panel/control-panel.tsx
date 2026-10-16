@@ -9,6 +9,7 @@ import {
 	StudioFloatingRecede,
 } from '@/components/studio/shared/studio-floating-layer'
 import { PANEL_RENDER, useMotionTransition } from '@/lib/motion'
+import { cn } from '@/lib/utils'
 import {
 	controllerStructureSignature,
 	type StudioPanelEntry,
@@ -118,12 +119,13 @@ function ControlPanelView({
 								key={floating.identity}
 								aria-label={floating.label}
 								data-slot="studio-floating-panel"
-								className="absolute inset-0 z-30 flex min-h-0"
+								// height:auto — 내용만큼 서고, 넘치면 열 높이에서 멈춰 안에서 스크롤한다(사용자 2026-10-16).
+								className="absolute inset-x-0 top-0 z-30 flex max-h-full min-h-0 flex-col"
 								{...floatingEnter('right', reducedMotion, transition)}
 							>
 								{/* 층마다 패널 렌더 기록이 따로다 — 아래 층의 기록을 건드리지 않는다. */}
 								<PanelRenderScope>
-									<PanelColumn column={top} transition={transition} />
+									<PanelColumn column={top} transition={transition} fit />
 								</PanelRenderScope>
 							</m.aside>
 						)}
@@ -216,12 +218,15 @@ function usePanelColumn(
 function PanelColumn({
 	column: { id, fixed, fixedKey, contentKey, tabs, active },
 	transition,
+	fit = false,
 }: {
 	column: ReturnType<typeof usePanelColumn>
 	transition: ReturnType<typeof useMotionTransition>
+	/** 내용 높이만큼만 선다(플로팅 층) — 기본 층은 열 높이를 채운다. 흐림·흐림 여백은 열을 채울 때만 둔다. */
+	fit?: boolean
 }) {
 	return (
-		<div className="flex h-full min-h-0 w-80 flex-col gap-3">
+		<div className={cn('flex min-h-0 w-80 flex-col gap-3', !fit && 'h-full')}>
 			{fixed && (
 				<PanelRenderTarget
 					side="right"
@@ -247,7 +252,12 @@ function PanelColumn({
 						key={tab.id}
 						id={`${id}-${tab.id}`}
 						hidden={active !== tab.id}
-						className="min-h-0 flex-1"
+						// 높이가 auto면 안쪽 h-full이 먹지 않는다 — 보이는 탭만 flex로 이어 목록이 열 안에서 스크롤되게 한다.
+						// (숨은 탭에 flex를 주면 hidden을 덮는다.)
+						className={cn(
+							'min-h-0 flex-1',
+							fit && active === tab.id && 'flex flex-col',
+						)}
 						style={{ transformOrigin: PANEL_RENDER.right.origin }}
 						initial={false}
 						animate={
@@ -278,13 +288,17 @@ function PanelColumn({
 									}
 								>
 									{/* 끝까지 내리면 마지막 컨트롤이 흐림 위로 올라오도록 아래 여백을 흐림 높이만큼 둔다. */}
-									<div className={`${CARD_BODY} pb-16`}>{tab.content}</div>
+									<div className={cn(CARD_BODY, !fit && 'pb-16')}>
+										{tab.content}
+									</div>
 									{/* Figma 529:19501·529:25146 — 스크롤 본문 아래 64px 흐림. */}
-									<div
-										aria-hidden="true"
-										data-slot="studio-control-fade"
-										className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-b from-transparent to-background to-75%"
-									/>
+									{!fit && (
+										<div
+											aria-hidden="true"
+											data-slot="studio-control-fade"
+											className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-b from-transparent to-background to-75%"
+										/>
+									)}
 								</ControllerRoot>
 							)}
 						</div>
