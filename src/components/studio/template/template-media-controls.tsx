@@ -71,7 +71,9 @@ export function TemplateGraphicSelection() {
  * 샘플 목록이 Basic 위 목록 카드이고, 생성 입력이 Basic을 차지하면 Presets 탭으로 비킨다.
  * 🔑 자리는 패널의 몫이라 매니페스트가 아니라 정책이 방식을 본다.
  */
-export function templateImagePanelPolicy(generating: boolean): StudioPanelPolicy {
+export function templateImagePanelPolicy(generating: boolean, adjusting = true): StudioPanelPolicy {
+	// 플로팅 패널(프로파일 조정)이 닫혀 있으면 프로파일 값은 서지 않는다 — Dimming·이동/확대/회전만(사용자 2026-10-16).
+	if (!adjusting) return { fixed: ['overlay'], adjustment: ['placement'] }
 	return generating
 		? {
 				settings: ['source'],
@@ -180,6 +182,7 @@ function templateImageTarget(
 export function buildTemplateImagePanel(
 	studio: TemplateStudioValue,
 	isBackground: boolean,
+	adjusting = true,
 ): TemplateTargetPanel {
 	const target = templateImageTarget(studio, isBackground)
 	if (!target) return { composition: null }
@@ -229,7 +232,11 @@ export function buildTemplateImagePanel(
 		) : undefined
 	return {
 		composition: {
-			slots: arrangeStudioPanel(manifest, templateImagePanelPolicy(generating), values),
+			slots: arrangeStudioPanel(
+				manifest,
+				templateImagePanelPolicy(generating, adjusting),
+				values,
+			),
 			values,
 			bindings: target.bindings,
 			presentation: TEMPLATE_IMAGE_PRESENTATION,
@@ -239,7 +246,7 @@ export function buildTemplateImagePanel(
 		},
 		extras: {
 			// 생성은 셸 액션이라 계약 밖이다 — Dimming 뒤에 같은 목록으로 잇는다.
-			fixed: generating && contract && (
+			fixed: adjusting && generating && contract && (
 				<Controller.Group title="Generate">
 					<Button
 						variant="muted"
@@ -254,7 +261,7 @@ export function buildTemplateImagePanel(
 					</Button>
 				</Controller.Group>
 			),
-			basic: status,
+			basic: adjusting ? status : undefined,
 		},
 	}
 }

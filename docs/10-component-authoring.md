@@ -409,7 +409,7 @@ Admin 제한·표시(`controllerRestrictions`·`controllerPresentation`)는 매�
 - `panel.identity`가 바뀔 때만(프로파일 교체) 패널을 새로 시작합니다 — 위젯 내부 상태·탭 선택이 다른 대상으로 이어지지 않게.
 - 위젯이 읽는 화면 데이터는 컴포지션의 `scope`로 싣습니다(`ControllerWidgetProps.scope`). 위젯 context provider를 패널 안쪽 갈래에 두면 패널을 하나로 둘 수 없습니다. 페이지 전체를 감싸는 세션 provider(`useImageStudio` 등)는 계약 밖 본문(첨부·시드 이미지·각도처럼 세션만 아는 것)을 그릴 때만 읽습니다 — 계약 컨트롤의 값은 언제나 위젯 입력(`values`·`onChange`)으로 받습니다. 같은 값을 두 경로로 받으면 한쪽만 고쳐지는 순간 어긋납니다.
 - 컴포지션 우선순위는 `panel.compositions` 배열 순서뿐입니다(자리마다 앞쪽부터 먼저 채운 것). context로 공급하는 길은 없습니다.
-- 템플릿은 `useTemplatePanel()` 하나가 선택한 대상(레이어·배경 방식)에 맞는 순수 빌더(`buildTemplateLayerPanel`·`buildTemplateImagePanel`·`buildTemplateGraphicPanel`·`buildTemplateBackgroundComposition`)를 고릅니다. 오른쪽 패널과 왼쪽 설정 카드(settings 슬롯 — 배경 방식·이미지 슬롯 방식)가 이 한 번의 계산을 씁니다. 대상이 바뀌면 `panel.target`이 바뀌어 탭 선택만 Basic으로 돌아갑니다.
+- 템플릿은 `useTemplatePanel()` 하나가 선택한 대상(레이어·배경 방식)에 맞는 순수 빌더(`buildTemplateLayerPanel`·`buildTemplateImagePanel`·`buildTemplateGraphicPanel`·`buildTemplateBackgroundComposition`)를 고릅니다. 오른쪽 패널과 왼쪽 설정 카드(settings 슬롯 — 배경 Image Mode·이미지 슬롯 방식)가 이 한 번의 계산을 씁니다. 프로파일 값은 플로팅 편집 패널이 열려 있을 때만 서고, 닫혀 있으면 오른쪽 고정 카드에 「프로파일 조정」 버튼이 섭니다. 대상이 바뀌면 `panel.target`이 바뀌어 탭 선택만 Basic으로 돌아갑니다.
 - 왼쪽 겹침(템플릿 편집 오버레이)은 `surface.frame`이 기본 카드 묶음을 감쌉니다.
 - 이행: ① Image·Graphic(Graph 포함) — 완료 → ② 템플릿 — 완료(위젯 context 3종 모두 `scope`로) → ③ 구조 서명에서 조건 제외 — 완료.
 

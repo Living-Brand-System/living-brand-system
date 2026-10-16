@@ -104,7 +104,6 @@ export function TemplateLayerGroups() {
 							data-manager-passthrough=""
 							onClick={() => {
 								layers.select(slots[0]?.id ?? null)
-								if (slots[0]) editing.begin(slots[0].id)
 								focus.set(
 									kind === 'background'
 										? { sectionId: 'section:background', kind: 'canvas' }

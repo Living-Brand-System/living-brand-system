@@ -22,11 +22,12 @@ import type {
 
 /**
  * 템플릿 편집(배경) 패널의 배치 정책 — 역할을 자리에 놓는다(docs/10 §3.7). 매니페스트는 이것을 모른다.
- * 방식(source)은 왼쪽 설정 카드, 가독성 층(overlay)은 오른쪽 위 고정 카드, 색(palette)은 Basic.
+ * 종류(source)와 가독성 층(overlay)은 오른쪽 위 고정 카드, 색(palette)은 Basic,
+ * 이미지 방식(tuning)은 프로파일 조정(플로팅 패널)의 설정 카드다.
  */
 export const TEMPLATE_BACKGROUND_PANEL_POLICY: StudioPanelPolicy = {
-	settings: ['source'],
-	fixed: ['overlay'],
+	settings: ['tuning'],
+	fixed: ['source', 'overlay'],
 	basic: ['palette'],
 }
 
@@ -71,9 +72,9 @@ export function buildTemplateBackgroundComposition({
 		onChange,
 		// 배경색은 텍스트·심볼 색과 같은 스와치 위젯이 그린다.
 		widgets: TEMPLATE_LAYER_WIDGETS,
-		// 배경색을 만지면 캔버스가 도화지를 짚는다 — 지금 「Background」 그룹의 활성화 배선 그대로.
+		// 배경 종류·색을 만지면 캔버스가 도화지를 짚는다 — 둘 다 「Background」 섹션이다.
 		groupSection: (group) =>
-			group.id === 'background-color'
+			group.id === 'background-color' || group.id === 'background-source'
 				? {
 						active: focus.target?.kind === 'canvas',
 						onActivate: () =>

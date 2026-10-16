@@ -307,7 +307,7 @@ Image Reset·Change는 Provider와 출력 상태를 함께 새로 시작해 프�
 Template Generator는 실제 발행 카탈로그와 인증된
 `GET /api/studio/template/<templateSlug>`를 사용합니다. 상세 조회는 운영 Studio와 같은
 `getTemplateStudio()`에서 Effective Config를 파생하고 원시 Admin 정책을 전달하지 않습니다.
-왼쪽 기본 화면은 대상 카드 → Layers·Output 순서입니다. 이미지·배경을 선택하면 해당 대상의 편집 패널을 엽니다.
+왼쪽 기본 화면은 대상 카드 → Layers·Output 순서입니다. 이미지·배경을 선택해도 편집 패널(플로팅)은 열리지 않습니다 — 오른쪽 「이미지/그래픽 프로파일 조정」을 눌러야 열립니다.
 Image Setting은 현재 이미지의 Preset/Generate를, Background Setting은 Mode(Color·Image·Graphic 토글 그룹)와 Image Mode를 표시합니다(Figma `525:8777`).
 방식 전환은 편집값을 유지하며, 편집 중에는 완료·취소 전까지 다른 레이어로 이동할 수 없습니다.
 오른쪽은 선택한 종류의 편집 컨트롤을 표시하고 Type·Mode를 중복 표시하지 않습니다.
@@ -319,7 +319,7 @@ Image 슬롯과 이미지 배경은 독립 Image의 Color·Generate 표현 컴�
 생성은 기존 Template 세션의 한 장·고정 슬롯 비율 요청과 결과 배정을 사용합니다. 샘플 선택·슬롯 Transform·배경 Dimmer는 유지합니다.
 Template 생성에는 참조 이미지·카메라 요청 경로가 없어 해당 컨트롤을 열지 않으며, 배경 이미지의 색 치환 제한도 유지합니다.
 Layers는 Text·Symbol·Image·Background
-네 줄이며 없는 종류는 비활성화합니다. Text·Symbol은 묶음 컨트롤을, Image·Background는 현재 대상의 편집 패널을 표시합니다. Text·Symbol 색은 같은 Solid 스와치 그리드(`StudioColorSwatches`)를 쓰고, 색 목록은 CMS의 발행된 `brand-color-groups`에 속한 색(`usePublishedBrandColorValues`, 그룹 생성 순서·그룹 안 순서, 중복은 처음 자리 한 번)입니다. 그룹에 없는 보조색은 팔레트가 아니라 나오지 않습니다. 무채색 정본은 Mono Color 8단입니다. 템플릿 텍스트 컨트롤이 `values`로 범위를 좁혔으면 그 목록을 씁니다. 정본 밖 색이 나가지 않도록 둘 다 Custom 모드를 잠그고, 목록을 못 불러오면 고를 수 없습니다.
+네 줄이며 없는 종류는 비활성화합니다. Text·Symbol은 묶음 컨트롤을, Image·Background는 오른쪽에 프로파일 밖의 값(배경 종류·Dimming·이동/확대/회전)과 「프로파일 조정」 버튼을 표시합니다. Text·Symbol 색은 같은 Solid 스와치 그리드(`StudioColorSwatches`)를 쓰고, 색 목록은 CMS의 발행된 `brand-color-groups`에 속한 색(`usePublishedBrandColorValues`, 그룹 생성 순서·그룹 안 순서, 중복은 처음 자리 한 번)입니다. 그룹에 없는 보조색은 팔레트가 아니라 나오지 않습니다. 무채색 정본은 Mono Color 8단입니다. 템플릿 텍스트 컨트롤이 `values`로 범위를 좁혔으면 그 목록을 씁니다. 정본 밖 색이 나가지 않도록 둘 다 Custom 모드를 잠그고, 목록을 못 불러오면 고를 수 없습니다.
 눈 아이콘은 편집 권한과 무관하게 묶음의 모든 슬롯을 함께 표시하거나 숨깁니다. 배경을 끄면 판이 투명해지고 색·이미지·그래픽·디머가 모두 빠집니다.
 첫 진입은 첫 텍스트 레이어를 선택하며
 텍스트 Compound는 라벨·입력만 표시하고 지원 문구와 잘림 안내는 생략합니다. 입력 형식 오류는 유지합니다.
@@ -340,7 +340,7 @@ Template Studio의 Output은 왼쪽에 둡니다.
 
 디자인 기준은 Figma V2 `529:16921`이며, 아래 규칙은 디자인 검토 후 확정한 동작입니다.
 
-- 이미지 또는 배경 레이어를 고르면 중첩 편집을 시작합니다. 왼쪽 카드는 실제 이미지 프로파일·그래픽 종류를 고르며, Setting 카드에 방식 설정과 그 아래 취소(테두리)·완료(회색)를 표시합니다(Figma `525:8777`). 배경의 방식·Dimming·색은 패널 컴포지션 계약(docs/10 §3.7)으로 섭니다 — `deriveTemplateBackgroundComposition`이 역할·조건을 선언하고 템플릿 셸의 `TEMPLATE_BACKGROUND_PANEL_POLICY`가 방식(source)을 왼쪽 설정 카드, Dimming(overlay)을 오른쪽 고정 카드, 색(palette)을 Basic에 놓습니다. Image Mode는 컴포지션 컨트롤(`background.imageMode`)로 승격했습니다. 두 패널은 프로파일 교체 패널(자산 브라우저)과 같은 거리·시간으로 움직입니다(`MOTION.tight`, 150ms CSS `ease`, `src/lib/motion.ts`). 편집 중 기본(마스터) 패널은 왼쪽 아래 대각선(`x: -16px`, `y: 16px`)으로 밀리며 50% 불투명도·`blur(4px)`가 되고(돌아오면 filter를 걷음), 편집 패널은 공용 패널 렌더의 왼쪽 모양(`PANEL_RENDER.left`: 왼쪽 16px·투명·0.95 크기)으로 들어오고 같은 상태로 나갑니다. 오른쪽 패널은 레이어 종류·배경 방식이 바뀌거나 레일 탭이 바뀌면 내용 열만 오른쪽 모양(`PANEL_RENDER.right`)으로 다시 그리고, 레일은 움직이지 않습니다. 첫 진입에는 걸지 않습니다. 퇴장 중에는 클릭을 받지 않고, 모션 감소 시 둘 다 즉시 전환합니다. 완료·취소하면 선택을 비우지 않고 처음 들어왔을 때의 마스터 레이어(`listTemplateLayerGroups`의 첫 묶음, 보통 Text)로 돌아갑니다. 템플릿·레이어·출력은 완료 또는 취소 전까지 `inert`로 잠급니다. 상단 헤더는 잠그지 않습니다(2026-10-07) — 완료 전에 페이지를 떠나면 취소로 치고, 임시 저장도 편집 중에는 들어오기 전 값(스냅샷)을 씁니다. Provider도 다른 레이어 선택을 거부합니다.
+- 플로팅 편집 패널은 이미지·그래픽 프로파일을 바꾸거나 조정할 때만 엽니다(사용자 2026-10-16) — 레이어를 고르거나 배경 종류(Color·Image·Graphic)를 바꿔도 열리지 않고, 오른쪽 고정 카드의 「이미지 프로파일 조정」·「그래픽 프로파일 조정」을 눌러야 열립니다. 프로파일 값(프롬프트·샘플·그래픽 조정)은 이 패널이 열려 있을 때만 섭니다. 왼쪽 카드는 실제 이미지 프로파일·그래픽 종류를 고르며, Setting 카드에 방식 설정과 그 아래 취소(테두리)·완료(회색)를 표시합니다(Figma `525:8777`). 배경의 방식·Dimming·색은 패널 컴포지션 계약(docs/10 §3.7)으로 섭니다 — `deriveTemplateBackgroundComposition`이 역할·조건을 선언하고 템플릿 셸의 `TEMPLATE_BACKGROUND_PANEL_POLICY`가 종류(source)와 Dimming(overlay)을 오른쪽 고정 카드, 색(palette)을 Basic, Image Mode(tuning)를 플로팅 패널의 설정 카드에 놓습니다. Image Mode는 컴포지션 컨트롤(`background.imageMode`)로 승격했습니다. 두 패널은 프로파일 교체 패널(자산 브라우저)과 같은 거리·시간으로 움직입니다(`MOTION.tight`, 150ms CSS `ease`, `src/lib/motion.ts`). 편집 중 기본(마스터) 패널은 왼쪽 아래 대각선(`x: -16px`, `y: 16px`)으로 밀리며 50% 불투명도·`blur(4px)`가 되고(돌아오면 filter를 걷음), 편집 패널은 공용 패널 렌더의 왼쪽 모양(`PANEL_RENDER.left`: 왼쪽 16px·투명·0.95 크기)으로 들어오고 같은 상태로 나갑니다. 오른쪽 패널은 레이어 종류·배경 방식이 바뀌거나 레일 탭이 바뀌면 내용 열만 오른쪽 모양(`PANEL_RENDER.right`)으로 다시 그리고, 레일은 움직이지 않습니다. 첫 진입에는 걸지 않습니다. 퇴장 중에는 클릭을 받지 않고, 모션 감소 시 둘 다 즉시 전환합니다. 완료·취소해도 고른 레이어는 그대로 남습니다. 템플릿·레이어·출력은 완료 또는 취소 전까지 `inert`로 잠급니다. 상단 헤더는 잠그지 않습니다(2026-10-07) — 완료 전에 페이지를 떠나면 취소로 치고, 임시 저장도 편집 중에는 들어오기 전 값(스냅샷)을 씁니다. Provider도 다른 레이어 선택을 거부합니다.
 - `TemplateStudioProvider.editing`이 진입 시 상태를 보관합니다. 변경은 캔버스에 즉시 미리보기하고, 완료는 유지하며 취소는 진입 상태로 복원합니다. Reset은 현재 대상의 프로파일·방식·배정 이미지를 유지하고 설정을 기본값으로 되돌립니다. Reset 뒤 취소해도 진입 상태가 복원됩니다.
 - 이미지 Preset은 완성된 이미지를 교체합니다. 위치·확대·회전은 초기화하고 배경 Dimming은 유지합니다. 그래픽 Preset은 타입·색상·세부 조정값의 묶음이며 `기본값 + 선택한 프리셋 값`으로 교체합니다.
 - Preset/Generate 전환은 화면 상태만 바꿉니다. 프롬프트·조정값·현재 이미지는 유지하며, 실제 이미지를 고르거나 생성에 성공했을 때만 교체합니다. 이미지 슬롯은 Image만, 배경은 발행 계약의 Color·Image·Graphic만 지원합니다.

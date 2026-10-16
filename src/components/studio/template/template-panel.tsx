@@ -15,6 +15,7 @@ import {
 	buildTemplateGraphicPanel,
 	buildTemplateImagePanel,
 } from '@/components/studio/template/template-media-controls'
+import { Button } from '@/components/ui/button'
 import { useTemplateStudio } from '@/features/template-customization/hooks/use-template-studio'
 
 /** 편집 대상 하나의 패널 — 대상별 빌더(순수 함수)가 낸다. 컴포지션이 없으면 그 대상은 공통 것만 선다. */
@@ -33,7 +34,7 @@ export function useTemplatePanel(): {
 	settings: ControlPanelComposition | null
 } {
 	const studio = useTemplateStudio()
-	const { config, layers, background, focus, sampleImages } = studio
+	const { config, layers, background, focus, sampleImages, editing } = studio
 	const kind = config.template.slots.find((slot) => slot.id === layers.selectedId)?.kind
 	useTextCaretHandoff(focus.target)
 	// 샘플 목록(Preset 카드)은 이미지 대상일 때만 필요하다 — 패널이 하나라 여기서 한 번 연다.
@@ -43,17 +44,29 @@ export function useTemplatePanel(): {
 		if (needsSamples) sampleImages.load()
 	}, [needsSamples, sampleImages.load])
 
+	// 프로파일 값(프롬프트·샘플·그래픽 조정)은 플로팅 패널이 열렸을 때만 선다 — 여는 것은 아래 버튼뿐이다(사용자 2026-10-16).
+	const adjusting = Boolean(editing.targetId)
 	const shared = kind === 'background' ? buildTemplateBackgroundComposition(studio) : null
 	const own: TemplateTargetPanel =
 		kind === 'text' || kind === 'vector'
 			? buildTemplateLayerPanel(kind, studio)
 			: kind === 'image'
-				? buildTemplateImagePanel(studio, false)
-				: kind === 'background' && background.state.type === 'graphic'
+				? buildTemplateImagePanel(studio, false, adjusting)
+				: adjusting && kind === 'background' && background.state.type === 'graphic'
 					? buildTemplateGraphicPanel(studio)
-					: kind === 'background' && background.state.type === 'image'
+					: adjusting && kind === 'background' && background.state.type === 'image'
 						? buildTemplateImagePanel(studio, true)
 						: { composition: null }
+	const selected = config.template.slots.find((slot) => slot.id === layers.selectedId)
+	const profile =
+		adjusting || !selected
+			? null
+			: kind === 'background' && background.state.type === 'graphic'
+				? '그래픽 프로파일 조정'
+				: (kind === 'background' && background.state.type === 'image') ||
+						(selected.kind === 'image' && selected.access === 'editable')
+					? '이미지 프로파일 조정'
+					: null
 	return {
 		panel: {
 			identity: config.id,
@@ -62,7 +75,22 @@ export function useTemplatePanel(): {
 			compositions: [own.composition, shared].filter(
 				(item): item is ControlPanelComposition => item !== null,
 			),
-			extras: own.extras,
+			extras:
+				profile && selected
+					? {
+							...own.extras,
+							fixed: (
+								<Button
+									variant="muted"
+									className="h-11 w-full rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/15"
+									disabled={editing.busy}
+									onClick={() => editing.begin(selected.id)}
+								>
+									{profile}
+								</Button>
+							),
+						}
+					: own.extras,
 		},
 		// 방식 행 — 배경은 배경 공통이, 이미지 슬롯은 자기 컴포지션이 갖는다.
 		settings: kind === 'background' ? shared : kind === 'image' ? own.composition : null,

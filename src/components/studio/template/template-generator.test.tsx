@@ -380,11 +380,11 @@ type LayerKind = 'text' | 'image' | 'vector' | 'background'
 
 /** 🔑 라벨이 아니라 종류로 집는다 — 이름에 개수가 붙어(Text3) 라벨 일치로는 못 찾는다. */
 function layerGroupRow(kind: LayerKind) {
+	const layers = screen.queryByRole('region', { name: 'Layers' })
+	// 오른쪽 패널에도 같은 이름의 그룹 제목(Background)이 서므로 Layers 안에서 찾는다.
 	const row =
-		screen
-			.queryByRole('region', { name: 'Layers' })
-			?.querySelector(`[data-slot="template-layer-group"][data-kind="${kind}"]`) ??
-		screen.queryByRole('button', {
+		layers?.querySelector(`[data-slot="template-layer-group"][data-kind="${kind}"]`) ??
+		(layers ? within(layers) : screen).queryByRole('button', {
 			name: (
 				{
 					text: 'Text',
@@ -405,6 +405,13 @@ function layerGroupRow(kind: LayerKind) {
 function selectLayerGroup(kind: LayerKind) {
 	const row = layerGroupRow(kind)
 	fireEvent.click(row)
+	openProfile()
+}
+
+/** 프로파일 값은 플로팅 패널에서만 선다 — 오른쪽의 「… 프로파일 조정」으로 연다(사용자 2026-10-16). 없으면 그대로. */
+function openProfile() {
+	const button = screen.queryByRole('button', { name: /프로파일 조정$/ })
+	if (button) fireEvent.click(button)
 }
 
 function selectLayer(label: string) {
@@ -422,6 +429,7 @@ function selectLayer(label: string) {
 			? within(layers).getByRole('button', { name: group })
 			: screen.getByRole('button', { name: label }),
 	)
+	openProfile()
 }
 
 function openImageColors() {
@@ -1229,7 +1237,8 @@ describe('TemplateGenerator', () => {
 
 		// 첫 묶음(Text)이 이미 골라져 있으므로, 다른 것을 눌러 옮겨지는지로 본다.
 		clickCanvas(node('i1'))
-		expect(titles()).toContain('Generate')
+		// 프로파일 값(Generate)은 프로파일 조정을 열어야 선다 — 고르기만 하면 Dimming·이동/확대/회전뿐이다.
+		expect(titles()).toContain('Dimming')
 		expect(titles()).not.toContain('Text')
 
 		// 🔑 선택은 텍스트 전체지만 판에서 밝아지는 것은 **누른 하나**다.
@@ -1868,6 +1877,7 @@ describe('TemplateGenerator', () => {
 				name: 'Image',
 			}),
 		)
+		openProfile()
 		await user.click(screen.getByRole('radio', { name: 'Generate' }))
 		fireEvent.change(await screen.findByLabelText('Prompt'), { target: { value: '노을 배경' } })
 		fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
@@ -1907,6 +1917,7 @@ describe('TemplateGenerator', () => {
 				name: 'Image',
 			}),
 		)
+		openProfile()
 		await user.click(screen.getByRole('radio', { name: 'Generate' }))
 		fireEvent.change(await screen.findByLabelText('Prompt'), {
 			target: { value: '사용자 입력' },
@@ -1947,6 +1958,7 @@ describe('TemplateGenerator', () => {
 				name: 'Graphic',
 			}),
 		)
+		openProfile()
 		await waitFor(() => expect(mocks.mountGraphicPreview).toHaveBeenCalledOnce())
 		expect(mocks.mountGraphicPreview).toHaveBeenCalledWith(
 			expect.objectContaining({ values: expect.any(Object), onChange: expect.any(Function) }),
