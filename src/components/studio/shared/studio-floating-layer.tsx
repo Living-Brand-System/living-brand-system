@@ -31,9 +31,12 @@ export type StudioFloating = {
 	}
 }
 
-// 아래 층은 왼쪽 아래 대각선(16px)으로 밀리며 반투명·흐려진다(blur 4px). 두 쪽이 같은 시간(`MOTION.tight`)으로 움직인다.
-// 🔑 오른쪽도 왼쪽 아래로 민다 — 바깥(오른쪽)으로 밀면 레일 뒤에 숨어 층이 떠 보이지 않는다(사용자 QA 2026-10-16).
-const RECEDED = { x: -16, y: 16, opacity: 0.5, filter: 'blur(4px)' } as const
+// 아래 층은 놓인 쪽 아래 대각선(16px)으로 밀리며 반투명·흐려진다(blur 4px). 두 쪽이 같은 시간(`MOTION.tight`)으로 움직인다.
+// 🔑 오른쪽은 레일 쪽으로 밀려 레일 아래로 들어간다 — 레일은 배경 없이 그 위에 선다(사용자 2026-10-16).
+const RECEDED = {
+	left: { x: -16, y: 16, opacity: 0.5, filter: 'blur(4px)' },
+	right: { x: 16, y: 16, opacity: 0.5, filter: 'blur(4px)' },
+} as const
 // 🔴 끝나면 filter를 걷는다 — blur(0px)도 필터라서 남겨 두면 안쪽 backdrop-blur·fixed 배치가 깨진다.
 const IN_PLACE = {
 	x: 0,
@@ -45,9 +48,11 @@ const IN_PLACE = {
 
 /** 아래 층 한 쪽 — 플로팅 층이 열려 있으면 뒤로 밀리고 잠긴다. */
 export function StudioFloatingRecede({
+	side,
 	floating,
 	children,
 }: {
+	side: PanelSide
 	floating: boolean
 	children: ReactNode
 }) {
@@ -58,7 +63,7 @@ export function StudioFloatingRecede({
 				inert={floating}
 				className="h-full min-h-0"
 				initial={false}
-				animate={floating ? RECEDED : IN_PLACE}
+				animate={floating ? RECEDED[side] : IN_PLACE}
 				transition={transition}
 			>
 				{children}

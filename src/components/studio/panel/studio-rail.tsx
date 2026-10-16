@@ -89,7 +89,11 @@ export function StudioRail({ children, className, ...props }: ComponentProps<'na
 			aria-label="편집 도구 보기"
 			{...props}
 			data-slot="studio-rail"
-			className={cn('flex w-11 shrink-0 flex-col items-start gap-1.5', className)}
+			// 레일은 배경 없이 패널 내용 열보다 위에 선다 — 플로팅 층이 열리면 밀려난 아래 층이 레일 아래로 들어간다.
+			className={cn(
+				'relative z-10 flex w-11 shrink-0 flex-col items-start gap-1.5',
+				className,
+			)}
 		>
 			{children ?? <StudioRailIcon icon="basic" label="Basic" state="active" />}
 		</nav>
