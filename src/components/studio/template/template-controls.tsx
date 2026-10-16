@@ -61,6 +61,8 @@ export function TemplateLayerGroups() {
 				// 레이어가 없는 묶음은 줄째 그리지 않는다 — 비활성 줄로 남기면 없는 것을 있는 것처럼 보인다.
 				if (!slots.length) return null
 				const selected = selectedKind === kind
+				// 하나라도 보이면 보이는 상태다 — 누르면 묶음 전체를 숨긴다.
+				const shown = slots.some((slot) => layers.visibility[slot.id] ?? true)
 				return (
 					<div
 						key={kind}
@@ -101,30 +103,19 @@ export function TemplateLayerGroups() {
 							<Icon aria-hidden="true" />
 							<span>{label}</span>
 						</Button>
-						{[
-							{ visible: true, label: '표시', Icon: View },
-							{ visible: false, label: '숨김', Icon: ViewOff },
-						].map(({ visible, label: action, Icon: Eye }) => (
-							<Button
-								key={action}
-								variant="ghost"
-								size="icon-xs"
-								className="rounded-sm hover:bg-foreground/5 aria-pressed:bg-foreground/10 dark:hover:bg-foreground/5"
-								aria-label={`${label} ${action}`}
-								aria-pressed={
-									slots.length > 0 &&
-									slots.every(
-										(slot) => (layers.visibility[slot.id] ?? true) === visible,
-									)
-								}
-								disabled={!slots.length}
-								onClick={() => {
-									for (const slot of slots) layers.setVisible(slot.id, visible)
-								}}
-							>
-								<Eye aria-hidden="true" />
-							</Button>
-						))}
+						{/* 표시·숨김은 버튼 하나다 — 지금 상태의 눈을 보이고, 누르면 반대로 바꾼다(사용자 2026-10-16). */}
+						<Button
+							variant="ghost"
+							size="icon-xs"
+							className="rounded-sm hover:bg-foreground/5 dark:hover:bg-foreground/5"
+							aria-label={`${label} ${shown ? '숨김' : '표시'}`}
+							disabled={!slots.length}
+							onClick={() => {
+								for (const slot of slots) layers.setVisible(slot.id, !shown)
+							}}
+						>
+							{shown ? <View aria-hidden="true" /> : <ViewOff aria-hidden="true" />}
+						</Button>
 					</div>
 				)
 			})}
