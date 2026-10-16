@@ -91,6 +91,14 @@ function renderTemplate(data: ReturnType<typeof studio> = studio()) {
 	)
 }
 
+/** 탭은 맨 위 층의 패널에서 누른다 — 플로팅 층이 열려 있으면 그 패널, 아니면 기본 패널. */
+function panelTab(name: string) {
+	const panel =
+		screen.queryByRole('complementary', { name: '선택한 레이어 편집' }) ??
+		screen.getByRole('complementary', { name: '편집 도구' })
+	fireEvent.click(within(panel).getByRole('button', { name }))
+}
+
 it('실제 합성 캔버스·출력에 연결하고 Reset은 텍스트·색·출력 설정을 초기화한다', async () => {
 	const { container } = renderTemplate()
 	const input = await screen.findByRole('textbox', { name: '제목' })
@@ -288,6 +296,32 @@ it('배경은 패널 컴포지션으로 선다 — 방식을 바꿔도 Dimming �
 	expect(dimming).not.toBeNull()
 })
 
+it('🔴 플로팅 층은 모든 것 위의 새 층이다 — 아래 층은 바뀌지 않고 잠기며, 층에는 프로파일 값만 선다', async () => {
+	const { container } = renderTemplate()
+	await screen.findByRole('textbox', { name: '제목' })
+	const layers = screen.getByRole('region', { name: 'Layers' })
+	fireEvent.click(within(layers).getByRole('button', { name: /^Background$/ }))
+	const base = screen.getByRole('complementary', { name: '편집 도구' })
+	fireEvent.click(
+		within(within(base).getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {
+			name: 'Image',
+		}),
+	)
+	const before = base.innerHTML
+	fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 조정' }))
+	// 아래 층은 그대로 뒤에 남아 잠긴다 — 내용을 옮기거나 섞지 않는다.
+	expect(base.innerHTML).toBe(before)
+	expect(base.closest('[inert]')).not.toBeNull()
+	expect(layers.closest('[inert]')).not.toBeNull()
+	const layer = container.querySelector<HTMLElement>('[data-slot="studio-floating-layer"]')
+	if (!layer) throw new Error('플로팅 층이 없습니다.')
+	expect(layer.closest('[inert]')).toBeNull()
+	const floating = within(layer).getByRole('complementary', { name: '선택한 레이어 편집' })
+	// 배경 종류·Dimming은 아래 층의 것이다.
+	expect(within(floating).queryByRole('radiogroup', { name: 'Mode' })).toBeNull()
+	expect(within(floating).queryByRole('radiogroup', { name: 'Use' })).toBeNull()
+})
+
 it('배경 종류는 오른쪽에서, Image Mode는 프로파일 조정(플로팅)에서 전환한다', async () => {
 	renderTemplate()
 	await screen.findByRole('textbox', { name: '제목' })
@@ -300,7 +334,8 @@ it('배경 종류는 오른쪽에서, Image Mode는 프로파일 조정(플로�
 	fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 조정' }))
 	const selection = screen.getByRole('region', { name: '선택한 레이어 편집' })
 	expect(within(selection).queryByRole('radiogroup', { name: 'Mode' })).toBeNull()
-	editing = screen.getByRole('complementary', { name: '편집 도구' })
+	// 프로파일 값은 플로팅 층의 패널에 선다 — 기본 패널은 그대로 뒤에 남는다.
+	editing = screen.getByRole('complementary', { name: '선택한 레이어 편집' })
 	expect(editing.querySelector('[data-slot="studio-preset-list"]')).toBeNull()
 	fireEvent.click(within(selection).getByRole('radio', { name: 'Generate' }))
 	expect(
@@ -375,10 +410,10 @@ it('Image 공통 생성 폼은 한 장을 요청하고 결과를 선택한 템�
 	fireEvent.click(await screen.findByRole('button', { name: /^Image$/ }))
 	fireEvent.click(screen.getByRole('button', { name: '이미지 프로파일 조정' }))
 	const prompt = await screen.findByRole('textbox', { name: 'Prompt' })
-	fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
+	panelTab('Adjustment')
 	expect(screen.getByRole('radio', { name: 'Swatch' })).toBeInTheDocument()
 	expect(screen.getByRole('radio', { name: 'Custom' })).toBeInTheDocument()
-	fireEvent.click(screen.getByRole('button', { name: 'Basic' }))
+	panelTab('Basic')
 	fireEvent.change(prompt, { target: { value: '템플릿 이미지' } })
 	fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
 	await waitFor(() =>
@@ -404,14 +439,16 @@ it('Graphic 공통 패널의 팔레트와 Position을 템플릿 배경 런타임
 	await screen.findByRole('textbox', { name: '제목' })
 	fireEvent.click(screen.getByRole('button', { name: /^Background$/ }))
 	fireEvent.click(screen.getByRole('button', { name: '그래픽 프로파일 조정' }))
-	const top = container.querySelector<HTMLElement>('[data-slot="studio-control-panel"]')
+	const top = container.querySelector<HTMLElement>(
+		'[data-slot="studio-floating-layer"] [data-slot="studio-control-panel"]',
+	)
 	const detail = top
 	if (!top || !detail) throw new Error('공통 편집 패널이 없습니다.')
 	expect(within(top).getByText('Presets')).toBeInTheDocument()
 	expect(within(top).getByRole('slider', { name: 'Position' })).toBeInTheDocument()
-	fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
+	panelTab('Adjustment')
 	expect(within(detail).getByRole('slider', { name: '열 간격' })).toBeInTheDocument()
-	fireEvent.click(screen.getByRole('button', { name: 'Basic' }))
+	panelTab('Basic')
 	expect(within(top).queryByRole('radio', { name: 'Custom' })).toBeNull()
 	fireEvent.click(within(top).getByRole('radio', { name: '네이비 · 블루' }))
 	await waitFor(() =>

@@ -432,8 +432,20 @@ function selectLayer(label: string) {
 	openProfile()
 }
 
+/** 탭은 맨 위 층의 패널에서 누른다 — 플로팅 층이 열려 있으면 그 패널, 아니면 기본 패널. */
+function panelTab(name: string) {
+	fireEvent.click(within(topPanel()).getByRole('button', { name }))
+}
+
+function topPanel() {
+	return (
+		screen.queryByRole('complementary', { name: '선택한 레이어 편집' }) ??
+		screen.getByRole('complementary', { name: '편집 도구' })
+	)
+}
+
 function openImageColors() {
-	const adjustment = screen.queryByRole('button', { name: 'Adjustment' })
+	const adjustment = within(topPanel()).queryByRole('button', { name: 'Adjustment' })
 	if (adjustment) fireEvent.click(adjustment)
 	const custom = screen.queryByRole('radio', { name: 'Custom' })
 	if (custom) fireEvent.click(custom)
@@ -1806,22 +1818,23 @@ describe('TemplateGenerator', () => {
 			/>,
 		)
 
-		selectLayerGroup('image')
-
-		fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
+		// 이동/확대/회전은 기본 층에 선다 — 프로파일 조정(플로팅 층)을 열기 전에 본다.
+		fireEvent.click(layerGroupRow('image'))
+		panelTab('Adjustment')
 
 		// 생성 전 — Transform 섹션은 닫힌 채 잠긴다(내용 미노출 + 트리거 비활성).
 		expect(screen.getByRole('button', { name: 'Image Transform' })).toBeDisabled()
 		expect(screen.queryByRole('slider', { name: '이미지 위치' })).toBeNull()
-		fireEvent.click(screen.getByRole('button', { name: 'Basic' }))
 
+		openProfile()
 		fireEvent.change(screen.getByLabelText('Prompt'), { target: { value: '파스텔 배경' } })
 		fireEvent.click(screen.getByRole('button', { name: '이미지 생성' }))
 		await waitFor(() =>
 			expect(container.innerHTML).toContain('/api/generated-images/file/bg.png'),
 		)
+		fireEvent.click(screen.getByRole('button', { name: '완료' }))
 
-		fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
+		panelTab('Adjustment')
 		// 생성 후 — 잠금이 풀리며 저장된 열림 상태(defaultOpen)로 펼쳐진다.
 		expect(screen.getByRole('button', { name: 'Image Transform' })).toBeEnabled()
 		const pad = screen.getByRole('slider', { name: '이미지 위치' })
@@ -1971,7 +1984,7 @@ describe('TemplateGenerator', () => {
 		await user.click(screen.getByRole('button', { name: /Fluted Glass/ }))
 		await waitFor(() => expect(mocks.mountGraphicPreview).toHaveBeenCalledTimes(2))
 		expect(mocks.destroyGraphicPreview).toHaveBeenCalledOnce()
-		fireEvent.click(screen.getByRole('button', { name: 'Adjustment' }))
+		panelTab('Adjustment')
 		fireEvent.keyDown(screen.getByRole('slider', { name: '광선 강도' }), {
 			key: 'ArrowRight',
 		})
@@ -2263,7 +2276,7 @@ describe('TemplateGenerator', () => {
 		fireEvent.change(screen.getByLabelText('Foreground 색상 선택'), {
 			target: { value: '#ff0000' },
 		})
-		fireEvent.click(screen.getByRole('button', { name: 'Basic' }))
+		panelTab('Basic')
 		fireEvent.click(within(slot).getByRole('button', { name: '이미지 생성' }))
 		await waitFor(() =>
 			expect(

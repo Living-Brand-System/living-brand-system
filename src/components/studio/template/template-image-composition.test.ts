@@ -22,7 +22,11 @@ const ids = (entries: readonly StudioPanelEntry[]) =>
 			: entry.cluster.id,
 	)
 
-const arrange = (mode: 'preset' | 'generate', dimmer = false) =>
+const arrange = (
+	mode: 'preset' | 'generate',
+	dimmer = false,
+	layer: 'base' | 'floating' = 'floating',
+) =>
 	arrangeStudioPanel(
 		deriveTemplateImageComposition({
 			contract,
@@ -32,7 +36,7 @@ const arrange = (mode: 'preset' | 'generate', dimmer = false) =>
 			samples: true,
 			transform: true,
 		}),
-		templateImagePanelPolicy(mode === 'generate'),
+		templateImagePanelPolicy(mode === 'generate', layer),
 		{ [TEMPLATE_IMAGE_IDS.mode]: mode, [TEMPLATE_IMAGE_IDS.dimmer]: dimmer },
 	)
 
@@ -42,7 +46,9 @@ describe('템플릿 이미지 컴포지션', () => {
 		expect(ids(slots.basicPresets)).toEqual(['samples'])
 		expect(slots.basic).toEqual([])
 		expect(slots.presets).toEqual([])
-		expect(ids(slots.adjustment)).toEqual(['transform'])
+		// 이동/확대/회전은 프로파일 값이 아니라 기본 층에 선다.
+		expect(slots.adjustment).toEqual([])
+		expect(ids(arrange('preset', false, 'base').adjustment)).toEqual(['transform'])
 	})
 
 	it('Generate는 프롬프트가 Basic을 차지하고 샘플은 Presets 탭으로 비킨다(Figma 529:27139)', () => {
@@ -52,9 +58,10 @@ describe('템플릿 이미지 컴포지션', () => {
 		expect(slots.basicPresets).toEqual([])
 	})
 
-	it('Dimming은 방식과 무관하게 서고, Use가 켜지면 Strength가 선다', () => {
-		expect(ids(arrange('preset').fixed)).toEqual(['image-dimming(image.dimmer)'])
-		expect(ids(arrange('generate', true).fixed)).toEqual([
+	it('Dimming은 기본 층에 방식과 무관하게 서고, Use가 켜지면 Strength가 선다', () => {
+		expect(arrange('preset').fixed).toEqual([])
+		expect(ids(arrange('preset', false, 'base').fixed)).toEqual(['image-dimming(image.dimmer)'])
+		expect(ids(arrange('generate', true, 'base').fixed)).toEqual([
 			'image-dimming(image.dimmer,image.dimmerOpacity)',
 		])
 	})

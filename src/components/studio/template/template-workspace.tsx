@@ -24,7 +24,7 @@ export function TemplateWorkspace({
 	onChange?: (slug: string) => void
 	onReset: () => void
 }) {
-	const { config, canvas, execution, layers, navigation } = useTemplateStudio()
+	const { config, canvas, execution, layers, navigation, editing } = useTemplateStudio()
 	const templatePanel = useTemplatePanel()
 	const firstLayer =
 		config.template.slots.find((slot) => slot.kind === 'text')?.id ??
@@ -89,12 +89,17 @@ export function TemplateWorkspace({
 								<TemplateOutput exporting={exporting} />
 							</>
 						),
-						// 편집 오버레이가 기본 카드 묶음(마스터)을 감싸고 그 위로 대상 카드·설정 카드를 띄운다.
-						frame: (master) => (
-							<TemplateEditingPanel settings={templatePanel.settings}>
-								{master}
-							</TemplateEditingPanel>
-						),
+						// 프로파일 조정은 모든 것 위의 새 층이다 — 왼쪽은 대상·설정 카드, 오른쪽은 프로파일 값 패널.
+						floating: editing.targetId
+							? {
+									label: '선택한 레이어 편집',
+									identity: editing.targetId,
+									left: (
+										<TemplateEditingPanel settings={templatePanel.settings} />
+									),
+									panel: templatePanel.floating ?? undefined,
+								}
+							: null,
 						canvas: (
 							// Figma 529:19461 — 작품 축은 화면(상단 메뉴) 중심이다. 오른쪽 패널이 왼쪽보다
 							// 56px 넓어 캔버스 열 중심과 28px 어긋나므로 왼쪽에 그만큼 더 비운다.

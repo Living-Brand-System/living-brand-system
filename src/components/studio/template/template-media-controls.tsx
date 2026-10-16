@@ -5,7 +5,10 @@ import { buildGraphicPanelComposition } from '@/components/studio/graphic/graphi
 import { graphicProfileCard } from '@/components/studio/graphic/graphic-profile-picker'
 import { imageProfileCard } from '@/components/studio/image/image-profile-picker'
 import { StudioProfileCards } from '@/components/studio/shared/studio-profile-cards'
-import type { TemplateTargetPanel } from '@/components/studio/template/template-panel'
+import type {
+	TemplatePanelLayer,
+	TemplateTargetPanel,
+} from '@/components/studio/template/template-panel'
 import type { TemplateImageTarget } from '@/components/studio/template/widgets/image-target'
 import { TEMPLATE_IMAGE_WIDGETS } from '@/components/studio/template/widgets/registry'
 import { Button } from '@/components/ui/button'
@@ -67,26 +70,27 @@ export function TemplateGraphicSelection() {
 }
 
 /**
- * 이미지 대상 패널의 배치 정책(docs/10 §3.7) — 생성 중인지가 정한다(Figma 529:26114·529:27139). 고를 것뿐이면
- * 샘플 목록이 Basic 위 목록 카드이고, 생성 입력이 Basic을 차지하면 Presets 탭으로 비킨다.
+ * 이미지 대상 패널의 배치 정책(docs/10 §3.7) — 어느 층에 서나(`layer`)와 생성 중인지가 정한다(Figma 529:26114·529:27139).
+ * 기본 층은 프로파일 밖의 값(Dimming·이동/확대/회전)만, 플로팅 층(프로파일 조정)은 프로파일 값만 갖는다(사용자 2026-10-16).
+ * 고를 것뿐이면 샘플 목록이 Basic 위 목록 카드이고, 생성 입력이 Basic을 차지하면 Presets 탭으로 비킨다.
  * 🔑 자리는 패널의 몫이라 매니페스트가 아니라 정책이 방식을 본다.
  */
-export function templateImagePanelPolicy(generating: boolean, adjusting = true): StudioPanelPolicy {
-	// 플로팅 패널(프로파일 조정)이 닫혀 있으면 프로파일 값은 서지 않는다 — Dimming·이동/확대/회전만(사용자 2026-10-16).
-	if (!adjusting) return { fixed: ['overlay'], adjustment: ['placement'] }
+export function templateImagePanelPolicy(
+	generating: boolean,
+	layer: TemplatePanelLayer = 'floating',
+): StudioPanelPolicy {
+	if (layer === 'base') return { fixed: ['overlay'], adjustment: ['placement'] }
 	return generating
 		? {
 				settings: ['source'],
-				fixed: ['overlay'],
 				basic: ['content'],
 				presets: ['preset'],
-				adjustment: ['palette', 'placement'],
+				adjustment: ['palette'],
 			}
 		: {
 				settings: ['source'],
-				fixed: ['overlay'],
 				basicPresets: ['preset'],
-				adjustment: ['palette', 'placement'],
+				adjustment: ['palette'],
 			}
 }
 
@@ -182,7 +186,7 @@ function templateImageTarget(
 export function buildTemplateImagePanel(
 	studio: TemplateStudioValue,
 	isBackground: boolean,
-	adjusting = true,
+	layer: TemplatePanelLayer,
 ): TemplateTargetPanel {
 	const target = templateImageTarget(studio, isBackground)
 	if (!target) return { composition: null }
@@ -234,7 +238,7 @@ export function buildTemplateImagePanel(
 		composition: {
 			slots: arrangeStudioPanel(
 				manifest,
-				templateImagePanelPolicy(generating, adjusting),
+				templateImagePanelPolicy(generating, layer),
 				values,
 			),
 			values,
@@ -245,8 +249,8 @@ export function buildTemplateImagePanel(
 			onChange,
 		},
 		extras: {
-			// 생성은 셸 액션이라 계약 밖이다 — Dimming 뒤에 같은 목록으로 잇는다.
-			fixed: adjusting && generating && contract && (
+			// 생성은 셸 액션이라 계약 밖이다 — 플로팅 층 패널의 고정 카드에 선다.
+			fixed: layer === 'floating' && generating && contract && (
 				<Controller.Group title="Generate">
 					<Button
 						variant="muted"
@@ -261,7 +265,7 @@ export function buildTemplateImagePanel(
 					</Button>
 				</Controller.Group>
 			),
-			basic: adjusting ? status : undefined,
+			basic: layer === 'floating' ? status : undefined,
 		},
 	}
 }

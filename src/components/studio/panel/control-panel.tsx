@@ -50,6 +50,8 @@ type ControlPanelProps = {
 	target?: string
 	/** 레일 맨 아래에 붙는 화면별 버튼(템플릿의 Manager mode 등) — 패널 탭과 상관없다. */
 	railFooter?: ReactNode
+	/** 패널의 접근 이름 — 플로팅 층의 패널은 층의 이름을 쓴다. */
+	label?: string
 }
 
 /**
@@ -73,6 +75,7 @@ function ControlPanelView({
 	extras,
 	target,
 	railFooter,
+	label = '편집 도구',
 }: ControlPanelProps & {
 	compositions: readonly ControlPanelComposition[]
 }) {
@@ -123,7 +126,7 @@ function ControlPanelView({
 	return (
 		<LazyMotion features={domAnimation}>
 			<aside
-				aria-label="편집 도구"
+				aria-label={label}
 				data-slot="studio-control-panel"
 				className="flex h-full min-h-0 w-102 gap-3 p-4"
 			>

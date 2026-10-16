@@ -5,20 +5,23 @@ type WorkspaceLayoutProps = {
 	left: ReactNode
 	right: ReactNode
 	children: ReactNode
+	/** 세 열 전체 위에 겹치는 층(플로팅 층) — 열 배치에 끼지 않는다. */
+	layer?: ReactNode
 }
 
 /** 작업 영역은 세 열만 배치한다. 카드 구성과 스크롤은 각 패널이 소유한다. */
-export function WorkspaceLayout({ left, right, children }: WorkspaceLayoutProps) {
+export function WorkspaceLayout({ left, right, children, layer }: WorkspaceLayoutProps) {
 	return (
 		<div
 			data-slot="studio-layout-workspace"
-			className="grid min-h-0 lg:h-full lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:grid-rows-[minmax(0,1fr)]"
+			className="relative grid min-h-0 lg:h-full lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:grid-rows-[minmax(0,1fr)]"
 		>
 			<div data-slot="studio-layout-left" className="min-h-0 min-w-0">
 				{left}
 			</div>
 			{children}
 			{right}
+			{layer}
 		</div>
 	)
 }
